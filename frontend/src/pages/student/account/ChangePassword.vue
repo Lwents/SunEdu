@@ -31,8 +31,9 @@
                 <input
                   :type="show.cur ? 'text' : 'password'"
                   v-model.trim="pwd.current"
-                  class="input"
+                  :class="['input', { invalid: touched.cur && !!errs.current }]"
                   autocomplete="current-password"
+                  @blur="touched.cur = true"
                 />
                 <button
                   type="button"
@@ -75,7 +76,7 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="errs.current" class="err">{{ errs.current }}</p>
+              <p v-if="touched.cur && errs.current" class="err">{{ errs.current }}</p>
             </div>
           </div>
 
@@ -86,8 +87,9 @@
                 <input
                   :type="show.new1 ? 'text' : 'password'"
                   v-model.trim="pwd.new1"
-                  class="input"
+                  :class="['input', { invalid: touched.new1 && !!errs.new1 }]"
                   autocomplete="new-password"
+                  @blur="touched.new1 = true"
                 />
                 <button
                   type="button"
@@ -130,7 +132,7 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="errs.new1" class="err">{{ errs.new1 }}</p>
+              <p v-if="touched.new1 && errs.new1" class="err">{{ errs.new1 }}</p>
             </div>
           </div>
 
@@ -141,8 +143,9 @@
                 <input
                   :type="show.new2 ? 'text' : 'password'"
                   v-model.trim="pwd.new2"
-                  class="input"
+                  :class="['input', { invalid: touched.new2 && !!errs.new2 }]"
                   autocomplete="new-password"
+                  @blur="touched.new2 = true"
                 />
                 <button
                   type="button"
@@ -185,7 +188,7 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="errs.new2" class="err">{{ errs.new2 }}</p>
+              <p v-if="touched.new2 && errs.new2" class="err">{{ errs.new2 }}</p>
             </div>
           </div>
 
@@ -214,8 +217,14 @@ const goParent = () => router.push({ name: 'student-parent' })
 type Pwd = { current: string; new1: string; new2: string }
 const pwd = reactive<Pwd>({ current: '', new1: '', new2: '' })
 const show = reactive({ cur: false, new1: false, new2: false })
+
+// trạng thái đã chạm/blur vào ô
+const touched = reactive({ cur: false, new1: false, new2: false })
+
+// error text (không hiển thị nếu chưa "touched")
 const errs = reactive<{ current?: string; new1?: string; new2?: string }>({})
 
+// theo dõi input để cập nhật nội dung lỗi
 watch(
   () => ({ ...pwd }),
   () => {
@@ -226,7 +235,11 @@ watch(
   { deep: true, immediate: true },
 )
 
-const isValid = computed(() => !errs.current && !errs.new1 && !errs.new2)
+// đủ điều kiện hợp lệ (để bật nút)
+const isValid = computed(
+  () => !!pwd.current && pwd.new1.length >= 6 && pwd.new2 === pwd.new1
+)
+
 const saving = ref(false)
 
 const toast = reactive<{ msg: string; type: 'success' | 'error' | '' }>({ msg: '', type: '' })
@@ -239,12 +252,17 @@ function showToast(msg: string, type: 'success' | 'error') {
 }
 
 async function changePassword() {
+  // khi bấm submit, coi như tất cả đã touched để hiện lỗi nếu có
+  touched.cur = touched.new1 = touched.new2 = true
   if (!isValid.value) return
+
   saving.value = true
   try {
     await auth.changePassword(pwd.current, pwd.new1)
     showToast('Đổi mật khẩu thành công!', 'success')
+    // reset form
     pwd.current = pwd.new1 = pwd.new2 = ''
+    touched.cur = touched.new1 = touched.new2 = false
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Có lỗi xảy ra, vui lòng thử lại.'
     showToast(message, 'error')
@@ -397,6 +415,12 @@ async function changePassword() {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+/* Hiệu ứng input khi có lỗi sau khi đã chạm */
+.input.invalid {
+  border-color: #fca5a5;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
 .pwd-wrap {
   position: relative;
   display: block;
@@ -506,9 +530,6 @@ async function changePassword() {
   .container {
     padding: 24px 16px 40px;
   }
-  /* .tabs {
-    width: max-content;
-  } */
   .tab {
     padding: 10px 14px;
     font-size: 13px;

@@ -27,8 +27,14 @@
           <div class="row">
             <label class="label">Họ tên phụ huynh <span class="req">*</span></label>
             <div>
-              <input v-model.trim="f.fullname" class="input" placeholder="Ví dụ: Nguyễn Văn B" />
-              <p v-if="errs.fullname" class="err">{{ errs.fullname }}</p>
+              <input
+                v-model.trim="f.fullname"
+                class="input"
+                :class="{ invalid: touched.fullname && !!errs.fullname }"
+                placeholder="Ví dụ: Nguyễn Văn B"
+                @blur="touched.fullname = true"
+              />
+              <p v-if="touched.fullname && errs.fullname" class="err">{{ errs.fullname }}</p>
             </div>
           </div>
 
@@ -39,10 +45,12 @@
                 v-model.trim="f.phone"
                 type="tel"
                 class="input"
+                :class="{ invalid: touched.phone && !!errs.phone }"
                 inputmode="tel"
                 placeholder="09xxxxxxxx"
+                @blur="touched.phone = true"
               />
-              <p v-if="errs.phone" class="err">{{ errs.phone }}</p>
+              <p v-if="touched.phone && errs.phone" class="err">{{ errs.phone }}</p>
             </div>
           </div>
 
@@ -53,9 +61,11 @@
                 v-model.trim="f.email"
                 type="email"
                 class="input"
+                :class="{ invalid: touched.email && !!errs.email }"
                 placeholder="parent@example.com"
+                @blur="touched.email = true"
               />
-              <p v-if="errs.email" class="err">{{ errs.email }}</p>
+              <p v-if="touched.email && errs.email" class="err">{{ errs.email }}</p>
             </div>
           </div>
 
@@ -120,9 +130,16 @@ type ParentForm = {
   address: string
 }
 const f = reactive<ParentForm>({ fullname: '', phone: '', email: '', relation: '', address: '' })
+
+// trạng thái đã tương tác từng ô
+const touched = reactive({ fullname: false, phone: false, email: false })
+
+// lỗi (chỉ hiển thị khi đã "touched" hoặc khi submit mà còn lỗi)
 const errs = reactive<{ fullname?: string; phone?: string; email?: string }>({})
+
 const isEmail = (v: string) => /^\S+@\S+\.\S+$/.test(v)
 
+// cập nhật thông báo lỗi theo dữ liệu
 watch(
   () => ({ ...f }),
   () => {
@@ -133,7 +150,14 @@ watch(
   { deep: true, immediate: true },
 )
 
-const isValid = computed(() => !errs.fullname && !errs.phone && !errs.email)
+// điều kiện hợp lệ để bật nút (độc lập với "touched")
+const isValid = computed(() => {
+  const phoneOk = !!f.phone
+  const nameOk = !!f.fullname
+  const emailOk = !f.email || isEmail(f.email)
+  return phoneOk && nameOk && emailOk
+})
+
 const saving = ref(false)
 const loading = ref(false)
 let profileDetails: ProfileDetails | null = null
@@ -148,7 +172,11 @@ function showToast(msg: string, type: 'success' | 'error') {
 }
 
 async function save() {
+  // khi bấm lưu, hiển thị lỗi cho các trường bắt buộc nếu còn thiếu
+  touched.fullname = touched.phone = true
+  if (f.email) touched.email = true
   if (!isValid.value) return
+
   saving.value = true
   try {
     const payload: ProfileUpdatePayload = {
@@ -333,6 +361,12 @@ onMounted(async () => {
   border-color: var(--focus-border);
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
+/* viền đỏ khi đã touched và còn lỗi */
+.input.invalid {
+  border-color: #fca5a5;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
 .select {
   appearance: none;
   background-image:
@@ -423,9 +457,6 @@ onMounted(async () => {
   .container {
     padding: 24px 16px 40px;
   }
-  /* .tabs {
-    width: max-content;
-  } */
   .tab {
     padding: 10px 14px;
     font-size: 13px;
