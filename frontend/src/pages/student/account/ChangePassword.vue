@@ -25,58 +25,30 @@
         <!-- FORM -->
         <form class="form" @submit.prevent="changePassword">
           <div class="row">
-            <label class="label">Mật khẩu hiện tại <span class="req">*</span></label>
+            <label class="label">Mã OTP xác nhận <span class="req">*</span></label>
             <div>
-              <div class="pwd-wrap">
+              <div class="otp-wrap">
                 <input
-                  :type="show.cur ? 'text' : 'password'"
-                  v-model.trim="pwd.current"
-                  :class="['input', { invalid: touched.cur && !!errs.current }]"
-                  autocomplete="current-password"
-                  @blur="touched.cur = true"
+                  v-model.trim="otp.code"
+                  class="input"
+                  maxlength="6"
+                  inputmode="numeric"
+                  placeholder="Nhập 6 số"
+                  @blur="touched.otp = true"
                 />
                 <button
                   type="button"
-                  class="eye"
-                  @click="show.cur = !show.cur"
-                  :aria-label="show.cur ? 'Ẩn' : 'Hiện'"
+                  class="otp-btn"
+                  :disabled="otp.countdown > 0 || otp.sending"
+                  @click="sendOtp"
                 >
-                  <svg
-                    v-if="show.cur"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
-                    />
-                  </svg>
-                  <svg
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-                    />
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
+                  <span v-if="otp.sending">Đang gửi...</span>
+                  <span v-else-if="otp.countdown > 0">Gửi lại ({{ otp.countdown }}s)</span>
+                  <span v-else>Gửi OTP</span>
                 </button>
               </div>
-              <p v-if="touched.cur && errs.current" class="err">{{ errs.current }}</p>
+              <p v-if="touched.otp && errs.otp" class="err">{{ errs.otp }}</p>
+              <p class="hint">OTP sẽ được gửi tới {{ otp.sentTo || 'email đăng ký của bạn' }}.</p>
             </div>
           </div>
 
@@ -205,7 +177,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch, computed } from 'vue'
+import { reactive, ref, watch, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
 
@@ -214,30 +186,55 @@ const auth = useAuthStore()
 const goProfile = () => router.push({ name: 'student-profile' })
 const goParent = () => router.push({ name: 'student-parent' })
 
-type Pwd = { current: string; new1: string; new2: string }
-const pwd = reactive<Pwd>({ current: '', new1: '', new2: '' })
-const show = reactive({ cur: false, new1: false, new2: false })
+const pwd = reactive({ new1: '', new2: '' })
+const show = reactive({ new1: false, new2: false })
+const touched = reactive({ otp: false, new1: false, new2: false })
+const errs = reactive<{ otp: string; new1: string; new2: string }>({ otp: '', new1: '', new2: '' })
 
-// trạng thái đã chạm/blur vào ô
-const touched = reactive({ cur: false, new1: false, new2: false })
+const otp = reactive({ code: '', countdown: 0, sending: false, sentTo: '' })
+const OTP_COUNTDOWN = 60
+let countdownTimer: number | undefined
 
-// error text (không hiển thị nếu chưa "touched")
-const errs = reactive<{ current?: string; new1?: string; new2?: string }>({})
+const maskedEmail = computed(() => {
+  const email = auth.user?.email || ''
+  if (!email || !email.includes('@')) return ''
+  const [local, domain] = email.split('@')
+  if (local.length <= 2) return `${local[0]}***@${domain}`
+  return `${local[0]}***${local[local.length - 1]}@${domain}`
+})
 
-// theo dõi input để cập nhật nội dung lỗi
 watch(
-  () => ({ ...pwd }),
+  () => otp.code,
   () => {
-    errs.current = pwd.current ? '' : 'Vui lòng nhập mật khẩu hiện tại.'
+    if (!otp.code) errs.otp = 'Vui lòng nhập OTP.'
+    else if (otp.code.length !== 6) errs.otp = 'OTP gồm 6 chữ số.'
+    else errs.otp = ''
+  },
+  { immediate: true },
+)
+
+watch(
+  () => pwd.new1,
+  () => {
     errs.new1 = pwd.new1.length >= 6 ? '' : 'Mật khẩu mới tối thiểu 6 ký tự.'
     errs.new2 = pwd.new2 === pwd.new1 ? '' : 'Xác nhận mật khẩu chưa khớp.'
   },
-  { deep: true, immediate: true },
+  { immediate: true },
 )
 
-// đủ điều kiện hợp lệ (để bật nút)
-const isValid = computed(
-  () => !!pwd.current && pwd.new1.length >= 6 && pwd.new2 === pwd.new1
+watch(
+  () => pwd.new2,
+  () => {
+    errs.new2 = pwd.new2 === pwd.new1 ? '' : 'Xác nhận mật khẩu chưa khớp.'
+  },
+  { immediate: true },
+)
+
+const isValid = computed(() =>
+  otp.code.length === 6 &&
+  pwd.new1.length >= 6 &&
+  pwd.new2 === pwd.new1 &&
+  !errs.otp && !errs.new1 && !errs.new2
 )
 
 const saving = ref(false)
@@ -253,16 +250,17 @@ function showToast(msg: string, type: 'success' | 'error') {
 
 async function changePassword() {
   // khi bấm submit, coi như tất cả đã touched để hiện lỗi nếu có
-  touched.cur = touched.new1 = touched.new2 = true
+  touched.otp = touched.new1 = touched.new2 = true
   if (!isValid.value) return
 
   saving.value = true
   try {
-    await auth.changePassword(pwd.current, pwd.new1)
+    await auth.changePasswordWithOtp(otp.code, pwd.new1)
     showToast('Đổi mật khẩu thành công!', 'success')
     // reset form
-    pwd.current = pwd.new1 = pwd.new2 = ''
-    touched.cur = touched.new1 = touched.new2 = false
+    pwd.new1 = pwd.new2 = ''
+    otp.code = ''
+    touched.otp = touched.new1 = touched.new2 = false
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Có lỗi xảy ra, vui lòng thử lại.'
     showToast(message, 'error')
@@ -270,6 +268,36 @@ async function changePassword() {
     saving.value = false
   }
 }
+
+function clearCountdown() {
+  if (countdownTimer) {
+    window.clearInterval(countdownTimer)
+    countdownTimer = undefined
+  }
+}
+
+async function sendOtp() {
+  if (otp.sending || otp.countdown > 0) return
+  otp.sending = true
+  try {
+    const res = await auth.requestPasswordOtp()
+    otp.sentTo = res?.email || maskedEmail.value || ''
+    showToast('Đã gửi OTP đến email của bạn.', 'success')
+    otp.countdown = OTP_COUNTDOWN
+    clearCountdown()
+    countdownTimer = window.setInterval(() => {
+      if (otp.countdown > 0) otp.countdown -= 1
+      else clearCountdown()
+    }, 1000)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Không gửi được OTP. Thử lại sau.'
+    showToast(message, 'error')
+  } finally {
+    otp.sending = false
+  }
+}
+
+onUnmounted(() => clearCountdown())
 </script>
 
 <!-- Giữ nguyên biến toàn cục như Profile.vue -->
@@ -425,6 +453,38 @@ async function changePassword() {
   position: relative;
   display: block;
   width: 100%;
+}
+.otp-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.otp-wrap .input {
+  flex: 1;
+  padding-right: 10px;
+}
+.otp-btn {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.otp-btn:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.otp-btn:not(:disabled):hover {
+  background: var(--accent-tint-bg);
+}
+.hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
 }
 .eye {
   position: absolute;
