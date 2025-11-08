@@ -61,6 +61,33 @@ export interface TxMetrics {
     disputed: number
 }
 
+export interface SubscriptionPlan {
+    id: string
+    name: string
+    price: number
+    durationDays: number
+    features: string[]
+}
+
+export type MomoFlow = 'capture_wallet' | 'pay_with_method' | 'pos'
+
+export interface MomoInitPayload {
+    planId?: string
+    amount?: number
+    description?: string
+    flow?: MomoFlow
+    paymentCode?: string
+}
+
+export interface MomoInitResponse {
+    paymentId: string
+    payUrl?: string
+    deeplink?: string
+    qrCodeUrl?: string
+    message?: string
+    resultCode?: number
+}
+
 export interface PageParams {
     q?: string
     status?: TxStatus
@@ -298,5 +325,37 @@ export const paymentService = {
             ),
         ].join('\n')
         return new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    },
+
+    // ===== STUDENT-FACING =====
+    async listPlans(): Promise<SubscriptionPlan[]> {
+        const { data } = await api.get('/payments/plans/')
+        const items = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : []
+        return items.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            price: Number(item.price),
+            durationDays: item.duration_days,
+            features: Array.isArray(item.features) ? item.features : [],
+        }))
+    },
+
+    async initiateMomo(payload: MomoInitPayload): Promise<MomoInitResponse> {
+        const body: Record<string, any> = {}
+        if (payload.planId) body.plan_id = payload.planId
+        if (typeof payload.amount === 'number') body.amount = payload.amount
+        if (payload.description) body.description = payload.description
+        if (payload.flow) body.flow = payload.flow
+        if (payload.paymentCode) body.payment_code = payload.paymentCode
+
+        const { data } = await api.post('/payments/momo/initiate/', body)
+        return {
+            paymentId: data.payment_id,
+            payUrl: data.payUrl || data.shortLink,
+            deeplink: data.deeplink,
+            qrCodeUrl: data.qrCodeUrl,
+            message: data.message,
+            resultCode: data.resultCode,
+        }
     },
 }

@@ -5,13 +5,13 @@ services:
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_DB: elearing
-      POSTGRES_USER: elearing
+      POSTGRES_DB: elearning
+      POSTGRES_USER: elearning
       POSTGRES_PASSWORD: 123456
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   web:
     build: .
@@ -26,8 +26,8 @@ services:
     depends_on:
       - db
     environment:
-      DB_NAME: elearing
-      DB_USER: elearing
+      DB_NAME: elearning
+      DB_USER: elearning
       DB_PASSWORD: 123456
       DB_HOST: db
       DB_PORT: 5432
