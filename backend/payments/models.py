@@ -23,6 +23,7 @@ class Payment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='payments')
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=32,
         default='pending',
@@ -35,7 +36,7 @@ class Payment(models.Model):
     class Meta:
         verbose_name = ('Payment')
         verbose_name_plural = ('Payments')
-        ordering = ['-paid_at']
+        ordering = ['-paid_at', '-created_at']
 
     def __str__(self):
         return f"Payment {self.amount} by {self.user}"
