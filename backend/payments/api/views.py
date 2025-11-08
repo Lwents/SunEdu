@@ -4,14 +4,20 @@ from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import transaction
+from django.db.models import Count, Sum, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.conf import settings
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 
-from payments.api.serializers import MomoPaymentInitSerializer, SubscriptionPlanSerializer
+from payments.api.serializers import (
+    MomoPaymentInitSerializer,
+    SubscriptionPlanSerializer,
+    PaymentHistorySerializer,
+)
 from payments.models import Payment, UserSubscription, SubscriptionPlan
 from payments.services.momo_client import MoMoAIOClient
 
@@ -48,7 +54,12 @@ class MoMoPaymentInitView(APIView):
         extra_data = base64.b64encode(json.dumps(extra_payload).encode("utf-8")).decode("utf-8")
 
         amount_vnd = int(amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
-        redirect_url = getattr(settings, "MOMO_REDIRECT_URL", None) or request.build_absolute_uri("/")
+        # Prefer FE-provided redirect_url if validated, else fallback to settings
+        redirect_url = (
+            serializer.validated_data.get("redirect_url")
+            or getattr(settings, "MOMO_REDIRECT_URL", None)
+            or request.build_absolute_uri("/")
+        )
         ipn_url = getattr(settings, "MOMO_IPN_URL", None) or request.build_absolute_uri(reverse("payments:momo-ipn"))
 
         client = MoMoAIOClient()
@@ -171,3 +182,99 @@ class SubscriptionPlanListView(generics.ListAPIView):
     queryset = SubscriptionPlan.objects.all().order_by("price")
     serializer_class = SubscriptionPlanSerializer
     permission_classes = [permissions.AllowAny]
+
+
+class PaymentHistoryListView(generics.ListAPIView):
+    """Lịch sử thanh toán của chính người dùng (có phân trang)."""
+
+    serializer_class = PaymentHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = Payment.objects.filter(user=self.request.user).order_by("-paid_at", "-created_at")
+        status_param = self.request.query_params.get("status")
+        if status_param in {"pending", "paid", "failed", "refunded"}:
+            qs = qs.filter(status=status_param)
+        gateway = self.request.query_params.get("gateway")
+        if gateway:
+            qs = qs.filter(metadata__gateway__iexact=gateway)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+
+        summary_qs = self.filter_queryset(self.get_queryset())
+        aggregates = summary_qs.aggregate(
+            total_amount_paid=Sum("amount", filter=Q(status__in=["paid", "refunded"])),
+            total_success=Count("id", filter=Q(status__in=["paid", "refunded"])),
+            total_pending=Count("id", filter=Q(status="pending")),
+            total_failed=Count("id", filter=Q(status="failed")),
+        )
+        summary = {
+            "total_amount": float(aggregates.get("total_amount_paid") or 0),
+            "success_count": aggregates.get("total_success") or 0,
+            "pending_count": aggregates.get("total_pending") or 0,
+            "failed_count": aggregates.get("total_failed") or 0,
+        }
+
+        if isinstance(response.data, dict):
+            response.data["summary"] = summary
+        else:
+            response.data = {"results": response.data, "summary": summary}
+        return response
+
+
+class MoMoSyncPaymentView(APIView):
+    """Manual sync with MoMo to update a payment status by payment id.
+
+    Useful in development when IPN cannot reach local backend.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        payment = get_object_or_404(Payment, id=pk, user=request.user)
+        order_id = (payment.metadata or {}).get("orderId") or payment.id.hex
+        request_id = (payment.metadata or {}).get("requestId")
+
+        client = MoMoAIOClient()
+        try:
+            momo_res = client.query_status(order_id=order_id, request_id=request_id)
+        except ValueError as exc:
+            payment.status = "failed"
+            payment.metadata = {
+                **(payment.metadata or {}),
+                "momo_sync_error": str(exc),
+            }
+            payment.save(update_fields=["status", "metadata"])
+            return Response({"detail": str(exc), "status": payment.status}, status=status.HTTP_400_BAD_REQUEST)
+
+        payment.metadata = {**(payment.metadata or {}), "momo_query": momo_res}
+        result_code = momo_res.get("resultCode")
+        trans_id = momo_res.get("transId") or momo_res.get("transactionId")
+
+        if result_code == 0:
+            # success
+            if payment.status != "paid":
+                payment.status = "paid"
+                if trans_id and not payment.transaction_id:
+                    payment.transaction_id = str(trans_id)
+                if not payment.paid_at:
+                    payment.paid_at = timezone.now()
+                payment.save(update_fields=["status", "transaction_id", "paid_at", "metadata"])
+        elif result_code in {1000, 7000}:
+            # 1000: transaction not found or still pending in some docs; keep pending
+            if payment.status != "pending":
+                payment.status = "pending"
+                payment.save(update_fields=["status", "metadata"])
+        else:
+            if payment.status != "failed":
+                payment.status = "failed"
+                payment.save(update_fields=["status", "metadata"])
+
+        return Response({
+            "payment_id": str(payment.id),
+            "status": payment.status,
+            "transaction_id": payment.transaction_id,
+            "resultCode": result_code,
+        })

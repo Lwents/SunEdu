@@ -106,6 +106,19 @@ export interface PageResult<T> {
     total: number
 }
 
+export interface PaymentHistorySummary {
+    totalAmount: number
+    successCount: number
+    pendingCount: number
+    failedCount: number
+}
+
+export interface PaymentHistoryListResult<T = any> {
+    items: T[]
+    total: number
+    summary: PaymentHistorySummary
+}
+
 const USE_MOCK = true // ← bật dữ liệu giả để dev trước
 
 function seededRand(n: number) {
@@ -340,6 +353,46 @@ export const paymentService = {
         }))
     },
 
+    // ===== STUDENT: PAYMENT HISTORY =====
+    async listMyPayments(params?: { status?: 'pending'|'paid'|'failed'|'refunded'; page?: number; pageSize?: number }): Promise<PaymentHistoryListResult> {
+        const query: any = {}
+        if (params?.status) query.status = params.status
+        if (params?.page) query.page = params.page
+        if (params?.pageSize) query.page_size = params.pageSize
+
+        const { data } = await api.get('/payments/history/', { params: query })
+        const items = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : []
+        const summaryRaw = (data?.summary ?? {}) as any
+        const summary: PaymentHistorySummary = {
+            totalAmount: Number(summaryRaw.total_amount ?? summaryRaw.total_amount_paid ?? summaryRaw.totalAmount ?? 0),
+            successCount: Number(summaryRaw.success_count ?? summaryRaw.total_success ?? 0),
+            pendingCount: Number(summaryRaw.pending_count ?? summaryRaw.total_pending ?? 0),
+            failedCount: Number(summaryRaw.failed_count ?? summaryRaw.total_failed ?? 0),
+        }
+
+        const normalized = items.map((p: any) => {
+            const planName = p.plan_name || (p.plan?.name) || 'Thanh toán tuỳ chỉnh'
+            const gateway = (p.gateway || (p.metadata?.gateway) || 'Momo') as string
+            const amount = Number(p.amount || 0)
+            const iso = p.paid_at || p.created_at || new Date().toISOString()
+            const status = String(p.status || '').toLowerCase()
+            const mappedStatus = status === 'paid' || status === 'refunded' ? 'success' : (status as 'pending'|'failed'|'success')
+
+            return {
+                id: p.id,
+                orderId: p.metadata?.orderId || p.transaction_id || String(p.id),
+                plan: planName,
+                amount,
+                method: gateway.charAt(0).toUpperCase() + gateway.slice(1),
+                date: iso,
+                status: mappedStatus,
+            }
+        })
+
+        const total = typeof data?.count === 'number' ? data.count : normalized.length
+        return { items: normalized, total, summary }
+    },
+
     async initiateMomo(payload: MomoInitPayload): Promise<MomoInitResponse> {
         const body: Record<string, any> = {}
         if (payload.planId) body.plan_id = payload.planId
@@ -357,5 +410,10 @@ export const paymentService = {
             message: data.message,
             resultCode: data.resultCode,
         }
+    },
+
+    async syncMomoPayment(paymentId: string): Promise<{ status: string; resultCode?: number; transaction_id?: string }>{
+        const { data } = await api.post(`/payments/momo/sync/${paymentId}/`)
+        return data
     },
 }

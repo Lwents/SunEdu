@@ -370,6 +370,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Thanh toán' },
       },
       {
+        path: 'payments/history',
+        name: 'student-payments-history',
+        component: () => import('@/pages/student/payments/History.vue'),
+        meta: { title: 'Lịch sử thanh toán' },
+      },
+      {
         path: 'account/profile',
         name: 'student-profile',
         component: () => import('@/pages/student/account/Profile.vue'),

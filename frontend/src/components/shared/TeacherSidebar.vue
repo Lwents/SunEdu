@@ -2,7 +2,7 @@
   <aside class="h-full flex flex-col bg-white border-r border-gray-200 shadow-sm md:shadow-none">
     <div class="p-5 flex items-center gap-3 border-b border-gray-200">
       <RouterLink to="/teacher/dashboard" class="text-xl font-bold tracking-tight text-gray-800">
-        <LogoEduriot :size="28" primary="#3B82F6" accent="#14B8A6" />
+        <LogoSmartEdu :size="28" />
       </RouterLink>
     </div>
 
@@ -42,7 +42,7 @@ import {
   ClipboardDocumentListIcon,
   UserGroupIcon,
 } from '@heroicons/vue/24/outline'
-import LogoEduriot from '@/components/ui/LogoEduriot.vue'
+import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
 
 const route = useRoute()
 
