@@ -159,13 +159,11 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // [ADD] Dùng cho trang Đổi mật khẩu
-    async changePassword(oldPassword: string, newPassword: string) {
-      if (typeof authService.changePassword === 'function') {
-        await authService.changePassword(oldPassword, newPassword)
-      } else {
-        return // mock local nếu chưa có API
-      }
+    async requestPasswordOtp() {
+      return authService.requestPasswordChangeOtp()
+    },
+    async changePasswordWithOtp(otp: string, newPassword: string) {
+      return authService.changePasswordWithOtp(otp, newPassword)
     },
 
     // Khởi tạo nhanh khi app load

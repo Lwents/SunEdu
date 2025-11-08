@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 
@@ -94,5 +95,26 @@ class ParentalConsent(models.Model):
     def __str__(self):
         return f'Consent from {self.parent} for {self.child}'
 
+
+class PasswordChangeOTP(models.Model):
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE, related_name='password_change_otps')
+    code_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveIntegerField(default=0)
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [models.Index(fields=['user', '-created_at'])]
+        ordering = ['-created_at']
+
+    def mark_attempt(self, save=True):
+        self.attempts = models.F('attempts') + 1
+        if save:
+            self.save(update_fields=['attempts'])
+
+    @property
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
 
 
