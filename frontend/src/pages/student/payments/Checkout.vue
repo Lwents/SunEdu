@@ -4,100 +4,105 @@
       <h1 class="title">Thanh toán</h1>
 
       <div class="grid">
-        <!-- QR + form -->
-        <section class="card qr-card">
-          <div class="qr-left">
-            <div class="qr-wrap">
-              <img :src="qrUrl" alt="VietQR" />
-            </div>
+        <section class="card momo-card">
+          <h2 class="section-title">Thanh toán qua MoMo</h2>
+          <p class="muted">
+            Chọn gói và bấm nút bên dưới, bạn sẽ được chuyển đến cổng MoMo Collection Link để hoàn tất.
+          </p>
 
-            <div class="qr-actions">
-              <button class="btn-outline" @click="downloadQR">Tải QR</button>
-              <button class="btn-light" @click="refreshOrder">Tạo mã mới</button>
-              <div class="muted small">Hết hạn trong: <b>{{ mm }}:{{ ss }}</b></div>
-            </div>
-          </div>
-
-          <div class="qr-right">
-            <h2 class="section-title">Quét QR để thanh toán</h2>
-            <ol class="steps">
-              <li>Mở App ngân hàng có hỗ trợ <b>VietQR/NAPAS 247</b>.</li>
-              <li>Chọn mục <b>Quét QR</b> và quét mã bên trái.</li>
-              <li>Kiểm tra thông tin khớp 100% rồi xác nhận thanh toán.</li>
-            </ol>
-
-            <div class="note success" v-if="copied">Đã sao chép: {{ copied }}</div>
-
-            <div class="field">
-              <span class="label">Ngân hàng</span>
-              <select v-model="bank" class="input select">
-                <option v-for="b in banks" :key="b.code" :value="b.code">{{ b.name }}</option>
-              </select>
-            </div>
-
-            <div class="row-2">
-              <div class="field">
-                <span class="label">Số tài khoản</span>
-                <div class="copy-line">
-                  <input v-model="account" class="input" />
-                  <button class="copy" @click="copy(account)">Copy</button>
-                </div>
-              </div>
-
-              <div class="field">
-                <span class="label">Chủ tài khoản</span>
-                <input v-model="accountName" class="input" />
-              </div>
-            </div>
-
-            <!-- Nội dung CK -->
-            <div class="field">
-              <span class="label">Nội dung chuyển khoản</span>
-              <div class="copy-line">
-                <input v-model="orderNote" class="input" />
-                <button class="copy" @click="copy(orderNote)">Copy</button>
-              </div>
-              <small class="muted">Vui lòng giữ nguyên đúng nội dung để tự động đối soát.</small>
-            </div>
-
-            <!-- Số tiền -->
-            <div class="field">
-              <span class="label">Số tiền (VND)</span>
-              <input
-                v-model="amountText"
-                @input="onAmountInput"
-                class="input right"
-                inputmode="numeric"
-                placeholder="Nhập số tiền, ví dụ 215000"
-              />
-              <small class="muted">Chỉ nhập chữ số.</small>
-            </div>
-
-            <div class="actions">
-              <button 
-                class="btn-primary" 
-                :class="{ 'is-busy': justMarked }"
-                @click="markPaid"
+          <div class="field">
+            <span class="label">Chọn gói</span>
+            <select
+              v-model="selectedPlanId"
+              class="input select"
+              :disabled="planLoading"
+            >
+              <option value="">Tự nhập số tiền</option>
+              <option
+                v-for="p in plans"
+                :key="p.id"
+                :value="p.id"
               >
-                <span v-if="justMarked" class="spinner"></span>
-                {{ justMarked ? 'Đang xử lý...' : 'Tôi đã thanh toán' }}
-              </button>
-            </div>
-            <span class="muted confirm-note" v-if="justMarked">
-              ✓ Đã ghi nhận. Hệ thống sẽ kích hoạt ngay sau khi đối soát.
-            </span>
+                {{ p.name }} • {{ vnd(p.price) }}
+              </option>
+            </select>
+            <small class="muted" v-if="!plans.length && !planLoading">
+              Chưa có gói nào được cấu hình — bạn có thể tự nhập số tiền ở dưới.
+            </small>
           </div>
+
+          <div class="field">
+            <span class="label">Nội dung hiển thị khi thanh toán</span>
+            <input class="input" :value="description" readonly />
+          </div>
+
+          <div class="field">
+            <span class="label">Số tiền (VND)</span>
+            <input
+              v-model="amountText"
+              @input="onAmountInput(true)"
+              class="input right"
+              inputmode="numeric"
+              placeholder="Nhập số tiền, ví dụ 215000"
+            />
+            <small class="muted">
+              <template v-if="selectedPlanId">
+                Số tiền được cố định từ gói {{ plan }}
+              </template>
+              <template v-else>
+                Chỉ nhập chữ số. Bạn có thể đặt số tiền tuỳ ý.
+              </template>
+            </small>
+          </div>
+
+          <div class="pill">
+            <div>
+              <small class="muted">Số tiền thanh toán</small>
+              <div class="pill-amount">{{ vnd(amountNumber) }}</div>
+            </div>
+            <div>
+              <small class="muted">Gói</small>
+              <div class="pill-plan">{{ plan }}</div>
+            </div>
+          </div>
+
+          <h3 class="sub-title">Các bước thực hiện</h3>
+          <ul class="steps">
+            <li>Mở app MoMo hoặc chọn liên kết thanh toán được chuyển tới.</li>
+            <li>Kiểm tra thông tin đơn hàng, số tiền và xác nhận thanh toán.</li>
+            <li>Sau khi hoàn tất, hệ thống sẽ tự đồng bộ trạng thái.</li>
+          </ul>
+
+          <button
+            class="btn-primary wide"
+            :class="{ 'is-busy': isMomoLoading }"
+            :disabled="!amountNumber"
+            @click="payWithMomo"
+          >
+            <span v-if="isMomoLoading" class="spinner"></span>
+            {{ isMomoLoading ? 'Đang chuyển hướng...' : 'Thanh toán với MoMo' }}
+          </button>
+          <small class="muted">
+            Bạn sẽ được chuyển đến trang thanh toán an toàn của MoMo.
+          </small>
         </section>
 
-        <!-- Tóm tắt -->
-        <section class="card">
+        <section class="card summary-card">
           <h2 class="section-title">Tóm tắt</h2>
           <div class="summary">
             <div class="line"><span>Gói</span><b>{{ plan }}</b></div>
+            <div class="line" v-if="planDuration"><span>Thời hạn</span><b>{{ planDuration }} ngày</b></div>
             <div class="line"><span>Thành tiền</span><b>{{ vnd(amountNumber) }}</b></div>
-            <div class="line"><span>Phí</span><b>0đ</b></div>
+            <div class="line"><span>Phí nền tảng</span><b>0đ</b></div>
             <div class="divider"></div>
             <div class="line total"><span>Tổng thanh toán</span><b>{{ vnd(amountNumber) }}</b></div>
+          </div>
+
+          <div v-if="planFeatures.length" class="feature-list">
+            <h3>Quyền lợi gói</h3>
+            <ul>
+              <li v-for="(feature, idx) in planFeatures" :key="idx">{{ feature }}</li>
+            </ul>
           </div>
         </section>
       </div>
@@ -106,92 +111,116 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+
+import { paymentService, type SubscriptionPlan, type MomoInitPayload } from '@/services/payment.service'
 
 const route = useRoute()
 
-/** ==== Config (đổi lại cho đúng) ==== */
-const banks = [
-  { code: 'vcb', name: 'Vietcombank' },
-  { code: 'mbbank', name: 'MBBank' },
-  { code: 'tcb', name: 'Techcombank' },
-  { code: 'bidv', name: 'BIDV' },
-  { code: 'vtb', name: 'VietinBank' },
-  { code: 'acb', name: 'ACB' },
-  { code: 'tpb', name: 'TPBank' },
-  { code: 'vpbank', name: 'VPBank' },
-  { code: 'agribank', name: 'Agribank' },
-]
+const plans = ref<SubscriptionPlan[]>([])
+const planLoading = ref(false)
+const selectedPlanId = ref(typeof route.query.planId === 'string' ? route.query.planId : '')
+const fallbackPlanLabel = ref(String(route.query.plan || 'Thanh toán tuỳ chỉnh'))
+const plan = ref(fallbackPlanLabel.value)
 
-const bank = ref('mbbank')
-const account = ref('0966148388')
-const accountName = ref('Vu Le Kien')
-
-/** Đọc amount & plan từ query (nếu không có → mặc định) */
-const plan = ref(String(route.query.plan || 'Khoá học Standard'))
 const amountText = ref(String(route.query.amount || '199000'))
-
 const amountNumber = computed(() => {
   const digits = amountText.value.replace(/[^\d]/g, '')
   return digits ? parseInt(digits, 10) : 0
 })
-function onAmountInput(){ amountText.value = amountText.value.replace(/[^\d]/g,'') }
 
-const orderId = ref(createOrderId())
-const orderNote = ref(`HOCVIEN-${orderId.value}`)
+const description = computed(() => `Thanh toán ${plan.value}`)
 
-/** URL ảnh QR */
-const qrUrl = computed(() => {
-  const p = new URLSearchParams({
-    amount: String(amountNumber.value || 0),
-    addInfo: orderNote.value,
-    accountName: accountName.value,
-  })
-  return `https://img.vietqr.io/image/${bank.value}-${account.value}-qr_only.png?${p.toString()}`
+const selectedPlan = computed(() =>
+  plans.value.find((item) => item.id === selectedPlanId.value) || null
+)
+const planDuration = computed(() => selectedPlan.value?.durationDays ?? null)
+const planFeatures = computed(() => selectedPlan.value?.features ?? [])
+
+async function loadPlans() {
+  planLoading.value = true
+  try {
+    const data = await paymentService.listPlans()
+    plans.value = data
+    if (!selectedPlanId.value && data.length) {
+      selectedPlanId.value = data[0].id
+    } else {
+      syncPlanWithSelection()
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    planLoading.value = false
+    if (!plans.value.length) {
+      syncPlanWithSelection()
+    }
+  }
+}
+
+function syncPlanWithSelection() {
+  if (selectedPlanId.value) {
+    const found = plans.value.find((p) => p.id === selectedPlanId.value)
+    if (found) {
+      fallbackPlanLabel.value = found.name
+      plan.value = found.name
+      amountText.value = String(Math.round(found.price))
+    } else if (!planLoading.value) {
+      selectedPlanId.value = ''
+      return
+    }
+  } else {
+    plan.value = fallbackPlanLabel.value || 'Thanh toán tuỳ chỉnh'
+  }
+}
+
+watch(selectedPlanId, () => {
+  syncPlanWithSelection()
 })
 
-/** Helpers */
-function vnd(n:number){ return n.toLocaleString('vi-VN') + 'đ' }
-function createOrderId(){
-  const t = new Date()
-  return t.getFullYear().toString().slice(-2)
-    + String(t.getMonth()+1).padStart(2,'0')
-    + String(t.getDate()).padStart(2,'0')
-    + '-' + Math.random().toString(36).slice(2,7).toUpperCase()
+onMounted(() => {
+  loadPlans()
+})
+
+const isMomoLoading = ref(false)
+async function payWithMomo() {
+  if (!amountNumber.value) {
+    ElMessage.warning('Vui lòng nhập số tiền hợp lệ')
+    return
+  }
+  isMomoLoading.value = true
+  try {
+    const payload: MomoInitPayload = {
+      description: description.value,
+    }
+    if (selectedPlanId.value) payload.planId = selectedPlanId.value
+    else payload.amount = amountNumber.value
+    payload.flow = 'pay_with_method'
+
+    const res = await paymentService.initiateMomo(payload)
+    ElMessage.success('Đang chuyển đến MoMo...')
+    const target = res.payUrl || res.deeplink || res.qrCodeUrl
+    if (target) window.location.href = target
+  } catch (err: any) {
+    ElMessage.error(err?.message || 'Không khởi tạo được thanh toán MoMo')
+  } finally {
+    isMomoLoading.value = false
+  }
 }
 
-/** Copy */
-const copied = ref('')
-async function copy(text:string){
-  try{ await navigator.clipboard.writeText(text); copied.value = text; setTimeout(()=>copied.value='',1500) }catch{}
+function vnd(n: number) {
+  return n.toLocaleString('vi-VN') + 'đ'
 }
 
-/** Countdown 10 phút */
-const seconds = ref(600)
-let timer:any
-onMounted(()=>{ timer=setInterval(()=>{ if(seconds.value>0) seconds.value-- },1000) })
-onBeforeUnmount(()=>clearInterval(timer))
-const mm = computed(()=> String(Math.floor(seconds.value/60)).padStart(2,'0'))
-const ss = computed(()=> String(seconds.value%60).padStart(2,'0'))
-function refreshOrder(){ orderId.value=createOrderId(); orderNote.value=`HOCVIEN-${orderId.value}`; seconds.value=600 }
-
-/** Download QR */
-async function downloadQR(){
-  try{
-    const res = await fetch(qrUrl.value, { mode:'cors' })
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `vietqr-${orderId.value}.png`
-    document.body.appendChild(a); a.click(); a.remove()
-    URL.revokeObjectURL(url)
-  }catch{ window.open(qrUrl.value,'_blank') }
+function onAmountInput(manual = false) {
+  amountText.value = amountText.value.replace(/[^\d]/g, '')
+  if (manual) {
+    selectedPlanId.value = ''
+    fallbackPlanLabel.value = 'Thanh toán tuỳ chỉnh'
+    plan.value = fallbackPlanLabel.value
+  }
 }
-
-/** Mock */
-const justMarked = ref(false)
-function markPaid(){ justMarked.value=true; setTimeout(()=>justMarked.value=false,3000) }
 </script>
 
 <style>
@@ -208,107 +237,58 @@ function markPaid(){ justMarked.value=true; setTimeout(()=>justMarked.value=fals
 
 .grid{ display:grid; grid-template-columns: 2fr 1fr; gap:16px; }
 .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; }
-
-/* Left card */
-.qr-card{ display:grid; grid-template-columns: 320px 1fr; gap:16px; }
-.qr-wrap{ width:100%; aspect-ratio:1/1; border:1px dashed var(--line); border-radius:14px; display:grid; place-items:center; overflow:hidden; }
-.qr-wrap img{ width:100%; height:100%; object-fit:contain; }
-.qr-actions{ display:flex; flex-direction:column; gap:8px; align-items:flex-start; margin-top:10px; }
-.small{ font-size:12px; }
-.muted{ color:var(--muted); }
 .section-title{ font-size:16px; font-weight:800; margin-bottom:8px; }
-.steps{ margin:0 0 8px; padding-left:18px; }
-.steps li{ margin:6px 0; }
-.note.success{ background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; padding:8px 10px; border-radius:10px; margin-bottom:10px; }
+.muted{ color:var(--muted); font-size:14px; }
 
-/* Fields */
+.momo-card .field{ margin-top:12px; }
 .field{ display:grid; gap:6px; margin-bottom:10px; }
 .label{ font-size:12px; color:var(--muted); }
-.input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; outline:none; transition: all 0.2s ease; }
-.input.right{ text-align:right; }
+.input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; outline:none; transition:all .2s ease; }
 .input:focus{ border-color:var(--focus-border); box-shadow:0 0 0 3px var(--focus-ring); }
-.select{ appearance:none; background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%), linear-gradient(135deg, #9ca3af 50%, transparent 50%); background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px); background-size: 5px 5px, 5px 5px; background-repeat:no-repeat; }
+.input.right{ text-align:right; }
+.select{ appearance:none; background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%), linear-gradient(135deg, #9ca3af 50%, transparent 50%); background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px); background-size: 5px 5px; background-repeat:no-repeat; }
 
-.row-2{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+.pill{
+  margin:16px 0;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 16px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+}
+.pill-amount{ font-size:20px; font-weight:800; }
+.pill-plan{ font-weight:700; }
 
-/* Copy line */
-.copy-line{ position:relative; }
-.copy-line .input{ padding-right: 96px; }
-.copy{ position:absolute; right:6px; top:50%; transform:translateY(-50%); border:1px solid var(--line); padding:6px 10px; background:#fff; border-radius:8px; cursor:pointer; font-weight:700; transition: all 0.2s ease; }
-.copy:hover{ background:#f9fafb; }
+.sub-title{ margin:14px 0 6px; font-weight:700; }
+.steps{ margin:0 0 12px; padding-left:18px; color:var(--muted); }
+.steps li{ margin:4px 0; }
 
-/* ===========================
-   BUTTONS - DÙNG !IMPORTANT
-   =========================== */
 .btn-primary{
-  background: var(--accent) !important;
-  color: #fff !important;
-  border: 1px solid var(--accent) !important;
-  padding: 12px 16px !important;
-  border-radius: 10px !important;
-  font-weight: 800 !important;
-  cursor: pointer !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  transition: all 0.2s ease !important;
-  width: 100% !important;
-  justify-content: center !important;
+  background:var(--accent); color:#fff; border:1px solid var(--accent);
+  padding:10px 16px; border-radius:10px; font-weight:800; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; transition:all .2s ease;
 }
-
-.btn-primary:hover{ 
-  filter: brightness(1.1) !important;
-  transform: translateY(-1px) !important;
+.btn-primary.wide{ width:100%; justify-content:center; }
+.btn-primary:not([disabled]):hover{ filter:brightness(1.08); transform:translateY(-1px); }
+.btn-primary[disabled]{ opacity:.7; cursor:not-allowed; }
+.btn-outline, .btn-light{
+  border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer;
+  background:#fff;
 }
-
-.btn-primary.is-busy{
-  opacity: .7 !important;
-  cursor: progress !important;
-}
-
-.btn-outline, .btn-light{ 
-  background:#fff !important; 
-  border:1px solid var(--line) !important; 
-  border-radius:10px !important; 
-  padding:8px 12px !important; 
-  cursor:pointer !important; 
-  font-weight:700 !important;
-  transition: all 0.2s ease !important;
-  width: 100% !important;
-}
-.btn-outline:hover, .btn-light:hover{ 
-  background:#f9fafb !important; 
-}
-
-.actions{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
-.confirm-note{ 
-  font-size:13px; 
-  color:#166534; 
-  font-weight:600; 
-  text-align:center;
-  display:block;
-  padding:6px;
-}
-
-/* Spinner */
-.spinner{ 
-  width:16px !important; 
-  height:16px !important; 
-  border:2px solid rgba(255,255,255,.6) !important; 
-  border-top-color:#fff !important; 
-  border-radius:50% !important; 
-  animation:spin .8s linear infinite !important; 
-}
+.btn-light{ background:#f9fafb; }
+.spinner{ width:16px; height:16px; border:2px solid rgba(255,255,255,.6); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
 @keyframes spin{ to{ transform:rotate(360deg); } }
 
-/* Summary */
-.summary{ display:grid; gap:8px; }
-.line{ display:flex; justify-content:space-between; }
+.summary-card .summary{ display:grid; gap:10px; }
+.line{ display:flex; justify-content:space-between; font-size:14px; }
+.line.total b{ font-size:18px; }
 .divider{ height:1px; background:var(--line); margin:6px 0; }
-.total b{ color:#065f46; }
+.feature-list{ margin-top:14px; }
+.feature-list h3{ margin-bottom:6px; font-size:14px; }
+.feature-list ul{ margin:0; padding-left:18px; color:var(--muted); font-size:13px; }
 
 @media (max-width: 980px){
   .grid{ grid-template-columns: 1fr; }
-  .qr-card{ grid-template-columns: 1fr; }
 }
 </style>

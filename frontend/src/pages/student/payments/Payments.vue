@@ -1,24 +1,82 @@
 <template>
   <div class="page">
     <div class="container">
-      <h1 class="title">Thanh toán</h1>
+      <div class="page-header">
+        <h1 class="title">Thanh toán</h1>
+        <button class="btn-light sm" :disabled="planLoading" @click="loadPlans">
+          {{ planLoading ? 'Đang tải...' : 'Làm mới' }}
+        </button>
+      </div>
 
       <!-- Payment Methods -->
       <div class="grid">
-        <div class="card method">
-          <h2>Chuyển khoản qua VietQR</h2>
-          <p>Quét mã QR bằng App ngân hàng (NAPAS 247) để thanh toán nhanh chóng.</p>
+        <div class="card method primary">
+          <h2>Ví MoMo</h2>
+          <p>Thanh toán nhanh chóng thông qua cổng MoMo AIO (hỗ trợ ví, thẻ, ngân hàng).</p>
+          <div v-if="plans.length" class="field">
+            <span class="label">Gói học</span>
+            <select
+              v-model="selectedPlanId"
+              class="input select"
+              :disabled="planLoading"
+            >
+              <option
+                v-for="plan in plans"
+                :key="plan.id"
+                :value="plan.id"
+              >
+                {{ plan.name }} • {{ vnd(plan.price) }}
+              </option>
+            </select>
+          </div>
+
+          <div class="selected-pill">
+            <div>
+              <small>Gói</small>
+              <b>{{ displayPlan.name }}</b>
+            </div>
+            <div>
+              <small>Số tiền</small>
+              <b>{{ vnd(displayPlan.price) }}</b>
+            </div>
+          </div>
           <div class="actions">
-            <button class="btn-primary" :disabled="loading" @click="goCheckout">
-              <span v-if="loading" class="spinner" />
-              <span>Tiếp tục</span>
+            <button
+              class="btn-primary"
+              :disabled="loadingMethod === 'momo'"
+              @click="goCheckout('momo')"
+            >
+              <span v-if="loadingMethod === 'momo'" class="spinner" />
+              <span>Thanh toán MoMo</span>
             </button>
           </div>
+          <small class="muted">Bạn sẽ được chuyển sang trang thanh toán an toàn của MoMo.</small>
         </div>
 
-        <div class="card method muted-card">
-          <h2>Thẻ/Tài khoản (Đang phát triển)</h2>
-          <p>Tính năng này sẽ sớm có mặt.</p>
+        <div class="card method disabled">
+          <div class="status-chip">Đang nâng cấp</div>
+          <h2>Chuyển khoản VietQR</h2>
+          <p>Quét mã QR bằng app ngân hàng NAPAS 247 để chuyển khoản thủ công.</p>
+          <div class="selected-pill">
+            <div>
+              <small>Gói</small>
+              <b>{{ displayPlan.name }}</b>
+            </div>
+            <div>
+              <small>Số tiền</small>
+              <b>{{ vnd(displayPlan.price) }}</b>
+            </div>
+          </div>
+          <div class="actions">
+            <button
+              class="btn-outline"
+              disabled
+              @click="goCheckout('bank')"
+            >
+              <span>Đang cập nhật</span>
+            </button>
+          </div>
+          <small class="muted">Tính năng sẽ sớm quay lại với nhiều tiện ích hơn.</small>
         </div>
       </div>
 
@@ -184,23 +242,77 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+
+import { paymentService, type SubscriptionPlan } from '@/services/payment.service'
 
 const router = useRouter()
-const loading = ref(false)
+
+const plans = ref<SubscriptionPlan[]>([])
+const planLoading = ref(false)
+const selectedPlanId = ref<string>('')
+const fallbackPlan: SubscriptionPlan = {
+  id: '',
+  name: 'Thanh toán tuỳ chỉnh',
+  price: 0,
+  durationDays: 0,
+  features: [],
+}
+const selectedPlan = computed(
+  () => plans.value.find((p) => p.id === selectedPlanId.value) || null
+)
+const displayPlan = computed(() => selectedPlan.value ?? fallbackPlan)
+const loadingMethod = ref<'momo' | 'bank' | ''>('')
 
 onMounted(() => {
+  loadPlans()
   import('@/pages/student/payments/Checkout.vue')
 })
 
-async function goCheckout() {
-  if (loading.value) return
-  loading.value = true
+async function loadPlans() {
+  planLoading.value = true
   try {
-    await router.push({ name: 'student-payments-checkout' })
+    const data = await paymentService.listPlans()
+    plans.value = data
+    if (!selectedPlanId.value && data.length) {
+      selectedPlanId.value = data[0].id
+    }
+  } catch (err: any) {
+    console.error(err)
+    ElMessage.error(err?.message || 'Không tải được danh sách gói')
   } finally {
-    loading.value = false
+    planLoading.value = false
+  }
+}
+
+async function goCheckout(method: 'momo' | 'bank') {
+  if (loadingMethod.value) return
+  const plan = displayPlan.value
+  if (!plan.id && method === 'bank') {
+    ElMessage.info('Phương thức VietQR đang nâng cấp')
+    return
+  }
+  loadingMethod.value = method
+  try {
+    const query: Record<string, string> = {
+      plan: plan.name,
+      method,
+      flow: 'pay_with_method',
+    }
+    if (plan.id) {
+      query.planId = plan.id
+    }
+    if (plan.price) {
+      query.amount = String(Math.round(plan.price))
+    }
+    await router.push({
+      name: 'student-payments-checkout',
+      query,
+    })
+  } finally {
+    loadingMethod.value = ''
   }
 }
 
@@ -259,13 +371,40 @@ function viewDetail(item: Transaction) { alert(`Chi tiết: ${item.orderId}`) }
 .container { max-width:1200px; margin:0 auto; padding:24px 16px 40px; }
 .title { font-size:clamp(20px, 2.2vw, 24px); font-weight:800; margin-bottom:16px; }
 
+.page-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+.field{ display:grid; gap:6px; margin:12px 0; }
+.label{ font-size:12px; color:var(--muted); }
+.input{
+  width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px;
+  outline:none; transition:all .2s ease;
+}
+.input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(22,163,74,0.12); }
+.select{
+  appearance:none;
+  background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%), linear-gradient(135deg, #9ca3af 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat:no-repeat;
+}
+
 /* Payment Methods Grid */
 .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:32px; }
 .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px; }
 .method h2 { margin:0 0 8px; font-size:18px; font-weight:700; }
 .method p { color:var(--muted); margin:0 0 12px; font-size:14px; }
-.method.muted-card { opacity:0.6; }
+.method.primary{ border:1px solid rgba(22,163,74,0.2); background:#f0fdf4; }
+.method.disabled{ opacity:0.7; position:relative; }
+.status-chip{
+  position:absolute; top:16px; right:16px; background:#fee2e2; color:#b91c1c;
+  font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px;
+}
 .actions { display:flex; gap:8px; }
+.selected-pill{
+  border:1px solid var(--line); border-radius:12px; padding:10px 14px; display:flex; justify-content:space-between;
+  gap:16px; margin:8px 0 14px;
+}
+.selected-pill small{ display:block; font-size:12px; color:var(--muted); }
+.selected-pill b{ font-size:16px; }
 
 /* Primary Button */
 .btn-primary{
@@ -283,8 +422,15 @@ function viewDetail(item: Transaction) { alert(`Chi tiết: ${item.orderId}`) }
 }
 .btn-primary:not([disabled]):hover{ filter: brightness(1.1) !important; transform: translateY(-1px) !important; }
 .btn-primary[disabled]{ opacity:.7 !important; cursor:not-allowed !important; }
+.btn-outline{
+  border:1px solid var(--line); border-radius:10px; padding:10px 16px; background:#fff; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.btn-outline.primary{ border-color:var(--accent); color:var(--accent); }
+.btn-light{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 14px; font-weight:700; cursor:pointer; }
+.btn-light.sm{ padding:6px 12px; }
 
 .spinner{ width:16px; height:16px; border:2px solid rgba(255,255,255,.6); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
+.spinner.dark{ border-color:rgba(15,23,42,.3); border-top-color:var(--accent); }
 @keyframes spin{ to{ transform: rotate(360deg); } }
 
 /* History Section */

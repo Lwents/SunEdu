@@ -30,6 +30,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/account/', include("custom_account.urls")),
     path('api/ai_personalization/', include('ai_personalization.urls')),
+    path('api/payments/', include('payments.urls')),
     path("", home),
 
     path("api/auth/", include("dj_rest_auth.urls")),
