@@ -1,59 +1,88 @@
 <template>
-  <div class="page">
-    <div class="container">
-      <div class="page-header">
-        <h1 class="title">Lịch sử thanh toán</h1>
-        <div class="actions">
-          <select v-model="status" class="filter-select">
+  <div class="student-shell">
+    <div class="student-container">
+      <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="student-section-title">Thanh toán</p>
+          <h1 class="text-3xl font-black text-brand-deep">Lịch sử thanh toán</h1>
+        </div>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select
+            v-model="status"
+            class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-deep shadow-sm shadow-slate-100 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+          >
             <option value="">Tất cả trạng thái</option>
             <option value="paid">Thành công</option>
             <option value="pending">Đang xử lý</option>
             <option value="failed">Thất bại</option>
             <option value="refunded">Hoàn tiền</option>
           </select>
-          <button class="btn-light" :disabled="loading" @click="load()">
+          <button
+            type="button"
+            class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-brand-muted shadow-sm shadow-slate-100 transition hover:bg-slate-50 disabled:opacity-60"
+            :disabled="loading"
+            @click="load()"
+          >
             {{ loading ? 'Đang tải...' : 'Làm mới' }}
           </button>
         </div>
       </div>
 
-      <div class="list">
-        <div v-for="item in items" :key="item.id" class="row">
-          <div class="col order">
-            <div class="label">Mã đơn</div>
-            <div class="value">{{ item.orderId }}</div>
+      <div class="student-card divide-y divide-slate-100 p-0">
+        <div
+          v-for="item in items"
+          :key="item.id"
+          class="grid gap-4 px-5 py-5 sm:grid-cols-[1.2fr,1.2fr,1fr,1fr,1.4fr,1fr]"
+        >
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Mã đơn</p>
+            <p class="text-sm font-bold text-brand-deep">{{ item.orderId }}</p>
           </div>
-          <div class="col plan">
-            <div class="label">Gói</div>
-            <div class="value">{{ item.plan }}</div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Gói</p>
+            <p class="text-sm font-semibold text-brand-deep">{{ item.plan }}</p>
           </div>
-          <div class="col amount">
-            <div class="label">Số tiền</div>
-            <div class="value">{{ vnd(item.amount) }}</div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Số tiền</p>
+            <p class="text-sm font-semibold text-brand-deep">{{ vnd(item.amount) }}</p>
           </div>
-          <div class="col method">
-            <div class="label">Phương thức</div>
-            <div class="value">{{ item.method }}</div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Phương thức</p>
+            <p class="text-sm font-semibold text-brand-deep">{{ item.method }}</p>
           </div>
-          <div class="col date">
-            <div class="label">Ngày & giờ</div>
-            <div class="value">
-              <div>{{ formatDate(item.date) }}</div>
-              <div class="text-xs text-gray-500">{{ formatTime(item.date) }}</div>
-            </div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Ngày & giờ</p>
+            <p class="text-sm font-semibold text-brand-deep">{{ formatDate(item.date) }}</p>
+            <p class="text-xs font-medium text-brand-muted">{{ formatTime(item.date) }}</p>
           </div>
-          <div class="col status">
-            <span :class="['badge', `badge-${mapBadge(item.status)}`]">{{ statusText(item.status) }}</span>
+          <div class="flex items-center">
+            <span
+              :class="[
+                'student-badge',
+                mapBadge(item.status) === 'success'
+                  ? 'student-badge--success'
+                  : mapBadge(item.status) === 'pending'
+                    ? 'bg-amber-50 text-amber-700'
+                    : 'bg-rose-50 text-rose-600',
+              ]"
+            >
+              {{ statusText(item.status) }}
+            </span>
           </div>
         </div>
 
-        <div v-if="!loading && !items.length" class="empty">
+        <div v-if="!loading && !items.length" class="px-6 py-10 text-center text-sm text-brand-muted">
           Chưa có giao dịch nào.
         </div>
       </div>
 
-      <div class="footer">
-        <RouterLink class="btn-primary" to="/student/payments">Quay lại Thanh toán</RouterLink>
+      <div class="mt-6 flex justify-end">
+        <RouterLink
+          class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-brand-500 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-brand-600"
+          to="/student/payments"
+        >
+          Quay lại Thanh toán
+        </RouterLink>
       </div>
     </div>
   </div>
@@ -86,26 +115,3 @@ function formatTime(s:string){ const d = new Date(s); return d.toLocaleTimeStrin
 function statusText(st:string){ return ({ success:'Thành công', pending:'Đang xử lý', failed:'Thất bại' } as any)[st] || st }
 function mapBadge(st:string){ return st === 'success' ? 'success' : st }
 </script>
-
-<style scoped>
-.page{ background:#f6f7fb; min-height:100vh; }
-.container{ max-width:1100px; margin:0 auto; padding:24px 16px 40px; }
-.page-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px; flex-wrap:wrap; }
-.title{ font-size:22px; font-weight:800; }
-.actions{ display:flex; gap:8px; align-items:center; }
-.btn-light{ background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:8px 12px; cursor:pointer; }
-.btn-primary{ background:#16a34a; color:#fff; border:1px solid #16a34a; border-radius:10px; padding:10px 16px; font-weight:800; }
-.filter-select{ padding:8px 12px; border:1px solid #e5e7eb; border-radius:10px; }
-.list{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; }
-.row{ display:grid; grid-template-columns: 2fr 2fr 1fr 1fr 1.4fr 1fr; gap:8px; padding:14px 16px; border-bottom:1px solid #f0f2f5; align-items:center; }
-.row:last-child{ border-bottom:none; }
-.label{ font-size:11px; color:#6b7280; }
-.value{ font-weight:700; }
-.badge{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; }
-.badge-success{ background:#ecfdf5; color:#10b981; }
-.badge-pending{ background:#fef3c7; color:#f59e0b; }
-.badge-failed{ background:#fee2e2; color:#ef4444; }
-.empty{ text-align:center; color:#6b7280; padding:24px; }
-.footer{ margin-top:16px; display:flex; justify-content:flex-end; }
-@media (max-width: 860px){ .row{ grid-template-columns: 1fr 1fr; } }
-</style>

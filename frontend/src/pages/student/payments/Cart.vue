@@ -1,43 +1,62 @@
 <template>
-  <div class="page">
-    <div class="container">
-      <h1 class="title">Giỏ hàng</h1>
+  <div class="student-shell">
+    <div class="student-container">
+      <div class="mb-4">
+        <p class="student-section-title">Thanh toán</p>
+        <h1 class="text-3xl font-black text-brand-deep">Giỏ hàng</h1>
+      </div>
 
-      <div v-if="items.length" class="card">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Khoá học</th>
-              <th class="right">Giá</th>
-              <th class="center">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="it in items" :key="it.id">
-              <td>{{ it.name }}</td>
-              <td class="right">{{ vnd(it.price) }}</td>
-              <td class="center">
-                <button class="btn-light sm" @click="remove(it.id)">Xoá</button>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td><b>Tổng cộng</b></td>
-              <td class="right"><b>{{ vnd(total) }}</b></td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
+      <div v-if="items.length" class="student-card space-y-6">
+        <div class="overflow-hidden rounded-2xl border border-slate-100">
+          <table class="min-w-full divide-y divide-slate-100 text-sm">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-brand-muted">
+              <tr>
+                <th class="px-4 py-3 text-left">Khoá học</th>
+                <th class="px-4 py-3 text-right">Giá</th>
+                <th class="px-4 py-3 text-center">Hành động</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="it in items" :key="it.id" class="bg-white/80">
+                <td class="px-4 py-3 font-semibold text-brand-deep">{{ it.name }}</td>
+                <td class="px-4 py-3 text-right font-semibold text-brand-deep">{{ vnd(it.price) }}</td>
+                <td class="px-4 py-3 text-center">
+                  <button
+                    type="button"
+                    class="inline-flex items-center rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-brand-muted transition hover:bg-slate-50"
+                    @click="remove(it.id)"
+                  >
+                    Xoá
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot class="bg-slate-50 text-sm font-bold text-brand-deep">
+              <tr>
+                <td class="px-4 py-3">Tổng cộng</td>
+                <td class="px-4 py-3 text-right">{{ vnd(total) }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
 
-        <div class="actions">
-          <button class="btn-primary" :disabled="!items.length" @click="goCheckout">
+        <div class="flex justify-end">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-brand-500 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
+            :disabled="!items.length"
+            @click="goCheckout"
+          >
             Thanh toán
           </button>
         </div>
       </div>
 
-      <div v-else class="empty card">
+      <div
+        v-else
+        class="student-card flex flex-col items-center justify-center text-center text-sm text-brand-muted"
+      >
         Giỏ hàng trống.
       </div>
     </div>
@@ -71,23 +90,3 @@ function goCheckout() {
   })
 }
 </script>
-
-<style scoped>
-:root{ --accent:#16a34a; --line:#e5e7eb; --muted:#6b7280; }
-.page{ background:#f6f7fb; min-height:100vh; }
-.container{ max-width:1000px; margin:0 auto; padding:24px 16px 40px; }
-.title{ font-size:22px; font-weight:800; margin-bottom:12px; }
-
-.card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; }
-.table{ width:100%; border-collapse:collapse; }
-th,td{ padding:10px; border-bottom:1px solid var(--line); }
-tfoot td{ border-bottom:0; }
-.right{ text-align:right; }
-.center{ text-align:center; }
-
-.actions{ display:flex; justify-content:flex-end; margin-top:12px; gap:8px; }
-.btn-primary{ background:var(--accent); color:#fff; border:1px solid var(--accent); padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer; }
-.btn-light{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 12px; cursor:pointer; font-weight:700; }
-.btn-light.sm{ padding:6px 10px; }
-.empty{ color:var(--muted); }
-</style>

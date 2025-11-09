@@ -1,10 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 @layer base {
   html,
   body,
   #app {
     height: 100%;
+  }
+
+  body {
+    @apply bg-brand-surface font-sans text-brand-deep antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-800;
+  }
+}
+
+@layer components {
+  .student-shell {
+    @apply min-h-screen bg-brand-surface pb-12 pt-6;
+  }
+
+  .student-container {
+    @apply mx-auto max-w-5xl px-4 sm:px-6 lg:px-0;
+  }
+
+  .student-card {
+    @apply rounded-3xl border border-slate-200/80 bg-white/95 px-5 py-6 shadow-xl shadow-slate-100 sm:px-8;
+  }
+
+  .student-tabs {
+    @apply rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm shadow-slate-100 backdrop-blur;
+  }
+
+  .student-tab {
+    @apply flex-1 rounded-xl px-3 py-2 text-[11px] font-semibold tracking-wide text-slate-500 transition hover:bg-slate-50 sm:px-4 sm:py-2.5 sm:text-xs;
+  }
+
+  .student-tab--active {
+    @apply border border-brand-100 bg-brand-50 text-brand-600 font-extrabold shadow-sm shadow-brand-100;
+  }
+
+  .student-pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500;
+  }
+
+  .student-badge {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide;
+  }
+
+  .student-badge--success {
+    @apply bg-brand-50 text-brand-700;
+  }
+
+  .student-badge--muted {
+    @apply bg-slate-100 text-slate-500;
+  }
+
+  .student-section-title {
+    @apply text-base font-bold uppercase tracking-[0.25em] text-brand-muted;
+  }
+
+  .student-link {
+    @apply text-sm font-semibold text-brand-600 transition hover:text-brand-700;
   }
 }

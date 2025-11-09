@@ -1,100 +1,165 @@
 <!-- src/pages/student/learn/LessonPlayer.vue -->
 <template>
-  <div class="lesson-player" v-if="course">
-    <div class="container">
-      <!-- TOP BAR -->
-      <div class="topbar">
-        <button class="link" @click="goBack">Rời khỏi đây</button>
-        <div class="spacer" />
+  <div class="student-shell" v-if="course">
+    <div class="student-container max-w-6xl">
+      <div
+        class="mb-4 flex flex-col gap-2 text-sm font-semibold text-brand-muted sm:flex-row sm:items-center sm:justify-between"
+      >
+        <button
+          type="button"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-deep transition hover:bg-slate-50 sm:w-auto"
+          @click="goBack"
+        >
+          ‹ Rời khỏi đây
+        </button>
+        <span class="text-center sm:text-right">{{ course.sections?.length || 0 }} chương</span>
       </div>
 
-      <div class="content">
-        <!-- LEFT: VIDEO -->
-        <div class="left">
-          <div class="video-shell">
-            <video
-              ref="videoRef"
-              class="video"
-              :src="currentSrc"
-              controls
-              playsinline
-              @ended="markDone(currentLesson?.id)"
-            ></video>
-
-            <div class="video-title">
-              <h2>{{ course.title }}</h2>
-              <p class="subtitle">
-                {{ (currentFlatIndex + 1) }}. {{ currentLesson?.title }}
-              </p>
-            </div>
-          </div>
-
-          <!-- BOTTOM NAV -->
-          <div class="bottom-nav">
-            <button class="btn bw" :disabled="!prevLesson" @click="goPrev">‹ BÀI TRƯỚC</button>
-            <div class="actions"></div>
-            <button class="btn bw" :disabled="!nextLesson" @click="goNext">BÀI TIẾP THEO ›</button>
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <div class="order-1 overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-lg shadow-slate-200">
+          <video
+            ref="videoRef"
+            class="aspect-video w-full rounded-3xl bg-black object-contain"
+            :src="currentSrc"
+            controls
+            playsinline
+            @ended="markDone(currentLesson?.id)"
+          ></video>
+          <div class="space-y-1 px-6 py-5">
+            <p class="student-section-title text-xs text-brand-muted">Bài học hiện tại</p>
+            <h2 class="text-2xl font-bold text-brand-deep">{{ course.title }}</h2>
+            <p class="text-sm text-brand-muted">
+              {{ currentFlatIndex + 1 }}. {{ currentLesson?.title }}
+            </p>
           </div>
         </div>
 
-        <!-- RIGHT: OUTLINE -->
-        <aside class="right">
-          <div class="panel">
-            <!-- Progress header -->
-            <div class="progress-head">
-              <div class="circle">
-                <svg viewBox="0 0 36 36" class="c">
-                  <path class="bg" d="M18 2a16 16 0 1 1 0 32a16 16 0 1 1 0-32"/>
-                  <path class="fg" :style="{ strokeDasharray: dash + ', 100' }"
-                        d="M18 2a16 16 0 1 1 0 32a16 16 0 1 1 0-32"/>
-                </svg>
-                <div class="pct">{{ progressPct }}%</div>
-              </div>
-              <div class="meta">
-                <h4>Nội dung khóa học</h4>
-                <div class="sub">{{ doneCount }}/{{ totalCount }} bài học</div>
-              </div>
+        <aside class="order-2 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100">
+          <div class="flex items-center gap-4">
+            <div class="relative flex h-20 w-20 items-center justify-center rounded-full bg-slate-100">
+              <svg viewBox="0 0 36 36" class="h-16 w-16 text-brand-200">
+                <path
+                  class="text-slate-200"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  fill="none"
+                  d="M18 2a16 16 0 1 1 0 32a16 16 0 1 1 0-32"
+                />
+                <path
+                  class="text-brand-500"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  fill="none"
+                  :style="{ strokeDasharray: dash + ', 100' }"
+                  d="M18 2a16 16 0 1 1 0 32a16 16 0 1 1 0-32"
+                />
+              </svg>
+              <span class="absolute text-lg font-black text-brand-deep">{{ progressPct }}%</span>
             </div>
+            <div>
+              <p class="text-sm font-semibold uppercase tracking-[0.3em] text-brand-muted">
+                Nội dung khóa học
+              </p>
+              <p class="text-base font-bold text-brand-deep">{{ doneCount }}/{{ totalCount }} bài học</p>
+            </div>
+          </div>
 
-            <!-- Outline -->
-            <div class="outline" ref="outlineRef">
-              <div v-for="(sec, si) in uiSections" :key="sec.id" class="sec">
-                <button class="sec-head" @click="toggle(si)">
-                  <span class="name">{{ si + 1 }}. {{ sec.title }}</span>
-                  <span class="len">{{ sec.items.length }}</span>
-                  <svg class="chev" viewBox="0 0 24 24" :class="{open: openIndex === si}">
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
-                </button>
-
-                <transition name="acc">
-                  <ul v-show="openIndex === si">
-                    <li v-for="(it, li) in sec.items"
-                        :key="it.id"
-                        :class="['row', {active: String(it.id)===String(currentLesson?.id), done: it.done}]"
-                        @click="goToLesson(si, li)">
-                      <div class="leftcell">
-                        <span class="idx">{{ li + 1 }}</span>
-                        <span class="title">{{ it.title }}</span>
-                      </div>
-                      <div class="rightcell">
-                        <span class="time">{{ formatDuration(it.durationMinutes) }}</span>
-                        <span class="state">
-                          <svg v-if="it.done" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-                        </span>
-                      </div>
-                    </li>
-                  </ul>
-                </transition>
-              </div>
+          <div ref="outlineRef" class="mt-5 space-y-4">
+            <div
+              v-for="(sec, si) in uiSections"
+              :key="sec.id"
+              class="rounded-2xl border border-slate-100 bg-white shadow-sm shadow-slate-100"
+            >
+              <button
+                type="button"
+                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-semibold text-brand-deep"
+                @click="toggle(si)"
+              >
+                <span class="flex-1 text-sm">{{ si + 1 }}. {{ sec.title }}</span>
+                <span class="text-xs text-brand-muted">{{ sec.items.length }}</span>
+                <svg
+                  class="h-4 w-4 text-brand-muted transition"
+                  :class="{ 'rotate-180': openIndex === si }"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              <transition
+                enter-active-class="transition-all duration-200 ease-out"
+                leave-active-class="transition-all duration-150 ease-in"
+                enter-from-class="max-h-0 opacity-0"
+                enter-to-class="max-h-[600px] opacity-100"
+                leave-from-class="max-h-[600px] opacity-100"
+                leave-to-class="max-h-0 opacity-0"
+              >
+                <ul v-show="openIndex === si" class="divide-y divide-slate-100 overflow-hidden">
+                  <li
+                    v-for="(it, li) in sec.items"
+                    :key="it.id"
+                    :class="[
+                      'flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm transition',
+                      String(it.id) === String(currentLesson?.id)
+                        ? 'bg-brand-50 text-brand-700'
+                        : 'bg-white text-brand-deep hover:bg-slate-50',
+                      it.done ? 'font-semibold' : '',
+                    ]"
+                    @click="goToLesson(si, li)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-semibold text-brand-muted">{{ li + 1 }}</span>
+                      <span>{{ it.title }}</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-brand-muted">
+                      <span>{{ formatDuration(it.durationMinutes) }}</span>
+                      <svg
+                        v-if="it.done"
+                        class="h-4 w-4 text-brand-500"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </div>
+                  </li>
+                </ul>
+              </transition>
             </div>
           </div>
         </aside>
+
+        <div class="order-3 flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-deep transition hover:bg-slate-50 disabled:opacity-50"
+            :disabled="!prevLesson"
+            @click="goPrev"
+          >
+            ‹ Bài trước
+          </button>
+          <div class="text-center text-xs font-semibold uppercase tracking-[0.3em] text-brand-muted">
+            {{ doneCount }}/{{ totalCount }} bài hoàn thành
+          </div>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-2xl border border-brand-200 bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-brand-600 disabled:opacity-50"
+            :disabled="!nextLesson"
+            @click="goNext"
+          >
+            Bài tiếp theo ›
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <div v-else class="grid min-h-screen place-items-center text-slate-200">Đang tải…</div>
+  <div v-else class="grid min-h-screen place-items-center text-brand-muted">Đang tải…</div>
 </template>
 
 <script setup lang="ts">
@@ -256,146 +321,3 @@ watchEffect(() => {
 /* ====== MOUNT ====== */
 onMounted(load)
 </script>
-
-<style scoped>
-:root{
-  --page-bg:#0b1220;
-  --panel:#ffffff;
-  --text:#0f172a;
-  --muted:#6b7280;
-  --line:#e5e7eb;
-  --accent:#16a34a;
-}
-
-.lesson-player{ background:var(--page-bg); min-height:100vh; }
-.container{ max-width:1440px; margin:0 auto; padding:14px; }
-
-.topbar{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-.link{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer; }
-.spacer{ flex:1; }
-
-.content{ display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:14px; }
-
-/* LEFT */
-.left{ background:#000; border-radius:12px; overflow:hidden; border:6px solid #000; }
-.video-shell{ background:#000; position:relative; }
-.video{ width:100%; aspect-ratio:16/9; display:block; background:#000; }
-
-.video-title{
-  display:flex; justify-content:space-between; align-items:flex-end;
-  gap:12px; padding:12px 14px; background:#0b1220; color:#e5e7eb;
-  border-top:1px solid rgba(255,255,255,.08);
-}
-.video-title h2{ font-size:18px; font-weight:800; margin:0; }
-.video-title .subtitle{ opacity:.85; font-size:14px; margin:0; }
-
-/* RIGHT */
-.right{ position:relative; }
-.panel{
-  position:sticky; top:10px;
-  background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden;
-  box-shadow:0 8px 24px rgba(0,0,0,.08);
-}
-
-/* Progress head */
-.progress-head{ display:flex; gap:12px; padding:12px; border-bottom:1px solid var(--line); align-items:center; }
-.circle{ position:relative; width:56px; height:56px; }
-.c{ transform:rotate(-90deg); }
-.bg{ fill:none; stroke:#e5e7eb; stroke-width:4; opacity:.9 }
-.fg{ fill:none; stroke:var(--accent); stroke-width:4; stroke-linecap:round; stroke-dasharray:0 100; transition:stroke-dasharray .4s ease; }
-
-/* >>> SỬA MÀU CHỮ Ở ĐÂY <<< */
-.pct{ position:absolute; inset:0; display:grid; place-items:center; font-weight:800; font-size:12px; color:var(--text); }
-.meta h4{ margin:0; font-size:16px; font-weight:800; color:var(--text); }
-.meta .sub{ color:var(--muted); font-size:13px; }
-/* <<< HẾT PHẦN SỬA >>> */
-
-/* Outline */
-.outline{ max-height:calc(100vh - 200px); overflow:auto; padding:8px; }
-.sec{ border-radius:10px; overflow:hidden; margin-bottom:8px; border:1px solid var(--line); background:#fff; }
-.sec-head{
-  width:100%; text-align:left; display:flex; align-items:center; gap:8px;
-  padding:10px 12px; background:#fff; border:0; cursor:pointer;
-}
-.sec-head .name{ font-weight:800; flex:1; }
-.sec-head .len{
-  font-size:12px; font-weight:800; color:#475569;
-  background:#f1f5f9; border:1px solid #e2e8f0; border-radius:999px; padding:2px 8px;
-}
-.chev{ width:18px; height:18px; fill:#475569 }
-.chev.open{ transform:rotate(180deg) }
-
-.row{
-  display:flex; justify-content:space-between; align-items:center; gap:8px;
-  padding:10px 12px; border-top:1px solid var(--line); cursor:pointer; background:#fff;
-}
-.row:hover{ background:#f8fafc; }
-.row.active{ background:#e8f2ff; }
-.row.done .title{ color:#16a34a; }
-.leftcell{ display:flex; align-items:center; gap:10px; min-width:0 }
-.idx{
-  width:22px; height:22px; display:grid; place-items:center;
-  border:1px solid #e5e7eb; border-radius:6px; font-size:12px; font-weight:800; color:#64748b;
-  background:#f8fafc;
-}
-.title{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.rightcell{ display:flex; align-items:center; gap:10px; }
-.time{ color:#64748b; font-size:12px; }
-.state svg{ width:18px; height:18px; stroke:#16a34a; stroke-width:2; fill:none }
-
-/* Accordion anim */
-.acc-enter-from, .acc-leave-to{ max-height:0; opacity:.2 }
-.acc-enter-to, .acc-leave-from{ max-height:500px; opacity:1 }
-.acc-enter-active, .acc-leave-active{ transition:all .18s ease-in-out }
-
-/* ==== BUTTONS: đen/trắng, KHÔNG đổi màu khi reset/disabled ==== */
-.btn{
-  padding:12px 20px;
-  border-radius:12px;
-  font-weight:800;
-  border:1.5px solid #e5e7eb;
-  background:#fff;
-  color:#0f172a;
-  transition:all .15s ease;
-  cursor:pointer;
-  box-shadow:0 1px 0 rgba(0,0,0,.05);
-}
-.btn:hover:not(:disabled){
-  background:#f8fafc;
-  border-color:#cbd5e1;
-  transform:translateY(-1px);
-}
-.btn:disabled{
-  opacity:.55;
-  cursor:not-allowed;
-  background:#fff !important;
-  color:#0f172a !important;
-  border-color:#e5e7eb !important;
-  transform:none;
-  box-shadow:none;
-}
-.btn.bw{ /* alias rõ ràng cho style này */
-  background:#fff;
-  color:#0f172a;
-  border-color:#e5e7eb;
-}
-
-/* BOTTOM NAV container */
-.bottom-nav{
-  display:flex; justify-content:space-between; align-items:center;
-  gap:10px; padding:12px; background:#0b1220; border-top:1px solid rgba(255,255,255,.08);
-}
-.actions{ display:flex; align-items:center; gap:8px; }
-
-/* Responsive */
-@media (max-width: 1200px){
-  .content{ grid-template-columns:1fr 340px; }
-}
-@media (max-width: 980px){
-  .content{ grid-template-columns:1fr; }
-  .right{ order:2 }
-  .left{ order:1 }
-  .panel{ position:static }
-  .outline{ max-height:none }
-}
-</style>

@@ -217,6 +217,20 @@ export const authService = {
     return { ok: true }
   },
 
+  async requestPasswordChangeOtp(): Promise<{ detail?: string; email?: string }> {
+    const { data } = await http.post('/account/password/change/request-otp/', {})
+    return data
+  },
+
+  async changePasswordWithOtp(otp: string, newPassword: string): Promise<{ ok: boolean }> {
+    if (!otp || !newPassword) throw new Error('Thiếu OTP hoặc mật khẩu mới')
+    await http.post('/account/password/change/confirm-otp/', {
+      otp,
+      new_password: newPassword,
+    })
+    return { ok: true }
+  },
+
   async forgotPassword(email: string): Promise<void> {
     if (!email) throw new Error('Vui lòng nhập email')
     await http.post('/account/password/reset/', { email })

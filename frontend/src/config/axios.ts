@@ -1,7 +1,8 @@
 // src/config/axios.ts
 import axios from 'axios'
 
-const apiUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '')
+// If VITE_API_URL is empty => use same-origin proxy ("/api").
+const apiUrl = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')
 const apiPrefix = `/${(import.meta.env.VITE_API_PREFIX || 'api').replace(/^\/+/, '')}`
 
 const http = axios.create({

@@ -55,7 +55,7 @@
     >
       <div
         v-if="isOpen"
-        class="absolute right-0 z-50 mt-3 w-80 sm:w-96 origin-top-right rounded-2xl border border-gray-200/50 bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden"
+        class="absolute left-1/2 z-50 mt-3 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 origin-top rounded-2xl border border-gray-200/50 bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden sm:left-auto sm:right-0 sm:w-96 sm:translate-x-0 sm:origin-top-right"
       >
         <!-- ===== HEADER ===== -->
         <div
@@ -204,7 +204,7 @@ const isOpen = ref(false)
 const loading = ref(false)
 const notifications = ref<Notification[]>([])
 const notificationRef = ref<HTMLElement | null>(null)
-const maxNotifications = 5
+const maxNotifications = 20
 
 // ===== COMPUTED =====
 const displayedNotifications = computed(() => {
@@ -255,12 +255,10 @@ async function fetchNotifications() {
       return
     }
 
-    const url = new URL(import.meta.env.VITE_API_URL || 'http://localhost:8000')
-    url.pathname = apiEndpoint.value
-    url.searchParams.append('user_id', String(userId))
-    url.searchParams.append('limit', String(maxNotifications * 2))
+    const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
+    const url = `${apiBase}${apiEndpoint.value}?user_id=${encodeURIComponent(String(userId))}&limit=${maxNotifications * 2}`
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -398,7 +396,8 @@ async function markAsRead(notificationId: number) {
   try {
     const token = localStorage.getItem('token')
     if (token) {
-      await fetch(`${import.meta.env.VITE_API_URL}${apiEndpoint.value}/${notificationId}/read`, {
+      const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
+      await fetch(`${apiBase}${apiEndpoint.value}/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -420,7 +419,8 @@ async function markAllAsRead() {
   try {
     const token = localStorage.getItem('token')
     if (token) {
-      await fetch(`${import.meta.env.VITE_API_URL}${apiEndpoint.value}/read-all`, {
+      const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
+      await fetch(`${apiBase}${apiEndpoint.value}/read-all`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,

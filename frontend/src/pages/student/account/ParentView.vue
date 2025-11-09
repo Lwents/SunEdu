@@ -1,111 +1,153 @@
 <!-- src/pages/student/account/ParentInfo.vue -->
 <template>
-  <div class="profile-page">
-    <div class="container">
-      <!-- Tabs -->
-      <div class="tabs w-full">
-        <button class="tab" type="button" @click="goProfile">CÁ NHÂN</button>
-        <button class="tab" type="button" @click="goChangePwd">ĐỔI MẬT KHẨU</button>
-        <button class="tab active" type="button">PHỤ HUYNH</button>
+  <div class="student-shell">
+    <div class="student-container">
+      <div class="student-tabs flex items-center gap-1 sm:gap-2">
+        <button type="button" class="student-tab" @click="goProfile">CÁ NHÂN</button>
+        <button type="button" class="student-tab" @click="goChangePwd">ĐỔI MẬT KHẨU</button>
+        <button type="button" class="student-tab student-tab--active">PHỤ HUYNH</button>
       </div>
 
-      <!-- Card -->
-      <div class="card">
-        <div class="card-head">
-          <h2 class="card-title">THÔNG TIN PHỤ HUYNH</h2>
+      <div class="student-card mt-4">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 class="text-base font-extrabold uppercase tracking-wide text-slate-900 sm:text-lg">
+            THÔNG TIN PHỤ HUYNH
+          </h2>
         </div>
 
-        <!-- Toast -->
-        <transition name="fade">
-          <div v-if="toast.msg" :class="['toast', toast.type]">
+        <Transition
+          enter-active-class="transition-opacity duration-200"
+          leave-active-class="transition-opacity duration-200"
+          enter-from-class="opacity-0"
+          leave-to-class="opacity-0"
+        >
+          <div
+            v-if="toast.msg"
+            :class="[
+              'fixed bottom-4 right-4 z-40 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg sm:text-base',
+              toast.type === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-rose-200 bg-rose-50 text-rose-700',
+            ]"
+          >
             {{ toast.msg }}
           </div>
-        </transition>
+        </Transition>
 
-        <!-- Form -->
-        <form class="form" @submit.prevent="save">
-          <div class="row">
-            <label class="label">Họ tên phụ huynh <span class="req">*</span></label>
-            <div>
+        <form v-if="!loading" class="mt-6 space-y-6" @submit.prevent="save">
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
+              Họ tên phụ huynh <span class="text-rose-500">*</span>
+            </label>
+            <div class="space-y-2">
               <input
                 v-model.trim="f.fullname"
-                class="input"
-                :class="{ invalid: touched.fullname && !!errs.fullname }"
                 placeholder="Ví dụ: Nguyễn Văn B"
                 @blur="touched.fullname = true"
+                :class="[
+                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  touched.fullname && errs.fullname
+                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
+                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                ]"
               />
-              <p v-if="touched.fullname && errs.fullname" class="err">{{ errs.fullname }}</p>
+              <p v-if="touched.fullname && errs.fullname" class="text-xs font-medium text-rose-600">
+                {{ errs.fullname }}
+              </p>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Số điện thoại <span class="req">*</span></label>
-            <div>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
+              Số điện thoại <span class="text-rose-500">*</span>
+            </label>
+            <div class="space-y-2">
               <input
                 v-model.trim="f.phone"
                 type="tel"
-                class="input"
-                :class="{ invalid: touched.phone && !!errs.phone }"
                 inputmode="tel"
                 placeholder="09xxxxxxxx"
                 @blur="touched.phone = true"
+                :class="[
+                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  touched.phone && errs.phone
+                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
+                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                ]"
               />
-              <p v-if="touched.phone && errs.phone" class="err">{{ errs.phone }}</p>
+              <p v-if="touched.phone && errs.phone" class="text-xs font-medium text-rose-600">
+                {{ errs.phone }}
+              </p>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Email</label>
-            <div>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Email</label>
+            <div class="space-y-2">
               <input
                 v-model.trim="f.email"
                 type="email"
-                class="input"
-                :class="{ invalid: touched.email && !!errs.email }"
                 placeholder="parent@example.com"
                 @blur="touched.email = true"
+                :class="[
+                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  touched.email && errs.email
+                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
+                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                ]"
               />
-              <p v-if="touched.email && errs.email" class="err">{{ errs.email }}</p>
+              <p v-if="touched.email && errs.email" class="text-xs font-medium text-rose-600">
+                {{ errs.email }}
+              </p>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Mối quan hệ</label>
-            <select v-model="f.relation" class="input select">
-              <option value="">Chọn</option>
-              <option>Bố</option>
-              <option>Mẹ</option>
-              <option>Người giám hộ</option>
-            </select>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Mối quan hệ</label>
+            <div>
+              <select
+                v-model="f.relation"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+              >
+                <option value="">Chọn</option>
+                <option>Bố</option>
+                <option>Mẹ</option>
+                <option>Người giám hộ</option>
+              </select>
+            </div>
           </div>
 
-          <div class="row">
-            <label class="label">Địa chỉ</label>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Địa chỉ</label>
             <div>
               <textarea
                 v-model.trim="f.address"
-                class="input"
                 rows="3"
                 placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
               ></textarea>
             </div>
           </div>
 
-          <div class="actions">
+          <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <button
-              class="btn-primary"
-              :class="{ 'is-busy': saving }"
-              :disabled="saving || !isValid"
               type="submit"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              :disabled="saving || !isValid"
             >
-              <span v-if="saving" class="spinner"></span>
+              <span
+                v-if="saving"
+                class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"
+              ></span>
               {{ saving ? 'ĐANG LƯU...' : 'LƯU THÔNG TIN' }}
             </button>
-            <small v-if="!isValid" class="btn-hint">
+            <p v-if="!isValid" class="text-center text-xs font-medium text-slate-500 sm:text-right">
               Vui lòng điền đầy đủ thông tin bắt buộc
-            </small>
+            </p>
           </div>
         </form>
+
+        <div v-else class="mt-6 text-sm font-medium text-slate-500">Đang tải thông tin…</div>
       </div>
     </div>
   </div>
@@ -212,279 +254,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<!-- GLOBAL THEME (đồng bộ các trang account) -->
-<style>
-:root {
-  --bg: #f6f7fb;
-  --card: #fff;
-  --text: #0f172a;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --accent: #16a34a;
-  --accent-tint-bg: #ecfdf5;
-  --accent-tint-border: #bbf7d0;
-  --focus-border: #86efac;
-  --focus-ring: rgba(22, 163, 74, 0.18);
-}
-</style>
-
-<!-- SCOPED -->
-<style scoped>
-/* ===== Layout chung (mobile-first) ===== */
-.profile-page {
-  background: var(--bg);
-  min-height: 100vh;
-  color: var(--text);
-}
-.container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 16px 10px 32px;
-}
-
-/* Tabs: full-width mobile, co lại ở desktop (giống Profile.vue) */
-.tabs {
-  display: flex;
-  gap: 4px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 4px;
-  width: 100%;
-}
-.tab {
-  flex: 1;
-  padding: 8px 4px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: #fff;
-  cursor: pointer;
-  font-weight: 700;
-  white-space: nowrap;
-  text-align: center;
-  font-size: 10px;
-  line-height: 1.3;
-  transition: 0.2s;
-}
-.tab:hover:not(.active) {
-  background: #f9fafb;
-}
-.tab.active {
-  color: var(--accent);
-  border-color: var(--accent-tint-border);
-  background: var(--accent-tint-bg);
-}
-
-/* Card */
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  margin-top: 10px;
-  padding: 12px;
-}
-.card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.card-title {
-  font-weight: 800;
-  font-size: 14px;
-}
-
-/* Toast */
-.toast {
-  position: fixed;
-  right: 10px;
-  bottom: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid;
-  z-index: 40;
-  font-size: 12px;
-}
-.toast.success {
-  background: #f0fdf4;
-  color: #166534;
-  border-color: #bbf7d0;
-}
-.toast.error {
-  background: #fef2f2;
-  color: #991b1b;
-  border-color: #fecaca;
-}
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Form + fields */
-.form {
-  margin-top: 6px;
-}
-.row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.label {
-  text-align: left;
-  color: #111827;
-  font-weight: 600;
-  font-size: 12px;
-}
-.req {
-  color: #ef4444;
-}
-
-.input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
-  outline: none;
-  font-size: 14px;
-  transition: 0.2s;
-}
-.input:focus {
-  border-color: var(--focus-border);
-  box-shadow: 0 0 0 3px var(--focus-ring);
-}
-/* viền đỏ khi đã touched và còn lỗi */
-.input.invalid {
-  border-color: #fca5a5;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
-}
-
-.select {
-  appearance: none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #9ca3af 50%),
-    linear-gradient(135deg, #9ca3af 50%, transparent 50%);
-  background-position:
-    calc(100% - 14px) calc(1em + 2px),
-    calc(100% - 9px) calc(1em + 2px);
-  background-size: 5px 5px;
-  background-repeat: no-repeat;
-}
-
-/* Actions + Button */
-.actions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.btn-primary {
-  background: var(--accent) !important;
-  color: #fff !important;
-  border: 1px solid var(--accent) !important;
-  padding: 12px 18px !important;
-  border-radius: 10px !important;
-  font-weight: 800 !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  font-size: 12px !important;
-  width: 100% !important;
-}
-.btn-primary:not(:disabled):hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
-  transition: 0.15s ease;
-}
-.btn-primary:disabled {
-  background: #d1d5db !important;
-  border-color: #d1d5db !important;
-  color: #6b7280 !important;
-  cursor: not-allowed !important;
-  opacity: 1 !important;
-}
-.btn-primary.is-busy {
-  opacity: 0.7 !important;
-}
-
-.btn-hint {
-  font-size: 10px;
-  color: var(--muted);
-  text-align: center;
-}
-
-/* Errors */
-.err {
-  color: #dc2626;
-  font-size: 12px;
-  margin-top: 6px;
-}
-
-/* ===== Breakpoints khớp với Profile.vue ===== */
-@media (min-width: 641px) {
-  .container {
-    padding: 20px 14px 36px;
-  }
-  .tabs {
-    gap: 6px;
-    padding: 6px;
-  }
-  .tab {
-    padding: 10px 10px;
-    font-size: 12px;
-  }
-  .card {
-    padding: 14px;
-  }
-  .card-title {
-    font-size: 15px;
-  }
-}
-
-@media (min-width: 841px) {
-  .container {
-    padding: 24px 16px 40px;
-  }
-  .tab {
-    padding: 10px 14px;
-    font-size: 13px;
-  }
-  .card {
-    padding: 16px;
-  }
-  .card-title {
-    font-size: 16px;
-  }
-
-  .row {
-    grid-template-columns: 220px 1fr;
-    gap: 14px;
-    align-items: center;
-  }
-  .label {
-    font-size: 14px;
-  }
-
-  .actions {
-    align-items: flex-end;
-  }
-  .btn-primary {
-    width: auto !important;
-  } /* nút thu gọn ở desktop */
-  .btn-hint {
-    text-align: right;
-  }
-}
-</style>
