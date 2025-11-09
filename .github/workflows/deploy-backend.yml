@@ -32,6 +32,29 @@ jobs:
             PIP_CMD="${VENV_PATH}/bin/pip"
             PYTHON_CMD="${VENV_PATH}/bin/python"
 
+            # Ensure PostgreSQL container/service is running
+            if command -v docker >/dev/null 2>&1; then
+              sudo docker compose -f /var/www/SunEdu/backend/docker-compose.yml up -d db >/dev/null 2>&1 || \
+              sudo docker-compose -f /var/www/SunEdu/backend/docker-compose.yml up -d db
+            fi
+
+            if command -v systemctl >/dev/null 2>&1; then
+              sudo systemctl start postgresql >/dev/null 2>&1 || true
+            fi
+
+            DB_HOST="127.0.0.1"
+            DB_PORT="5433"
+            if command -v nc >/dev/null 2>&1; then
+              for i in {1..10}; do
+                if nc -z "${DB_HOST}" "${DB_PORT}"; then
+                  break
+                fi
+                sleep 3
+              done
+            else
+              sleep 5
+            fi
+
             cd backend
             "${PIP_CMD}" install --upgrade pip
             "${PIP_CMD}" install -r requirements.txt
