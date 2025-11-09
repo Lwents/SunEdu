@@ -139,23 +139,19 @@ jobs:
                 exit 1
               fi
             else
-              python3 - <<'PY'
-import socket
-import time
-import os
-
-host = os.environ.get("DB_HOST", "127.0.0.1")
-port = int(os.environ.get("DB_PORT", "5433"))
-
-for _ in range(40):
-    try:
-        with socket.create_connection((host, port), timeout=2):
-            break
-    except OSError:
-        time.sleep(3)
-else:
-    raise SystemExit(f"Database on {host}:{port} did not become ready in time")
-PY
+              DB_READY=0
+              for i in $(seq 1 40); do
+                if timeout 2 bash -c "cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}" >/dev/null 2>&1; then
+                  DB_READY=1
+                  break
+                fi
+                echo "Waiting for PostgreSQL on ${DB_HOST}:${DB_PORT} (attempt $i/40)..."
+                sleep 3
+              done
+              if [ "${DB_READY}" -ne 1 ]; then
+                echo "Database on ${DB_HOST}:${DB_PORT} did not become ready in time" >&2
+                exit 1
+              fi
             fi
 
             cd backend
