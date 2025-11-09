@@ -11,7 +11,16 @@ from custom_account.api.views.auth_view import (
     ResetPasswordRequestView,
     ResetPasswordConfirmView,
 )
-from custom_account.api.views.user_view import AdminUserListView, CurrentUserDetailView, ChangePasswordView, AdminUserDetailView, AdminChangePasswordView, AdminMaintenanceView
+from custom_account.api.views.user_view import (
+    AdminUserListView,
+    CurrentUserDetailView,
+    ChangePasswordView,
+    AdminUserDetailView,
+    AdminChangePasswordView,
+    AdminMaintenanceView,
+    PasswordChangeOTPRequestView,
+    PasswordChangeOTPConfirmView,
+)
 from custom_account.api.views.profile_view import UserProfileView, AdminProfileListView, AdminProfileDetailView
 
 urlpatterns = [
@@ -22,6 +31,8 @@ urlpatterns = [
     path("user/", CurrentUserDetailView.as_view(), name="current-user"),
     path("profile/", UserProfileView.as_view(), name="account-profile"),
     path("password/change/", ChangePasswordView.as_view(), name="account-change-password"),
+    path("password/change/request-otp/", PasswordChangeOTPRequestView.as_view(), name="account-change-password-request-otp"),
+    path("password/change/confirm-otp/", PasswordChangeOTPConfirmView.as_view(), name="account-change-password-confirm-otp"),
     path('password/reset/', ResetPasswordRequestView.as_view(), name='password_reset_request'),
     path('password/reset/confirm/', ResetPasswordConfirmView.as_view(), name='password_reset_confirm'),
     re_path(r'^password/reset/confirm/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,32})/$', AdvancedPasswordResetConfirmView.as_view(), name='password_reset_confirm_legacy'),

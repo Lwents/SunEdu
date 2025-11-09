@@ -9,8 +9,14 @@ from custom_account.models import UserModel
 from custom_account.domains.user_domain import UserDomain
 from custom_account.api.dtos.user_dto import UpdateUserInput, UserPublicOutput, UserAdminOutput, UserInput
 from custom_account.api.mixins import RoleBasedOutputMixin
-from custom_account.serializers import UserSerializer, ChangePasswordSerializer, SetPasswordSerializer, RegisterSerializer
-from custom_account.services import user_service, exceptions
+from custom_account.serializers import (
+    UserSerializer,
+    ChangePasswordSerializer,
+    SetPasswordSerializer,
+    RegisterSerializer,
+    PasswordChangeOTPVerifySerializer,
+)
+from custom_account.services import user_service, exceptions, password_otp_service
 from custom_account.services.exceptions import DomainError
 
 
@@ -71,6 +77,55 @@ class ChangePasswordView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except exceptions.IncorrectPasswordError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"success": True}, status=status.HTTP_200_OK)
+
+
+class PasswordChangeOTPRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        try:
+            password_otp_service.request_password_change_otp(request.user)
+        except password_otp_service.OTPThrottleError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        masked_email = request.user.email
+        if masked_email and "@" in masked_email:
+            local, domain = masked_email.split("@", 1)
+            if len(local) > 2:
+                masked_email = local[0] + "***" + local[-1] + "@" + domain
+            else:
+                masked_email = local[0] + "***@" + domain
+
+        return Response(
+            {"detail": "OTP đã được gửi tới email", "email": masked_email},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordChangeOTPConfirmView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = PasswordChangeOTPVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        code = serializer.validated_data["otp"]
+        new_password = serializer.validated_data["new_password"]
+
+        try:
+            password_otp_service.verify_password_change_otp(request.user, code)
+        except password_otp_service.OTPExpiredError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except password_otp_service.OTPInvalidError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except password_otp_service.OTPNotFoundError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except password_otp_service.OTPAttemptsExceededError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(new_password)
+        request.user.save(update_fields=["password"])
 
         return Response({"success": True}, status=status.HTTP_200_OK)
     

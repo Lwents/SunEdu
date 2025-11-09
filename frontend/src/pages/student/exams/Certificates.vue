@@ -1,35 +1,55 @@
 <template>
-  <div class="certs">
-    <div class="wrap">
-      <header class="head">
-        <div>
-          <h1>Chứng chỉ của tôi</h1>
-          <p class="muted">Các chứng chỉ bạn đã đạt được sau khi hoàn thành bài thi.</p>
-        </div>
+  <div class="student-shell">
+    <div class="student-container">
+      <header class="mb-6">
+        <p class="student-section-title">Chứng chỉ</p>
+        <h1 class="text-3xl font-black text-brand-deep">Chứng chỉ của tôi</h1>
+        <p class="mt-2 text-sm text-brand-muted">
+          Các chứng chỉ bạn đã đạt được sau khi hoàn thành bài thi.
+        </p>
       </header>
 
-      <div class="grid">
-        <article v-for="c in items" :key="c.id" class="card">
-          <img :src="c.thumbnail" :alt="c.title" class="thumb" />
-          <div class="meta">
-            <h3 class="title">{{ c.title }}</h3>
-            <p class="sub muted">Điểm {{ c.score }}/{{ c.total }} · Ngày cấp {{ c.issuedAt }}</p>
-          </div>
-          <div class="foot">
-            <el-button @click="view(c)">Xem</el-button>
-            <el-button type="primary" @click="download(c)">Tải PDF</el-button>
+      <div
+        v-if="items.length"
+        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+      >
+        <article
+          v-for="c in items"
+          :key="c.id"
+          class="flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
+        >
+          <img :src="c.thumbnail" :alt="c.title" class="h-40 w-full object-cover" />
+          <div class="flex flex-1 flex-col space-y-2 p-4">
+            <h3 class="text-lg font-semibold text-brand-deep">{{ c.title }}</h3>
+            <p class="text-sm text-brand-muted">
+              Điểm {{ c.score }}/{{ c.total }} · Ngày cấp {{ c.issuedAt }}
+            </p>
+            <div class="mt-auto flex items-center justify-end gap-2">
+              <el-button size="small" @click="view(c)">Xem</el-button>
+              <el-button size="small" type="primary" @click="download(c)">Tải PDF</el-button>
+            </div>
           </div>
         </article>
       </div>
 
-      <div v-if="!items.length" class="empty">Bạn chưa có chứng chỉ nào.</div>
-      <div v-if="err" class="empty error">{{ err }}</div>
+      <div
+        v-else
+        class="mt-6 rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-10 text-center text-sm text-brand-muted"
+      >
+        Bạn chưa có chứng chỉ nào.
+      </div>
+      <div
+        v-if="err"
+        class="mt-4 rounded-3xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-center text-sm text-rose-600"
+      >
+        {{ err }}
+      </div>
     </div>
 
     <el-dialog v-model="show" title="Xem chứng chỉ" width="720px">
-      <img :src="viewing?.image" alt="" style="width:100%;border-radius:8px;border:1px solid #e5e7eb" />
+      <img :src="viewing?.image" alt="" class="w-full rounded-lg border border-slate-200" />
       <template #footer>
-        <el-button @click="show=false">Đóng</el-button>
+        <el-button @click="show = false">Đóng</el-button>
         <el-button type="primary" @click="download(viewing!)">Tải PDF</el-button>
       </template>
     </el-dialog>
@@ -79,22 +99,3 @@ function mockCerts(){
   }))
 }
 </script>
-
-<style scoped>
-.certs{ background:#fff; min-height:100vh; color:#0f172a; }
-.wrap{ max-width:1100px; margin:0 auto; padding:18px; }
-.head{ margin-bottom:12px; }
-h1{ margin:0; font-size:24px; font-weight:800; }
-.muted{ color:#6b7280; }
-.grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
-.card{ border:1px solid #e5e7eb; border-radius:14px; background:#fff; overflow:hidden; }
-.thumb{ width:100%; aspect-ratio:16/9; object-fit:cover; border-bottom:1px solid #e5e7eb; }
-.meta{ padding:10px; }
-.title{ margin:0 0 2px; font-weight:800; }
-.sub{ margin:0; }
-.foot{ padding:10px; border-top:1px solid #e5e7eb; display:flex; justify-content:flex-end; gap:8px; }
-.empty{ text-align:center; padding:20px; color:#6b7280; }
-.error{ color:#b91c1c; }
-@media (max-width: 980px){ .grid{ grid-template-columns:repeat(2, 1fr) } }
-@media (max-width: 640px){ .grid{ grid-template-columns:1fr } }
-</style>

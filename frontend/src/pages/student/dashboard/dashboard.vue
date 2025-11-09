@@ -1,86 +1,145 @@
 <!-- src/pages/student/dashboard/dashboard.vue -->
 <template>
-  <div class="student-dashboard">
-    <div class="container">
-      <div v-if="errMsg" class="err">
-        <div class="err-title">Đã xảy ra lỗi khi tải Dashboard</div>
-        <pre class="err-pre">{{ errMsg }}</pre>
+  <div class="student-shell">
+    <div class="student-container max-w-6xl">
+      <div
+        v-if="errMsg"
+        class="mb-6 rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm text-rose-700 shadow-sm shadow-rose-100"
+      >
+        <p class="font-semibold">Đã xảy ra lỗi khi tải Dashboard</p>
+        <pre class="mt-2 whitespace-pre-wrap font-mono text-xs">{{ errMsg }}</pre>
       </div>
 
-      <!-- Continue Learning -->
-      <section class="card hero">
-        <div class="hero-head">Continue Learning</div>
-
-        <div class="hero-body" v-if="resumeCourse">
-          <div class="hero-title">{{ resumeCourse.title }}</div>
-          <div class="hero-sub">
+      <section
+        class="student-card overflow-hidden bg-gradient-to-br from-brand-600 via-emerald-500 to-teal-500 text-white shadow-student-card"
+      >
+        <div class="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/80">
+          Continue learning
+        </div>
+        <div v-if="resumeCourse" class="space-y-4">
+          <h2 class="text-2xl font-bold sm:text-3xl">{{ resumeCourse.title }}</h2>
+          <p class="text-sm text-white/80">
             {{ resumeCourse.done ? 'Đã hoàn thành' : `Đang học · ${resumeCourse.progress}%` }}
-          </div>
-          <div class="hero-progress">
-            <span>Progress</span>
-            <div class="spacer" />
-            <button class="btn-primary" @click="onResume">Resume</button>
+          </p>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="flex flex-1 items-center gap-3">
+              <span class="text-xs uppercase tracking-[0.2em] text-white/70">Progress</span>
+              <div class="h-2 flex-1 overflow-hidden rounded-full bg-white/30">
+                <div
+                  class="h-full rounded-full bg-white"
+                  :style="{ width: `${resumeCourse.done ? 100 : resumeCourse.progress}%` }"
+                ></div>
+              </div>
+              <span class="text-sm font-semibold">{{ resumeCourse.progress }}%</span>
+            </div>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2 text-sm font-bold uppercase tracking-wide text-brand-700 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white/90"
+              @click="onResume"
+            >
+              Tiếp tục học
+            </button>
           </div>
         </div>
-
-        <div class="hero-body" v-else>
-          <div class="hero-title">Chưa có khóa học</div>
-          <div class="hero-sub">Bắt đầu từ trang Khóa học</div>
-          <div class="hero-progress">
-            <span></span>
-            <div class="spacer" />
-            <button class="btn-primary" @click="goToCourses">Xem khóa học</button>
-          </div>
+        <div v-else class="space-y-4">
+          <h2 class="text-2xl font-bold sm:text-3xl">Chưa có khóa học</h2>
+          <p class="text-sm text-white/80">Bắt đầu khám phá từ trang Khoá học.</p>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2 text-sm font-bold uppercase tracking-wide text-brand-700 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white/90"
+            @click="goToCourses"
+          >
+            Xem khóa học
+          </button>
         </div>
       </section>
 
-      <!-- My Courses -->
-      <section class="card">
-        <div class="section-head">
-          <h2>My Courses</h2>
-          <button class="ghost" aria-label="view more" @click="goToCourses">›</button>
+      <section class="student-card mt-6">
+        <div class="mb-6 flex items-center justify-between gap-3">
+          <div>
+            <p class="student-section-title">Khoá học</p>
+            <h2 class="text-2xl font-black text-brand-deep">My Courses</h2>
+          </div>
+          <button
+            type="button"
+            class="student-link flex items-center gap-1 text-sm"
+            aria-label="view more"
+            @click="goToCourses"
+          >
+            Xem tất cả
+            <span aria-hidden="true">›</span>
+          </button>
         </div>
 
-        <div class="courses" v-if="featured.length">
-          <div
-            class="course-card"
+        <div v-if="featured.length" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <article
             v-for="c in featured"
             :key="String(c.id)"
+            class="group flex flex-col rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
             @click="openCourse(Number(c.id))"
           >
-            <img class="thumb" :src="c.thumbnail" :alt="c.title" />
-            <div class="title">{{ c.title }}</div>
-            <div class="progress-line">
-              <div class="bar" :style="{ width: ((c.done ? 100 : c.progress) || 0) + '%' }"></div>
+            <img
+              class="h-36 w-full rounded-2xl object-cover object-center"
+              :src="c.thumbnail"
+              :alt="c.title"
+            />
+            <div class="mt-4 space-y-3">
+              <h3 class="text-base font-semibold text-brand-deep line-clamp-2">{{ c.title }}</h3>
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">
+                  <span>Progress</span>
+                  <span>{{ c.done ? 100 : c.progress }}%</span>
+                </div>
+                <div class="h-2 rounded-full bg-slate-100">
+                  <div
+                    class="h-2 rounded-full bg-brand-500 transition-all"
+                    :style="{ width: `${(c.done ? 100 : c.progress) || 0}%` }"
+                  ></div>
+                </div>
+              </div>
+              <p class="text-sm font-medium text-brand-muted">
+                {{ c.done ? 'Đã hoàn thành' : `Đang học · ${c.progress}%` }}
+              </p>
             </div>
-            <div class="status muted">
-              {{ c.done ? 'Đã hoàn thành' : `Đang học · ${c.progress}%` }}
-            </div>
-          </div>
+          </article>
         </div>
-        <div v-else class="muted">Chưa có khóa học nào.</div>
+        <p v-else class="text-sm text-brand-muted">Chưa có khóa học nào.</p>
       </section>
 
-      <!-- Practice Exams -->
-      <section class="card">
-        <div class="section-head">
-          <h2>Practice Exams</h2>
-          <button class="ghost" aria-label="view more" @click="openExamsList">›</button>
+      <section class="student-card mt-6">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <p class="student-section-title">Luyện tập</p>
+            <h2 class="text-2xl font-black text-brand-deep">Practice Exams</h2>
+          </div>
+          <button type="button" class="student-link flex items-center gap-1 text-sm" @click="openExamsList">
+            Xem thêm
+            <span aria-hidden="true">›</span>
+          </button>
         </div>
 
-        <ul class="exams" v-if="previewExams.length">
-          <li class="exam-row" v-for="e in previewExams" :key="String(e.id)">
-            <label class="checkbox"><input type="checkbox" disabled /><span></span></label>
-            <div class="exam-main">
-              <div class="exam-title">{{ e.title }}</div>
-              <div class="muted small">
+        <ul v-if="previewExams.length" class="space-y-4">
+          <li
+            v-for="e in previewExams"
+            :key="String(e.id)"
+            class="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm shadow-slate-100 sm:flex-row sm:items-center"
+          >
+            <div class="flex flex-1 flex-col">
+              <h3 class="text-lg font-semibold text-brand-deep">{{ e.title }}</h3>
+              <p class="text-sm text-brand-muted">
                 Khối {{ e.grade }} · {{ toMin(e.duration) }} phút · Đạt ≥ {{ e.pass }} câu
-              </div>
+              </p>
             </div>
-            <button class="btn-outline" @click="openExamDetail(e.id)">Làm bài</button>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-2xl border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-600 transition hover:bg-brand-50"
+              @click="openExamDetail(e.id)"
+            >
+              Làm bài
+            </button>
           </li>
         </ul>
-        <div v-else class="muted small" style="padding: 6px 2px">Hiện chưa có đề phù hợp.</div>
+        <p v-else class="text-sm text-brand-muted">Hiện chưa có đề phù hợp.</p>
       </section>
     </div>
   </div>
@@ -184,211 +243,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style>
-:root {
-  --bg: #f6f7fb;
-  --card: #fff;
-  --text: #0f172a;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --accent: #42b983;
-}
-.student-dashboard {
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-}
-.container {
-  padding: 20px 16px 40px;
-  max-width: 980px;
-  margin: 0 auto;
-  display: grid;
-  gap: 16px;
-}
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
-  padding: 14px;
-}
-.err {
-  border: 1px solid #fecaca;
-  background: #fff1f2;
-  color: #7f1d1d;
-  border-radius: 12px;
-  padding: 12px;
-}
-.err-title {
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-.err-pre {
-  white-space: pre-wrap;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 12px;
-}
-.hero .hero-head {
-  font-weight: 600;
-  font-size: 20px;
-  margin-bottom: 12px;
-}
-.hero-body {
-  background: #0b2952;
-  color: #e6eefc;
-  border-radius: 12px;
-  padding: 16px;
-}
-.hero-title {
-  font-size: 18px;
-  font-weight: 700;
-}
-.hero-sub {
-  margin-top: 6px;
-  opacity: 0.9;
-}
-.hero-progress {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-}
-.hero-progress .spacer {
-  flex: 1;
-}
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 110px;
-  height: 44px;
-  padding: 0 16px;
-  border-radius: 10px;
-  background: #fff !important;
-  color: #0b2952 !important;
-  border: 1px solid #c9d9ff !important;
-  font-weight: 700;
-  font-size: 14px;
-}
-.btn-primary:hover {
-  background: #f6f9ff !important;
-  border-color: #b7cbff !important;
-}
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.section-head h2 {
-  font-size: 16px;
-  font-weight: 700;
-}
-.ghost {
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-}
-.courses {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-.course-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px;
-  cursor: pointer;
-  background: #fff;
-}
-.course-card:hover {
-  background: #fafafa;
-}
-.course-card .thumb {
-  width: 100%;
-  height: 90px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 8px;
-}
-.course-card .title {
-  font-weight: 600;
-}
-.progress-line {
-  margin-top: 8px;
-  height: 6px;
-  background: #eef2f7;
-  border-radius: 999px;
-  overflow: hidden;
-}
-.progress-line .bar {
-  height: 100%;
-  background: var(--accent);
-}
-.status {
-  margin-top: 6px;
-  font-size: 12px;
-}
-.exams {
-  display: grid;
-  gap: 10px;
-}
-.exam-row {
-  display: grid;
-  grid-template-columns: 28px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px;
-}
-.checkbox {
-  position: relative;
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-}
-.checkbox input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: default;
-}
-.checkbox span {
-  width: 16px;
-  height: 16px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: #fff;
-}
-.exam-title {
-  font-weight: 700;
-}
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--line);
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 700;
-}
-.muted {
-  color: var(--muted);
-}
-.small {
-  font-size: 12px;
-}
-@media (max-width: 900px) {
-  .courses {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 640px) {
-  .courses {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

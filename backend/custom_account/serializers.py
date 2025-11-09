@@ -144,6 +144,11 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 class SetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, required=True)
+
+
+class PasswordChangeOTPVerifySerializer(serializers.Serializer):
+    otp = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(write_only=True, min_length=6)
     
 
 class ProfileUpdateRequestSerializer(serializers.Serializer):
