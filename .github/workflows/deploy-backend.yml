@@ -3,10 +3,13 @@ name: Deploy Backend
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
