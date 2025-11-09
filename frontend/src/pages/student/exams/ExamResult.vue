@@ -1,6 +1,6 @@
 <template>
   <div class="result-page">
-    <div class="result-card" :class="resultStatus.class">
+    <div class="result-card" :class="toneClass">
       <h1>Hoàn thành!</h1>
       <p class="lead">Đây là kết quả bài làm của bạn:</p>
 
@@ -99,16 +99,28 @@ const percentage = computed(() => {
 
 const resultStatus = computed(() => {
   if (userAnswers.value === mockUserAnswers) {
-    return { class: 'status-danger', message: 'Không thể tính toán kết quả.', color: '#ef4444' };
+    return { tone: 'danger', message: 'Không thể tính toán kết quả.', color: '#ef4444' }
   }
   if (percentage.value >= 80) {
-    return { class: 'status-success', message: 'Xuất sắc! Bạn đã làm rất tốt! 🎉', color: '#16a34a' };
+    return { tone: 'success', message: 'Xuất sắc! Bạn đã làm rất tốt! 🎉', color: '#16a34a' }
   } else if (percentage.value >= 50) {
-    return { class: 'status-warning', message: 'Khá tốt! Cùng cố gắng hơn ở lần sau nhé. 👍', color: '#f59e0b' };
-  } else {
-    return { class: 'status-danger', message: 'Đừng nản lòng, hãy xem lại và thử lại nhé! 💪', color: '#ef4444' };
+    return { tone: 'warning', message: 'Khá tốt! Cùng cố gắng hơn ở lần sau nhé. 👍', color: '#f59e0b' }
   }
-});
+  return { tone: 'danger', message: 'Đừng nản lòng, hãy xem lại và thử lại nhé! 💪', color: '#ef4444' }
+})
+
+const toneClass = computed(() => {
+  switch (resultStatus.value.tone) {
+    case 'success':
+      return 'border-brand-200 bg-brand-50'
+    case 'warning':
+      return 'border-amber-200 bg-amber-50/80'
+    case 'danger':
+      return 'border-rose-200 bg-rose-50/80'
+    default:
+      return 'border-slate-200 bg-white'
+  }
+})
 
 // --- Logic Phân trang ---
 const totalPages = computed(() => Math.ceil(userAnswers.value.length / itemsPerPage));
@@ -152,12 +164,3 @@ function scrollToReviewTop() {
   }
 }
 </script>
-
-<style scoped>
-/* Giữ nguyên style cũ và thêm style cho phân trang, transition */
-:root{--success-color:#16a34a;--warning-color:#f59e0b;--danger-color:#ef4444;--text-primary:#1e293b;--text-secondary:#64748b;--bg-light:#f1f5f9;--border-color:#e2e8f0}.result-page{display:flex;flex-direction:column;align-items:center;min-height:100vh;background-color:var(--bg-light);padding:40px 20px;font-family:sans-serif}.result-card{background:#fff;border-radius:16px;padding:32px 40px;width:100%;max-width:560px;text-align:center;box-shadow:0 10px 15px -3px #0000001a,0 4px 6px -2px #0000000d;border-top:5px solid;transition:border-color .3s ease;margin-bottom:30px}.result-card.status-success{border-color:var(--success-color)}.result-card.status-warning{border-color:var(--warning-color)}.result-card.status-danger{border-color:var(--danger-color)}.icon-wrapper{margin:0 auto 16px;color:var(--text-secondary)}.status-success .icon-wrapper{color:var(--success-color)}.status-warning .icon-wrapper{color:var(--warning-color)}.status-danger .icon-wrapper{color:var(--danger-color)}h1{font-size:28px;font-weight:700;color:var(--text-primary);margin-bottom:8px}.lead{color:var(--text-secondary);font-size:16px;margin-bottom:24px}.score-display{margin-bottom:4px}.score-value{font-size:60px;font-weight:800;color:var(--text-primary);line-height:1}.score-total{font-size:24px;font-weight:600;color:var(--text-secondary)}.percentage{font-size:20px;font-weight:600;margin-bottom:16px}.message{font-size:16px;color:var(--text-secondary);min-height:40px;margin-bottom:32px}.actions{display:flex;gap:12px;justify-content:center}.btn{padding:12px 20px;border-radius:10px;font-weight:700;text-decoration:none;border:2px solid transparent;transition:all .2s ease-in-out;cursor:pointer}.btn.ghost{background-color:#fff;color:var(--text-secondary);border-color:var(--border-color)}.btn.ghost:hover{border-color:var(--text-primary);color:var(--text-primary);transform:translateY(-2px);box-shadow:0 4px 10px #00000014}.btn.primary{color:#fff}.status-success .btn.primary{background-color:var(--success-color)}.status-warning .btn.primary{background-color:var(--warning-color)}.status-danger .btn.primary{background-color:var(--danger-color)}.btn.primary:hover{transform:translateY(-2px);filter:brightness(1.1);box-shadow:0 4px 10px #0000001a}.review-section{background:#fff;border-radius:16px;padding:24px 32px;width:100%;max-width:800px;box-shadow:0 10px 15px -3px #0000001a,0 4px 6px -2px #0000000d}.review-header{text-align:center;margin-bottom:24px;border-bottom:1px solid var(--border-color);padding-bottom:16px}.review-header h2{font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:4px}.review-header p{color:var(--text-secondary);font-size:14px;margin:0}.question-review{padding:16px;border-radius:8px;margin-bottom:16px;border:1px solid var(--border-color);border-left-width:5px}.question-review.correct{border-left-color:var(--success-color);background-color:#f0fdf4}.question-review.incorrect{border-left-color:var(--danger-color);background-color:#fef2f2}.question-header{margin-bottom:12px;color:var(--text-primary);display:flex;gap:8px}.q-text{flex:1}.answer-details p{margin:4px 0;font-size:15px}.user-answer{font-weight:600;color:#475569}.incorrect .user-answer{color:var(--danger-color);text-decoration:line-through}.correct-answer{font-weight:600;color:var(--success-color)}.explanation{margin-top:12px;padding:10px;background-color:#fffbeb;border-radius:6px;font-size:14px;color:#78350f}
-
-/* --- Style cho Phân trang và Transition --- */
-.pagination-controls{display:flex;justify-content:space-between;align-items:center;padding-top:20px;margin-top:20px;border-top:1px solid var(--border-color)}.page-info{font-size:14px;font-weight:600;color:var(--text-secondary)}.btn-page{background-color:#fff;border:1px solid var(--border-color);color:var(--text-primary);padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;transition:all .2s ease}.btn-page:hover:not(:disabled){background-color:#f8fafc;border-color:#cbd5e1}.btn-page:disabled{opacity:.5;cursor:not-allowed}
-.fade-enter-active,.fade-leave-active{transition:opacity .3s ease,transform .3s ease}.fade-enter-from,.fade-leave-to{opacity:0;transform:translateY(20px)}
-</style>

@@ -1,171 +1,261 @@
 <!-- src/pages/student/courses/MyCourses.vue -->
 <template>
-  <div class="my-courses">
-    <div class="container">
-      <!-- Header -->
-      <div class="header">
-        <div class="lh">
-          <h1>Khoá học của tôi</h1>
-          <p class="lead">
+  <div class="student-shell">
+    <div class="student-container">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p class="student-section-title">Học tập</p>
+          <h1 class="text-3xl font-black text-brand-deep">Khoá học của tôi</h1>
+          <p class="mt-2 text-sm text-brand-muted">
             Các khóa học bạn đang sở hữu được chia theo từng cấp trình độ, tương ứng với mỗi chặng mục tiêu.
             Hãy chọn trình độ mà bạn muốn bắt đầu nhé.
           </p>
         </div>
-
-        <!-- Quick Links -->
-        <div class="quick">
-          <router-link class="ghost" :to="{ name: 'student-learning-path' }">Lộ trình</router-link>
-          <router-link class="ghost" :to="{ name: 'student-catalog' }">Catalog</router-link>
+        <div class="flex gap-2">
+          <router-link
+            class="inline-flex items-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-600 transition hover:bg-slate-50"
+            :to="{ name: 'student-learning-path' }"
+          >
+            Lộ trình
+          </router-link>
+          <router-link
+            class="inline-flex items-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-600 transition hover:bg-slate-50"
+            :to="{ name: 'student-catalog' }"
+          >
+            Catalog
+          </router-link>
         </div>
-      </div>
-
-      <!-- Tabs + tools -->
-      <div class="tabs-tools">
-        <div class="tabs">
-          <button class="tab" :class="{active: activeTab==='main'}" @click="activeTab='main'">Khóa học chính</button>
-          <button class="tab" :class="{active: activeTab==='supp'}" @click="activeTab='supp'">Khóa học bổ trợ</button>
-        </div>
-
-        <div class="tools">
-          <div class="select" @mouseleave="open=false">
-            <button class="select-btn" @click="open = !open">
-              {{ level || 'Tất cả trình độ' }}
-              <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <ul v-show="open" class="select-menu">
-              <li @click="setLevel('')">Tất cả trình độ</li>
-              <li @click="setLevel('Khối 1–2')">Khối 1–2</li>
-              <li @click="setLevel('Khối 3–5')">Khối 3–5</li>
-            </ul>
-          </div>
-
-          <div class="search">
-            <svg viewBox="0 0 24 24"><path d="M21 21l-4.3-4.3"/><circle cx="11" cy="11" r="7"/></svg>
-            <input v-model.trim="q" placeholder="Tìm khóa học..." />
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ TAB: KHÓA HỌC CHÍNH ============ -->
-      <template v-if="activeTab==='main'">
-        <!-- SECTION: Khối 1–2 -->
-        <section class="section" v-if="baseList.length">
-          <div class="section-head">
-            <div>
-              <h3>Khối 1–2 (Cơ bản)</h3>
-              <span class="sub">{{ baseList.length }} môn</span>
-            </div>
-            <div class="rh">
-              <span class="trophy">🏆 {{ baseTrophies.earned }}/{{ baseTrophies.total }}</span>
-              <router-link class="ghost sm" :to="{ name:'student-catalog', query: { grade: 1 } }">Xem tất cả ›</router-link>
-            </div>
-          </div>
-
-          <div class="grid">
-            <article v-for="c in baseList" :key="c.id" class="card" @click="openDetail(c.id)">
-              <div class="thumb">
-                <img :src="c.thumbnail" :alt="c.title" />
-                <button class="play" type="button" title="Vào học" @click.stop="playFirst(c.id)">
-                  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </button>
-              </div>
-              <div class="meta">
-                <div class="title">{{ c.title }}</div>
-                <div class="info">
-                  <span class="state" :class="{ok: c.done}">
-                    <span class="dot"></span>
-                    {{ c.done ? 'Đã hoàn thành' : 'Đang học' }}<template v-if="!c.done"> · {{ c.progress }}%</template>
-                  </span>
-                  <span class="score"><span class="emoji">🏆</span> {{ c.score }}</span>
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <!-- SECTION: Khối 3–5 -->
-        <section class="section" v-if="midList.length">
-          <div class="section-head">
-            <div>
-              <h3>Khối 3–5 (Nâng cao)</h3>
-              <span class="sub">{{ midList.length }} môn</span>
-            </div>
-            <div class="rh">
-              <span class="trophy">🏆 {{ midTrophies.earned }}/{{ midTrophies.total }}</span>
-              <router-link class="ghost sm" :to="{ name:'student-catalog', query: { grade: 3 } }">Xem tất cả ›</router-link>
-            </div>
-          </div>
-
-          <div class="grid">
-            <article v-for="c in midList" :key="c.id" class="card" @click="openDetail(c.id)">
-              <div class="thumb">
-                <img :src="c.thumbnail" :alt="c.title" />
-                <button class="play" type="button" title="Vào học" @click.stop="playFirst(c.id)">
-                  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </button>
-              </div>
-              <div class="meta">
-                <div class="title">{{ c.title }}</div>
-                <div class="info">
-                  <span class="state" :class="{ok: c.done}">
-                    <span class="dot"></span>
-                    {{ c.done ? 'Đã hoàn thành' : 'Đang học' }}<template v-if="!c.done"> · {{ c.progress }}%</template>
-                  </span>
-                  <span class="score"><span class="emoji">🏆</span> {{ c.score }}</span>
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-      </template>
-
-      <!-- ============ TAB: KHÓA HỌC BỔ TRỢ ============ -->
-      <template v-else>
-        <section class="section">
-          <div class="section-head">
-            <div>
-              <h3>Khóa học bổ trợ</h3>
-              <span class="sub">{{ suppList.length }} khóa</span>
-            </div>
-            <router-link class="ghost sm" :to="{ name:'student-catalog' }">Tìm thêm ›</router-link>
-          </div>
-
-          <div class="grid">
-            <article 
-              v-for="s in suppList" 
-              :key="s.id" 
-              class="card"
-              @click="enroll(s.id)"
-            >
-              <div class="thumb">
-                <img :src="s.thumbnail" :alt="s.title" />
-                <span class="chip">{{ s.tag }}</span>
-              </div>
-              <div class="meta">
-                <div class="title">{{ s.title }}</div>
-                <div class="info">
-                  <span class="state ok"><span class="dot"></span> Phù hợp {{ toLevelLabel(s.grade) }}</span>
-                  <button class="join-btn" @click.stop="enroll(s.id)"><span>Tham gia</span></button>
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-      </template>
-
-      <!-- Tổng số cúp -->
-      <div class="stats-bottom" v-if="activeTab==='main' && (baseList.length || midList.length)">
-        <span class="pill"><span class="emoji">🏆</span> Tổng số cúp đã đạt <b>{{ (baseTrophies.earned + midTrophies.earned) }}/{{ (baseTrophies.total + midTrophies.total) }}</b></span>
       </div>
 
       <div
-        v-if="(activeTab==='main' && baseList.length + midList.length === 0) || (activeTab==='supp' && !suppList.length)"
-        class="empty"
+        class="mt-6 flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-sm shadow-slate-100 sm:p-5 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div class="flex gap-2">
+          <button
+            class="student-tab"
+            :class="{ 'student-tab--active': activeTab === 'main' }"
+            @click="activeTab = 'main'"
+          >
+            Khóa học chính
+          </button>
+          <button
+            class="student-tab"
+            :class="{ 'student-tab--active': activeTab === 'supp' }"
+            @click="activeTab = 'supp'"
+          >
+            Khóa học bổ trợ
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div class="relative" @mouseleave="open = false">
+            <button
+              type="button"
+              class="inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-deep shadow-sm shadow-slate-100 transition hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100 sm:w-56"
+              @click="open = !open"
+            >
+              <span>{{ level || 'Tất cả trình độ' }}</span>
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            <ul
+              v-show="open"
+              class="absolute z-20 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-200"
+            >
+              <li
+                v-for="lvl in ['', 'Khối 1–2', 'Khối 3–5']"
+                :key="lvl || 'all'"
+                class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-brand-muted transition hover:bg-slate-50 hover:text-brand-600"
+                @click="setLevel(lvl as '' | 'Khối 1–2' | 'Khối 3–5')"
+              >
+                {{ lvl || 'Tất cả trình độ' }}
+              </li>
+            </ul>
+          </div>
+
+            <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-brand-deep shadow-sm shadow-slate-100">
+              <svg class="h-4 w-4 text-brand-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 21l-4.3-4.3" />
+                <circle cx="11" cy="11" r="7" />
+              </svg>
+              <input
+                v-model.trim="q"
+                placeholder="Tìm khóa học..."
+                class="w-full border-none bg-transparent text-sm font-medium text-brand-deep placeholder:text-brand-muted focus:outline-none"
+              />
+            </div>
+        </div>
+      </div>
+
+      <template v-if="activeTab === 'main'">
+        <section v-if="baseList.length" class="student-card mt-6 space-y-6">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 class="text-xl font-bold text-brand-deep">Khối 1–2 (Cơ bản)</h3>
+              <p class="text-sm text-brand-muted">{{ baseList.length }} môn</p>
+            </div>
+            <div class="flex items-center gap-3 text-sm font-semibold text-brand-muted">
+              <span>🏆 {{ baseTrophies.earned }}/{{ baseTrophies.total }}</span>
+              <router-link
+                class="student-link text-sm"
+                :to="{ name: 'student-catalog', query: { grade: 1 } }"
+              >
+                Xem tất cả ›
+              </router-link>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <article
+              v-for="c in baseList"
+              :key="c.id"
+              class="group flex flex-col rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
+              @click="openDetail(c.id)"
+            >
+              <div class="relative overflow-hidden rounded-2xl">
+                <img :src="c.thumbnail" :alt="c.title" class="h-40 w-full object-cover" />
+                <button
+                  type="button"
+                  class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/90 p-2 text-brand-600 shadow-lg shadow-slate-300 transition hover:scale-105"
+                  title="Vào học"
+                  @click.stop="playFirst(c.id)"
+                >
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </button>
+              </div>
+              <div class="mt-4 space-y-3">
+                <h4 class="text-base font-semibold text-brand-deep line-clamp-2">{{ c.title }}</h4>
+                <div class="flex items-center justify-between text-sm text-brand-muted">
+                  <span class="inline-flex items-center gap-2 font-semibold" :class="c.done ? 'text-brand-600' : ''">
+                    <span class="h-2 w-2 rounded-full" :class="c.done ? 'bg-brand-500' : 'bg-amber-400'"></span>
+                    {{ c.done ? 'Đã hoàn thành' : `Đang học · ${c.progress}%` }}
+                  </span>
+                  <span class="font-semibold text-brand-deep">🏆 {{ c.score }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section v-if="midList.length" class="student-card mt-6 space-y-6">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 class="text-xl font-bold text-brand-deep">Khối 3–5 (Nâng cao)</h3>
+              <p class="text-sm text-brand-muted">{{ midList.length }} môn</p>
+            </div>
+            <div class="flex items-center gap-3 text-sm font-semibold text-brand-muted">
+              <span>🏆 {{ midTrophies.earned }}/{{ midTrophies.total }}</span>
+              <router-link
+                class="student-link text-sm"
+                :to="{ name: 'student-catalog', query: { grade: 3 } }"
+              >
+                Xem tất cả ›
+              </router-link>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <article
+              v-for="c in midList"
+              :key="c.id"
+              class="group flex flex-col rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
+              @click="openDetail(c.id)"
+            >
+              <div class="relative overflow-hidden rounded-2xl">
+                <img :src="c.thumbnail" :alt="c.title" class="h-40 w-full object-cover" />
+                <button
+                  type="button"
+                  class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/90 p-2 text-brand-600 shadow-lg shadow-slate-300 transition hover:scale-105"
+                  title="Vào học"
+                  @click.stop="playFirst(c.id)"
+                >
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </button>
+              </div>
+              <div class="mt-4 space-y-3">
+                <h4 class="text-base font-semibold text-brand-deep line-clamp-2">{{ c.title }}</h4>
+                <div class="flex items-center justify-between text-sm text-brand-muted">
+                  <span class="inline-flex items-center gap-2 font-semibold" :class="c.done ? 'text-brand-600' : ''">
+                    <span class="h-2 w-2 rounded-full" :class="c.done ? 'bg-brand-500' : 'bg-amber-400'"></span>
+                    {{ c.done ? 'Đã hoàn thành' : `Đang học · ${c.progress}%` }}
+                  </span>
+                  <span class="font-semibold text-brand-deep">🏆 {{ c.score }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </template>
+
+      <template v-else>
+        <section class="student-card mt-6 space-y-6">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 class="text-xl font-bold text-brand-deep">Khóa học bổ trợ</h3>
+              <p class="text-sm text-brand-muted">{{ suppList.length }} khóa</p>
+            </div>
+            <router-link class="student-link text-sm" :to="{ name: 'student-catalog' }">
+              Tìm thêm ›
+            </router-link>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <article
+              v-for="s in suppList"
+              :key="s.id"
+              class="flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm shadow-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
+              @click="enroll(s.id)"
+            >
+              <div class="relative h-40 w-full overflow-hidden">
+                <img :src="s.thumbnail" :alt="s.title" class="h-full w-full object-cover" />
+                <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-brand-deep">
+                  {{ s.tag }}
+                </span>
+              </div>
+              <div class="flex flex-1 flex-col space-y-3 p-4">
+                <h4 class="text-base font-semibold text-brand-deep line-clamp-2">{{ s.title }}</h4>
+                <div class="mt-auto flex items-center justify-between text-sm text-brand-muted">
+                  <span class="inline-flex items-center gap-2 font-semibold text-brand-600">
+                    <span class="h-2 w-2 rounded-full bg-brand-500"></span>
+                    Phù hợp {{ toLevelLabel(s.grade) }}
+                  </span>
+                  <button
+                    type="button"
+                    class="rounded-2xl border border-brand-200 px-4 py-1.5 text-xs font-semibold text-brand-600 transition hover:bg-brand-50"
+                    @click.stop="enroll(s.id)"
+                  >
+                    Tham gia
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </template>
+
+      <div
+        v-if="activeTab === 'main' && (baseList.length || midList.length)"
+        class="mt-6 flex flex-wrap items-center gap-3 rounded-3xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-brand-deep shadow-sm shadow-slate-100"
+      >
+        <span>🏆 Tổng số cúp đã đạt</span>
+        <b>{{ baseTrophies.earned + midTrophies.earned }}/{{ baseTrophies.total + midTrophies.total }}</b>
+      </div>
+
+      <div
+        v-if="(activeTab === 'main' && baseList.length + midList.length === 0) || (activeTab === 'supp' && !suppList.length)"
+        class="mt-6 rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-10 text-center text-sm text-brand-muted"
       >
         Không có khóa học phù hợp.
       </div>
 
-      <div v-if="err" class="empty" style="color:#b91c1c">{{ err }}</div>
+      <div v-if="err" class="mt-4 rounded-3xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-700">
+        {{ err }}
+      </div>
     </div>
   </div>
 </template>
@@ -306,102 +396,3 @@ function enroll(id: number | string){
 
 onMounted(load)
 </script>
-
-<style>
-:root{
-  --bg:#f6f7fb; --card:#fff; --text:#0f172a; --muted:#6b7280; --line:#e5e7eb;
-  --accent:#16a34a; --brand:#0ea5e9; --warn:#f59e0b;
-}
-</style>
-
-<style scoped>
-.my-courses{ background:var(--bg); min-height:100vh; color:var(--text); }
-.container{ max-width:1200px; margin:0 auto; padding:18px; }
-
-.header{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
-.quick{ display:flex; gap:8px; }
-h1{ font-size:28px; font-weight:800; margin:8px 0 6px; }
-.lead{ color:var(--muted); max-width:760px; }
-
-.tabs-tools{ margin-top:16px; display:flex; align-items:center; gap:12px; }
-.tabs{ display:flex; gap:18px; }
-.tab{ position:relative; background:transparent; border:0; font-weight:800; padding:10px 0; cursor:pointer; }
-.tab.active::after{ content:''; position:absolute; left:0; right:0; bottom:-6px; height:3px; background:var(--brand); border-radius:3px; }
-
-.tools{ margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.ghost{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-weight:700; cursor:pointer; }
-.ghost.sm{padding:6px 10px; font-size:13px}
-.search{ display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 12px; }
-.search input{ border:0; outline:0; width:240px; }
-.search svg{ width:18px; height:18px; stroke:#9ca3af; fill:none; stroke-width:2; }
-
-.select{ position:relative; }
-.select-btn{ display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 12px; cursor:pointer; font-weight:700; }
-.select-btn svg{ width:16px; height:16px; fill:#6b7280; }
-.select-menu{ position:absolute; top:42px; left:0; min-width:180px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:6px; box-shadow:0 8px 24px rgba(0,0,0,.06); z-index:10; }
-.select-menu li{ padding:8px 10px; border-radius:8px; cursor:pointer; }
-.select-menu li:hover{ background:#f3f4f6; }
-
-.section{ margin-top:22px; }
-.section-head{ display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:10px; gap:8px; }
-.section-head h3{ font-size:20px; font-weight:800; margin:0; }
-.sub{ color:var(--muted); font-size:13px; }
-.trophy{ color:var(--warn); font-weight:800; }
-.rh{ display:flex; align-items:center; gap:8px; }
-
-.grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; }
-.card{ background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 6px 14px rgba(15,23,42,.04); transition:transform .15s, box-shadow .15s; cursor:pointer; }
-.card:hover{ transform:translateY(-2px); box-shadow:0 10px 22px rgba(15,23,42,.08); }
-.thumb{ position:relative; aspect-ratio:16/9; background:#e5e7eb; }
-.thumb img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.play{ position:absolute; right:12px; bottom:12px; width:40px; height:40px; border-radius:999px; background:var(--accent); border:1px solid var(--accent); color:#fff; display:grid; place-items:center; cursor:pointer; }
-.play svg{ width:20px; height:20px; fill:#fff; }
-.chip{
-  position:absolute; left:10px; bottom:10px;
-  background:#fff; border:1px solid var(--line); border-radius:999px; padding:4px 8px; font-size:12px; font-weight:700;
-}
-
-.meta{ padding:12px; display:flex; flex-direction:column; gap:10px; }
-.title{ font-weight:800; line-height:1.35; }
-.info{ display:flex; align-items:center; gap:8px; }
-.state{ display:flex; align-items:center; gap:8px; font-weight:800; color:#f59e0b; }
-.state .dot{ width:10px; height:10px; border-radius:50%; background:#f59e0b; }
-.state.ok{ color:var(--accent); }
-.state.ok .dot{ background:var(--accent); }
-.score{ color:var(--warn); font-weight:800; display:flex; align-items:center; gap:6px; }
-.score .emoji{ font-size:16px; }
-
-.join-btn{
-  margin-left:auto;
-  min-width:108px;
-  height:36px;
-  padding:0 14px;
-  border-radius:10px;
-  display:inline-flex; align-items:center; justify-content:center;
-  background:var(--accent); color:#fff; border:1px solid var(--accent);
-  font-size:14px; font-weight:800; letter-spacing:.1px;
-  box-shadow:0 2px 0 rgba(0,0,0,.06);
-  transition:transform .08s ease, box-shadow .08s ease, filter .18s; cursor:pointer;
-}
-.join-btn:hover{ filter:brightness(0.96); }
-.join-btn:active{ transform:translateY(1px); box-shadow:none; }
-.join-btn:focus-visible{ outline:3px solid #bbf7d0; outline-offset:2px; }
-
-.stats-bottom{ margin-top:20px; display:flex; justify-content:flex-end; }
-.pill{ display:flex; align-items:center; gap:8px; padding:10px 12px; background:#fff; border:1px solid #e5e7eb; border-radius:999px; font-weight:800; }
-.pill .emoji{ font-size:16px; }
-
-.empty{ text-align:center; padding:40px 20px; color:var(--muted); }
-
-@media (max-width: 1200px){ .grid{ grid-template-columns:repeat(3, 1fr); } }
-@media (max-width: 880px){
-  .header{ flex-direction:column; }
-  .grid{ grid-template-columns:repeat(2, 1fr); }
-  .search input{ width:180px; }
-  .join-btn{ min-width:100px; height:34px; padding:0 12px; }
-}
-@media (max-width: 560px){
-  .tabs-tools{ flex-direction:column; align-items:flex-start; gap:8px; }
-  .grid{ grid-template-columns:1fr; }
-}
-</style>

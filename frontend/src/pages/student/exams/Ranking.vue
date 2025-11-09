@@ -1,129 +1,199 @@
 <template>
-  <div class="ranking-page-ui">
-    <div class="container">
-      <header class="header">
-        <div class="header-info">
-          <h1 class="header-title">🏆 Bảng Xếp Hạng</h1>
-          <p class="header-subtitle">Vinh danh những học viên có thành tích xuất sắc nhất trong mỗi kỳ thi.</p>
+  <div class="student-shell">
+    <div class="student-container max-w-6xl">
+      <header class="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/95 px-5 py-5 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-3xl font-black text-brand-deep">🏆 Bảng Xếp Hạng</h1>
+          <p class="mt-1 text-sm text-brand-muted">
+            Vinh danh những học viên có thành tích xuất sắc nhất trong mỗi kỳ thi.
+          </p>
         </div>
-
-        <div class="select-wrapper">
-          <button class="select-btn" @click="openSelect = !openSelect" :disabled="loadingExams">
+        <div class="relative w-full max-w-sm" @mouseleave="openSelect = false">
+          <button
+            type="button"
+            class="flex w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-brand-deep shadow-sm shadow-slate-100 transition hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+            :disabled="loadingExams"
+            @click="openSelect = !openSelect"
+          >
             <span v-if="loadingExams">Đang tải đề...</span>
             <span v-else>{{ selectedExamTitle || 'Vui lòng chọn đề thi' }}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="select-icon">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            <svg class="h-4 w-4 text-brand-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25 12 15.75 4.5 8.25" />
             </svg>
           </button>
-          <ul v-show="openSelect" class="select-menu" @mouseleave="openSelect = false">
-            <li v-for="e in exams" :key="e.id" @click="selectExam(e.id)">{{ e.title }}</li>
+          <ul
+            v-show="openSelect"
+            class="absolute right-0 z-20 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-200"
+          >
+            <li
+              v-for="e in exams"
+              :key="e.id"
+              class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-brand-muted transition hover:bg-slate-50"
+              @click="selectExam(e.id)"
+            >
+              {{ e.title }}
+            </li>
           </ul>
         </div>
       </header>
-      
-      <div v-if="loading" class="skeleton-wrapper">
-        <div class="skeleton-top3">
-          <div class="sk-top-card"></div>
-          <div class="sk-top-card main"></div>
-          <div class="sk-top-card"></div>
+
+      <div v-if="loading" class="mt-6 space-y-4">
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="h-48 animate-pulse rounded-3xl bg-slate-100"></div>
+          <div class="h-48 animate-pulse rounded-3xl bg-slate-100"></div>
+          <div class="h-48 animate-pulse rounded-3xl bg-slate-100"></div>
         </div>
-        <div class="sk-list">
-          <div v-for="i in 7" :key="i" class="sk-list-item"></div>
+        <div class="space-y-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 shadow-sm shadow-slate-100">
+          <div v-for="i in 7" :key="i" class="h-14 animate-pulse rounded-2xl bg-slate-100"></div>
         </div>
       </div>
 
-      <div v-else-if="rows.length === 0" class="empty-state">
-         <img src="https://res.cloudinary.com/dapvicdpm/image/upload/v1727116801/temp/leaderboard-empty_u5o8fg.svg" alt="No data" class="empty-icon" />
-        <h3 class="empty-title">Chưa có dữ liệu xếp hạng</h3>
-        <p class="empty-text">Hiện chưa có ai hoàn thành đề thi này. Hãy là người đầu tiên!</p>
+      <div
+        v-else-if="rows.length === 0"
+        class="mt-6 flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-12 text-center text-sm text-brand-muted"
+      >
+        <img
+          src="https://res.cloudinary.com/dapvicdpm/image/upload/v1727116801/temp/leaderboard-empty_u5o8fg.svg"
+          alt="No data"
+          class="h-32 w-32"
+        />
+        <h3 class="mt-4 text-xl font-bold text-brand-deep">Chưa có dữ liệu xếp hạng</h3>
+        <p class="mt-2 max-w-md">
+          Hiện chưa có ai hoàn thành đề thi này. Hãy là người đầu tiên!
+        </p>
       </div>
 
-      <div v-else>
-        <div class="top-3-grid">
-          <div v-if="rows[1]" class="rank-card rank-2">
-            <div class="podium-rank silver">🥈 Hạng 2</div>
-            <img :src="avatarOf(rows[1].name)" alt="avatar" class="rank-avatar">
-            <h3 class="rank-name">{{ rows[1].name }}</h3>
-            <div class="rank-score">{{ rows[1].score }} điểm</div>
-            <div class="rank-time">{{ rows[1].time }}</div>
+      <div v-else class="mt-6 space-y-6">
+        <div class="grid gap-4 md:grid-cols-3">
+          <div
+            v-if="rows[1]"
+            class="flex flex-col items-center rounded-3xl border border-slate-200 bg-white px-4 py-6 text-center shadow-sm shadow-slate-100"
+          >
+            <div class="text-sm font-semibold text-brand-muted">🥈 Hạng 2</div>
+            <img :src="avatarOf(rows[1].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover" />
+            <h3 class="mt-3 text-lg font-bold text-brand-deep">{{ rows[1].name }}</h3>
+            <p class="text-sm text-brand-muted">{{ rows[1].time }}</p>
+            <p class="text-xl font-black text-brand-deep">{{ rows[1].score }} điểm</p>
           </div>
-          <div v-if="rows[0]" class="rank-card rank-1">
-            <div class="podium-rank gold">🥇 Hạng 1</div>
-            <img :src="avatarOf(rows[0].name)" alt="avatar" class="rank-avatar">
-            <h3 class="rank-name">{{ rows[0].name }}</h3>
-            <div class="rank-score">{{ rows[0].score }} điểm</div>
-            <div class="rank-time">{{ rows[0].time }}</div>
+          <div
+            v-if="rows[0]"
+            class="flex flex-col items-center rounded-3xl border border-brand-200 bg-gradient-to-br from-brand-500 to-emerald-500 px-4 py-6 text-center text-white shadow-lg shadow-brand-200"
+          >
+            <div class="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">🥇 Hạng 1</div>
+            <img :src="avatarOf(rows[0].name)" alt="avatar" class="mt-3 h-18 w-18 rounded-full border-4 border-white/40 object-cover" />
+            <h3 class="mt-3 text-lg font-bold">{{ rows[0].name }}</h3>
+            <p class="text-sm text-white/80">{{ rows[0].time }}</p>
+            <p class="text-2xl font-black">{{ rows[0].score }} điểm</p>
           </div>
-          <div v-if="rows[2]" class="rank-card rank-3">
-            <div class="podium-rank bronze">🥉 Hạng 3</div>
-            <img :src="avatarOf(rows[2].name)" alt="avatar" class="rank-avatar">
-            <h3 class="rank-name">{{ rows[2].name }}</h3>
-            <div class="rank-score">{{ rows[2].score }} điểm</div>
-            <div class="rank-time">{{ rows[2].time }}</div>
+          <div
+            v-if="rows[2]"
+            class="flex flex-col items-center rounded-3xl border border-slate-200 bg-white px-4 py-6 text-center shadow-sm shadow-slate-100"
+          >
+            <div class="text-sm font-semibold text-brand-muted">🥉 Hạng 3</div>
+            <img :src="avatarOf(rows[2].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover" />
+            <h3 class="mt-3 text-lg font-bold text-brand-deep">{{ rows[2].name }}</h3>
+            <p class="text-sm text-brand-muted">{{ rows[2].time }}</p>
+            <p class="text-xl font-black text-brand-deep">{{ rows[2].score }} điểm</p>
           </div>
         </div>
 
-        <div class="ranking-list-wrapper">
-          <div v-for="(row, index) in paginatedRestRows" :key="row.id || row.name + '-' + getRestRank(index)" class="rank-row">
-            <div class="row-rank">#{{ getRestRank(index) }}</div>
-            <div class="row-user">
-              <img :src="avatarOf(row.name)" alt="avatar" class="row-avatar" loading="lazy" decoding="async" />
-              <span class="row-name">{{ row.name }}</span>
+        <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm shadow-slate-100">
+          <div
+            v-for="(row, index) in paginatedRestRows"
+            :key="row.id || row.name + '-' + getRestRank(index)"
+            class="flex flex-col gap-3 border-b border-slate-100 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div class="flex items-center gap-4">
+              <div class="text-xl font-black text-brand-muted">#{{ getRestRank(index) }}</div>
+              <div class="flex items-center gap-3">
+                <img :src="avatarOf(row.name)" alt="avatar" class="h-12 w-12 rounded-full object-cover" />
+                <span class="text-base font-semibold text-brand-deep">{{ row.name }}</span>
+              </div>
             </div>
-            <div class="row-stats">
-              <div class="row-stat">
-                <span class="stat-value">{{ row.correct }}/{{ row.total }}</span>
-                <span class="stat-label">Câu đúng</span>
+            <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-brand-muted">
+              <div>
+                <p class="text-lg font-bold text-brand-deep">{{ row.correct }}/{{ row.total }}</p>
+                <p>Câu đúng</p>
               </div>
-              <div class="row-stat">
-                <span class="stat-value">{{ row.time }}</span>
-                <span class="stat-label">Thời gian</span>
+              <div>
+                <p class="text-lg font-bold text-brand-deep">{{ row.time }}</p>
+                <p>Thời gian</p>
               </div>
-              <div class="row-stat score">
-                <span class="stat-value">{{ row.score }}</span>
-                <span class="stat-label">Điểm</span>
+              <div>
+                <p class="text-lg font-bold text-brand-deep">{{ row.score }}</p>
+                <p>Điểm</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-if="totalPages > 1" class="pagination-wrapper">
-        <button class="nav-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">‹</button>
+      <div v-if="totalPages > 1" class="mt-6 flex items-center justify-center gap-2">
+        <button
+          class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-brand-deep transition hover:border-brand-300 disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="currentPage <= 1"
+          @click="handlePageChange(currentPage - 1)"
+        >
+          ‹
+        </button>
         <button
           v-for="p in pagesToShow"
           :key="p.key"
-          class="page-btn"
-          :class="{ active: p.num === currentPage, separator: p.sep }"
+          class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-xl border text-sm font-semibold transition"
+          :class="p.sep
+            ? 'border-transparent bg-transparent text-brand-muted'
+            : p.num === currentPage
+              ? 'border-brand-500 bg-brand-500 text-white shadow-lg shadow-brand-200'
+              : 'border-slate-200 bg-white text-brand-deep hover:border-brand-300'"
           :disabled="p.sep"
           @click="!p.sep && handlePageChange(p.num!)"
-        >{{ p.text }}</button>
-        <button class="nav-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">›</button>
+        >
+          {{ p.text }}
+        </button>
+        <button
+          class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-brand-deep transition hover:border-brand-300 disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="currentPage >= totalPages"
+          @click="handlePageChange(currentPage + 1)"
+        >
+          ›
+        </button>
       </div>
 
-      <div v-if="me" class="my-rank-sticky">
-        <div class="my-rank-rank">#{{ me.rank }}</div>
-        <div class="my-rank-user">
-          <img :src="avatarOf('Bạn')" alt="avatar" class="row-avatar" />
-          <span class="row-name">Vị trí của bạn</span>
-        </div>
-        <div class="row-stats">
-          <div class="row-stat">
-            <span class="stat-value">{{ me.correct }}/{{ me.total }}</span>
-            <span class="stat-label">Câu đúng</span>
+      <div
+        v-if="me"
+        class="mt-8 rounded-3xl border border-brand-200 bg-brand-50/80 px-5 py-4 shadow-sm shadow-brand-100"
+      >
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center gap-4">
+            <div class="text-2xl font-black text-brand-600">#{{ me.rank }}</div>
+            <div class="flex items-center gap-3">
+              <img :src="avatarOf('Bạn')" alt="avatar" class="h-12 w-12 rounded-full object-cover" />
+              <span class="text-base font-semibold text-brand-deep">Vị trí của bạn</span>
+            </div>
           </div>
-          <div class="row-stat">
-            <span class="stat-value">{{ me.time }}</span>
-            <span class="stat-label">Thời gian</span>
-          </div>
-          <div class="row-stat score">
-            <span class="stat-value">{{ me.score }}</span>
-            <span class="stat-label">Điểm</span>
+          <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-brand-muted">
+            <div>
+              <p class="text-lg font-bold text-brand-deep">{{ me.correct }}/{{ me.total }}</p>
+              <p>Câu đúng</p>
+            </div>
+            <div>
+              <p class="text-lg font-bold text-brand-deep">{{ me.time }}</p>
+              <p>Thời gian</p>
+            </div>
+            <div>
+              <p class="text-lg font-bold text-brand-deep">{{ me.score }}</p>
+              <p>Điểm</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div v-if="err" class="empty-state error">{{ err }}</div>
+      <div
+        v-if="err"
+        class="mt-4 rounded-3xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-center text-sm text-rose-600"
+      >
+        {{ err }}
+      </div>
     </div>
   </div>
 </template>
@@ -279,93 +349,3 @@ function createMockService() {
   };
 }
 </script>
-
-<style scoped>
-/* --- General --- */
-.ranking-page-ui { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; padding-bottom: 96px; }
-.container { max-width: 900px; margin: 0 auto; padding: 24px; }
-.header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-.header-title { margin: 0; font-size: 32px; font-weight: 800; color: #0f172a; }
-.header-subtitle { color: #64748b; margin: 4px 0 0 0; }
-
-/* --- Custom Select --- */
-.select-wrapper { position: relative; width: 320px; }
-.select-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #fff; width: 100%; height: 44px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease; }
-.select-btn:disabled { cursor: not-allowed; background-color: #f8fafc; }
-.select-btn:not(:disabled):hover { border-color: #cbd5e1; }
-.select-icon { width: 18px; height: 18px; color: #6b7280; }
-.select-menu { position: absolute; top: calc(100% + 6px); left: 0; width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 6px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); z-index: 10; max-height: 250px; overflow-y: auto; }
-.select-menu li { padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 500; }
-.select-menu li:hover { background: #f1f5f9; color: #16a34a; }
-
-/* --- Top 3 Cards --- */
-.top-3-grid { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 16px; align-items: flex-end; margin-bottom: 24px; }
-.rank-card { background: #fff; border-radius: 16px; padding: 24px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
-.rank-1 { order: 2; transform: scale(1.05); z-index: 5; }
-.rank-2 { order: 1; }
-.rank-3 { order: 3; }
-
-.podium-rank { font-weight: 700; font-size: 14px; margin-bottom: 12px; }
-.gold { color: #ca8a04; }
-.silver { color: #64748b; }
-.bronze { color: #c2410c; }
-.rank-avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 12px; border: 4px solid #fff; box-shadow: 0 0 0 1px #e2e8f0; }
-.rank-1 .rank-avatar { width: 96px; height: 96px; }
-.rank-name { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
-.rank-score { font-size: 24px; font-weight: 800; color: #16a34a; margin-bottom: 8px; }
-.rank-time { font-size: 14px; color: #64748b; font-variant-numeric: tabular-nums; }
-
-/* --- Ranking List (4+) --- */
-.ranking-list-wrapper { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
-.rank-row { display: grid; grid-template-columns: 60px 1fr auto; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s ease; }
-.rank-row:last-child { border-bottom: none; }
-.rank-row:hover { background-color: #f8fafc; }
-
-.row-rank { font-weight: 700; color: #64748b; font-size: 16px; text-align: center; }
-.row-user { display: flex; align-items: center; gap: 16px; font-weight: 600; }
-.row-avatar { width: 40px; height: 40px; border-radius: 50%; }
-.row-stats { display: flex; gap: 24px; font-variant-numeric: tabular-nums; }
-.row-stat { display: flex; flex-direction: column; align-items: flex-end; width: 90px; }
-.stat-value { font-weight: 700; font-size: 16px; }
-.stat-label { font-size: 12px; color: #64748b; }
-.row-stat.score .stat-value { color: #16a34a; }
-
-/* --- My Rank --- */
-.my-rank-sticky { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; z-index: 20; box-shadow: 0 -5px 15px -3px rgb(0 0 0 / 0.07); border-top: 1px solid #e2e8f0; display: flex; justify-content: center; }
-.my-rank-sticky .row-stats { background-color: transparent; }
-.my-rank-sticky { display: grid; grid-template-columns: 60px 1fr auto; align-items: center; padding: 12px 20px; max-width: 1800px; margin: 0 auto; background: linear-gradient(to right, #f0fdf4, #fff); border-top: 2px solid #16a34a; }
-.my-rank-rank { font-weight: 800; color: #166534; font-size: 18px; text-align: center; }
-.my-rank-user { display: flex; align-items: center; gap: 16px; font-weight: 700; }
-
-/* --- States & Pagination --- */
-.pagination-wrapper { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 32px 0 16px; }
-.nav-btn, .page-btn { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
-.nav-btn:disabled, .page-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.nav-btn:not(:disabled):hover, .page-btn:not(:disabled):hover { border-color: #cbd5e1; }
-.page-btn.active { background: #16a34a; color: #fff; border-color: #16a34a; }
-.page-btn.separator { cursor: default; background: #f8fafc; }
-
-.empty-state { text-align: center; padding: 64px 24px; }
-.empty-icon { width: 140px; height: 140px; margin-bottom: 24px; }
-.empty-title { font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 8px; }
-.empty-text { font-size: 16px; color: #64748b; max-width: 400px; margin: 0 auto; }
-.error { color: #b91c1c; }
-
-/* --- Skeleton --- */
-.skeleton-wrapper { animation: pulse 1.5s infinite; }
-.skeleton-top3 { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 16px; align-items: flex-end; margin-bottom: 24px; }
-.sk-top-card { height: 200px; background-color: #e2e8f0; border-radius: 16px; }
-.sk-top-card.main { height: 220px; }
-.sk-list { background-color: #fff; border-radius: 16px; padding: 16px; border: 1px solid #e2e8f0; }
-.sk-list-item { height: 40px; background-color: #e2e8f0; border-radius: 8px; margin: 12px; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
-
-/* --- Responsive --- */
-@media (max-width: 768px) {
-  .header, .select-wrapper { width: 100%; }
-  .top-3-grid { grid-template-columns: 1fr; }
-  .rank-1, .rank-2, .rank-3 { order: 0 !important; transform: none !important; }
-  .row-stats { display: none; } /* Ẩn bớt thông tin trên mobile */
-  .rank-row, .my-rank-sticky { grid-template-columns: 60px 1fr; }
-}
-</style>

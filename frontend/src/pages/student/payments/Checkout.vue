@@ -1,90 +1,140 @@
 <template>
-  <div class="pay-page">
-    <div class="container">
-      <h1 class="title">Thanh toán</h1>
+  <div class="min-h-screen bg-slate-50 pb-16 pt-8">
+    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-500">Checkout</p>
+          <h1 class="text-3xl font-black text-slate-900 sm:text-4xl">Thanh toán</h1>
+        </div>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm shadow-slate-100 transition hover:border-emerald-300"
+          @click="loadPlans"
+          :disabled="planLoading"
+        >
+          <span v-if="planLoading" class="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-500"></span>
+          <svg
+            v-else
+            class="h-4 w-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>{{ planLoading ? 'Đang tải...' : 'Làm mới gói' }}</span>
+        </button>
+      </div>
 
-      <div class="grid">
-        <section class="card momo-card">
-          <h2 class="section-title">Thanh toán qua MoMo</h2>
-          <p class="muted">
+      <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <section class="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-xl shadow-slate-100">
+          <h2 class="text-lg font-bold text-slate-900">Thanh toán qua MoMo</h2>
+          <p class="mt-2 text-sm text-slate-500">
             Chọn gói và bấm nút bên dưới, bạn sẽ được chuyển đến cổng MoMo Collection Link để hoàn tất.
           </p>
 
-          <div class="field">
-            <span class="label">Nội dung hiển thị khi thanh toán</span>
-            <input
-              v-model="descriptionText"
-              class="input"
-              placeholder="Ví dụ: Thanh toán học phí tháng 11"
-            />
-            <small class="muted">Dòng mô tả sẽ xuất hiện trên màn hình xác nhận của MoMo.</small>
-          </div>
-
-          <div class="field">
-            <span class="label">Số tiền (VND)</span>
-            <input
-              v-model="amountText"
-              @input="onAmountInput(true)"
-              class="input right"
-              inputmode="numeric"
-              placeholder="Nhập số tiền, ví dụ 215000"
-            />
-            <small class="muted">
-              <template v-if="selectedPlanId">
-                Số tiền được cố định từ gói {{ plan }}
-              </template>
-              <template v-else>
-                Chỉ nhập chữ số. Bạn có thể đặt số tiền tuỳ ý.
-              </template>
-            </small>
-          </div>
-
-          <div class="pill">
-            <div>
-              <small class="muted">Số tiền thanh toán</small>
-              <div class="pill-amount">{{ vnd(amountNumber) }}</div>
+          <div class="mt-6 space-y-6">
+            <div class="space-y-2">
+              <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Nội dung hiển thị khi thanh toán
+              </label>
+              <input
+                v-model="descriptionText"
+                placeholder="Ví dụ: Thanh toán học phí tháng 11"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+              />
+              <p class="text-xs text-slate-500">Dòng mô tả sẽ xuất hiện trên màn hình xác nhận của MoMo.</p>
             </div>
+
+            <div class="space-y-2">
+              <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Số tiền (VND)
+              </label>
+              <input
+                v-model="amountText"
+                @input="onAmountInput(true)"
+                inputmode="numeric"
+                placeholder="Nhập số tiền, ví dụ 215000"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-right text-lg font-bold text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+              />
+              <p class="text-xs text-slate-500">
+                <template v-if="selectedPlanId">
+                  Số tiền được cố định từ gói {{ plan }}.
+                </template>
+                <template v-else>
+                  Chỉ nhập chữ số. Bạn có thể đặt số tiền tuỳ ý.
+                </template>
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Số tiền thanh toán</p>
+                <p class="text-2xl font-black text-slate-900">{{ vnd(amountNumber) }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Gói</p>
+                <p class="text-sm font-semibold text-slate-900">{{ planDisplay }}</p>
+              </div>
+            </div>
+
             <div>
-              <small class="muted">Gói</small>
-              <div class="pill-plan">{{ planDisplay }}</div>
+              <h3 class="text-sm font-bold uppercase tracking-wide text-slate-500">Các bước thực hiện</h3>
+              <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-600">
+                <li>Mở app MoMo hoặc chọn liên kết thanh toán được chuyển tới.</li>
+                <li>Kiểm tra thông tin đơn hàng, số tiền và xác nhận thanh toán.</li>
+                <li>Sau khi hoàn tất, hệ thống sẽ tự đồng bộ trạng thái.</li>
+              </ol>
+            </div>
+
+            <div class="space-y-2">
+              <button
+                type="button"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
+                :disabled="!amountNumber"
+                @click="payWithMomo"
+              >
+                <span
+                  v-if="isMomoLoading"
+                  class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"
+                ></span>
+                {{ isMomoLoading ? 'Đang chuyển hướng...' : 'Thanh toán với MoMo' }}
+              </button>
+              <p class="text-xs text-slate-500">Bạn sẽ được chuyển đến trang thanh toán an toàn của MoMo.</p>
             </div>
           </div>
-
-          <h3 class="sub-title">Các bước thực hiện</h3>
-          <ul class="steps">
-            <li>Mở app MoMo hoặc chọn liên kết thanh toán được chuyển tới.</li>
-            <li>Kiểm tra thông tin đơn hàng, số tiền và xác nhận thanh toán.</li>
-            <li>Sau khi hoàn tất, hệ thống sẽ tự đồng bộ trạng thái.</li>
-          </ul>
-
-          <button
-            class="btn-primary wide"
-            :class="{ 'is-busy': isMomoLoading }"
-            :disabled="!amountNumber"
-            @click="payWithMomo"
-          >
-            <span v-if="isMomoLoading" class="spinner"></span>
-            {{ isMomoLoading ? 'Đang chuyển hướng...' : 'Thanh toán với MoMo' }}
-          </button>
-          <small class="muted">
-            Bạn sẽ được chuyển đến trang thanh toán an toàn của MoMo.
-          </small>
         </section>
 
-        <section class="card summary-card">
-          <h2 class="section-title">Tóm tắt</h2>
-          <div class="summary">
-            <div class="line"><span>Gói</span><b>{{ planDisplay }}</b></div>
-            <div class="line" v-if="planDuration"><span>Thời hạn</span><b>{{ planDuration }} ngày</b></div>
-            <div class="line"><span>Thành tiền</span><b>{{ vnd(amountNumber) }}</b></div>
-            <div class="line"><span>Phí nền tảng</span><b>0đ</b></div>
-            <div class="divider"></div>
-            <div class="line total"><span>Tổng thanh toán</span><b>{{ vnd(amountNumber) }}</b></div>
+        <section class="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-xl shadow-slate-100">
+          <h2 class="text-lg font-bold text-slate-900">Tóm tắt</h2>
+          <div class="mt-4 space-y-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+            <div class="flex items-center justify-between text-sm text-slate-600">
+              <span>Gói</span>
+              <b class="text-slate-900">{{ planDisplay }}</b>
+            </div>
+            <div class="flex items-center justify-between text-sm text-slate-600" v-if="planDuration">
+              <span>Thời hạn</span>
+              <b class="text-slate-900">{{ planDuration }} ngày</b>
+            </div>
+            <div class="flex items-center justify-between text-sm text-slate-600">
+              <span>Thành tiền</span>
+              <b class="text-slate-900">{{ vnd(amountNumber) }}</b>
+            </div>
+            <div class="flex items-center justify-between text-sm text-slate-600">
+              <span>Phí nền tảng</span>
+              <b class="text-slate-900">0đ</b>
+            </div>
+            <div class="h-px bg-slate-200"></div>
+            <div class="flex items-center justify-between text-base font-black text-slate-900">
+              <span>Tổng thanh toán</span>
+              <b>{{ vnd(amountNumber) }}</b>
+            </div>
           </div>
 
-          <div v-if="planFeatures.length" class="feature-list">
-            <h3>Quyền lợi gói</h3>
-            <ul>
+          <div v-if="planFeatures.length" class="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+            <h3 class="text-sm font-bold text-emerald-800">Quyền lợi gói</h3>
+            <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-emerald-700">
               <li v-for="(feature, idx) in planFeatures" :key="idx">{{ feature }}</li>
             </ul>
           </div>
@@ -207,73 +257,3 @@ function onAmountInput(manual = false) {
   }
 }
 </script>
-
-<style>
-:root{
-  --bg:#f6f7fb; --card:#fff; --text:#0f172a; --muted:#6b7280; --line:#e5e7eb;
-  --accent:#16a34a; --focus-border:#86efac; --focus-ring:rgba(22,163,74,.18);
-}
-</style>
-
-<style scoped>
-.pay-page{ background:var(--bg); min-height:100vh; color:var(--text); }
-.container{ max-width:1100px; margin:0 auto; padding:24px 16px 40px; }
-.title{ font-size:22px; font-weight:800; margin-bottom:12px; }
-
-.grid{ display:grid; grid-template-columns: 2fr 1fr; gap:16px; }
-.card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; }
-.section-title{ font-size:16px; font-weight:800; margin-bottom:8px; }
-.muted{ color:var(--muted); font-size:14px; }
-
-.momo-card .field{ margin-top:12px; }
-.field{ display:grid; gap:6px; margin-bottom:10px; }
-.label{ font-size:12px; color:var(--muted); }
-.input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; outline:none; transition:all .2s ease; }
-.input:focus{ border-color:var(--focus-border); box-shadow:0 0 0 3px var(--focus-ring); }
-.input.right{ text-align:right; }
-.select{ appearance:none; background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%), linear-gradient(135deg, #9ca3af 50%, transparent 50%); background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px); background-size: 5px 5px; background-repeat:no-repeat; }
-
-.pill{
-  margin:16px 0;
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:12px 16px;
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-}
-.pill-amount{ font-size:20px; font-weight:800; }
-.pill-plan{ font-weight:700; }
-
-.sub-title{ margin:14px 0 6px; font-weight:700; }
-.steps{ margin:0 0 12px; padding-left:18px; color:var(--muted); }
-.steps li{ margin:4px 0; }
-
-.btn-primary{
-  background:var(--accent); color:#fff; border:1px solid var(--accent);
-  padding:10px 16px; border-radius:10px; font-weight:800; cursor:pointer;
-  display:inline-flex; align-items:center; gap:8px; transition:all .2s ease;
-}
-.btn-primary.wide{ width:100%; justify-content:center; }
-.btn-primary:not([disabled]):hover{ filter:brightness(1.08); transform:translateY(-1px); }
-.btn-primary[disabled]{ opacity:.7; cursor:not-allowed; }
-.btn-outline, .btn-light{
-  border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer;
-  background:#fff;
-}
-.btn-light{ background:#f9fafb; }
-.spinner{ width:16px; height:16px; border:2px solid rgba(255,255,255,.6); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
-@keyframes spin{ to{ transform:rotate(360deg); } }
-
-.summary-card .summary{ display:grid; gap:10px; }
-.line{ display:flex; justify-content:space-between; font-size:14px; }
-.line.total b{ font-size:18px; }
-.divider{ height:1px; background:var(--line); margin:6px 0; }
-.feature-list{ margin-top:14px; }
-.feature-list h3{ margin-bottom:6px; font-size:14px; }
-.feature-list ul{ margin:0; padding-left:18px; color:var(--muted); font-size:13px; }
-
-@media (max-width: 980px){
-  .grid{ grid-template-columns: 1fr; }
-}
-</style>

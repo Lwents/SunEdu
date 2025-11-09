@@ -1,22 +1,37 @@
 <template>
-  <div class="nav" :style="{ height: size + 'px' }">
+  <div class="nav" :style="{ height: computedHeight }">
     <img
       v-if="show"
       :src="logo"
       alt="SmartEdu Logo"
       class="logo-smartedu"
-      :style="{ transform: `scale(${scale})`, height: size + 'px' }"
+      :style="{ height: computedHeight }"
     />
   </div>
 </template>
 
 <script setup>
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import logo from '@/assets/images/demologo.png'
+
 const props = defineProps({
-  size: { type: Number, default: 56 }, // Thêm prop size
-  scale: { type: Number, default: 1.2 },
+  size: { type: Number, default: 56 },
+  scale: { type: Number, default: 1 },
   show: { type: Boolean, default: true },
 })
-import logo from '@/assets/images/demologo.png'
+
+const width = ref(window.innerWidth)
+function handleResize() {
+  width.value = window.innerWidth
+}
+onMounted(() => window.addEventListener('resize', handleResize))
+onUnmounted(() => window.removeEventListener('resize', handleResize))
+
+const computedHeight = computed(() => {
+  if (width.value < 640) return `${Math.round(props.size * 0.7)}px`
+  if (width.value < 1024) return `${Math.round(props.size * 0.85)}px`
+  return `${props.size}px`
+})
 </script>
 
 <style scoped>
