@@ -11,29 +11,13 @@
           </p>
 
           <div class="field">
-            <span class="label">Chọn gói</span>
-            <select
-              v-model="selectedPlanId"
-              class="input select"
-              :disabled="planLoading"
-            >
-              <option value="">Tự nhập số tiền</option>
-              <option
-                v-for="p in plans"
-                :key="p.id"
-                :value="p.id"
-              >
-                {{ p.name }} • {{ vnd(p.price) }}
-              </option>
-            </select>
-            <small class="muted" v-if="!plans.length && !planLoading">
-              Chưa có gói nào được cấu hình — bạn có thể tự nhập số tiền ở dưới.
-            </small>
-          </div>
-
-          <div class="field">
             <span class="label">Nội dung hiển thị khi thanh toán</span>
-            <input class="input" :value="description" readonly />
+            <input
+              v-model="descriptionText"
+              class="input"
+              placeholder="Ví dụ: Thanh toán học phí tháng 11"
+            />
+            <small class="muted">Dòng mô tả sẽ xuất hiện trên màn hình xác nhận của MoMo.</small>
           </div>
 
           <div class="field">
@@ -62,7 +46,7 @@
             </div>
             <div>
               <small class="muted">Gói</small>
-              <div class="pill-plan">{{ plan }}</div>
+              <div class="pill-plan">{{ planDisplay }}</div>
             </div>
           </div>
 
@@ -90,7 +74,7 @@
         <section class="card summary-card">
           <h2 class="section-title">Tóm tắt</h2>
           <div class="summary">
-            <div class="line"><span>Gói</span><b>{{ plan }}</b></div>
+            <div class="line"><span>Gói</span><b>{{ planDisplay }}</b></div>
             <div class="line" v-if="planDuration"><span>Thời hạn</span><b>{{ planDuration }} ngày</b></div>
             <div class="line"><span>Thành tiền</span><b>{{ vnd(amountNumber) }}</b></div>
             <div class="line"><span>Phí nền tảng</span><b>0đ</b></div>
@@ -125,13 +109,14 @@ const selectedPlanId = ref(typeof route.query.planId === 'string' ? route.query.
 const fallbackPlanLabel = ref(String(route.query.plan || 'Thanh toán tuỳ chỉnh'))
 const plan = ref(fallbackPlanLabel.value)
 
-const amountText = ref(String(route.query.amount || '199000'))
+const amountText = ref(String(route.query.amount || '0'))
 const amountNumber = computed(() => {
   const digits = amountText.value.replace(/[^\d]/g, '')
   return digits ? parseInt(digits, 10) : 0
 })
-
-const description = computed(() => `Thanh toán ${plan.value}`)
+const descriptionText = ref(typeof route.query.description === 'string' ? route.query.description : '')
+const description = computed(() => descriptionText.value || `Thanh toán ${plan.value}`)
+const planDisplay = computed(() => plan.value || 'Thanh toán tuỳ chỉnh')
 
 const selectedPlan = computed(() =>
   plans.value.find((item) => item.id === selectedPlanId.value) || null

@@ -9,7 +9,7 @@
           class="logo-wrapper group relative inline-block transition-transform duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.08] hover:-rotate-[3deg]"
         >
           <div class="logo-glow absolute inset-[-15px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.3)_0%,rgba(20,184,166,0.2)_30%,transparent_70%)] opacity-0 blur-[20px] transition-all duration-500 ease-out animate-float group-hover:opacity-100 group-hover:scale-110"></div>
-          <LogoEduriot :size="90" primary="#3B82F6" accent="#14B8A6" class="relative z-10" />
+          <LogoSmartEdu :size="90" class="relative z-10" />
         </RouterLink>
       </div>
 
@@ -228,7 +228,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
 import { onClickOutside } from '@vueuse/core'
-import LogoEduriot from '@/components/ui/LogoEduriot.vue'
+import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
 import ConfirmLogout from '@/components/ui/ConfirmLogout.vue'
 import NotificationBell from '@/components/shared/NotificationBell.vue'
 

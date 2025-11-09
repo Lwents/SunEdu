@@ -1,8 +1,9 @@
 from decimal import Decimal
 
 from rest_framework import serializers
+from django.conf import settings
 
-from payments.models import SubscriptionPlan
+from payments.models import SubscriptionPlan, Payment
 
 
 class MomoPaymentInitSerializer(serializers.Serializer):
@@ -14,6 +15,7 @@ class MomoPaymentInitSerializer(serializers.Serializer):
         required=False,
     )
     description = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    redirect_url = serializers.URLField(required=False)
 
     def validate(self, attrs):
         plan_id = attrs.get("plan_id")
@@ -37,6 +39,31 @@ class MomoPaymentInitSerializer(serializers.Serializer):
             if not attrs.get("description"):
                 attrs["description"] = "Thanh toán MoMo"
 
+        # Optional redirect_url with basic whitelist to avoid open redirect
+        redirect = attrs.get("redirect_url")
+        if redirect:
+            allowed_prefixes = [
+                getattr(settings, "FRONTEND_URL", "").rstrip("/"),
+            ]
+            # Add common local dev origins
+            allowed_prefixes += [
+                "http://127.0.0.1:5173",
+                "http://localhost:5173",
+            ]
+            # Add CORS_ALLOWED_ORIGINS if any
+            try:
+                from urllib.parse import urlparse
+                cors = getattr(settings, "CORS_ALLOWED_ORIGINS", []) or []
+                allowed_prefixes += [u.rstrip("/") for u in cors]
+            except Exception:
+                pass
+
+            redirect_ok = any(redirect.startswith(p) and p for p in allowed_prefixes)
+            if not redirect_ok:
+                raise serializers.ValidationError({
+                    "redirect_url": "Redirect URL is not allowed."
+                })
+
         return attrs
 
 
@@ -44,3 +71,29 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionPlan
         fields = ("id", "name", "price", "duration_days", "features")
+
+
+class PaymentHistorySerializer(serializers.ModelSerializer):
+    plan_name = serializers.SerializerMethodField()
+    gateway = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payment
+        fields = (
+            "id",
+            "amount",
+            "status",
+            "created_at",
+            "paid_at",
+            "transaction_id",
+            "plan",  # UUID
+            "plan_name",
+            "gateway",
+            "metadata",
+        )
+
+    def get_plan_name(self, obj: Payment) -> str:
+        return obj.plan.name if obj.plan else "Thanh toán tuỳ chỉnh"
+
+    def get_gateway(self, obj: Payment) -> str:
+        return (obj.metadata or {}).get("gateway") or "momo"

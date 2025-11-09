@@ -18,6 +18,7 @@ class MoMoAIOClient:
 
     CREATE_ENDPOINT = "https://test-payment.momo.vn/v2/gateway/api/create"
     POS_ENDPOINT = "https://test-payment.momo.vn/v2/gateway/api/pos"
+    QUERY_ENDPOINT = "https://test-payment.momo.vn/v2/gateway/api/query"
 
     def __init__(
         self,
@@ -33,6 +34,7 @@ class MoMoAIOClient:
         self.pos_endpoint = getattr(settings, "MOMO_POS_ENDPOINT", self.POS_ENDPOINT)
         self.partner_name = getattr(settings, "MOMO_PARTNER_NAME", "SunEdu")
         self.store_id = getattr(settings, "MOMO_STORE_ID", "SunEduStore")
+        self.query_endpoint = getattr(settings, "MOMO_QUERY_ENDPOINT", self.QUERY_ENDPOINT)
 
     def _sign(self, raw_data: str) -> str:
         signature = hmac.new(
@@ -206,6 +208,28 @@ class MoMoAIOClient:
         )
         payload["signature"] = self._sign(raw_signature)
         return self._request(self.pos_endpoint, payload)
+
+    def query_status(self, order_id: str, request_id: str | None = None, lang: str = "vi") -> dict:
+        """Query transaction status from MoMo and return response dict."""
+        req_id = request_id or uuid.uuid4().hex
+        payload = {
+            "partnerCode": self.partner_code,
+            "accessKey": self.access_key,
+            "requestId": req_id,
+            "orderId": order_id,
+            "lang": lang,
+        }
+        raw_signature = self._build_raw(
+            payload,
+            (
+                "accessKey",
+                "orderId",
+                "partnerCode",
+                "requestId",
+            ),
+        )
+        payload["signature"] = self._sign(raw_signature)
+        return self._request(self.query_endpoint, payload)
 
     def verify_ipn(self, payload: Dict[str, str]) -> bool:
         """

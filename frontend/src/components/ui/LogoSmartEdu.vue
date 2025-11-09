@@ -3,8 +3,8 @@
     <img
       v-if="show"
       :src="logo"
-      alt="EDURIOT logo"
-      class="logo-eduriot"
+      alt="SmartEdu Logo"
+      class="logo-smartedu"
       :style="{ transform: `scale(${scale})`, height: size + 'px' }"
     />
   </div>
@@ -25,7 +25,7 @@ import logo from '@/assets/images/demologo.png'
   align-items: center;
   overflow: visible;
 }
-.logo-eduriot {
+.logo-smartedu {
   width: auto;
   transform-origin: left center;
   transition: transform 0.2s ease;
