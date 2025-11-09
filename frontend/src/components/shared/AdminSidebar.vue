@@ -38,10 +38,8 @@
           <span class="text-lg">🎓</span>
         </div>
         <span class="hidden text-base font-semibold text-emerald-700 sm:inline"> My Learning </span> -->
-        <LogoEduriot
+        <LogoSmartEdu
           :size="90"
-          primary="#3B82F6"
-          accent="#14B8A6"
           style="justify-content: center; margin-left: 55px"
         />
       </RouterLink>
@@ -89,7 +87,7 @@ import {
   FileText,
   History,
 } from 'lucide-vue-next'
-import LogoEduriot from '@/components/ui/LogoEduriot.vue'
+import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
 
 const year = new Date().getFullYear()
 

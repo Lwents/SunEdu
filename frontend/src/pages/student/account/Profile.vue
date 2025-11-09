@@ -53,8 +53,8 @@
           <div class="row">
             <label class="label">Tên đăng nhập</label>
             <div>
-              <input v-model.trim="form.username" type="text" class="input" />
-              <span class="helper muted">Có thể để trống nếu hệ thống tự sinh.</span>
+              <input v-model.trim="form.username" type="text" class="input" readonly />
+              <span class="helper muted">Tên đăng nhập do hệ thống quản lý, không thể đổi.</span>
             </div>
           </div>
 
@@ -128,32 +128,61 @@
 
           <div class="row">
             <label class="label">Tỉnh/Thành phố</label>
-            <select v-model="form.city" class="input select">
-              <option value="">Chọn</option>
-              <option>Hà Nội</option>
-              <option>TP. Hồ Chí Minh</option>
-              <option>Đà Nẵng</option>
-              <option>N/A</option>
+            <select
+              v-model.number="selectedProvinceCode"
+              class="input select"
+              :disabled="provincesLoading"
+            >
+              <option value="">
+                {{ provincesLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố' }}
+              </option>
+              <option v-for="province in provinces" :key="province.code" :value="province.code">
+                {{ province.name }}
+              </option>
             </select>
           </div>
 
           <div class="row">
             <label class="label">Quận/Huyện</label>
-            <select v-model="form.district" class="input select">
-              <option value="">Chọn (có thể để trống)</option>
-              <option>Quận 1</option>
-              <option>Quận 2</option>
-              <option>Khác</option>
+            <select
+              v-model.number="selectedDistrictCode"
+              class="input select"
+              :disabled="!selectedProvinceCode || districtsLoading"
+            >
+              <option value="">
+                {{
+                  !selectedProvinceCode
+                    ? 'Chọn tỉnh/thành phố trước'
+                    : districtsLoading
+                      ? 'Đang tải...'
+                      : 'Chọn quận/huyện (có thể để trống)'
+                }}
+              </option>
+              <option v-for="district in districts" :key="district.code" :value="district.code">
+                {{ district.name }}
+              </option>
             </select>
           </div>
 
           <div class="row">
             <label class="label">Phường/Xã</label>
-            <select v-model="form.ward" class="input select">
-              <option value="">Chọn (có thể để trống)</option>
-              <option>Phường A</option>
-              <option>Phường B</option>
-              <option>Khác</option>
+            <select
+              v-model.number="selectedWardCode"
+              class="input select"
+              :disabled="!selectedDistrictCode || wardsLoading"
+            >
+              <option value="">
+                {{
+                  !selectedDistrictCode
+                    ? 'Chọn quận/huyện trước'
+                    : wardsLoading
+                      ? 'Đang tải...'
+                      : 'Chọn phường/xã (có thể để trống)'
+                }}
+              </option>
+              <option v-for="ward in wards" :key="ward.code" :value="ward.code">
+                {{ ward.name }}
+              </option>
             </select>
           </div>
 
@@ -210,6 +239,7 @@ import { computed, onMounted, reactive, ref, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
 import { authService, type ProfileUpdatePayload, type ProfileDetails } from '@/services/auth.service'
+import { locationService, type DistrictOption, type ProvinceOption, type WardOption } from '@/services/location.service'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -289,6 +319,19 @@ const form = reactive({
   ward: '',
 })
 
+const provinces = ref<ProvinceOption[]>([])
+const districts = ref<DistrictOption[]>([])
+const wards = ref<WardOption[]>([])
+const provincesLoading = ref(false)
+const districtsLoading = ref(false)
+const wardsLoading = ref(false)
+
+const selectedProvinceCode = ref<number | null>(null)
+const selectedDistrictCode = ref<number | null>(null)
+const selectedWardCode = ref<number | null>(null)
+const pendingDistrictName = ref<string | null>(null)
+const pendingWardName = ref<string | null>(null)
+
 const dob = reactive({ day: 1, month: 1, year: 2000 })
 const days = Array.from({ length: 31 }, (_, i) => i + 1)
 const months = Array.from({ length: 12 }, (_, i) => i + 1)
@@ -312,6 +355,94 @@ function formatDateTime(value?: string | Date) {
     minute: '2-digit',
     second: '2-digit',
   }).format(date)
+}
+
+const normalizeName = (value?: string | null) =>
+  (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+
+function findByName<T extends { name: string }>(list: T[], name?: string | null) {
+  if (!name) return undefined
+  const target = normalizeName(name)
+  return list.find((item) => normalizeName(item.name) === target)
+}
+
+async function loadProvinces() {
+  provincesLoading.value = true
+  try {
+    provinces.value = await locationService.listProvinces()
+  } catch (error) {
+    console.error('Không thể tải danh sách tỉnh/thành phố:', error)
+    provinces.value = []
+  } finally {
+    provincesLoading.value = false
+  }
+}
+
+async function handleProvinceChanged(code: number | null) {
+  form.city = ''
+  form.district = ''
+  form.ward = ''
+  districts.value = []
+  wards.value = []
+  selectedDistrictCode.value = null
+  selectedWardCode.value = null
+
+  if (typeof code !== 'number' || Number.isNaN(code)) {
+    return
+  }
+
+  const province = provinces.value.find((p) => p.code === code)
+  form.city = province?.name || ''
+
+  districtsLoading.value = true
+  try {
+    districts.value = await locationService.listDistricts(code)
+  } catch (error) {
+    console.error('Không thể tải danh sách quận/huyện:', error)
+    districts.value = []
+  } finally {
+    districtsLoading.value = false
+  }
+
+  if (pendingDistrictName.value) {
+    const matchDistrict = findByName(districts.value, pendingDistrictName.value)
+    pendingDistrictName.value = null
+    if (matchDistrict) {
+      selectedDistrictCode.value = matchDistrict.code
+      return
+    }
+  }
+}
+
+async function handleDistrictChanged(code: number | null) {
+  form.district = ''
+  form.ward = ''
+  wards.value = []
+  selectedWardCode.value = null
+
+  if (typeof code !== 'number' || Number.isNaN(code)) {
+    return
+  }
+  const district = districts.value.find((d) => d.code === code)
+  form.district = district?.name || ''
+
+  wardsLoading.value = true
+  try {
+    wards.value = await locationService.listWards(code)
+  } catch (error) {
+    console.error('Không thể tải danh sách phường/xã:', error)
+    wards.value = []
+  } finally {
+    wardsLoading.value = false
+  }
+
+  if (pendingWardName.value) {
+    const matchWard = findByName(wards.value, pendingWardName.value)
+    pendingWardName.value = null
+    if (matchWard) {
+      selectedWardCode.value = matchWard.code
+    }
+  }
 }
 
 function applyProfileToForm(profile?: ProfileDetails | null) {
@@ -343,13 +474,30 @@ function applyProfileToForm(profile?: ProfileDetails | null) {
   snapshot()
 }
 
+async function hydrateLocationSelections(profile?: ProfileDetails | null) {
+  if (!profile) {
+    selectedProvinceCode.value = null
+    return
+  }
+  pendingDistrictName.value = profile.district || null
+  pendingWardName.value = profile.ward || null
+  const provinceMatch = findByName(provinces.value, profile.city || '')
+  if (provinceMatch) {
+    selectedProvinceCode.value = provinceMatch.code
+  } else {
+    selectedProvinceCode.value = null
+  }
+}
+
 onMounted(async () => {
   auth.init?.()
+  await loadProvinces()
   try {
     await auth.fetchCurrentUser()
     const profile = await authService.getProfile()
     profileDetails.value = profile
     applyProfileToForm(profile)
+    await hydrateLocationSelections(profile)
     const avatarUrl = profile.avatar || profile.avatar_url
     if (avatarUrl) {
       auth.setAvatar(avatarUrl)
@@ -375,6 +523,26 @@ watch(
   },
   { deep: true }
 )
+
+watch(selectedProvinceCode, (code) => {
+  const normalized = typeof code === 'number' && !Number.isNaN(code) ? code : null
+  handleProvinceChanged(normalized)
+})
+
+watch(selectedDistrictCode, (code) => {
+  const normalized = typeof code === 'number' && !Number.isNaN(code) ? code : null
+  handleDistrictChanged(normalized)
+})
+
+watch(selectedWardCode, (code) => {
+  const normalized = typeof code === 'number' && !Number.isNaN(code) ? code : null
+  if (!normalized) {
+    form.ward = ''
+    return
+  }
+  const ward = wards.value.find((w) => w.code === normalized)
+  form.ward = ward?.name || ''
+})
 
 const isValidInfo = computed(() => !errors.fullname && !errors.phone && !errors.email)
 const isDirty = computed(() => {
@@ -404,7 +572,6 @@ async function saveProfile() {
   saving.value = true
   try {
     const payload: ProfileUpdatePayload = {
-      username: form.username || undefined,
       full_name: form.fullname || undefined,
       phone: form.phone || undefined,
       email: form.email || undefined,

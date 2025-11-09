@@ -54,7 +54,7 @@
         <div class="form-box">
           <!-- Logo -->
           <div class="logo-area">
-            <LogoEduriot :size="100" />
+            <LogoSmartEdu :size="100" />
           </div>
 
           <!-- Title -->
@@ -81,7 +81,7 @@
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import LogoEduriot from '@/components/ui/LogoEduriot.vue'
+import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
 
 const route = useRoute()
 
