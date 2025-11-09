@@ -1,237 +1,367 @@
 <!-- src/pages/student/account/Profile.vue -->
 <template>
-  <div class="profile-page">
-    <div class="container">
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active" type="button">CÁ NHÂN</button>
-        <button class="tab" type="button" @click="goChangePwd">ĐỔI MẬT KHẨU</button>
-        <button class="tab" type="button" @click="goParent">PHỤ HUYNH</button>
+  <div class="student-shell">
+    <div class="student-container">
+      <div class="student-tabs flex items-center gap-1 sm:gap-2">
+        <button type="button" class="student-tab student-tab--active">CÁ NHÂN</button>
+        <button type="button" class="student-tab" @click="goChangePwd">ĐỔI MẬT KHẨU</button>
+        <button type="button" class="student-tab" @click="goParent">PHỤ HUYNH</button>
       </div>
 
-      <!-- Card -->
-      <div class="card">
-        <div class="card-head">
-          <h2 class="card-title">THÔNG TIN CÁ NHÂN</h2>
-          <div class="last-updated">
-            Lần cập nhật gần nhất: <b>{{ lastUpdated }}</b>
-          </div>
+      <div class="student-card mt-4">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 class="text-base font-extrabold uppercase tracking-wide text-slate-900 sm:text-lg">
+            THÔNG TIN CÁ NHÂN
+          </h2>
+          <p class="text-xs font-semibold text-slate-500 sm:text-sm">
+            Lần cập nhật gần nhất: <span class="text-slate-900">{{ lastUpdated }}</span>
+          </p>
         </div>
 
-        <!-- Toast (thành công/thất bại khi lưu) -->
-        <transition name="fade">
-          <div v-if="toast.msg" :class="['toast', toast.type]">
+        <Transition
+          enter-active-class="transition-opacity duration-200"
+          leave-active-class="transition-opacity duration-200"
+          enter-from-class="opacity-0"
+          leave-to-class="opacity-0"
+        >
+          <div
+            v-if="toast.msg"
+            :class="[
+              'fixed bottom-4 right-4 z-40 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg sm:text-base',
+              toast.type === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-rose-200 bg-rose-50 text-rose-700',
+            ]"
+          >
             {{ toast.msg }}
           </div>
-        </transition>
+        </Transition>
 
-        <!-- FORM -->
-        <form v-if="ready" class="form" @submit.prevent="saveProfile">
-          <div class="row">
-            <label class="label">Ảnh đại diện</label>
-            <div class="field-inline">
-              <!-- Avatar clickable -->
-              <div class="avatar-wrapper" @click="openFile">
-                <div class="avatar">
-                  <img :src="avatarPreview || currentAvatar" alt="avatar" />
-                  <div class="avatar-overlay">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                      stroke-width="2" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                      <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+        <form v-if="ready" class="mt-6 space-y-6" @submit.prevent="saveProfile">
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Ảnh đại diện</label>
+            <div class="space-y-2">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  class="group relative inline-flex h-28 w-28 items-center justify-center rounded-3xl border-2 border-dashed border-emerald-200 bg-white/70 p-1 shadow-sm shadow-slate-100 transition hover:border-emerald-500 hover:bg-emerald-50"
+                  @click="openFile"
+                >
+                  <img
+                    :src="avatarPreview || currentAvatar"
+                    alt="Ảnh đại diện"
+                    class="h-full w-full rounded-2xl object-cover object-center"
+                  />
+                  <div
+                    class="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-3xl bg-slate-900/10 text-[11px] font-semibold text-slate-700 opacity-0 transition group-hover:opacity-100"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"
+                      />
                     </svg>
+                    <span>Đổi ảnh</span>
                   </div>
-                </div>
+                </button>
               </div>
               <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onPickFile" />
-              <small class="muted"><br />PNG/JPG ≤ 2MB</small>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Tên đăng nhập</label>
-            <div>
-              <input v-model.trim="form.username" type="text" class="input" readonly />
-              <span class="helper muted">Tên đăng nhập do hệ thống quản lý, không thể đổi.</span>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Tên đăng nhập</label>
+            <div class="space-y-2">
+              <input
+                v-model.trim="form.username"
+                type="text"
+                readonly
+                class="w-full rounded-2xl border border-slate-200 bg-slate-100/80 px-4 py-2.5 text-sm font-semibold text-slate-500 shadow-sm shadow-slate-100"
+              />
+              <p class="text-xs text-slate-500">Tên đăng nhập do hệ thống quản lý, không thể đổi.</p>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Họ và tên <span class="req">*</span></label>
-            <div>
-              <input v-model.trim="form.fullname" type="text" class="input" placeholder="Họ và tên" />
-              <p v-if="errors.fullname" class="err">{{ errors.fullname }}</p>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
+              Họ và tên <span class="text-rose-500">*</span>
+            </label>
+            <div class="space-y-2">
+              <input
+                v-model.trim="form.fullname"
+                type="text"
+                placeholder="Họ và tên"
+                :class="[
+                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  errors.fullname
+                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
+                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                ]"
+              />
+              <p v-if="errors.fullname" class="text-xs font-medium text-rose-600">
+                {{ errors.fullname }}
+              </p>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Số điện thoại <span class="req">*</span></label>
-            <div>
-              <input v-model.trim="form.phone" type="tel" class="input" />
-              <p v-if="errors.phone" class="err">{{ errors.phone }}</p>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
+              Số điện thoại <span class="text-rose-500">*</span>
+            </label>
+            <div class="space-y-2">
+              <input
+                v-model.trim="form.phone"
+                type="tel"
+                :class="[
+                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  errors.phone
+                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
+                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                ]"
+              />
+              <p v-if="errors.phone" class="text-xs font-medium text-rose-600">
+                {{ errors.phone }}
+              </p>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Ngày sinh</label>
-            <div>
-              <div class="field-inline dob-selects">
-                <select v-model.number="dob.day" class="input select">
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Ngày sinh</label>
+            <div class="space-y-2">
+              <div class="flex flex-col gap-3 sm:flex-row">
+                <select
+                  v-model.number="dob.day"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[180px]"
+                >
                   <option v-for="d in days" :key="d" :value="d">Ngày {{ d }}</option>
                 </select>
-                <select v-model.number="dob.month" class="input select">
+                <select
+                  v-model.number="dob.month"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[180px]"
+                >
                   <option v-for="m in months" :key="m" :value="m">Tháng {{ m }}</option>
                 </select>
-                <select v-model.number="dob.year" class="input select">
+                <select
+                  v-model.number="dob.year"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[200px]"
+                >
                   <option v-for="y in years" :key="y" :value="y">Năm {{ y }}</option>
                 </select>
               </div>
-              <span class="helper muted">Có thể để trống.</span>
+              <p class="text-xs text-slate-500">Có thể để trống.</p>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Giới tính</label>
-            <div class="field-inline gender-radio">
-              <label class="radio">
-                <input type="radio" name="gender" value="male" v-model="form.gender" />
-                <span></span> Nam
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Giới tính</label>
+            <div class="flex flex-wrap gap-3">
+              <label
+                class="flex flex-1 min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-2 text-sm font-semibold shadow-sm shadow-slate-100 transition"
+                :class="form.gender === 'male' ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'"
+              >
+                <input
+                  type="radio"
+                  class="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  value="male"
+                  v-model="form.gender"
+                />
+                Nam
               </label>
-              <label class="radio">
-                <input type="radio" name="gender" value="female" v-model="form.gender" />
-                <span></span> Nữ
+              <label
+                class="flex flex-1 min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-2 text-sm font-semibold shadow-sm shadow-slate-100 transition"
+                :class="form.gender === 'female' ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'"
+              >
+                <input
+                  type="radio"
+                  class="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  value="female"
+                  v-model="form.gender"
+                />
+                Nữ
               </label>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Email</label>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Email</label>
+            <div class="space-y-3">
+              <div class="space-y-2">
+                <input
+                  v-model.trim="form.email"
+                  type="email"
+                  placeholder="you@example.com"
+                  :class="[
+                    'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                    errors.email
+                      ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
+                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                  ]"
+                />
+                <p v-if="errors.email" class="text-xs font-medium text-rose-600">
+                  {{ errors.email }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Địa chỉ</label>
             <div>
-              <input v-model.trim="form.email" type="email" class="input" placeholder="you@example.com" />
-              <p v-if="errors.email" class="err">{{ errors.email }}</p>
-              <label class="check">
-                <input type="checkbox" v-model="form.emailUpdates" />
-                <span></span> Nhận thông báo qua email
-              </label>
-              <span class="helper muted">Email không bắt buộc, có thể để trống.</span>
+              <textarea
+                v-model.trim="form.address"
+                rows="3"
+                placeholder="Có thể để trống"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+              ></textarea>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Địa chỉ</label>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
+              Tỉnh/Thành phố
+            </label>
             <div>
-              <textarea v-model.trim="form.address" class="input" rows="3" placeholder="Có thể để trống"></textarea>
+              <select
+                v-model.number="selectedProvinceCode"
+                :disabled="provincesLoading"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+              >
+                <option value="">
+                  {{ provincesLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố' }}
+                </option>
+                <option v-for="province in provinces" :key="province.code" :value="province.code">
+                  {{ province.name }}
+                </option>
+              </select>
             </div>
           </div>
 
-          <div class="row">
-            <label class="label">Tỉnh/Thành phố</label>
-            <select
-              v-model.number="selectedProvinceCode"
-              class="input select"
-              :disabled="provincesLoading"
-            >
-              <option value="">
-                {{ provincesLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố' }}
-              </option>
-              <option v-for="province in provinces" :key="province.code" :value="province.code">
-                {{ province.name }}
-              </option>
-            </select>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Quận/Huyện</label>
+            <div>
+              <select
+                v-model.number="selectedDistrictCode"
+                :disabled="!selectedProvinceCode || districtsLoading"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+              >
+                <option value="">
+                  {{
+                    !selectedProvinceCode
+                      ? 'Chọn tỉnh/thành phố trước'
+                      : districtsLoading
+                        ? 'Đang tải...'
+                        : 'Chọn quận/huyện (có thể để trống)'
+                  }}
+                </option>
+                <option v-for="district in districts" :key="district.code" :value="district.code">
+                  {{ district.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <div class="row">
-            <label class="label">Quận/Huyện</label>
-            <select
-              v-model.number="selectedDistrictCode"
-              class="input select"
-              :disabled="!selectedProvinceCode || districtsLoading"
-            >
-              <option value="">
-                {{
-                  !selectedProvinceCode
-                    ? 'Chọn tỉnh/thành phố trước'
-                    : districtsLoading
-                      ? 'Đang tải...'
-                      : 'Chọn quận/huyện (có thể để trống)'
-                }}
-              </option>
-              <option v-for="district in districts" :key="district.code" :value="district.code">
-                {{ district.name }}
-              </option>
-            </select>
+          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Phường/Xã</label>
+            <div>
+              <select
+                v-model.number="selectedWardCode"
+                :disabled="!selectedDistrictCode || wardsLoading"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+              >
+                <option value="">
+                  {{
+                    !selectedDistrictCode
+                      ? 'Chọn quận/huyện trước'
+                      : wardsLoading
+                        ? 'Đang tải...'
+                        : 'Chọn phường/xã (có thể để trống)'
+                  }}
+                </option>
+                <option v-for="ward in wards" :key="ward.code" :value="ward.code">
+                  {{ ward.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <div class="row">
-            <label class="label">Phường/Xã</label>
-            <select
-              v-model.number="selectedWardCode"
-              class="input select"
-              :disabled="!selectedDistrictCode || wardsLoading"
+          <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+            <button
+              type="submit"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              :disabled="saving || !isValidInfo || !isDirty"
+              :class="{ 'opacity-80': saving }"
             >
-              <option value="">
-                {{
-                  !selectedDistrictCode
-                    ? 'Chọn quận/huyện trước'
-                    : wardsLoading
-                      ? 'Đang tải...'
-                      : 'Chọn phường/xã (có thể để trống)'
-                }}
-              </option>
-              <option v-for="ward in wards" :key="ward.code" :value="ward.code">
-                {{ ward.name }}
-              </option>
-            </select>
-          </div>
-
-          <div class="actions">
-            <button type="submit" class="btn-primary" :class="{ 'is-busy': saving }"
-              :disabled="saving || !isValidInfo || !isDirty">
-              <span v-if="saving" class="spinner"></span>
+              <span
+                v-if="saving"
+                class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"
+              ></span>
               {{ saving ? 'ĐANG CẬP NHẬT...' : 'CẬP NHẬT' }}
             </button>
-            <small v-if="!isValidInfo || !isDirty" class="btn-hint">
+            <p v-if="!isValidInfo || !isDirty" class="text-center text-xs font-medium text-slate-500 sm:text-right">
               {{ !isValidInfo ? 'Vui lòng điền đầy đủ thông tin bắt buộc' : 'Chưa có thay đổi nào' }}
-            </small>
+            </p>
           </div>
         </form>
 
-        <div v-else class="muted" style="padding: 12px 0">Đang tải thông tin…</div>
+        <div v-else class="mt-6 text-sm font-medium text-slate-500">Đang tải thông tin…</div>
       </div>
     </div>
   </div>
 
-  <!-- ===== Modal thông báo dung lượng ảnh ===== -->
-  <transition name="modal-fade">
+  <Transition
+    enter-active-class="transition-opacity duration-200"
+    leave-active-class="transition-opacity duration-200"
+    enter-from-class="opacity-0"
+    leave-to-class="opacity-0"
+  >
     <div
       v-if="limitModal.open"
-      class="modal-backdrop"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-10 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="limit-title"
       @click.self="closeLimitModal"
     >
-      <div class="modal-card" ref="limitCard" tabindex="-1">
-        <div class="modal-header">
-          <svg xmlns="http://www.w3.org/2000/svg" class="icon-alert" fill="none" viewBox="0 0 24 24"
-            stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M12 9v3m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-          </svg>
-          <h3 id="limit-title">Không thể tải ảnh</h3>
+      <div
+        class="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-2xl shadow-slate-200 outline-none"
+        ref="limitCard"
+        tabindex="-1"
+      >
+        <div class="mb-4 flex flex-col items-center gap-3">
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.8"
+                d="M12 9v3m0 4h.01M10.29 3.86 1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              />
+            </svg>
+          </div>
+          <h3 id="limit-title" class="text-lg font-bold text-slate-900">Không thể tải ảnh</h3>
         </div>
-        <div class="modal-body">
-          <p>{{ limitModal.message }}</p>
-          <small class="muted">Vui lòng chọn tệp PNG/JPG ≤ 2MB.</small>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-primary" type="button" @click="closeLimitModal">ĐÃ HIỂU</button>
+        <p class="text-sm text-slate-600">{{ limitModal.message }}</p>
+        <p class="mt-2 text-xs text-slate-500">Vui lòng chọn tệp PNG/JPG ≤ 2MB.</p>
+        <div class="mt-6">
+          <button
+            type="button"
+            class="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+            @click="closeLimitModal"
+          >
+            ĐÃ HIỂU
+          </button>
         </div>
       </div>
     </div>
-  </transition>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -604,151 +734,3 @@ async function saveProfile() {
   }
 }
 </script>
-
-<style>
-:root {
-  --bg: #f6f7fb;
-  --card: #fff;
-  --text: #0f172a;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --accent: #16a34a;
-  --accent-tint-bg: #ecfdf5;
-  --accent-tint-border: #bbf7d0;
-  --focus-border: #86efac;
-  --focus-ring: rgba(22, 163, 74, 0.18);
-}
-</style>
-
-<style scoped>
-.profile-page { background: var(--bg); min-height: 100vh; color: var(--text); }
-.container { max-width: 1000px; margin: 0 auto; padding: 16px 10px 32px; }
-
-/* Tabs */
-.tabs { display: flex; gap: 4px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 4px; width: 100%; }
-.tab { flex: 1; padding: 8px 4px; border-radius: 8px; border: 1px solid transparent; background: #fff; cursor: pointer; font-weight: 700; white-space: nowrap; text-align: center; font-size: 10px; line-height: 1.3; }
-.tab.active { color: var(--accent); border-color: var(--accent-tint-border); background: var(--accent-tint-bg); }
-
-/* Card */
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; padding: 12px; }
-.card-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-.card-title { font-weight: 800; font-size: 14px; }
-.last-updated { font-size: 10px; color: var(--muted); width: 100%; }
-
-/* Toast */
-.toast { position: fixed; right: 10px; bottom: 10px; padding: 8px 10px; border-radius: 10px; border: 1px solid; z-index: 40; font-size: 12px; }
-.toast.success { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-.toast.error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
-/* Form */
-.form { margin-top: 4px; }
-.row { display: grid; grid-template-columns: 1fr; gap: 4px; margin-bottom: 10px; }
-.label { text-align: left; color: #111827; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
-.req { color: #ef4444; }
-
-.input { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; outline: none; font-size: 14px; }
-.input:focus { border-color: var(--focus-border); box-shadow: 0 0 0 3px var(--focus-ring); }
-.select {
-  appearance: none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #9ca3af 50%),
-    linear-gradient(135deg, #9ca3af 50%, transparent 50%);
-  background-position:
-    calc(100% - 14px) calc(1em + 2px),
-    calc(100% - 9px) calc(1em + 2px);
-  background-size: 5px 5px;
-  background-repeat: no-repeat;
-}
-.field-inline { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
-.helper { display: block; margin-top: 4px; font-size: 10px; color: var(--muted); line-height: 1.4; }
-.err { color: #dc2626; font-size: 10px; margin-top: 4px; line-height: 1.4; }
-
-/* Avatar */
-.avatar-wrapper { cursor: pointer; flex-shrink: 0; }
-.avatar { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; border: 2px solid var(--line); background: #fff; position: relative; transition: all 0.2s ease; }
-.avatar:hover { border-color: var(--accent); }
-.avatar img { width: 100%; height: 100%; object-fit: cover; }
-.avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s ease; }
-.avatar:hover .avatar-overlay { opacity: 1; }
-.avatar-overlay svg { width: 20px; height: 20px; color: #fff; }
-.hidden { display: none; }
-
-.actions { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
-.btn-primary { background: var(--accent) !important; color: #fff !important; border: 1px solid var(--accent) !important; padding: 10px 14px !important; border-radius: 10px !important; font-weight: 800 !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 6px !important; font-size: 12px !important; width: 100% !important; }
-.btn-primary:disabled { background: #d1d5db !important; border-color: #d1d5db !important; color: #6b7280 !important; cursor: not-allowed !important; }
-.btn-primary.is-busy { opacity: .7 !important; cursor: progress !important; }
-.btn-hint { font-size: 10px; color: var(--muted); text-align: center; line-height: 1.4; }
-
-.spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.6); border-top-color:#fff; border-radius: 50%; animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg);} }
-
-.radio { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; font-size: 12px; }
-.radio input { display: none; }
-.radio span { width: 14px; height: 14px; border: 2px solid var(--focus-border); border-radius: 50%; display: inline-block; position: relative; }
-.radio input:checked + span::after { content: ''; position: absolute; inset: 2px; background: var(--accent); border-radius: 50%; }
-
-.gender-radio { flex-direction: row !important; }
-
-.check { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; }
-.check input { display: none; }
-.check span { width: 14px; height: 14px; border: 1px solid #cbd5e1; border-radius: 4px; position: relative; }
-.check input:checked + span::after { content: ''; position: absolute; left: 3px; top: 0; width: 6px; height: 10px; border: 2px solid var(--accent); border-top: 0; border-left: 0; transform: rotate(45deg); }
-
-.muted { color: var(--muted); }
-
-.dob-selects { flex-direction: row !important; gap: 4px !important; }
-.dob-selects .select { flex: 1; min-width: 0; font-size: 12px; padding: 8px 6px; }
-
-/* ===== Modal styles ===== */
-.modal-backdrop {
-  position: fixed; inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  display: grid; place-items: center;
-  padding: 16px; z-index: 50;
-}
-.modal-card {
-  width: 100%; max-width: 420px;
-  background: #fff; border: 1px solid var(--line);
-  border-radius: 14px; padding: 14px;
-  outline: none;
-  box-shadow: 0 20px 50px rgba(0,0,0,.15);
-}
-.modal-header { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-.icon-alert { width: 22px; height: 22px; color: #f59e0b; }
-.modal-header h3 { font-weight: 800; font-size: 15px; margin: 0; }
-.modal-body { color: var(--text); font-size: 13px; line-height: 1.5; margin: 8px 0 12px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
-
-.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity .15s ease; }
-.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
-
-/* Breakpoints: đồng bộ ChangePassword */
-@media (min-width: 641px) {
-  .container { padding: 20px 14px 36px; }
-  .tabs { gap: 6px; padding: 6px; }
-  .tab { padding: 10px 10px; font-size: 12px; }
-  .card { padding: 14px; }
-  .card-title { font-size: 15px; }
-  .label { font-size: 13px; }
-  .avatar { width: 64px; height: 64px; }
-  .avatar-overlay svg { width: 24px; height: 24px; }
-}
-
-@media (min-width: 841px) {
-  .container { padding: 24px 16px 40px; }
-  .tab { padding: 10px 14px; font-size: 13px; }
-  .card { padding: 16px; }
-  .card-title { font-size: 16px; }
-  .row { grid-template-columns: 220px 1fr; gap: 14px; }
-  .label { font-size: 14px; padding-top: 10px; }
-  .avatar { width: 72px; height: 72px; }
-  .avatar-overlay svg { width: 28px; height: 28px; }
-  .field-inline { flex-direction: row; flex-wrap: wrap; }
-  .actions { align-items: flex-end; }
-  .btn-primary { width: auto !important; }
-  .btn-hint { text-align: right; }
-  .last-updated { width: auto; }
-}
-</style>

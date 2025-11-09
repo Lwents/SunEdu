@@ -1,11 +1,15 @@
 <template>
-  <div class="activity">
-    <ul class="list">
-      <li v-for="(it,i) in items" :key="i">
-        <div class="dot"></div>
-        <div class="content">
-          <b>{{ it.title }}</b>
-          <div class="muted small">{{ it.time }}</div>
+  <div class="space-y-4">
+    <ul class="flex flex-col gap-3">
+      <li
+        v-for="(it, i) in items"
+        :key="i"
+        class="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm shadow-slate-100"
+      >
+        <div class="mt-2 h-2.5 w-2.5 rounded-full bg-emerald-500"></div>
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-slate-900">{{ it.title }}</p>
+          <p class="text-xs text-slate-500">{{ it.time }}</p>
         </div>
       </li>
     </ul>
@@ -19,12 +23,3 @@ const items = [
   { title: 'Đổi mật khẩu', time: '2 ngày trước, 08:02' },
 ]
 </script>
-
-<style scoped>
-.activity{ padding:8px 0; }
-.list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; }
-.list li{ display:flex; gap:12px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:#fff; }
-.dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); margin-top:6px; }
-.content .small{ font-size:12px; }
-.muted{ color:#6b7280; }
-</style>

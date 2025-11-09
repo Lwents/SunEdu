@@ -1,9 +1,9 @@
 <!-- src/components/navbar/TeacherNavbar.vue -->
 <template>
   <nav
-    class="sticky top-0 z-50 h-16 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm"
+    class="sticky top-0 z-50 h-14 sm:h-16 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm"
   >
-    <div class="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto flex h-full max-w-7xl items-center justify-between px-3 sm:px-4 lg:px-8">
       <!-- Logo -->
       <div class="flex items-center gap-3">
         <RouterLink
