@@ -24,7 +24,7 @@ from custom_account.api.views.auth_view import GoogleLogin
 
 
 def home(request):
-    return HttpResponse("Welcome to my e-learning backend!")
+    return HttpResponse("Welcome to my SmartEdu backend!")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
