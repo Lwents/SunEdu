@@ -9,8 +9,30 @@
         </div>
       </div>
 
-      <!-- Form -->
-      <form class="mt-6 space-y-5" @submit.prevent="onSubmit">
+        <!-- Form -->
+        <form class="mt-6 space-y-5" @submit.prevent="onSubmit">
+        <!-- Current password -->
+        <div>
+          <label class="text-sm text-gray-600">Mật khẩu hiện tại</label>
+          <div class="relative mt-1">
+            <input
+              :type="show.current ? 'text' : 'password'"
+              v-model.trim="form.currentPassword"
+              class="w-full rounded-lg border px-3 py-2 pr-12 focus:ring-2 focus:ring-blue-500"
+              autocomplete="current-password"
+              placeholder="Nhập mật khẩu đang dùng"
+            />
+            <button
+              type="button"
+              class="absolute inset-y-0 right-2 my-auto text-sm text-gray-500"
+              @click="show.current = !show.current"
+            >
+              {{ show.current ? 'Ẩn' : 'Hiện' }}
+            </button>
+          </div>
+          <p v-if="errors.currentPassword" class="mt-1 text-xs text-red-600">{{ errors.currentPassword }}</p>
+        </div>
+
         <!-- OTP row -->
         <div>
           <label class="text-sm text-gray-600">Mã OTP xác nhận</label>
@@ -115,13 +137,19 @@ import { useAuthStore } from '@/store/auth.store'
 const auth = useAuthStore()
 
 const form = reactive({
+  currentPassword: '',
   newPassword: '',
   confirmPassword: '',
 })
-const errors = reactive<{ [k: string]: string }>({ otp: '', newPassword: '', confirmPassword: '' })
+const errors = reactive<{ [k: string]: string }>({
+  currentPassword: '',
+  otp: '',
+  newPassword: '',
+  confirmPassword: '',
+})
 const loading = ref(false)
 const done = ref(false)
-const show = reactive({ new: false, confirm: false })
+const show = reactive({ current: false, new: false, confirm: false })
 const otp = reactive({ code: '', countdown: 0, sending: false, sentTo: '' })
 const OTP_COUNTDOWN = 60
 let timer: number | undefined
@@ -173,10 +201,15 @@ const onSubmit = async () => {
 
 const sendOtp = async () => {
   if (otp.sending || otp.countdown > 0) return
+  if (!form.currentPassword) {
+    errors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại.'
+    return
+  }
   otp.sending = true
   try {
-    const res = await auth.requestPasswordOtp()
+    const res = await auth.requestPasswordOtp(form.currentPassword)
     otp.sentTo = res?.email || maskedEmail.value || ''
+    errors.currentPassword = ''
     otp.countdown = OTP_COUNTDOWN
     clearTimer()
     timer = window.setInterval(() => {
@@ -184,7 +217,11 @@ const sendOtp = async () => {
       else clearTimer()
     }, 1000)
   } catch (error: any) {
-    errors.otp = error?.message || 'Không thể gửi OTP. Vui lòng thử lại.'
+    const message = error?.message || 'Không thể gửi OTP. Vui lòng thử lại.'
+    errors.otp = message
+    if (message.toLowerCase().includes('mật khẩu') && message.toLowerCase().includes('không chính xác')) {
+      errors.currentPassword = message
+    }
   } finally {
     otp.sending = false
   }

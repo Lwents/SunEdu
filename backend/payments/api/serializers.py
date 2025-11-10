@@ -38,6 +38,14 @@ class MomoPaymentInitSerializer(serializers.Serializer):
             attrs["plan"] = None
             if not attrs.get("description"):
                 attrs["description"] = "Thanh toán MoMo"
+            min_amount = getattr(settings, "MOMO_MIN_CUSTOM_AMOUNT", Decimal("1000"))
+            if amount is None:
+                raise serializers.ValidationError({"amount": "Số tiền thanh toán là bắt buộc."})
+            if amount < min_amount:
+                human_min = f"{int(min_amount):,}".replace(",", ".")
+                raise serializers.ValidationError({
+                    "amount": f"Số tiền tối thiểu cho thanh toán MoMo tuỳ chỉnh là {human_min} ₫."
+                })
 
         # Optional redirect_url with basic whitelist to avoid open redirect
         redirect = attrs.get("redirect_url")

@@ -297,6 +297,18 @@ async function confirmSubmit() {
 
   showSubmitModal.value = false;
   
+  const payload = {
+    examId: route.params.id,
+    answers: userAnswersData,
+    savedAt: Date.now(),
+  }
+  try {
+    const key = route.params.id ? `examResult:${route.params.id}` : 'examResult:last'
+    sessionStorage.setItem(key, JSON.stringify(payload))
+  } catch (err) {
+    console.warn('Không thể lưu tạm kết quả bài làm:', err)
+  }
+
   router.push({ 
     name: 'student-exam-result',
     params: { id: route.params.id },
