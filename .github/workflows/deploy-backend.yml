@@ -12,7 +12,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -35,6 +35,13 @@ jobs:
             "$VENV/bin/pip" install -r backend/requirements.txt
 
             cd backend
+
+            # Sync environment configuration from GitHub Secrets
+            cat <<'EOF' > .env
+${{ secrets.BACKEND_ENV_FILE }}
+EOF
+            chmod 600 .env
+
             mkdir -p logs
             touch logs/ai_personalization.log
 
