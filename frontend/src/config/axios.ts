@@ -5,7 +5,13 @@ import axios from 'axios'
 const DEFAULT_API_URL = 'https://api.smartedu.click'
 const rawApiUrl = (import.meta.env.VITE_API_URL ?? '').toString().trim()
 const apiUrl = (rawApiUrl || DEFAULT_API_URL).replace(/\/+$/, '')
-const apiPrefix = `/${(import.meta.env.VITE_API_PREFIX || 'api').replace(/^\/+/, '')}`
+
+const normalizePrefix = (value?: string) => {
+  const cleaned = (value ?? '').trim().replace(/^\/+|\/+$/g, '')
+  return cleaned || 'api'
+}
+
+const apiPrefix = `/${normalizePrefix(import.meta.env.VITE_API_PREFIX)}`
 
 const http = axios.create({
   baseURL: `${apiUrl}${apiPrefix}`,

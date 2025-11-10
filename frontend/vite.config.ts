@@ -7,26 +7,24 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 import sitemap from 'vite-plugin-sitemap'
 
 export default defineConfig(({ mode }) => ({
-  plugins: [
-    vue(),
-    vueDevTools(),
-    vueJsx(),
-    sitemap({ hostname: 'https://smartedu.click' }),
-  ],
+  plugins: [vue(), vueDevTools(), vueJsx(), sitemap({ hostname: 'https://smartedu.click' })],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   // chỉ bật proxy khi dev (vite serve)
-  server: mode === 'development' ? {
-    proxy: {
-      '/api': {
-        target: 'https://api.smartedu.click',
-        changeOrigin: true,
-        secure: true,
-        rewrite: (p) => p.replace(/^\/api/, '/api'),
-      }
-    }
-  } : undefined,
+  server:
+    mode === 'development'
+      ? {
+          proxy: {
+            '/api': {
+              target: 'https://api.smartedu.click',
+              changeOrigin: true,
+              secure: true,
+              rewrite: (p) => p.replace(/^\/api/, '/api'),
+            },
+          },
+        }
+      : undefined,
   // Build optimization
   build: {
     rollupOptions: {
@@ -42,12 +40,12 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/pinia')) {
             return 'vue-vendor'
           }
-          
+
           // Element Plus UI (large library)
           if (id.includes('node_modules/element-plus')) {
             return 'element-plus'
           }
-          
+
           // ECharts (large visualization library)
           if (id.includes('node_modules/echarts') || id.includes('node_modules/vue-echarts')) {
             return 'echarts'
@@ -55,29 +53,31 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/zrender')) {
             return 'echarts'
           }
-          
+
           // Icons & UI utilities (small but many)
-          if (id.includes('node_modules/@heroicons') || 
-              id.includes('node_modules/lucide') ||
-              id.includes('node_modules/feather-icons')) {
+          if (
+            id.includes('node_modules/@heroicons') ||
+            id.includes('node_modules/lucide') ||
+            id.includes('node_modules/feather-icons')
+          ) {
             return 'icons'
           }
-          
+
           // VueUse utilities
           if (id.includes('node_modules/@vueuse')) {
             return 'vueuse'
           }
-          
+
           // Axios & HTTP
           if (id.includes('node_modules/axios')) {
             return 'http'
           }
-          
+
           // AOS animation
           if (id.includes('node_modules/aos')) {
             return 'animations'
           }
-          
+
           // Other node_modules -> generic vendor
           if (id.includes('node_modules')) {
             return 'vendor'
