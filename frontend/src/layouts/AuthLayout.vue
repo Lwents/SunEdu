@@ -1,293 +1,385 @@
 <template>
-  <div class="kids-auth-layout-pink">
-    <!-- Minimal Background -->
-    <div class="pink-background">
-      <div class="pink-orb orb-1"></div>
-      <div class="pink-orb orb-2"></div>
-    </div>
+  <div class="sliding-auth-layout">
+    <!-- Simple Gradient Background -->
+    <div class="bg-canvas"></div>
 
     <!-- Home Button -->
-    <router-link to="/" class="home-btn-pink">
-      <div class="home-icon-wrapper">
-        <svg class="home-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-          />
-        </svg>
-      </div>
-      <div class="home-tooltip">Về trang chủ</div>
+    <router-link to="/" class="home-button">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      <span class="home-text">Trang chủ</span>
     </router-link>
 
     <!-- Main Container -->
-    <div class="auth-container-equal">
-      <!-- Left Column -->
-      <section class="welcome-column">
-        <div class="welcome-content">
-          <!-- Title -->
-          <h1 class="main-title">Chào bạn nhỏ! 👋</h1>
-          <p class="main-subtitle">Sẵn sàng học bài mới chưa?</p>
-
-          <!-- Features -->
-          <div class="features-grid">
-            <div class="feature-box" v-for="(f, i) in features" :key="i">
-              <div class="feature-emoji">{{ f.icon }}</div>
-              <div class="feature-name">{{ f.text }}</div>
+    <div class="content-wrapper">
+      <!-- Sliding Auth Container (Login/Register) -->
+      <div v-if="isLoginOrRegister" class="auth-container" :class="{ 'register-mode': isRegisterPage }">
+        <!-- Left Panel - Login Form -->
+        <div class="form-panel left-panel">
+          <div class="form-wrapper">
+            <div class="brand-header">
+              <LogoSmartEdu :size="50" />
+              <h2 class="form-title">Đăng nhập</h2>
             </div>
+            <Login v-if="route.path === '/auth/login'" />
           </div>
+        </div>
 
-          <!-- Stats -->
-          <div class="stats-grid">
-            <div class="stat-box" v-for="(s, i) in stats" :key="i">
-              <div class="stat-icon">{{ s.emoji }}</div>
-              <div class="stat-num">{{ s.number }}</div>
-              <div class="stat-text">{{ s.label }}</div>
+        <!-- Right Panel - Register Form -->
+        <div class="form-panel right-panel">
+          <div class="form-wrapper">
+            <div class="brand-header">
+              <LogoSmartEdu :size="50" />
+              <h2 class="form-title">Đăng ký</h2>
+            </div>
+            <Register v-if="route.path === '/auth/register'" />
+          </div>
+        </div>
+
+        <!-- Sliding Overlay Panel -->
+        <div class="overlay-container">
+          <div class="overlay">
+            <!-- Left Overlay (shown when in Register mode) -->
+            <div class="overlay-panel overlay-left">
+              <h2 class="overlay-title">Chào mừng trở lại!</h2>
+              <p class="overlay-text">
+                Đăng nhập để tiếp tục hành trình học tập của bạn
+              </p>
+              <button class="overlay-btn" @click="switchToLogin">
+                Đăng nhập
+              </button>
+            </div>
+
+            <!-- Right Overlay (shown when in Login mode) -->
+            <div class="overlay-panel overlay-right">
+              <h2 class="overlay-title">Chào bạn!</h2>
+              <p class="overlay-text">
+                Tạo tài khoản mới để bắt đầu học tập cùng SmartEdu
+              </p>
+              <button class="overlay-btn" @click="switchToRegister">
+                Đăng ký
+              </button>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- Right Column -->
-      <section class="form-column">
-        <div class="form-box">
-          <!-- Logo -->
-          <div class="logo-area">
-            <LogoSmartEdu :size="100" />
-          </div>
-
-          <!-- Title -->
-          <div class="form-heading">
-            <h2 class="form-title">{{ route.meta.title }}</h2>
-            <p class="form-desc">{{ route.meta.desc }}</p>
-          </div>
-
-          <!-- Form -->
-          <div class="form-body">
-            <router-view v-slot="{ Component }">
-              <transition name="fade" mode="out-in">
-                <component :is="Component" />
-              </transition>
-            </router-view>
-          </div>
+      <!-- Simple Card for Other Auth Pages -->
+      <div v-else class="simple-auth-card">
+        <div class="brand-header">
+          <LogoSmartEdu :size="50" />
+          <h2 class="form-title">{{ route.meta.title }}</h2>
         </div>
-      </section>
+        <router-view />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRoute } from 'vue-router'
-
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
+import Login from '@/pages/auth/Login.vue'
+import Register from '@/pages/auth/Register.vue'
 
 const route = useRoute()
+const router = useRouter()
 
-const features = ref([
-  { icon: '🎮', text: 'Học qua trò chơi' },
-  { icon: '🏆', text: 'Nhận huy chương' },
-  { icon: '📊', text: 'Xem tiến độ' },
-])
+const isLoginOrRegister = computed(() => 
+  route.path === '/auth/login' || route.path === '/auth/register'
+)
 
-const stats = ref([
-  { emoji: '👦', number: '50K+', label: 'Học sinh' },
-  { emoji: '📚', number: '1000+', label: 'Bài học' },
-  { emoji: '⭐', number: '4.9', label: 'Đánh giá' },
-])
+const isRegisterPage = computed(() => route.path === '/auth/register')
+
+function switchToLogin() {
+  router.push('/auth/login')
+}
+
+function switchToRegister() {
+  router.push('/auth/register')
+}
 </script>
 
 <style scoped>
-/* 🌸 BASE (Pink theme) */
-.kids-auth-layout-pink {
-  width: 100vw;
-  height: 100vh;
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  background: linear-gradient(135deg, #fce7f3, #fbcfe8, #f9a8d4);
-  animation: fade-in 0.5s ease-out;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* 🌸 BACKGROUND */
-.pink-background {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.pink-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(40px);
-  opacity: 0;
-  animation: orb-appear 1s ease-out 0.2s forwards;
-}
-
-@keyframes orb-appear {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  to {
-    opacity: 0.25;
-    transform: scale(1);
-  }
-}
-
-.orb-1 {
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.4), transparent);
-  top: -10%;
-  left: -10%;
-}
-
-.orb-2 {
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(219, 39, 119, 0.4), transparent);
-  bottom: -10%;
-  right: -10%;
-  animation-delay: 0.4s;
-}
-
-/* 🏠 HOME BUTTON (Pink) */
-.home-btn-pink {
-  position: fixed;
-  top: 1.5rem;
-  left: 1.5rem;
-  z-index: 100;
-  animation: slide-in-left 0.6s ease-out;
-}
-
-@keyframes slide-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.home-icon-wrapper {
+/* 🌈 Sliding Auth Layout - Modern Form with Overlay Animation */
+.sliding-auth-layout {
+  min-height: 100vh;
+  width: 100%;
   position: relative;
-  width: 3.5rem;
-  height: 3.5rem;
-  background: linear-gradient(135deg, #ec4899, #db2777);
-  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
-  transition: transform 0.2s;
+  padding: 2rem;
 }
 
-.home-btn-pink:hover .home-icon-wrapper {
-  transform: translateY(-2px);
-}
-
-.home-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  color: white;
-}
-
-.home-tooltip {
+/* ✨ Simple Gradient Background */
+.bg-canvas {
   position: absolute;
-  left: calc(100% + 1rem);
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 0.5rem 1rem;
-  background: #1f2937;
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 700;
-  border-radius: 10px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.home-btn-pink:hover .home-tooltip {
+/* 🏠 Home Button */
+.home-button {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.home-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.home-text {
+  font-size: 0.9375rem;
+}
+
+/* 📦 Content Wrapper */
+.content-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 990px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 🎴 Auth Container - Main Box */
+.auth-container {
+  position: relative;
+  width: 100%;
+  min-height: 660px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 32px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  overflow: hidden;
+  animation: fadeInScale 0.6s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 📄 Form Panels */
+.form-panel {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3.3rem 2.75rem;
+  transition: 
+    transform 1s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.6s ease-out;
+  z-index: 2;
+}
+
+.left-panel {
+  left: 0;
+}
+
+.right-panel {
+  right: 0;
+  transform: translateX(100%);
+}
+
+/* When in Register Mode */
+.auth-container.register-mode .left-panel {
+  transform: translateX(-100%);
+}
+
+.auth-container.register-mode .right-panel {
+  transform: translateX(0);
+}
+
+/* Form Wrapper */
+.form-wrapper {
+  width: 100%;
+  max-width: 420px;
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 🏷️ Brand Header */
+.brand-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.form-title {
+  font-size: 1.75rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-top: 1rem;
+  letter-spacing: 0.5px;
+}
+
+/* 🎴 Simple Auth Card (for other auth pages) */
+.simple-auth-card {
+  width: 100%;
+  max-width: 530px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 32px;
+  padding: 3.3rem 2.75rem;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  animation: fadeInScale 0.6s ease-out;
+}
+
+/*  Overlay Container */
+.overlay-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  transition: 
+    transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 100;
+}
+
+.auth-container.register-mode .overlay-container {
+  transform: translateX(-100%);
+}
+
+/* Overlay Background */
+.overlay {
+  position: relative;
+  width: 200%;
+  height: 100%;
+  left: -100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transform: translateX(0);
+  transition: 
+    transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.auth-container.register-mode .overlay {
+  transform: translateX(50%);
+}
+
+/* Overlay Panels */
+.overlay-panel {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3.3rem 2.75rem;
+  width: 50%;
+  height: 100%;
+  text-align: center;
+  color: white;
+  transform: translateX(0);
+  transition: 
+    transform 1s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overlay-left {
+  left: 0;
+  transform: translateX(-20%);
+  opacity: 0;
+}
+
+.overlay-right {
+  right: 0;
+  transform: translateX(0);
   opacity: 1;
 }
 
-/* 📦 GRID */
-.auth-container-equal {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  height: 100vh;
-  width: 100vw;
-  min-height: 0; /* Critical for overflow */
+.auth-container.register-mode .overlay-left {
+  transform: translateX(0);
+  opacity: 1;
 }
 
-/* 🌟 LEFT COLUMN */
-.welcome-column {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1.5rem;
-  background: rgba(236, 72, 153, 0.08);
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0; /* Critical for flex overflow */
-  animation: slide-in-left 0.7s ease-out 0.2s both;
+.auth-container.register-mode .overlay-right {
+  transform: translateX(20%);
+  opacity: 0;
 }
 
-.welcome-content {
-  width: 100%;
-  max-width: 550px;
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.main-title {
-  font-size: 2.25rem;
+/* Overlay Content */
+.overlay-title {
+  font-size: 2rem;
   font-weight: 900;
-  color: #1f2937;
-  text-align: center;
-  margin-bottom: 0.5rem;
-  animation: fade-in-up 0.6s ease-out 0.5s both;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: fadeInUp 0.6s ease-out;
 }
 
-@keyframes fade-in-up {
+.overlay-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  opacity: 0.95;
+  animation: fadeInUp 0.6s ease-out 0.1s both;
+}
+
+.overlay-btn {
+  padding: 0.875rem 2.5rem;
+  background: white;
+  color: #667eea;
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: fadeInUp 0.6s ease-out 0.2s both;
+}
+
+@keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -298,120 +390,173 @@ const stats = ref([
   }
 }
 
-.main-subtitle {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #ec4899;
-  text-align: center;
-  margin-bottom: 2rem;
-  animation: fade-in-up 0.6s ease-out 0.6s both;
+.overlay-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.95);
 }
 
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+.overlay-btn:active {
+  transform: translateY(-1px) scale(1.02);
 }
 
-.feature-box {
-  padding: 1.25rem 0.75rem;
-  background: white;
-  border-radius: 16px;
-  text-align: center;
-  border: 2px solid rgba(236, 72, 153, 0.2);
-  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.08);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  animation: fade-in-up 0.5s ease-out both;
-}
-
-.feature-box:nth-child(1) {
-  animation-delay: 0.7s;
-}
-.feature-box:nth-child(2) {
-  animation-delay: 0.8s;
-}
-.feature-box:nth-child(3) {
-  animation-delay: 0.9s;
-}
-
-.feature-box:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.15);
-}
-
-.feature-emoji {
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
-}
-.feature-name {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #374151;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-
-.stat-box {
-  padding: 1.25rem 0.75rem;
-  background: white;
-  border-radius: 16px;
-  text-align: center;
-  border: 2px solid rgba(236, 72, 153, 0.2);
-  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.08);
-  animation: fade-in-up 0.5s ease-out both;
-}
-
-.stat-box:nth-child(1) {
-  animation-delay: 1s;
-}
-.stat-box:nth-child(2) {
-  animation-delay: 1.1s;
-}
-.stat-box:nth-child(3) {
-  animation-delay: 1.2s;
-}
-
-.stat-icon {
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.stat-num {
-  font-size: 1.25rem;
-  font-weight: 900;
-  color: #ec4899;
-  margin-bottom: 0.25rem;
-}
-
-.stat-text {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-
-/* 📝 RIGHT COLUMN - FIX OVERFLOW ISSUE */
-.form-column {
-  position: relative;
+/* � Left Side - Decorative */
+.left-side {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.5rem;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(8px);
-  overflow-y: auto; /* Enable scroll */
-  overflow-x: hidden;
-  min-height: 0; /* Critical for flex item overflow */
-  animation: slide-in-right 0.7s ease-out 0.3s both;
+  padding: 3rem 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  overflow-y: auto;
 }
 
-@keyframes slide-in-right {
+.decoration-content {
+  width: 100%;
+  max-width: 500px;
+  color: white;
+}
+
+.brand-section {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin: 1rem 0 0.5rem;
+  letter-spacing: 2px;
+}
+
+.brand-tagline {
+  font-size: 1.125rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.features-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.feature-item {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  animation: fadeInLeft 0.6s ease-out both;
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.feature-item:hover {
+  transform: translateX(10px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.feature-content {
+  flex: 1;
+}
+
+.feature-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.feature-desc {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.stats-showcase {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+.stat-item:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 900;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+/* 📝 Right Side - Form */
+.right-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  overflow-y: auto;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 480px;
+  animation: fadeInRight 0.8s ease-out;
+}
+
+@keyframes fadeInRight {
   from {
     opacity: 0;
     transform: translateX(30px);
@@ -422,195 +567,164 @@ const stats = ref([
   }
 }
 
-.form-box {
-  width: 100%;
-  max-width: 440px;
-  padding: 2.5rem 2rem;
-  background: white;
-  border-radius: 24px;
-  border: 2px solid rgba(236, 72, 153, 0.2);
-  box-shadow: 0 12px 40px rgba(236, 72, 153, 0.12);
-  animation: scale-in 0.6s ease-out 0.5s both;
-  margin: auto; /* Center vertically when scrolling */
-  flex-shrink: 0; /* Prevent shrinking */
-}
-
-.logo-area {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1.5rem;
-  flex-shrink: 0; /* Prevent logo from shrinking */
-}
-
-.form-heading {
+.form-header {
   text-align: center;
-  margin-bottom: 2rem;
-  flex-shrink: 0;
+  margin-bottom: 2.5rem;
 }
 
 .form-title {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 900;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.75rem;
 }
 
-.form-desc {
+.form-subtitle {
   font-size: 1rem;
   color: #6b7280;
-  font-weight: 600;
+  font-weight: 500;
 }
 
-.form-body {
-  margin-bottom: 1.5rem;
-  flex-shrink: 0;
+/* 🎬 Transitions */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
 }
 
-/* 🎬 TRANSITION */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s;
+.slide-fade-leave-active {
+  transition: all 0.2s ease-in;
 }
-.fade-enter-from,
-.fade-leave-to {
+
+.slide-fade-enter-from {
   opacity: 0;
+  transform: translateX(20px);
 }
 
-/* 📱 RESPONSIVE - FIXED */
-@media (max-width: 1024px) {
-  .auth-container-equal {
-    grid-template-columns: 1fr;
-    overflow: hidden; /* Prevent double scroll */
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* 📱 Responsive Design */
+@media (max-width: 768px) {
+  .content-wrapper {
+    max-width: 100%;
   }
 
-  .welcome-column {
+  .auth-container {
+    min-height: 550px;
+  }
+
+  .form-panel {
+    width: 100%;
+    padding: 2.5rem 2rem;
+  }
+
+  .left-panel {
+    left: 0;
+  }
+
+  .right-panel {
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  .overlay-container {
     display: none;
   }
 
-  .form-column {
-    padding: 1.5rem 1rem;
-    animation: fade-in 0.5s ease-out;
-    overflow-y: auto; /* Ensure scroll works */
-    min-height: 100vh; /* Full height for scroll */
+  .auth-container.register-mode .left-panel {
+    transform: translateX(-100%);
   }
 
-  .form-box {
-    padding: 2rem 1.5rem;
-    max-width: 500px;
-    animation: fade-in-up 0.6s ease-out 0.2s both;
-    margin: 1rem auto; /* Add margin for breathing room */
-  }
-
-  .home-btn-pink {
-    top: 1rem;
-    left: 1rem;
-  }
-
-  .home-icon-wrapper {
-    width: 3rem;
-    height: 3rem;
-  }
-
-  .home-icon {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  .home-tooltip {
-    display: none;
-  }
-}
-
-@media (max-width: 640px) {
-  .form-column {
-    padding: 1rem 0.75rem;
-    min-height: 100vh;
-  }
-
-  .form-box {
-    padding: 1.5rem 1.25rem;
-    border-radius: 20px;
-    margin: 0.75rem auto;
-  }
-
-  .form-title {
-    font-size: 1.75rem;
-  }
-
-  .form-desc {
-    font-size: 0.9375rem;
-  }
-
-  .logo-area {
-    margin-bottom: 1.25rem;
-  }
-
-  .home-btn-pink {
-    top: 0.75rem;
-    left: 0.75rem;
-  }
-
-  .home-icon-wrapper {
-    width: 2.75rem;
-    height: 2.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-column {
-    padding: 0.75rem 0.5rem;
-  }
-
-  .form-box {
-    padding: 1.25rem 1rem;
-    margin: 0.5rem auto;
+  .auth-container.register-mode .right-panel {
+    transform: translateX(0);
   }
 
   .form-title {
     font-size: 1.5rem;
   }
 
-  .form-heading {
+  .home-button {
+    top: 1rem;
+    left: 1rem;
+    padding: 0.625rem 1.25rem;
+  }
+
+  .home-text {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .sliding-auth-layout {
+    padding: 1.5rem 1rem;
+  }
+
+  .auth-container {
+    min-height: 500px;
+    border-radius: 24px;
+  }
+
+  .form-panel {
+    padding: 2rem 1.5rem;
+  }
+
+  .brand-header {
     margin-bottom: 1.5rem;
   }
 
-  .logo-area {
-    margin-bottom: 1rem;
+  .form-title {
+    font-size: 1.375rem;
+  }
+
+  .home-button {
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .home-text {
+    display: none;
   }
 }
 
-/* Fix for very small screens */
-@media (max-height: 600px) {
-  .form-box {
-    margin: 0.5rem auto;
-    padding: 1.25rem 1.5rem;
+@media (max-width: 480px) {
+  .sliding-auth-layout {
+    padding: 1rem 0.75rem;
   }
 
-  .logo-area {
-    margin-bottom: 1rem;
+  .auth-container {
+    min-height: 450px;
+    border-radius: 20px;
   }
 
-  .form-heading {
-    margin-bottom: 1.25rem;
-  }
-
-  .form-body {
-    margin-bottom: 1rem;
-  }
-}
-/* 📌 Form vừa đẹp trên màn hình laptop 13–14 inch */
-@media (min-width: 1024px) and (max-width: 1440px) {
-  .form-box {
-    max-width: 380px; /* Thu nhỏ form */
-    padding: 2rem 1.75rem;
+  .form-panel {
+    padding: 1.75rem 1.25rem;
   }
 
   .form-title {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
+  }
+}
+
+/* Landscape mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+  .sliding-auth-layout {
+    padding: 1rem;
+    align-items: flex-start;
+    overflow-y: auto;
   }
 
-  .form-desc {
-    font-size: 0.9rem;
+  .auth-container {
+    margin: 1rem 0;
+    min-height: auto;
+  }
+
+  .form-panel {
+    padding: 2rem 1.5rem;
   }
 }
 </style>

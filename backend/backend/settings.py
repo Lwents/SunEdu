@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from decimal import Decimal
 from dotenv import load_dotenv
 
 # -------------------------------
@@ -228,6 +229,10 @@ MOMO_PARTNER_NAME = os.getenv("MOMO_PARTNER_NAME", "SunEdu")
 MOMO_STORE_ID = os.getenv("MOMO_STORE_ID", "SunEduStore")
 MOMO_REDIRECT_URL = os.getenv("MOMO_REDIRECT_URL", "http://localhost:5173/payment/result")
 MOMO_IPN_URL = os.getenv("MOMO_IPN_URL", "")
+try:
+    MOMO_MIN_CUSTOM_AMOUNT = Decimal(os.getenv("MOMO_MIN_CUSTOM_AMOUNT", "1000"))
+except Exception:
+    MOMO_MIN_CUSTOM_AMOUNT = Decimal("1000")
 
 # -------------------------------
 # Logging

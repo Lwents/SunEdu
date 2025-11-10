@@ -1,32 +1,21 @@
 <template>
   <div class="space-y-6">
-    <!-- Back button -->
-    <RouterLink
-      to="/auth/login"
-      class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition group"
-    >
-      <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
-      Quay lại đăng nhập
-    </RouterLink>
-
     <div class="text-center">
-      <div class="mx-auto w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mb-4 animate-bounce-slow">
-        <svg class="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 animate-bounce-slow">
+        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       </div>
       <h3 class="text-xl font-bold text-gray-900 mb-2">Quên mật khẩu?</h3>
       <p class="text-sm text-gray-600">
-        Nhập email của bạn và chúng tôi sẽ gửi link đặt lại mật khẩu
+        Nhập email của bạn để nhận link đặt lại mật khẩu
       </p>
     </div>
 
     <!-- Success Alert -->
     <div
       v-if="status === 'success'"
-      class="rounded-xl border border-pink-200 bg-pink-50 p-4 text-sm text-pink-700 animate-fade-in"
+      class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-700 animate-fade-in"
       role="alert"
     >
       <div class="flex items-start gap-3">
@@ -85,12 +74,14 @@
             required
           />
         </div>
-        <p v-if="touched && !validEmail" class="form-error">
-          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-          </svg>
-          <span>Vui lòng nhập email hợp lệ</span>
-        </p>
+        <div class="min-h-[20px]">
+          <p v-if="touched && !validEmail" class="form-error">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span>Vui lòng nhập email hợp lệ</span>
+          </p>
+        </div>
       </div>
 
       <button
@@ -118,20 +109,23 @@
       </button>
       <RouterLink
         to="/auth/login"
-        class="block w-full rounded-xl border border-pink-200 bg-pink-50 px-4 py-2.5 text-center text-sm font-medium text-pink-700 hover:bg-pink-100 transition"
+        class="block w-full rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-center text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
       >
         Quay lại đăng nhập
       </RouterLink>
     </div>
 
     <!-- Footer links -->
-    <div v-if="status !== 'success'" class="text-center text-sm">
-      <p class="text-gray-600">
-        Chưa có tài khoản?
-        <RouterLink to="/auth/register" class="font-medium text-pink-600 hover:text-pink-700 transition">
-          Đăng ký ngay
-        </RouterLink>
-      </p>
+    <div v-if="status !== 'success'" class="text-center text-sm space-y-2">
+      <RouterLink
+        to="/auth/login"
+        class="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition group"
+      >
+        <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        <span class="font-medium">Quay lại đăng nhập</span>
+      </RouterLink>
     </div>
   </div>
 </template>
@@ -181,7 +175,7 @@ async function submit() {
 
 .form-input {
   @apply w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400;
-  @apply focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500;
+  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500;
   @apply transition duration-200;
   @apply disabled:bg-gray-50 disabled:cursor-not-allowed;
 }
@@ -198,7 +192,7 @@ async function submit() {
   @apply text-xs text-red-600 mt-1.5 flex items-start gap-1.5;
 }
 
-/* Primary Button — Pink gradient */
+/* Primary Button — Purple gradient */
 .btn-primary {
   width: 100% !important;
   display: flex !important;
@@ -206,21 +200,21 @@ async function submit() {
   justify-content: center !important;
   padding: 0.75rem 1.5rem !important;
   border-radius: 0.75rem !important;
-  background: linear-gradient(to right, rgb(236, 72, 153), rgb(219, 39, 119)) !important; /* #ec4899 → #db2777 */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   font-weight: 600 !important;
   transition: all 0.2s !important;
   transform-origin: center !important;
-  box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.25) !important;
+  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(to right, rgb(219, 39, 119), rgb(190, 24, 93)) !important; /* #db2777 → #be185d */
+  background: linear-gradient(135deg, #5568d3 0%, #663d8f 100%) !important;
 }
 
 .btn-primary:focus {
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.5), 0 10px 15px -3px rgba(236, 72, 153, 0.25) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.5), 0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
 }
 
 .btn-primary:active:not(:disabled) {
