@@ -34,6 +34,8 @@ jobs:
             "$VENV/bin/pip" install -r backend/requirements.txt
 
             cd backend
+            mkdir -p logs
+            touch logs/ai_personalization.log
 
             if command -v docker >/dev/null 2>&1; then
               docker compose -f docker-compose.yml up -d db
