@@ -28,7 +28,8 @@ jobs:
             git reset --hard origin/main
 
             VENV="/var/www/SunEdu/backend/.venv"
-            test -x "$VENV/bin/python" || python3 -m venv "$VENV"
+            rm -rf "$VENV"
+            python3 -m venv "$VENV"
             "$VENV/bin/pip" install --upgrade pip
             "$VENV/bin/pip" install -r backend/requirements.txt
 
