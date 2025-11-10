@@ -29,6 +29,16 @@ import { useIdleLogout } from '@/composables/useIdleLogout'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 
+// Force HTTPS in production to keep origin consistent with the backend (avoids CORS).
+if (
+  typeof window !== 'undefined' &&
+  window.location.hostname.endsWith('smartedu.click') &&
+  window.location.protocol !== 'https:'
+) {
+  const { host, pathname, search, hash } = window.location
+  window.location.replace(`https://${host}${pathname}${search}${hash}`)
+}
+
 
 const app = createApp(App)
 const pinia = createPinia()
