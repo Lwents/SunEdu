@@ -33,6 +33,20 @@ jobs:
             "$VENV/bin/pip" install -r backend/requirements.txt
 
             cd backend
+
+            if command -v docker >/dev/null 2>&1; then
+              docker compose -f docker-compose.yml up -d db
+              for i in {1..20}; do
+                if pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+                  break
+                fi
+                echo "Waiting for Postgres container on 127.0.0.1:5432 ... ($i/20)"
+                sleep 3
+              done
+            else
+              echo "Docker is not installed; skipping dockerized DB startup" >&2
+            fi
+
             "$VENV/bin/python" manage.py migrate --noinput
             "$VENV/bin/python" manage.py collectstatic --noinput
 
