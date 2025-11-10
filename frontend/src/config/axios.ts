@@ -1,8 +1,10 @@
 // src/config/axios.ts
 import axios from 'axios'
 
-// If VITE_API_URL is empty => use same-origin proxy ("/api").
-const apiUrl = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')
+// Default to the SmartEdu public API when no env override is provided.
+const DEFAULT_API_URL = 'https://api.smartedu.click'
+const rawApiUrl = (import.meta.env.VITE_API_URL ?? '').toString().trim()
+const apiUrl = (rawApiUrl || DEFAULT_API_URL).replace(/\/+$/, '')
 const apiPrefix = `/${(import.meta.env.VITE_API_PREFIX || 'api').replace(/^\/+/, '')}`
 
 const http = axios.create({
@@ -41,6 +43,7 @@ function translateMessage(message: string): string {
     // Login errors
     'Invalid credentials': 'Tài khoản hoặc mật khẩu không chính xác',
     'Invalid email or password': 'Tài khoản hoặc mật khẩu không chính xác',
+    'Unable to log in with provided credentials.': 'Tài khoản hoặc mật khẩu không chính xác',
     'Email not found': 'Tài khoản không tồn tại',
     'User not found': 'Tài khoản không tồn tại',
 
@@ -123,17 +126,30 @@ http.interceptors.response.use(
     let message = 'Có lỗi xảy ra'
 
     if (error.response) {
-      if (error.response.data?.message) {
-        message = error.response.data.message
-      } else if (error.response.data?.error) {
-        message = error.response.data.error
-      } else if (error.response.data?.detail) {
-        message = error.response.data.detail
-      } else {
+      const data = error.response.data
+      if (typeof data === 'string' && data.trim()) {
+        message = data
+      } else if (data?.message) {
+        message = data.message
+      } else if (data?.error) {
+        message = data.error
+      } else if (data?.detail) {
+        message = data.detail
+      } else if (data && typeof data === 'object') {
+        const firstKey = Object.keys(data)[0]
+        const firstValue = data[firstKey]
+        if (Array.isArray(firstValue) && firstValue[0]) {
+          message = String(firstValue[0])
+        } else if (typeof firstValue === 'string') {
+          message = firstValue
+        }
+      }
+
+      if (!message || message === 'Có lỗi xảy ra') {
         if (status === 401) {
           message = 'Phiên đăng nhập đã hết hạn'
         } else if (status === 400) {
-          message = 'Tài khoản hoặc mật khẩu không chính xác'
+          message = 'Yêu cầu không hợp lệ'
         } else if (status === 500) {
           message = 'Lỗi máy chủ'
         }
@@ -144,7 +160,13 @@ http.interceptors.response.use(
       message = 'Lỗi kết nối. Kiểm tra internet'
     }
 
-    return Promise.reject(new Error(message))
+    const enhancedError = error || new Error(message)
+    if (enhancedError instanceof Error) {
+      enhancedError.message = message
+      ;(enhancedError as any).status = status
+      ;(enhancedError as any).data = error?.response?.data
+    }
+    return Promise.reject(enhancedError)
   }
 )
 

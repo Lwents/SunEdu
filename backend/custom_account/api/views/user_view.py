@@ -85,6 +85,12 @@ class PasswordChangeOTPRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        current_password = request.data.get("current_password")
+        if not current_password:
+            return Response({"detail": "Vui lòng nhập mật khẩu hiện tại."}, status=status.HTTP_400_BAD_REQUEST)
+        if not request.user.check_password(current_password):
+            return Response({"detail": "Mật khẩu hiện tại không chính xác."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             password_otp_service.request_password_change_otp(request.user)
         except password_otp_service.OTPThrottleError as exc:

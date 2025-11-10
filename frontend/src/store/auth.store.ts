@@ -159,8 +159,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async requestPasswordOtp() {
-      return authService.requestPasswordChangeOtp()
+    async requestPasswordOtp(currentPassword: string) {
+      return authService.requestPasswordChangeOtp(currentPassword)
     },
     async changePasswordWithOtp(otp: string, newPassword: string) {
       return authService.changePasswordWithOtp(otp, newPassword)

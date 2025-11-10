@@ -547,12 +547,12 @@ function showToast(message: string, type: 'success' | 'error') {
   color: #9ca3af;
 }
 
-/* ==== PINK THEME INPUT ==== */
+/* ==== PURPLE THEME INPUT ==== */
 .form-input {
   width: 100%;
   padding: 0.5rem 2.5rem 0.5rem 2.25rem;
   background: white;
-  border: 2px solid rgba(236, 72, 153, 0.2); /* pink-500 @ 0.2 */
+  border: 2px solid rgba(102, 126, 234, 0.2); /* indigo @ 0.2 */
   border-radius: 0.625rem;
   font-size: 0.8125rem;
   color: #1f2937;
@@ -564,13 +564,13 @@ function showToast(message: string, type: 'success' | 'error') {
 }
 
 .form-input:hover {
-  border-color: rgba(236, 72, 153, 0.4);
+  border-color: rgba(102, 126, 234, 0.4);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #ec4899; /* pink-500 */
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.12);
+  border-color: #667eea; /* indigo */
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
 }
 
 .form-input.error {
@@ -591,7 +591,7 @@ function showToast(message: string, type: 'success' | 'error') {
   transition: color 0.2s;
 }
 .toggle-btn:hover {
-  color: #ec4899;
+  color: #667eea;
 }
 
 .toggle-icon {
@@ -629,8 +629,8 @@ function showToast(message: string, type: 'success' | 'error') {
   transition: color 0.2s;
 }
 .hint.valid {
-  color: #ec4899;
-} /* pink when valid */
+  color: #667eea;
+} /* purple when valid */
 .hint-icon {
   width: 0.75rem;
   height: 0.75rem;
@@ -653,10 +653,10 @@ function showToast(message: string, type: 'success' | 'error') {
   width: 0.875rem;
   height: 0.875rem;
   flex-shrink: 0;
-  border: 2px solid rgba(236, 72, 153, 0.4);
+  border: 2px solid rgba(102, 126, 234, 0.4);
   border-radius: 0.25rem;
   cursor: pointer;
-  accent-color: #ec4899; /* pink */
+  accent-color: #667eea; /* purple */
 }
 
 .terms-text {
@@ -666,16 +666,16 @@ function showToast(message: string, type: 'success' | 'error') {
 }
 
 .terms-link {
-  color: #ec4899;
+  color: #667eea;
   font-weight: 700;
   text-decoration: none;
   transition: color 0.2s;
 }
 .terms-link:hover {
-  color: #db2777;
+  color: #5568d3;
 }
 
-/* ==== SUBMIT BUTTON – PINK GRADIENT ==== */
+/* ==== SUBMIT BUTTON – PURPLE GRADIENT ==== */
 .submit-btn {
   width: 100%;
   display: flex;
@@ -683,7 +683,7 @@ function showToast(message: string, type: 'success' | 'error') {
   justify-content: center;
   gap: 0.375rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #ec4899, #db2777, #be185d);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: 200% 200%;
   color: white;
   font-weight: 700;
@@ -692,7 +692,7 @@ function showToast(message: string, type: 'success' | 'error') {
   border-radius: 0.625rem;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.3);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
   animation: gradient-shift 3s ease infinite;
   margin-top: 0.25rem;
 }
@@ -709,7 +709,7 @@ function showToast(message: string, type: 'success' | 'error') {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .submit-btn:active:not(:disabled) {
@@ -743,12 +743,12 @@ function showToast(message: string, type: 'success' | 'error') {
 }
 .login-link-text {
   font-weight: 700;
-  color: #ec4899;
+  color: #667eea;
   text-decoration: none;
   transition: color 0.2s;
 }
 .login-link-text:hover {
-  color: #db2777;
+  color: #5568d3;
 }
 
 /* ==== TOAST ==== */
@@ -771,8 +771,8 @@ function showToast(message: string, type: 'success' | 'error') {
 }
 
 :global(.toast-success) {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.98), rgba(219, 39, 119, 0.98));
-  border: 1px solid rgba(236, 72, 153, 0.5);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.98), rgba(118, 75, 162, 0.98));
+  border: 1px solid rgba(102, 126, 234, 0.5);
 }
 
 :global(.toast-error) {

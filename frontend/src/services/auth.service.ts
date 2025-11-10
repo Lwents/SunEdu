@@ -217,8 +217,11 @@ export const authService = {
     return { ok: true }
   },
 
-  async requestPasswordChangeOtp(): Promise<{ detail?: string; email?: string }> {
-    const { data } = await http.post('/account/password/change/request-otp/', {})
+  async requestPasswordChangeOtp(currentPassword: string): Promise<{ detail?: string; email?: string }> {
+    if (!currentPassword) throw new Error('Vui lòng nhập mật khẩu hiện tại')
+    const { data } = await http.post('/account/password/change/request-otp/', {
+      current_password: currentPassword,
+    })
     return data
   },
 

@@ -1,11 +1,11 @@
 // src/router/index.ts
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
-// Layouts (import tĩnh cho ổn định)
-import AdminLayout from '@/layouts/AdminLayout.vue'
-import TeacherLayout from '@/layouts/TeacherLayout.vue'
-import StudentLayout from '@/layouts/StudentLayout.vue'
-import AuthLayout from '@/layouts/AuthLayout.vue'
+// Layouts - Lazy load để giảm bundle size
+const AdminLayout = () => import('@/layouts/AdminLayout.vue')
+const TeacherLayout = () => import('@/layouts/TeacherLayout.vue')
+const StudentLayout = () => import('@/layouts/StudentLayout.vue')
+const AuthLayout = () => import('@/layouts/AuthLayout.vue')
 
 // Pinia store (dùng trong guard)
 import { useAuthStore } from '@/store/auth.store'
