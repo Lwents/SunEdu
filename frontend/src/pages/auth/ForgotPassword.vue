@@ -1,15 +1,20 @@
 <template>
   <div class="space-y-6">
     <div class="text-center">
-      <div class="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 animate-bounce-slow">
+      <div
+        class="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 animate-bounce-slow"
+      >
         <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
         </svg>
       </div>
       <h3 class="text-xl font-bold text-gray-900 mb-2">Quên mật khẩu?</h3>
-      <p class="text-sm text-gray-600">
-        Nhập email của bạn để nhận link đặt lại mật khẩu
-      </p>
+      <p class="text-sm text-gray-600">Nhập email của bạn để nhận link đặt lại mật khẩu</p>
     </div>
 
     <!-- Success Alert -->
@@ -20,13 +25,17 @@
     >
       <div class="flex items-start gap-3">
         <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clip-rule="evenodd"
+          />
         </svg>
         <div>
           <p class="font-medium">Đã gửi email thành công!</p>
           <p class="mt-1">
-            Chúng tôi đã gửi link đặt lại mật khẩu đến <span class="font-semibold">{{ email }}</span>. 
-            Vui lòng kiểm tra hộp thư (và cả mục Spam).
+            Chúng tôi đã gửi link đặt lại mật khẩu đến <span class="font-semibold">{{ email }}</span
+            >. Vui lòng kiểm tra hộp thư (và cả mục Spam).
           </p>
         </div>
       </div>
@@ -40,7 +49,11 @@
     >
       <div class="flex items-start gap-3">
         <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+            clip-rule="evenodd"
+          />
         </svg>
         <p>{{ errMessage }}</p>
       </div>
@@ -55,8 +68,18 @@
         </label>
         <div class="relative">
           <div class="input-icon">
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <svg
+              class="w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
             </svg>
           </div>
           <input
@@ -77,7 +100,11 @@
         <div class="min-h-[20px]">
           <p v-if="touched && !validEmail" class="form-error">
             <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
             </svg>
             <span>Vui lòng nhập email hợp lệ</span>
           </p>
@@ -90,9 +117,26 @@
         :disabled="!validEmail || loading"
         :class="{ 'opacity-60 cursor-not-allowed': !validEmail || loading }"
       >
-        <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <svg
+          v-if="loading"
+          class="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
         </svg>
         <span v-if="!loading">Gửi link đặt lại</span>
         <span v-else>Đang gửi...</span>
@@ -102,7 +146,11 @@
     <!-- Success state actions -->
     <div v-else class="space-y-3">
       <button
-        @click="status = 'idle'; email = ''; touched = false"
+        @click="
+          status = 'idle'
+          email = ''
+          touched = false
+        "
         class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
       >
         Gửi lại email
@@ -121,8 +169,18 @@
         to="/auth/login"
         class="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition group"
       >
-        <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        <svg
+          class="w-4 h-4 transition-transform group-hover:-translate-x-0.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
         <span class="font-medium">Quay lại đăng nhập</span>
       </RouterLink>
@@ -147,7 +205,7 @@ const validEmail = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)
 async function submit() {
   touched.value = true
   if (!validEmail.value || loading.value) return
-  
+
   loading.value = true
   status.value = 'idle'
   errMessage.value = ''
@@ -214,7 +272,9 @@ async function submit() {
 
 .btn-primary:focus {
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.5), 0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
+  box-shadow:
+    0 0 0 2px rgba(102, 126, 234, 0.5),
+    0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
 }
 
 .btn-primary:active:not(:disabled) {
@@ -228,21 +288,45 @@ async function submit() {
 
 /* Animations */
 @keyframes bounce-slow {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
-.animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.animate-fade-in { animation: fade-in 0.3s ease-out; }
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25%      { transform: translateX(-10px); }
-  75%      { transform: translateX(10px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
 }
-.animate-shake { animation: shake 0.3s ease-out; }
+.animate-shake {
+  animation: shake 0.3s ease-out;
+}
 </style>
