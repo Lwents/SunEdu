@@ -53,5 +53,14 @@ jobs:
             "$VENV/bin/python" manage.py migrate --noinput
             "$VENV/bin/python" manage.py collectstatic --noinput
 
-            sudo systemctl restart sunedu-backend
-            sudo systemctl restart sunedu-celery || true
+            if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
+              sudo systemctl restart sunedu-backend
+            else
+              echo "sunedu-backend.service not found; skipping restart" >&2
+            fi
+
+            if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
+              sudo systemctl restart sunedu-celery
+            else
+              echo "sunedu-celery.service not found; skipping restart" >&2
+            fi
