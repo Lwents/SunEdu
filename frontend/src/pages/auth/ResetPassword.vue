@@ -2,13 +2,13 @@
   <div class="space-y-6">
     <!-- Header -->
     <div class="text-center">
-      <div class="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4 animate-bounce-slow">
-        <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 animate-bounce-slow">
+        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
       </div>
-      <h1 class="text-xl font-bold text-gray-900 mb-2">Đặt lại mật khẩu</h1>
-      <p class="text-sm text-gray-600">Nhập mật khẩu mới cho tài khoản của bạn</p>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Đặt lại mật khẩu</h2>
+      <p class="text-sm text-gray-600">Tạo mật khẩu mới cho tài khoản của bạn</p>
     </div>
 
     <!-- Error Alert -->
@@ -128,11 +128,11 @@
 
       <!-- Back to login -->
       <div class="text-center">
-        <RouterLink to="/auth/login" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition inline-flex items-center gap-1">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <RouterLink to="/auth/login" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition inline-flex items-center gap-1.5 group">
+          <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
-          Quay lại đăng nhập
+          <span>Quay lại đăng nhập</span>
         </RouterLink>
       </div>
     </form>
@@ -210,7 +210,7 @@ async function submit() {
 
 .form-input {
   @apply w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400;
-  @apply focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500;
+  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500;
   @apply transition duration-200;
   @apply disabled:bg-gray-50 disabled:cursor-not-allowed;
 }
@@ -234,21 +234,21 @@ async function submit() {
   justify-content: center !important;
   padding: 0.75rem 1.5rem !important;
   border-radius: 0.75rem !important;
-  background: linear-gradient(to right, rgb(5, 150, 105), rgb(20, 184, 166)) !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   font-weight: 600 !important;
   transition: all 0.2s !important;
   transform-origin: center !important;
-  box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.25) !important;
+  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(to right, rgb(4, 120, 87), rgb(13, 148, 136)) !important;
+  background: linear-gradient(135deg, #5568d3 0%, #663d8f 100%) !important;
 }
 
 .btn-primary:focus {
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.5), 0 10px 15px -3px rgba(5, 150, 105, 0.25) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.5), 0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
 }
 
 .btn-primary:active:not(:disabled) {

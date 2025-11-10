@@ -1,5 +1,6 @@
 import logging
 import traceback
+from collections.abc import Mapping, Sequence
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -65,14 +66,62 @@ def _as_tuple(*items):
     return tuple(item for item in items if item is not None)
 
 
+def _extract_message(payload):
+    if isinstance(payload, str):
+        return payload
+    if isinstance(payload, Mapping):
+        for key in ("message", "detail", "error", "non_field_errors"):
+            value = payload.get(key)
+            if isinstance(value, str) and value:
+                return value
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)) and value:
+                return _extract_message(value[0])
+        for value in payload.values():
+            if isinstance(value, str) and value:
+                return value
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)) and value:
+                return _extract_message(value[0])
+        return ""
+    if isinstance(payload, Sequence) and not isinstance(payload, (str, bytes)):
+        return _extract_message(payload[0]) if payload else ""
+    return str(payload)
+
+
+def _normalize_error_payload(data, status_code, default_code="error"):
+    # Already formatted payload → ensure status present then return
+    if isinstance(data, Mapping) and "message" in data and ("error" in data or "code" in data or "detail" in data):
+        normalized = dict(data)
+        normalized.setdefault("status", status_code)
+        if "error" not in normalized and default_code:
+            normalized["error"] = default_code
+        return normalized
+
+    message = _extract_message(data)
+    if not message:
+        message = "Yêu cầu không hợp lệ" if status_code < 500 else "Đã xảy ra lỗi hệ thống"
+
+    payload = {
+        "error": default_code or "error",
+        "message": message,
+        "status": status_code,
+    }
+
+    if isinstance(data, Mapping):
+        payload["errors"] = dict(data)
+        payload["detail"] = data.get("detail", message)
+    elif isinstance(data, Sequence) and not isinstance(data, (str, bytes)):
+        payload["errors"] = list(data)
+        payload["detail"] = message
+    else:
+        payload["detail"] = str(data)
+
+    return payload
+
+
 def _build_error_response(detail, status_code, error_code):
-    return Response(
-        {
-            "error": error_code,
-            "detail": detail,
-        },
-        status=status_code,
-    )
+    detail_payload = {"detail": detail} if not isinstance(detail, (Mapping, Sequence)) or isinstance(detail, (str, bytes)) else detail
+    normalized = _normalize_error_payload(detail_payload, status_code, error_code)
+    return Response(normalized, status=status_code)
 
 
 def custom_exception_handler(exc, context):
@@ -85,7 +134,8 @@ def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if response is not None:
-        # Giữ nguyên format mặc định cho lỗi chuẩn của DRF
+        default_code = "validation_error" if response.status_code == status.HTTP_400_BAD_REQUEST else "error"
+        response.data = _normalize_error_payload(response.data, response.status_code, default_code)
         return response
 
     # -------------------------------

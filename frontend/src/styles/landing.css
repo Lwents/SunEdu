@@ -1,0 +1,86 @@
+/* Landing Page Custom Styles */
+
+/* Button Styles */
+.btn-primary {
+  @apply bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300;
+}
+.btn-primary:hover {
+  @apply shadow-2xl scale-105;
+}
+
+.btn-secondary {
+  @apply bg-white text-gray-700 px-8 py-4 rounded-2xl font-bold text-lg border-2 border-gray-200 transition-all duration-300;
+}
+.btn-secondary:hover {
+  @apply border-indigo-300 shadow-lg;
+}
+
+.btn-header {
+  @apply bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2;
+}
+.btn-header:hover {
+  @apply shadow-xl scale-105;
+}
+
+/* Section Styles */
+.section-badge {
+  @apply inline-block px-4 py-2 rounded-full mb-4;
+}
+
+.section-title {
+  @apply text-4xl md:text-5xl font-bold text-gray-900 mb-4;
+}
+
+.section-subtitle {
+  @apply text-xl text-gray-600 max-w-2xl mx-auto;
+}
+
+/* Card Styles */
+.card-feature {
+  @apply bg-white rounded-3xl p-8 shadow-sm transition-all duration-500 border border-gray-100;
+}
+.card-feature:hover {
+  @apply shadow-2xl -translate-y-2;
+}
+
+.card-course {
+  @apply relative overflow-hidden rounded-3xl shadow-lg transition-all duration-500;
+}
+.card-course:hover {
+  @apply shadow-2xl -translate-y-2;
+}
+
+.card-testimonial {
+  @apply w-[400px] bg-white rounded-3xl p-8 transition-all duration-300 border-2 border-transparent flex-shrink-0;
+}
+
+/* Icon Styles */
+.icon-feature {
+  @apply w-16 h-16 rounded-2xl mb-6 flex items-center justify-center text-3xl transition-all duration-500;
+}
+.card-feature:hover .icon-feature {
+  @apply scale-110 rotate-6;
+}
+
+.icon-course {
+  @apply text-5xl mb-4 transition-all duration-500;
+}
+.card-course:hover .icon-course {
+  @apply scale-110 rotate-6;
+}
+
+/* Animation Helpers */
+.fade-in-section {
+  @apply opacity-0 translate-y-8 transition-all duration-800;
+}
+
+.fade-in-visible {
+  @apply opacity-100 translate-y-0;
+}
+
+/* Testimonial card shadow */
+.testimonial-card {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+              0 2px 4px -1px rgba(0, 0, 0, 0.06),
+              0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}

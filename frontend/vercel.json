@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.eduriot.fit/api/:path*"
+      "destination": "https://api.smartedu.click/api/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

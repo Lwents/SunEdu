@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-5">
     <form @submit.prevent="onSubmit" class="space-y-5" autocomplete="off">
       <!-- Email -->
       <div class="form-group">
@@ -150,7 +150,7 @@
         </label>
         <RouterLink
           to="/auth/forgot-password"
-          class="text-sm font-medium text-pink-600 hover:text-pink-700 transition"
+          class="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition"
         >
           Quên mật khẩu?
         </RouterLink>
@@ -248,7 +248,7 @@
       Chưa có tài khoản?
       <RouterLink
         to="/auth/register"
-        class="font-medium text-pink-600 hover:text-pink-700 transition"
+        class="font-medium text-indigo-600 hover:text-indigo-700 transition"
       >
         Đăng ký ngay
       </RouterLink>
@@ -313,8 +313,7 @@ const onSubmit = async () => {
     await auth.login(form.email, form.password, form.remember)
     showToast('Đăng nhập thành công!', 'success')
   } catch (e: any) {
-    // showToast(e?.message || 'Đăng nhập thất bại', 'error')
-    showToast('Đăng nhập thất bại', 'error')
+    showToast(e?.message || 'Đăng nhập thất bại', 'error')
   } finally {
     loading.value = false
   }
@@ -358,7 +357,7 @@ function showToast(message: string, type: 'success' | 'error') {
 
 .form-input {
   @apply w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400;
-  @apply focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500;
+  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500;
   @apply transition duration-200;
 }
 
@@ -374,7 +373,7 @@ function showToast(message: string, type: 'success' | 'error') {
   @apply text-xs text-red-600 mt-1.5 flex items-start gap-1.5;
 }
 
-/* Primary Button — Pink gradient */
+/* Primary Button — Purple gradient */
 .btn-primary {
   width: 100% !important;
   display: flex !important;
@@ -382,31 +381,23 @@ function showToast(message: string, type: 'success' | 'error') {
   justify-content: center !important;
   padding: 0.75rem 1.5rem !important;
   border-radius: 0.75rem !important;
-  background: linear-gradient(
-    to right,
-    rgb(236, 72, 153),
-    rgb(219, 39, 119)
-  ) !important; /* #ec4899 → #db2777 */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   font-weight: 600 !important;
   transition: all 0.2s !important;
   transform-origin: center !important;
-  box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.25) !important;
+  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(
-    to right,
-    rgb(219, 39, 119),
-    rgb(190, 24, 93)
-  ) !important; /* #db2777 → #be185d */
+  background: linear-gradient(135deg, #5568d3 0%, #663d8f 100%) !important;
 }
 
 .btn-primary:focus {
   outline: none !important;
   box-shadow:
-    0 0 0 2px rgba(236, 72, 153, 0.5),
-    0 10px 15px -3px rgba(236, 72, 153, 0.25) !important;
+    0 0 0 2px rgba(102, 126, 234, 0.5),
+    0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
 }
 
 .btn-primary:active:not(:disabled) {
