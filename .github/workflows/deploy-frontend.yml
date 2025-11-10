@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  id-token: write        # cần cho OIDC
+  id-token: write
   contents: read
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       AWS_REGION: ap-southeast-2
       S3_BUCKET: www.smartedu.click
       DIST_DIR: frontend/dist
-      CF_DISTRIBUTION_ID: ""   # điền ID nếu dùng CloudFront, nếu không thì để rỗng
+      CF_DISTRIBUTION_ID: ""  # điền ID nếu dùng CloudFront
 
     steps:
       - name: Checkout
@@ -30,6 +30,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install deps
         working-directory: frontend
@@ -39,23 +41,19 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      # 1) Configure AWS credentials via OIDC (không cần access key)
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: arn:aws:iam::<YOUR_AWS_ACCOUNT_ID>:role/<GITHUB_OIDC_ROLE_NAME>
+          role-to-assume: arn:aws:iam::365761707577:role/github-actions-deploy-s3
           role-session-name: github-actions-frontend
 
-      # 2) Upload assets (cache dài, immutable)
-      - name: Sync assets
-        if: always()
+      - name: Sync assets (immutable)
         run: |
           aws s3 sync "$DIST_DIR/assets" "s3://$S3_BUCKET/assets" \
             --delete \
             --cache-control "public,max-age=31536000,immutable"
 
-      # 3) Upload các file khác trừ index.html (cache vừa)
       - name: Sync other files (except index.html)
         run: |
           aws s3 sync "$DIST_DIR" "s3://$S3_BUCKET" \
@@ -64,16 +62,14 @@ jobs:
             --exclude "index.html" \
             --cache-control "public,max-age=3600"
 
-      # 4) Upload index.html (no-cache để thấy bản mới ngay)
       - name: Upload index.html (no-cache)
         run: |
           aws s3 cp "$DIST_DIR/index.html" "s3://$S3_BUCKET/index.html" \
             --cache-control "no-cache" \
             --content-type "text/html"
 
-      # 5) (Tuỳ chọn) Invalidate CloudFront để cập nhật nhanh
       - name: Invalidate CloudFront
-        if: env.CF_DISTRIBUTION_ID != ''
+        if: ${{ env.CF_DISTRIBUTION_ID != '' }}
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "$CF_DISTRIBUTION_ID" \
