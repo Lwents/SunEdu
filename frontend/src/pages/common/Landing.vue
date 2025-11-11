@@ -6,7 +6,7 @@
       class="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/80 border-b border-gray-200/50 shadow-sm"
     >
       <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center">
-        <LogoSmartEdu :size="50" class="sm:w-[70px]" />
+        <LogoSmartEdu :size="64" class="w-16 sm:w-[90px]" />
         <nav class="hidden lg:flex items-center space-x-8">
           <a
             href="#home"
@@ -104,19 +104,19 @@
             <div class="counter-item">
               <div
                 class="text-xl sm:text-2xl md:text-3xl font-bold text-indigo-600"
-                data-target="50000"
-              >
-                0
-              </div>
+                data-target="5000"
+                data-suffix="+"
+                data-animated="false"
+              >0</div>
               <div class="text-xs sm:text-sm text-gray-600">Học sinh</div>
             </div>
             <div class="counter-item">
               <div
                 class="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600"
-                data-target="10000"
-              >
-                0
-              </div>
+                data-target="1000"
+                data-suffix="+"
+                data-animated="false"
+              >0</div>
               <div class="text-xs sm:text-sm text-gray-600">Bài học</div>
             </div>
             <div>
@@ -637,7 +637,6 @@
           class="mb-6 sm:mb-8 md:mb-12 opacity-0 translate-y-8 transition-all duration-800 text-center"
           :class="{ 'opacity-100 translate-y-0': footerVisible }"
         >
-          <LogoSmartEdu :size="60" class="sm:w-[70px] mx-auto mb-3" />
           <p class="text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
             Nền tảng học tập trực tuyến hàng đầu cho học sinh tiểu học Việt Nam
           </p>
@@ -789,8 +788,8 @@ const footerVisible = ref(false)
 
 // Data
 const stats = ref([
-  { icon: '👨‍👩‍👧‍👦', value: '50,000+', label: 'Học sinh' },
-  { icon: '📚', value: '10,000+', label: 'Bài học' },
+  { icon: '👨‍👩‍👧‍👦', value: '5,000+', label: 'Học sinh' },
+  { icon: '📚', value: '1,000+', label: 'Bài học' },
   { icon: '🎮', value: '500+', label: 'Trò chơi' },
   { icon: '⭐', value: '4.9/5', label: 'Đánh giá' },
 ])
@@ -1088,16 +1087,17 @@ const handleScroll = () => {
 
 const animateCounter = (el) => {
   const target = parseInt(el.getAttribute('data-target'))
-  const increment = target / 100
+  const suffix = el.getAttribute('data-suffix') || ''
+  const increment = Math.max(1, target / 100)
   let current = 0
 
   const updateCounter = () => {
     current += increment
     if (current < target) {
-      el.textContent = Math.ceil(current).toLocaleString() + '+'
+      el.textContent = `${Math.ceil(current).toLocaleString()}${suffix}`
       requestAnimationFrame(updateCounter)
     } else {
-      el.textContent = target.toLocaleString() + '+'
+      el.textContent = `${target.toLocaleString()}${suffix}`
     }
   }
 
@@ -1110,7 +1110,8 @@ const setupCounters = () => {
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting && entry.target.textContent === '0') {
+        if (entry.isIntersecting && entry.target.getAttribute('data-animated') !== 'true') {
+          entry.target.setAttribute('data-animated', 'true')
           animateCounter(entry.target)
         }
       })

@@ -665,14 +665,35 @@ function switchToRegister() {
   .auth-container {
     min-height: 500px;
     border-radius: 24px;
+    display: block;
   }
 
   .form-panel {
     padding: 2rem 1.5rem;
+    position: relative;
+    width: 100%;
+    transform: none;
+    opacity: 1;
   }
 
   .brand-header {
     margin-bottom: 1.5rem;
+  }
+
+  .form-wrapper {
+    max-width: 100%;
+  }
+
+  .right-panel {
+    display: none;
+  }
+
+  .auth-container.register-mode .left-panel {
+    display: none;
+  }
+
+  .auth-container.register-mode .right-panel {
+    display: flex;
   }
 
   .form-title {
