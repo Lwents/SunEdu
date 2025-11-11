@@ -13,6 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy toàn bộ project vào container
 COPY . .
 
+# Tạo thư mục logs và file log
+RUN mkdir -p /app/logs && touch /app/logs/ai_personalization.log
+
 # Expose port 8000 cho Django
 EXPOSE 8000
 
