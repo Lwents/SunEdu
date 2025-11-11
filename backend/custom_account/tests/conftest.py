@@ -31,7 +31,7 @@ def dummy_email(monkeypatch):
 
     dummy_service = DummyService()
     monkeypatch.setattr(
-        "account.services.auth_service.get_email_service",
+        "custom_account.services.auth_service.get_email_service",
         lambda: dummy_service,
     )
     return sent
@@ -90,5 +90,4 @@ def admin_auth_client(db, django_user_model):
 @pytest.fixture
 def profile_factory(db):
     return ProfileFactory
-
 
