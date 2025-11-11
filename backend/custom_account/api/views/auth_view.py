@@ -77,7 +77,7 @@ class ResetPasswordRequestView(APIView):
             return Response({"detail": f"Error sending email: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         if sent:
-            return Response({"detail": "If the email exists, reset instructions have been sent."}, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({"detail": "Failed to send reset email."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
