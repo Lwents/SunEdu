@@ -22,7 +22,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 30m
+          timeout: 10m
           envs: BACKEND_ENV_FILE
           script: |
             set -euo pipefail
