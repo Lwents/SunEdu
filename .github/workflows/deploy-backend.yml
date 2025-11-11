@@ -1,36 +1,20 @@
 name: Deploy Backend
 
-
-# Chỉ commit file example này, KHÔNG commit file thực lên giton:
-
+on:
   push:
+    branches: [main]
+  workflow_dispatch: {}   # chạy tay khi cần
 
-# Ví dụ: Override DB password khác trên server    branches: [main]
-
-# DB_PASSWORD=super-secure-password-on-server  workflow_dispatch: {}   # chạy tay khi cần
-
-
-
-# Ví dụ: Override email passwordconcurrency:
-
-# EMAIL_HOST_PASSWORD=app-password-from-google  group: deploy-backend
-
+concurrency:
+  group: deploy-backend
   cancel-in-progress: true
 
-# Ví dụ: Override các API keys khác
-
-# OPENAI_API_KEY=sk-...jobs:
-
+jobs:
   deploy:
-
-# CÁCH SỬ DỤNG:    runs-on: ubuntu-latest
-
-# 1. Tạo file .env.local.override trên server EC2    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-
-# 2. Thêm các giá trị cần override    steps:
-
-# 3. Workflow sẽ tự động merge với .env.production      - name: Deploy to EC2
-
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         env:
           BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
@@ -38,7 +22,7 @@ name: Deploy Backend
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 10m
+          timeout: 30m
           envs: BACKEND_ENV_FILE
           script: |
             set -euo pipefail
