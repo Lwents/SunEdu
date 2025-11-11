@@ -1,20 +1,36 @@
 name: Deploy Backend
 
-on:
-  push:
-    branches: [main]
-  workflow_dispatch: {}   # chạy tay khi cần
 
-concurrency:
-  group: deploy-backend
+# Chỉ commit file example này, KHÔNG commit file thực lên giton:
+
+  push:
+
+# Ví dụ: Override DB password khác trên server    branches: [main]
+
+# DB_PASSWORD=super-secure-password-on-server  workflow_dispatch: {}   # chạy tay khi cần
+
+
+
+# Ví dụ: Override email passwordconcurrency:
+
+# EMAIL_HOST_PASSWORD=app-password-from-google  group: deploy-backend
+
   cancel-in-progress: true
 
-jobs:
+# Ví dụ: Override các API keys khác
+
+# OPENAI_API_KEY=sk-...jobs:
+
   deploy:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Deploy to EC2
+
+# CÁCH SỬ DỤNG:    runs-on: ubuntu-latest
+
+# 1. Tạo file .env.local.override trên server EC2    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+# 2. Thêm các giá trị cần override    steps:
+
+# 3. Workflow sẽ tự động merge với .env.production      - name: Deploy to EC2
+
         uses: appleboy/ssh-action@v1.0.3
         env:
           BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
@@ -22,7 +38,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 30m
+          timeout: 10m
           envs: BACKEND_ENV_FILE
           script: |
             set -euo pipefail
@@ -77,31 +93,30 @@ jobs:
             fi
 
             if command -v docker >/dev/null 2>&1; then
-              echo "🐳 Starting database with $COMPOSE_FILE"
-              docker compose -f "$COMPOSE_FILE" up -d db
-              for i in {1..20}; do
-                if pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
-                  echo "✅ Database ready"
+              echo "🐳 Deploying with Docker Compose: $COMPOSE_FILE"
+              
+              # Stop old containers
+              docker compose -f "$COMPOSE_FILE" down
+              
+              # Build and start all services (db + web)
+              docker compose -f "$COMPOSE_FILE" up -d --build
+              
+              # Wait for services to be healthy
+              echo "⏳ Waiting for services to be healthy..."
+              for i in {1..30}; do
+                if docker compose -f "$COMPOSE_FILE" ps | grep -q "healthy"; then
+                  echo "✅ Services are healthy"
                   break
                 fi
-                echo "⏳ Waiting for database... ($i/20)"
+                echo "⏳ Waiting... ($i/30)"
                 sleep 3
               done
+              
+              # Show container status
+              docker compose -f "$COMPOSE_FILE" ps
+              
+              echo "✅ Docker deployment complete!"
             else
-              echo "⚠️  Docker not installed; assuming external database" >&2
-            fi
-
-            "$VENV/bin/python" manage.py migrate --noinput
-            "$VENV/bin/python" manage.py collectstatic --noinput
-
-            if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
-              sudo systemctl restart sunedu-backend
-            else
-              echo "sunedu-backend.service not found; skipping restart" >&2
-            fi
-
-            if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
-              sudo systemctl restart sunedu-celery
-            else
-              echo "sunedu-celery.service not found; skipping restart" >&2
+              echo "❌ Docker not installed!"
+              exit 1
             fi
