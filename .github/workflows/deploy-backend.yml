@@ -22,7 +22,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 10m
+          timeout: 30m
           envs: BACKEND_ENV_FILE
           script: |
             set -euo pipefail
@@ -39,28 +39,56 @@ jobs:
 
             cd backend
 
-            # Sync environment configuration if provided via secrets
+            # Sync environment configuration
             if [ -n "${BACKEND_ENV_FILE:-}" ]; then
+              # Priority 1: Use GitHub secret
               printf '%s\n' "$BACKEND_ENV_FILE" > .env
               chmod 600 .env
+              echo "✅ Updated .env from GitHub secrets"
+            elif [ -f ".env.production" ]; then
+              # Priority 2: Use .env.production from repo (auto-sync from git)
+              echo "📋 Using .env.production from repository"
+              cp .env.production .env
+              chmod 600 .env
+              
+              # Merge with local overrides if exists
+              if [ -f ".env.local.override" ]; then
+                echo "🔀 Merging with .env.local.override"
+                cat .env.local.override >> .env
+              fi
+              
+              echo "✅ Created .env from .env.production"
+            elif [ -f ".env" ]; then
+              # Priority 3: Keep existing .env
+              echo "⚠️  Using existing .env file"
             else
-              echo "BACKEND_ENV_FILE secret not provided; keeping existing .env" >&2
+              echo "❌ No .env configuration found!"
+              exit 1
             fi
 
             mkdir -p logs
             touch logs/ai_personalization.log
 
+            # Use production docker-compose if available
+            COMPOSE_FILE="docker-compose.prod.yml"
+            if [ ! -f "$COMPOSE_FILE" ]; then
+              COMPOSE_FILE="docker-compose.yml"
+              echo "⚠️  docker-compose.prod.yml not found, using docker-compose.yml"
+            fi
+
             if command -v docker >/dev/null 2>&1; then
-              docker compose -f docker-compose.yml up -d db
+              echo "🐳 Starting database with $COMPOSE_FILE"
+              docker compose -f "$COMPOSE_FILE" up -d db
               for i in {1..20}; do
                 if pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+                  echo "✅ Database ready"
                   break
                 fi
-                echo "Waiting for Postgres container on 127.0.0.1:5432 ... ($i/20)"
+                echo "⏳ Waiting for database... ($i/20)"
                 sleep 3
               done
             else
-              echo "Docker is not installed; skipping dockerized DB startup" >&2
+              echo "⚠️  Docker not installed; assuming external database" >&2
             fi
 
             "$VENV/bin/python" manage.py migrate --noinput
