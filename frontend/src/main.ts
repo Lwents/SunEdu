@@ -2,7 +2,6 @@
 // import { createPinia } from 'pinia'
 // import ElementPlus from 'element-plus'
 
-
 // import App from './App.vue'
 // import router from './router'
 // import "@/styles/tailwind.css"
@@ -13,9 +12,7 @@
 // app.use(router)
 // app.use(ElementPlus)
 
-
 // app.mount('#app')
-
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -39,7 +36,6 @@ if (
   const { host, pathname, search, hash } = window.location
   window.location.replace(`https://${host}${pathname}${search}${hash}`)
 }
-
 
 const app = createApp(App)
 const pinia = createPinia()

@@ -22,7 +22,10 @@
         </svg>
         <div>
           <p class="font-medium">Đặt lại mật khẩu thành công!</p>
-          <p class="mt-1">Đang chuyển hướng đến trang đăng nhập trong <span class="font-semibold">{{ countdown }}s</span>...</p>
+          <p class="mt-1">
+            Đang chuyển hướng đến trang đăng nhập trong
+            <span class="font-semibold">{{ countdown }}s</span>...
+          </p>
         </div>
       </div>
     </div>
@@ -290,10 +293,10 @@ async function submit() {
   try {
     await auth.resetPassword(email.value, token.value, password.value)
     status.value = 'success'
-    
+
     // Hiển thị toast thành công
     showToast('Đặt lại mật khẩu thành công!', 'success')
-    
+
     // Đếm ngược từ 10 giây
     countdown.value = 10
     const interval = setInterval(() => {
@@ -306,7 +309,7 @@ async function submit() {
   } catch (e: any) {
     status.value = 'error'
     errMessage.value = e?.message || 'Đặt lại mật khẩu thất bại.'
-    
+
     // Hiển thị toast lỗi
     showToast(e?.message || 'Đặt lại mật khẩu thất bại.', 'error')
   } finally {

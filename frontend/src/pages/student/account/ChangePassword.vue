@@ -243,7 +243,9 @@
             class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-10 backdrop-blur-sm"
             @click.self="closeOtpModal"
           >
-            <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200">
+            <div
+              class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200"
+            >
               <div class="flex items-start justify-between">
                 <div>
                   <h3 class="mt-1 text-xl font-bold text-slate-900">Nhập mã OTP xác thực</h3>
@@ -257,7 +259,14 @@
                   aria-label="Đóng"
                   @click="closeOtpModal"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    class="h-5 w-5"
+                  >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -482,7 +491,10 @@ async function sendOtp(showSuccess = true) {
     return true
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Không gửi được OTP. Thử lại sau.'
-    if (message.toLowerCase().includes('mật khẩu') && message.toLowerCase().includes('không chính xác')) {
+    if (
+      message.toLowerCase().includes('mật khẩu') &&
+      message.toLowerCase().includes('không chính xác')
+    ) {
       errs.current = message
       touched.current = true
     }
