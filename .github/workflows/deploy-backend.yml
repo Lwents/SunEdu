@@ -3,7 +3,7 @@ name: Deploy Backend
 on:
   push:
     branches: [main]
-  workflow_dispatch: {}   # chạy tay khi cần
+  workflow_dispatch: {} # chạy tay khi cần
 
 concurrency:
   group: deploy-backend
