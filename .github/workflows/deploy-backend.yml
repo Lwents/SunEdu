@@ -77,31 +77,41 @@ jobs:
             fi
 
             if command -v docker >/dev/null 2>&1; then
-              echo "🐳 Starting database with $COMPOSE_FILE"
-              docker compose -f "$COMPOSE_FILE" up -d db
-              for i in {1..20}; do
-                if pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
-                  echo "✅ Database ready"
+              echo "🐳 Deploying with Docker Compose: $COMPOSE_FILE"
+              
+              # Stop old systemd services (they use port 8000)
+              if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
+                echo "⏹️  Stopping sunedu-backend.service..."
+                sudo systemctl stop sunedu-backend || true
+                sudo systemctl disable sunedu-backend || true
+              fi
+              
+              if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
+                echo "⏹️  Stopping sunedu-celery.service..."
+                sudo systemctl stop sunedu-celery || true
+              fi
+              
+              # Stop and remove old containers
+              docker compose -f "$COMPOSE_FILE" down || true
+              
+              # Build and start all services
+              docker compose -f "$COMPOSE_FILE" up -d --build
+              
+              # Wait for health check
+              echo "⏳ Waiting for services to be healthy..."
+              for i in {1..30}; do
+                if docker compose -f "$COMPOSE_FILE" ps | grep -q "healthy"; then
+                  echo "✅ Services are healthy"
                   break
                 fi
-                echo "⏳ Waiting for database... ($i/20)"
+                echo "⏳ Waiting... ($i/30)"
                 sleep 3
               done
+              
+              # Show status
+              docker compose -f "$COMPOSE_FILE" ps
+              echo "✅ Docker deployment complete! Backend running on port 8001"
             else
-              echo "⚠️  Docker not installed; assuming external database" >&2
-            fi
-
-            "$VENV/bin/python" manage.py migrate --noinput
-            "$VENV/bin/python" manage.py collectstatic --noinput
-
-            if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
-              sudo systemctl restart sunedu-backend
-            else
-              echo "sunedu-backend.service not found; skipping restart" >&2
-            fi
-
-            if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
-              sudo systemctl restart sunedu-celery
-            else
-              echo "sunedu-celery.service not found; skipping restart" >&2
+              echo "❌ Docker not installed!"
+              exit 1
             fi
