@@ -35,7 +35,11 @@ def reset_password_request(email: str) -> None:
         )
         return True
     except Exception as e:
-        return False
+        # Log the actual error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send password reset email to {email}: {str(e)}")
+        raise  # Re-raise to let caller handle it
 
 
 def reset_password_confirm(email: str, token: str, new_password: str) -> bool:
