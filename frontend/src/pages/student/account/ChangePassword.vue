@@ -15,25 +15,6 @@
           </h2>
         </div>
 
-        <Transition
-          enter-active-class="transition-opacity duration-200"
-          leave-active-class="transition-opacity duration-200"
-          enter-from-class="opacity-0"
-          leave-to-class="opacity-0"
-        >
-          <div
-            v-if="toast.msg"
-            :class="[
-              'fixed bottom-4 right-4 z-40 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg sm:text-base',
-              toast.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-rose-200 bg-rose-50 text-rose-700',
-            ]"
-          >
-            {{ toast.msg }}
-          </div>
-        </Transition>
-
         <form class="mt-6 space-y-6" @submit.prevent="changePassword">
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
             <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
@@ -336,6 +317,7 @@
 import { reactive, ref, watch, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -423,15 +405,6 @@ const isSubmitDisabled = computed(() => {
 })
 
 const saving = ref(false)
-
-const toast = reactive<{ msg: string; type: 'success' | 'error' | '' }>({ msg: '', type: '' })
-let toastTimer: number | undefined
-function showToast(msg: string, type: 'success' | 'error') {
-  toast.msg = msg
-  toast.type = type
-  clearTimeout(toastTimer)
-  toastTimer = window.setTimeout(() => (toast.msg = ''), 2500)
-}
 
 async function changePassword() {
   touched.current = touched.new1 = touched.new2 = true

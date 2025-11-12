@@ -191,6 +191,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
+import { showToast } from '@/utils/toast'
 
 const auth = useAuthStore()
 
@@ -213,9 +214,11 @@ async function submit() {
   try {
     await auth.forgotPassword(email.value)
     status.value = 'success'
+    showToast('Đã gửi link đặt lại mật khẩu đến email của bạn!', 'success')
   } catch (e: any) {
     status.value = 'error'
     errMessage.value = e?.message || 'Gửi email thất bại. Vui lòng thử lại.'
+    showToast(e?.message || 'Gửi email thất bại. Vui lòng thử lại.', 'error')
   } finally {
     loading.value = false
   }

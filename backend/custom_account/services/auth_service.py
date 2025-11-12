@@ -26,6 +26,12 @@ def reset_password_request(email: str) -> None:
     frontend_base = (settings.FRONTEND_URL or "").rstrip("/") or "http://localhost:5173"
     reset_link = f"{frontend_base}/auth/reset-password?email={quote(user.email)}&token={quote(token)}"
   
+    # Log link for testing (remove in production)
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"🔗 Password reset link for {email}: {reset_link}")
+    print(f"\n{'='*80}\n🔗 PASSWORD RESET LINK:\n{reset_link}\n{'='*80}\n")
+  
     try: 
         email_service = get_email_service()
         email_service.send(

@@ -177,7 +177,7 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() == "true"
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "false").lower() == "true"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@eduriot.fit")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@smartedu")
 
 # -------------------------------
 # Celery / Redis
@@ -269,7 +269,7 @@ USE_TZ = True
 # Miscellaneous
 # -------------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://eduriot.fit/')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://smartedu.click/')
 PASSWORD_RESET_TIMEOUT = 600  # 10 minutes
 
 # Upload limits

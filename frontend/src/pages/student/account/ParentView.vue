@@ -15,25 +15,6 @@
           </h2>
         </div>
 
-        <Transition
-          enter-active-class="transition-opacity duration-200"
-          leave-active-class="transition-opacity duration-200"
-          enter-from-class="opacity-0"
-          leave-to-class="opacity-0"
-        >
-          <div
-            v-if="toast.msg"
-            :class="[
-              'fixed bottom-4 right-4 z-40 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg sm:text-base',
-              toast.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-rose-200 bg-rose-50 text-rose-700',
-            ]"
-          >
-            {{ toast.msg }}
-          </div>
-        </Transition>
-
         <form v-if="!loading" class="mt-6 space-y-6" @submit.prevent="save">
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
             <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
@@ -103,7 +84,9 @@
           </div>
 
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Mối quan hệ</label>
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
+              >Mối quan hệ</label
+            >
             <div>
               <select
                 v-model="f.relation"
@@ -157,7 +140,12 @@
 import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
-import { authService, type ProfileUpdatePayload, type ProfileDetails } from '@/services/auth.service'
+import {
+  authService,
+  type ProfileUpdatePayload,
+  type ProfileDetails,
+} from '@/services/auth.service'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const goProfile = () => router.push({ name: 'student-profile' })
@@ -203,15 +191,6 @@ const isValid = computed(() => {
 const saving = ref(false)
 const loading = ref(false)
 let profileDetails: ProfileDetails | null = null
-
-const toast = reactive<{ msg: string; type: 'success' | 'error' | '' }>({ msg: '', type: '' })
-let toastTimer: number | undefined
-function showToast(msg: string, type: 'success' | 'error') {
-  toast.msg = msg
-  toast.type = type
-  clearTimeout(toastTimer)
-  toastTimer = window.setTimeout(() => (toast.msg = ''), 2500)
-}
 
 async function save() {
   // khi bấm lưu, hiển thị lỗi cho các trường bắt buộc nếu còn thiếu

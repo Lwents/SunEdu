@@ -3,9 +3,7 @@
   <div class="min-h-screen w-full overflow-x-hidden bg-slate-50">
     <main class="w-full mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 md:px-10">
       <!-- Header -->
-      <div
-        class="mb-4 sm:mb-5 flex flex-wrap items-center justify-between gap-2 sm:gap-3"
-      >
+      <div class="mb-4 sm:mb-5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <h1 class="text-xl font-semibold sm:text-2xl">Phản hồi học sinh</h1>
 
         <!-- Nút quay lại: nhỏ trên mobile, bình thường trên >=sm -->
@@ -22,8 +20,16 @@
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <!-- Left: student list -->
         <section class="lg:col-span-1 rounded-2xl border border-slate-200 bg-white p-4">
-          <div class="mb-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-            <svg viewBox="0 0 24 24" class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" aria-hidden="true">
+          <div
+            class="mb-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="h-5 w-5 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
               <circle cx="11" cy="11" r="8" stroke-width="2" />
               <path d="M21 21l-4.3-4.3" stroke-width="2" />
             </svg>
@@ -36,7 +42,11 @@
           </div>
 
           <div v-if="loading" class="space-y-2">
-            <div v-for="i in 6" :key="'sk-'+i" class="flex items-center gap-3 rounded-xl px-2 py-2">
+            <div
+              v-for="i in 6"
+              :key="'sk-' + i"
+              class="flex items-center gap-3 rounded-xl px-2 py-2"
+            >
               <div class="h-9 w-9 rounded-full bg-slate-200 animate-pulse"></div>
               <div class="flex-1">
                 <div class="h-3 w-2/3 rounded bg-slate-200 animate-pulse mb-2"></div>
@@ -55,12 +65,16 @@
                 <img :src="s.avatar" :alt="s.name" class="h-9 w-9 rounded-full object-cover" />
                 <div class="min-w-0 flex-1">
                   <div class="truncate text-sm font-medium">{{ s.name }}</div>
-                  <div class="truncate text-xs text-slate-500">{{ s.classCode }} · {{ s.course }}</div>
+                  <div class="truncate text-xs text-slate-500">
+                    {{ s.classCode }} · {{ s.course }}
+                  </div>
                 </div>
               </button>
             </li>
           </ul>
-          <div v-else class="py-10 text-center text-sm text-slate-500">Không có học sinh phù hợp.</div>
+          <div v-else class="py-10 text-center text-sm text-slate-500">
+            Không có học sinh phù hợp.
+          </div>
         </section>
 
         <!-- Right: composer -->
@@ -71,10 +85,16 @@
 
           <div v-else class="space-y-4">
             <div class="flex items-center gap-3">
-              <img :src="current.avatar" :alt="current.name" class="h-12 w-12 rounded-full object-cover" />
+              <img
+                :src="current.avatar"
+                :alt="current.name"
+                class="h-12 w-12 rounded-full object-cover"
+              />
               <div>
                 <div class="font-semibold">{{ current.name }}</div>
-                <div class="text-xs text-slate-500">{{ current.classCode }} · {{ current.course }}</div>
+                <div class="text-xs text-slate-500">
+                  {{ current.classCode }} · {{ current.course }}
+                </div>
               </div>
             </div>
 
@@ -102,8 +122,8 @@
 
                 <div class="flex flex-wrap gap-2">
                   <button
-                    v-for="(t,i) in chipTexts"
-                    :key="'chip-'+i"
+                    v-for="(t, i) in chipTexts"
+                    :key="'chip-' + i"
                     type="button"
                     class="rounded-full border px-2 py-1 text-xs hover:bg-slate-50"
                     @click="append(t)"
@@ -116,7 +136,14 @@
               <div class="space-y-3">
                 <div>
                   <label class="mb-1 block text-sm font-medium">Mức độ hoàn thành</label>
-                  <input type="range" min="0" max="10" step="0.5" v-model.number="rating" class="w-full" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    step="0.5"
+                    v-model.number="rating"
+                    class="w-full"
+                  />
                   <div class="mt-1 text-sm">
                     <span class="font-medium">{{ rating.toFixed(1) }}</span> / 10
                   </div>
@@ -124,7 +151,10 @@
 
                 <div>
                   <label class="mb-1 block text-sm font-medium">Mẫu phản hồi</label>
-                  <select v-model="template" class="w-full rounded-xl border border-slate-200 p-2 text-sm">
+                  <select
+                    v-model="template"
+                    class="w-full rounded-xl border border-slate-200 p-2 text-sm"
+                  >
                     <option value="">— Chọn mẫu —</option>
                     <option value="praise">Khen ngợi</option>
                     <option value="improve">Cần cải thiện</option>
@@ -199,7 +229,9 @@ async function fetchStudents() {
     // @ts-ignore
     const mod = await import('@/services/user.service')
     const userService = mod.userService as {
-      list: (p: any) => Promise<{ items: Array<{ id:number|string; name:string; username:string }> }>
+      list: (
+        p: any,
+      ) => Promise<{ items: Array<{ id: number | string; name: string; username: string }> }>
     }
     const res = await userService.list({ role: 'student', pageSize: 50, page: 1 })
     const now = Date.now()
@@ -215,7 +247,7 @@ async function fetchStudents() {
         course,
         progress: 40 + ((id + i) % 50),
         avgScore: 6 + ((id + i) % 40) / 10,
-        lastActive: new Date(now - ((i + 1) * 36e5)).toLocaleString(),
+        lastActive: new Date(now - (i + 1) * 36e5).toLocaleString(),
       }
     })
   } catch {
@@ -241,16 +273,17 @@ async function fetchStudents() {
 
 const students = computed(() => {
   const key = q.value.trim().toLowerCase()
-  return allStudents.value.filter(s =>
-    !key ||
-    s.name.toLowerCase().includes(key) ||
-    s.classCode.toLowerCase().includes(key) ||
-    s.course.toLowerCase().includes(key)
+  return allStudents.value.filter(
+    (s) =>
+      !key ||
+      s.name.toLowerCase().includes(key) ||
+      s.classCode.toLowerCase().includes(key) ||
+      s.course.toLowerCase().includes(key),
   )
 })
 
-const current = computed<StudentRow | null>(() =>
-  students.value.find(s => s.id === selectedId.value) ?? null
+const current = computed<StudentRow | null>(
+  () => students.value.find((s) => s.id === selectedId.value) ?? null,
 )
 
 const canSend = computed(() => !!current.value && message.value.trim().length > 0)
@@ -273,9 +306,12 @@ watch(selectedId, (val) => {
 
 watch(template, (t) => {
   if (!t) return
-  if (t === 'praise') message.value = 'Cô/Thầy đánh giá cao sự nỗ lực của em. Tiếp tục phát huy nhé!'
-  if (t === 'improve') message.value = 'Em cần chú ý hơn ở các bài tập vận dụng và luyện thêm ví dụ tương tự.'
-  if (t === 'suggest') message.value = 'Gợi ý: Ôn lại các mục trọng tâm và làm bài luyện tập ở cuối chương.'
+  if (t === 'praise')
+    message.value = 'Cô/Thầy đánh giá cao sự nỗ lực của em. Tiếp tục phát huy nhé!'
+  if (t === 'improve')
+    message.value = 'Em cần chú ý hơn ở các bài tập vận dụng và luyện thêm ví dụ tương tự.'
+  if (t === 'suggest')
+    message.value = 'Gợi ý: Ôn lại các mục trọng tâm và làm bài luyện tập ở cuối chương.'
 })
 
 function append(t: string) {
@@ -298,12 +334,15 @@ function goBack() {
 
 onMounted(async () => {
   await fetchStudents()
-  if (selectedId.value && !allStudents.value.some(s => s.id === selectedId.value)) {
+  if (selectedId.value && !allStudents.value.some((s) => s.id === selectedId.value)) {
     selectedId.value = null
   }
 })
 </script>
 
 <style scoped>
-:host, .min-h-screen { overflow-x: hidden; }
+:host,
+.min-h-screen {
+  overflow-x: hidden;
+}
 </style>

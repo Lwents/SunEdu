@@ -70,15 +70,15 @@ class ResetPasswordRequestView(APIView):
 
         try:
             sent = auth_service.reset_password_request(email=email)
-        except ValueError:
-            # Không tiết lộ email tồn tại hay không -> vẫn báo thành công
-            sent = True
+        except ValueError as e:
+            # Trả về lỗi cụ thể khi email không tồn tại
+            return Response({"detail": "Email không tồn tại trong hệ thống."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as exc:
-            return Response({"detail": f"Error sending email: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": f"Lỗi khi gửi email: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         if sent:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({"detail": "Failed to send reset email."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": "Đã gửi link đặt lại mật khẩu đến email của bạn."}, status=status.HTTP_200_OK)
+        return Response({"detail": "Không thể gửi email đặt lại mật khẩu."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ResetPasswordConfirmView(APIView):
