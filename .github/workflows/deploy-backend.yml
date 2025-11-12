@@ -77,53 +77,31 @@ jobs:
             fi
 
             if command -v docker >/dev/null 2>&1; then
-              echo "🐳 Deploying with Docker Compose: $COMPOSE_FILE"
-              
-              # Stop old systemd services to free up ports
-              if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
-                echo "⏹️  Stopping sunedu-backend.service..."
-                sudo systemctl stop sunedu-backend || true
-                sudo systemctl disable sunedu-backend || true
-              fi
-              
-              if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
-                echo "⏹️  Stopping sunedu-celery.service..."
-                sudo systemctl stop sunedu-celery || true
-                sudo systemctl disable sunedu-celery || true
-              fi
-              
-              # Kill any process using port 8000
-              echo "🔍 Checking for processes on port 8000..."
-              sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
-              
-              # Kill any process using port 5432 (PostgreSQL)
-              sudo lsof -ti:5432 | xargs -r sudo kill -9 || true
-              
-              # Wait a bit for ports to be freed
-              sleep 2
-              
-              # Stop old containers
-              docker compose -f "$COMPOSE_FILE" down
-              
-              # Build and start all services (db + web)
-              docker compose -f "$COMPOSE_FILE" up -d --build
-              
-              # Wait for services to be healthy
-              echo "⏳ Waiting for services to be healthy..."
-              for i in {1..30}; do
-                if docker compose -f "$COMPOSE_FILE" ps | grep -q "healthy"; then
-                  echo "✅ Services are healthy"
+              echo "🐳 Starting database with $COMPOSE_FILE"
+              docker compose -f "$COMPOSE_FILE" up -d db
+              for i in {1..20}; do
+                if pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+                  echo "✅ Database ready"
                   break
                 fi
-                echo "⏳ Waiting... ($i/30)"
+                echo "⏳ Waiting for database... ($i/20)"
                 sleep 3
               done
-              
-              # Show container status
-              docker compose -f "$COMPOSE_FILE" ps
-              
-              echo "✅ Docker deployment complete!"
             else
-              echo "❌ Docker not installed!"
-              exit 1
+              echo "⚠️  Docker not installed; assuming external database" >&2
+            fi
+
+            "$VENV/bin/python" manage.py migrate --noinput
+            "$VENV/bin/python" manage.py collectstatic --noinput
+
+            if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
+              sudo systemctl restart sunedu-backend
+            else
+              echo "sunedu-backend.service not found; skipping restart" >&2
+            fi
+
+            if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
+              sudo systemctl restart sunedu-celery
+            else
+              echo "sunedu-celery.service not found; skipping restart" >&2
             fi
