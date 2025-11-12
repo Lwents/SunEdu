@@ -28,7 +28,6 @@
         <div class="form-panel left-panel">
           <div class="form-wrapper">
             <div class="brand-header">
-              <LogoSmartEdu :size="50" />
               <h2 class="form-title">Đăng nhập</h2>
             </div>
             <Login v-if="route.path === '/auth/login'" />
@@ -39,7 +38,6 @@
         <div class="form-panel right-panel">
           <div class="form-wrapper">
             <div class="brand-header">
-              <LogoSmartEdu :size="50" />
               <h2 class="form-title">Đăng ký</h2>
             </div>
             <Register v-if="route.path === '/auth/register'" />
