@@ -79,6 +79,19 @@ jobs:
             if command -v docker >/dev/null 2>&1; then
               echo "🐳 Deploying with Docker Compose: $COMPOSE_FILE"
               
+              # Stop old systemd services to free up ports
+              if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
+                echo "⏹️  Stopping sunedu-backend.service..."
+                sudo systemctl stop sunedu-backend || true
+                sudo systemctl disable sunedu-backend || true
+              fi
+              
+              if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
+                echo "⏹️  Stopping sunedu-celery.service..."
+                sudo systemctl stop sunedu-celery || true
+                sudo systemctl disable sunedu-celery || true
+              fi
+              
               # Stop old containers
               docker compose -f "$COMPOSE_FILE" down
               
