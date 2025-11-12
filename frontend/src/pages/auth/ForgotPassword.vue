@@ -17,48 +17,6 @@
       <p class="text-sm text-gray-600">Nhập email của bạn để nhận link đặt lại mật khẩu</p>
     </div>
 
-    <!-- Success Alert -->
-    <div
-      v-if="status === 'success'"
-      class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-700 animate-fade-in"
-      role="alert"
-    >
-      <div class="flex items-start gap-3">
-        <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fill-rule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        <div>
-          <p class="font-medium">Đã gửi email thành công!</p>
-          <p class="mt-1">
-            Chúng tôi đã gửi link đặt lại mật khẩu đến <span class="font-semibold">{{ email }}</span
-            >. Vui lòng kiểm tra hộp thư (và cả mục Spam).
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Error Alert -->
-    <div
-      v-else-if="status === 'error'"
-      class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 animate-shake"
-      role="alert"
-    >
-      <div class="flex items-start gap-3">
-        <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fill-rule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        <p>{{ errMessage }}</p>
-      </div>
-    </div>
-
     <form v-if="status !== 'success'" @submit.prevent="submit" class="space-y-5" autocomplete="off">
       <!-- Email -->
       <div class="form-group">
@@ -146,11 +104,11 @@
     <!-- Success state actions -->
     <div v-else class="space-y-3">
       <button
-        @click="
+        @click="() => {
           status = 'idle';
           email = '';
           touched = false;
-        "
+        }"
         class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
       >
         Gửi lại email
@@ -191,6 +149,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
+import { showToast } from '@/utils/toast'
 
 const auth = useAuthStore()
 
@@ -198,7 +157,6 @@ const email = ref('')
 const touched = ref(false)
 const loading = ref(false)
 const status = ref<'idle' | 'success' | 'error'>('idle')
-const errMessage = ref('')
 
 const validEmail = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value))
 
@@ -208,14 +166,14 @@ async function submit() {
 
   loading.value = true
   status.value = 'idle'
-  errMessage.value = ''
 
   try {
     await auth.forgotPassword(email.value)
     status.value = 'success'
+    showToast('Đã gửi link đặt lại mật khẩu đến email của bạn!', 'success')
   } catch (e: any) {
     status.value = 'error'
-    errMessage.value = e?.message || 'Gửi email thất bại. Vui lòng thử lại.'
+    showToast(e?.message || 'Gửi email thất bại. Vui lòng thử lại.', 'error')
   } finally {
     loading.value = false
   }
@@ -298,35 +256,5 @@ async function submit() {
 }
 .animate-bounce-slow {
   animation: bounce-slow 3s ease-in-out infinite;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-10px);
-  }
-  75% {
-    transform: translateX(10px);
-  }
-}
-.animate-shake {
-  animation: shake 0.3s ease-out;
 }
 </style>

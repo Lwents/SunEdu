@@ -11,61 +11,234 @@
     height: 100%;
   }
 
+  /* Light mode - Ocean Blue gradient theme with animated waves */
   body {
-    @apply bg-brand-surface font-sans text-brand-deep antialiased;
+    @apply font-sans text-gray-900 antialiased transition-colors duration-500;
+    background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 25%, #ffffff 50%, #f0fdfa 75%, #ccfbf1 100%);
+    background-size: 400% 400%;
+    animation: ocean-flow 15s ease-in-out infinite;
   }
 
+  /* Dark mode with ocean depth theme */
+  .dark body {
+    @apply text-gray-100;
+    background: linear-gradient(135deg, #0c4a6e 0%, #075985 25%, #0f172a 50%, #134e4a 75%, #064e3b 100%);
+    background-size: 400% 400%;
+    animation: ocean-flow 20s ease-in-out infinite;
+  }
+
+  /* Selection styles */
   ::selection {
-    @apply bg-brand-200 text-brand-800;
+    @apply bg-cyan-200 text-cyan-900;
+  }
+
+  .dark ::selection {
+    @apply bg-cyan-700 text-cyan-100;
+  }
+
+  /* Scrollbar styling - White/Light Theme */
+  ::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f8fafc !important; /* slate-50 - very light background */
+    border-radius: 10px;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: #1e293b !important; /* slate-800 */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #e2e8f0 !important; /* slate-200 - light gray/white */
+    border-radius: 10px !important;
+    border: 2px solid #f8fafc !important; /* white border for definition */
+    box-shadow: 0 0 4px rgba(148, 163, 184, 0.2);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1 !important; /* slate-300 - slightly darker on hover */
+    box-shadow: 0 0 6px rgba(148, 163, 184, 0.3);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #475569 !important; /* slate-600 */
+    border: 2px solid #1e293b !important;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b !important; /* slate-500 */
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
   }
 }
 
 @layer components {
+  /* Layout Components */
   .student-shell {
-    @apply min-h-screen bg-brand-surface pb-12 pt-6;
+    @apply min-h-screen pb-12 pt-6 transition-colors duration-300;
   }
 
   .student-container {
     @apply mx-auto max-w-5xl px-4 sm:px-6 lg:px-0;
   }
 
+  /* Card Components - Light & Dark Mode with Ocean Theme */
   .student-card {
-    @apply rounded-3xl border border-slate-200/80 bg-white/95 px-5 py-6 shadow-xl shadow-slate-100 sm:px-8;
+    @apply rounded-3xl border border-cyan-200/60 bg-white/95 px-5 py-6 shadow-ocean-glow backdrop-blur-sm sm:px-8 transition-all duration-300 hover:shadow-ocean-glow-lg;
   }
 
+  .dark .student-card {
+    @apply border-cyan-800/50 bg-gray-800/95 shadow-dark-ocean;
+  }
+
+  /* Tabs - Light & Dark Mode */
   .student-tabs {
-    @apply rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm shadow-slate-100 backdrop-blur;
+    @apply rounded-2xl border border-cyan-200/50 bg-white/90 p-2 shadow-sm backdrop-blur transition-all duration-300;
+  }
+
+  .dark .student-tabs {
+    @apply border-cyan-800/50 bg-gray-800/90;
   }
 
   .student-tab {
-    @apply flex-1 rounded-xl px-3 py-2 text-[11px] font-semibold tracking-wide text-slate-500 transition hover:bg-slate-50 sm:px-4 sm:py-2.5 sm:text-xs;
+    @apply flex-1 rounded-xl px-3 py-2 text-[11px] font-semibold tracking-wide text-gray-500 transition-all hover:bg-cyan-50 sm:px-4 sm:py-2.5 sm:text-xs;
+  }
+
+  .dark .student-tab {
+    @apply text-gray-400 hover:bg-cyan-900/30;
   }
 
   .student-tab--active {
-    @apply border border-brand-100 bg-brand-50 text-brand-600 font-extrabold shadow-sm shadow-brand-100;
+    @apply border border-cyan-300 bg-gradient-primary text-white font-extrabold shadow-ocean-glow;
   }
 
+  .dark .student-tab--active {
+    @apply border-cyan-700 bg-gradient-dark-ocean shadow-dark-glow;
+  }
+
+  /* Pills & Badges */
   .student-pill {
-    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500;
+    @apply inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600 transition-all hover:border-cyan-300 hover:bg-cyan-50;
+  }
+
+  .dark .student-pill {
+    @apply border-cyan-800 bg-gray-800 text-gray-300 hover:border-cyan-700 hover:bg-cyan-900/30;
   }
 
   .student-badge {
-    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide;
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide transition-all;
   }
 
   .student-badge--success {
-    @apply bg-brand-50 text-brand-700;
+    @apply bg-primary-100 text-primary-700;
+  }
+
+  .dark .student-badge--success {
+    @apply bg-primary-900/50 text-primary-300;
   }
 
   .student-badge--muted {
-    @apply bg-slate-100 text-slate-500;
+    @apply bg-gray-100 text-gray-500;
   }
 
+  .dark .student-badge--muted {
+    @apply bg-gray-700 text-gray-400;
+  }
+
+  /* Typography */
   .student-section-title {
-    @apply text-base font-bold uppercase tracking-[0.25em] text-brand-muted;
+    @apply text-base font-bold uppercase tracking-[0.25em] text-gray-500;
+  }
+
+  .dark .student-section-title {
+    @apply text-gray-400;
   }
 
   .student-link {
-    @apply text-sm font-semibold text-brand-600 transition hover:text-brand-700;
+    @apply text-sm font-semibold text-primary-600 transition hover:text-primary-700;
+  }
+
+  .dark .student-link {
+    @apply text-primary-400 hover:text-primary-300;
+  }
+
+  /* Buttons with ocean gradient */
+  .btn-gradient {
+    @apply bg-gradient-primary text-white font-semibold rounded-xl px-6 py-3 shadow-ocean-glow transition-all duration-300 hover:shadow-ocean-glow-lg hover:scale-105 active:scale-95;
+    background-size: 200% 200%;
+    animation: wave 8s ease-in-out infinite;
+  }
+
+  .dark .btn-gradient {
+    @apply bg-gradient-dark-ocean shadow-dark-glow hover:shadow-dark-ocean;
+  }
+
+  /* Input fields with ocean accent */
+  .input-field {
+    @apply w-full rounded-xl border border-cyan-200 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 transition-all focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none hover:border-cyan-300;
+  }
+
+  .dark .input-field {
+    @apply border-cyan-800 bg-gray-800 text-gray-100 placeholder-gray-500 focus:border-cyan-600 focus:ring-cyan-600/30 hover:border-cyan-700;
+  }
+
+  /* Glass effect for modals/cards with ocean tint */
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-xl border border-cyan-200/50 shadow-ocean-glow;
+  }
+
+  .dark .glass-effect {
+    @apply bg-gray-900/80 border-cyan-800/50 shadow-dark-ocean;
+  }
+}
+
+@layer utilities {
+  /* Ocean gradient text */
+  .text-gradient {
+    @apply bg-gradient-primary bg-clip-text text-transparent;
+    background-size: 200% 200%;
+    animation: wave 6s ease-in-out infinite;
+  }
+
+  .dark .text-gradient {
+    @apply bg-gradient-ocean;
+  }
+
+  /* Hover lift effect with ocean glow */
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-2 hover:shadow-ocean-glow-lg;
+  }
+
+  .dark .hover-lift:hover {
+    @apply shadow-dark-ocean;
+  }
+
+  /* Smooth transitions */
+  .smooth-transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Ocean glow on hover */
+  .glow-on-hover {
+    @apply transition-shadow duration-300 hover:shadow-ocean-glow-lg;
+  }
+
+  .dark .glow-on-hover:hover {
+    @apply shadow-dark-ocean;
+  }
+
+  /* Ocean wave animation background */
+  .ocean-wave-bg {
+    background: linear-gradient(90deg, #06b6d4 0%, #0891b2 25%, #14b8a6 50%, #0891b2 75%, #06b6d4 100%);
+    background-size: 400% 400%;
+    animation: wave 8s ease-in-out infinite;
+  }
+
+  /* Floating animation for cards */
+  .float-card {
+    animation: wave-slow 6s ease-in-out infinite;
   }
 }

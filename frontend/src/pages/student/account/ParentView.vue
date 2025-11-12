@@ -15,25 +15,6 @@
           </h2>
         </div>
 
-        <Transition
-          enter-active-class="transition-opacity duration-200"
-          leave-active-class="transition-opacity duration-200"
-          enter-from-class="opacity-0"
-          leave-to-class="opacity-0"
-        >
-          <div
-            v-if="toast.msg"
-            :class="[
-              'fixed bottom-4 right-4 z-40 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg sm:text-base',
-              toast.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-rose-200 bg-rose-50 text-rose-700',
-            ]"
-          >
-            {{ toast.msg }}
-          </div>
-        </Transition>
-
         <form v-if="!loading" class="mt-6 space-y-6" @submit.prevent="save">
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
             <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
@@ -48,7 +29,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   touched.fullname && errs.fullname
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="touched.fullname && errs.fullname" class="text-xs font-medium text-rose-600">
@@ -72,7 +53,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   touched.phone && errs.phone
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="touched.phone && errs.phone" class="text-xs font-medium text-rose-600">
@@ -93,7 +74,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   touched.email && errs.email
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="touched.email && errs.email" class="text-xs font-medium text-rose-600">
@@ -103,11 +84,13 @@
           </div>
 
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Mối quan hệ</label>
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
+              >Mối quan hệ</label
+            >
             <div>
               <select
                 v-model="f.relation"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               >
                 <option value="">Chọn</option>
                 <option>Bố</option>
@@ -124,7 +107,7 @@
                 v-model.trim="f.address"
                 rows="3"
                 placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               ></textarea>
             </div>
           </div>
@@ -132,7 +115,7 @@
           <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
               :disabled="saving || !isValid"
             >
               <span
@@ -157,7 +140,12 @@
 import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
-import { authService, type ProfileUpdatePayload, type ProfileDetails } from '@/services/auth.service'
+import {
+  authService,
+  type ProfileUpdatePayload,
+  type ProfileDetails,
+} from '@/services/auth.service'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const goProfile = () => router.push({ name: 'student-profile' })
@@ -203,15 +191,6 @@ const isValid = computed(() => {
 const saving = ref(false)
 const loading = ref(false)
 let profileDetails: ProfileDetails | null = null
-
-const toast = reactive<{ msg: string; type: 'success' | 'error' | '' }>({ msg: '', type: '' })
-let toastTimer: number | undefined
-function showToast(msg: string, type: 'success' | 'error') {
-  toast.msg = msg
-  toast.type = type
-  clearTimeout(toastTimer)
-  toastTimer = window.setTimeout(() => (toast.msg = ''), 2500)
-}
 
 async function save() {
   // khi bấm lưu, hiển thị lỗi cho các trường bắt buộc nếu còn thiếu

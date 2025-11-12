@@ -1,6 +1,5 @@
 //frontend/src/services/auth.service.ts
 
-
 import http from '@/config/axios'
 import { jwtDecode } from 'jwt-decode'
 
@@ -121,9 +120,7 @@ export const authService = {
     if (!identifier || !password) throw new Error('Thiếu thông tin đăng nhập')
 
     const isEmail = /\S+@\S+\.\S+/.test(identifier)
-    const body = isEmail
-      ? { email: identifier, password }
-      : { username: identifier, password }
+    const body = isEmail ? { email: identifier, password } : { username: identifier, password }
 
     const { data } = await http.post('/account/login/', body)
 
@@ -184,7 +181,6 @@ export const authService = {
     return { ok: true }
   },
 
-
   async updateProfile(payload: ProfileUpdatePayload): Promise<ProfileDetails> {
     const { data } = await http.patch('/account/profile/', payload)
     return normalizeProfileResponse(data)
@@ -217,7 +213,9 @@ export const authService = {
     return { ok: true }
   },
 
-  async requestPasswordChangeOtp(currentPassword: string): Promise<{ detail?: string; email?: string }> {
+  async requestPasswordChangeOtp(
+    currentPassword: string,
+  ): Promise<{ detail?: string; email?: string }> {
     if (!currentPassword) throw new Error('Vui lòng nhập mật khẩu hiện tại')
     const { data } = await http.post('/account/password/change/request-otp/', {
       current_password: currentPassword,
@@ -249,9 +247,7 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    const refresh =
-      localStorage.getItem('refreshToken') ||
-      sessionStorage.getItem('refreshToken')
+    const refresh = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
     try {
       await http.post('/account/logout/', refresh ? { refresh } : {})
     } catch (error: any) {
@@ -264,9 +260,7 @@ export const authService = {
   },
 
   async refreshToken(): Promise<{ access: string; refresh?: string }> {
-    const refresh =
-      localStorage.getItem('refreshToken') ||
-      sessionStorage.getItem('refreshToken')
+    const refresh = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
     if (!refresh) {
       throw new Error('Thiếu refresh token')
     }

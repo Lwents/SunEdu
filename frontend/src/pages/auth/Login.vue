@@ -259,6 +259,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
+import { showToast } from '@/utils/toast'
 
 const auth = useAuthStore()
 
@@ -330,20 +331,6 @@ const onSubmit = async () => {
 //     loadingGoogle.value = false
 //   }
 // }
-
-function showToast(message: string, type: 'success' | 'error') {
-  const toast = document.createElement('div')
-  toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 animate-slide-in ${
-    type === 'success' ? 'bg-pink-600' : 'bg-red-600'
-  }`
-  toast.textContent = message
-  document.body.appendChild(toast)
-
-  setTimeout(() => {
-    toast.classList.add('animate-slide-out')
-    setTimeout(() => toast.remove(), 300)
-  }, 3000)
-}
 </script>
 
 <style scoped>
@@ -437,33 +424,5 @@ function showToast(message: string, type: 'success' | 'error') {
 
 .btn-google:active:not(:disabled) {
   transform: scale(0.98) !important;
-}
-
-/* Toast animation */
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-@keyframes slide-out {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
-}
-.animate-slide-out {
-  animation: slide-out 0.3s ease-in;
 }
 </style>
