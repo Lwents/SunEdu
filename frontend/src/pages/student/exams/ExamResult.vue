@@ -195,7 +195,7 @@ const resultStatus = computed(() => {
 const toneClass = computed(() => {
   switch (resultStatus.value.tone) {
     case 'success':
-      return 'border-brand-200 bg-brand-50'
+      return 'border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20'
     case 'warning':
       return 'border-amber-200 bg-amber-50/80'
     case 'danger':

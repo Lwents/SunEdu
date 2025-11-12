@@ -27,7 +27,7 @@
               <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <button
                   type="button"
-                  class="group relative inline-flex h-28 w-28 items-center justify-center rounded-3xl border-2 border-dashed border-emerald-200 bg-white/70 p-1 shadow-sm shadow-slate-100 transition hover:border-emerald-500 hover:bg-emerald-50"
+                  class="group relative inline-flex h-28 w-28 items-center justify-center rounded-3xl border-2 border-dashed border-cyan-200 dark:border-cyan-700 bg-white/70 p-1 shadow-sm shadow-slate-100 transition hover:border-cyan-500 dark:border-cyan-600 hover:bg-cyan-50 dark:bg-cyan-900/20"
                   @click="openFile"
                 >
                   <img
@@ -102,7 +102,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   errors.fullname
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="errors.fullname" class="text-xs font-medium text-rose-600">
@@ -123,7 +123,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   errors.phone
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="errors.phone" class="text-xs font-medium text-rose-600">
@@ -140,19 +140,19 @@
               <div class="flex flex-col gap-3 sm:flex-row">
                 <select
                   v-model.number="dob.day"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[180px]"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[180px]"
                 >
                   <option v-for="d in days" :key="d" :value="d">Ngày {{ d }}</option>
                 </select>
                 <select
                   v-model.number="dob.month"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[180px]"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[180px]"
                 >
                   <option v-for="m in months" :key="m" :value="m">Tháng {{ m }}</option>
                 </select>
                 <select
                   v-model.number="dob.year"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[200px]"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[200px]"
                 >
                   <option v-for="y in years" :key="y" :value="y">Năm {{ y }}</option>
                 </select>
@@ -170,13 +170,13 @@
                 class="flex flex-1 min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-2 text-sm font-semibold shadow-sm shadow-slate-100 transition"
                 :class="
                   form.gender === 'male'
-                    ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                    ? 'border-cyan-400 dark:border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
                     : 'border-slate-200 text-slate-600'
                 "
               >
                 <input
                   type="radio"
-                  class="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  class="h-4 w-4 border-slate-300 text-cyan-600 dark:text-cyan-400 focus:ring-cyan-500/50"
                   value="male"
                   v-model="form.gender"
                 />
@@ -186,13 +186,13 @@
                 class="flex flex-1 min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-2 text-sm font-semibold shadow-sm shadow-slate-100 transition"
                 :class="
                   form.gender === 'female'
-                    ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                    ? 'border-cyan-400 dark:border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
                     : 'border-slate-200 text-slate-600'
                 "
               >
                 <input
                   type="radio"
-                  class="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  class="h-4 w-4 border-slate-300 text-cyan-600 dark:text-cyan-400 focus:ring-cyan-500/50"
                   value="female"
                   v-model="form.gender"
                 />
@@ -213,7 +213,7 @@
                     'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                     errors.email
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <p v-if="errors.email" class="text-xs font-medium text-rose-600">
@@ -230,7 +230,7 @@
                 v-model.trim="form.address"
                 rows="3"
                 placeholder="Có thể để trống"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               ></textarea>
             </div>
           </div>
@@ -243,7 +243,7 @@
               <select
                 v-model.number="selectedProvinceCode"
                 :disabled="provincesLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{ provincesLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố' }}
@@ -263,7 +263,7 @@
               <select
                 v-model.number="selectedDistrictCode"
                 :disabled="!selectedProvinceCode || districtsLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{
@@ -289,7 +289,7 @@
               <select
                 v-model.number="selectedWardCode"
                 :disabled="!selectedDistrictCode || wardsLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{
@@ -310,7 +310,7 @@
           <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
               :disabled="saving || !isValidInfo || !isDirty"
               :class="{ 'opacity-80': saving }"
             >
@@ -381,7 +381,7 @@
         <div class="mt-6">
           <button
             type="button"
-            class="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+            class="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600"
             @click="closeLimitModal"
           >
             ĐÃ HIỂU

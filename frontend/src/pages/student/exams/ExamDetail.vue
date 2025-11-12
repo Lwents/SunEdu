@@ -6,8 +6,8 @@
       >
         <div>
           <p class="student-section-title">Đề luyện tập</p>
-          <h1 class="text-2xl font-black text-brand-deep">{{ exam?.title || 'Đề luyện tập' }}</h1>
-          <p class="mt-1 flex flex-wrap gap-3 text-sm text-brand-muted">
+          <h1 class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ exam?.title || 'Đề luyện tập' }}</h1>
+          <p class="mt-1 flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
             <span>{{ labelLevel(exam?.level) }}</span>
             <span>• {{ Math.round((exam?.durationSec || 0) / 60) }} phút</span>
             <span>• {{ questions.length }} câu</span>
@@ -20,7 +20,7 @@
             :class="
               timeLeft <= 60
                 ? 'border-rose-200 bg-rose-50 text-rose-600'
-                : 'border-slate-200 bg-white text-brand-deep'
+                : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100'
             "
           >
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -34,7 +34,7 @@
           </div>
           <button
             type="button"
-            class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-muted transition hover:bg-slate-50"
+            class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 transition hover:bg-slate-50"
             @click="goBack"
           >
             Thoát
@@ -52,7 +52,7 @@
         <section
           class="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100"
         >
-          <h3 class="text-base font-bold text-brand-deep">Danh sách câu hỏi</h3>
+          <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Danh sách câu hỏi</h3>
           <div class="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-6">
             <button
               v-for="(ans, i) in answers"
@@ -60,9 +60,9 @@
               class="flex h-10 items-center justify-center rounded-2xl border text-sm font-semibold transition"
               :class="[
                 i === idx
-                  ? 'border-brand-500 bg-brand-50 text-brand-700'
-                  : 'border-slate-200 bg-white text-brand-deep',
-                isAnswered(ans) && i !== idx ? 'border-brand-200 bg-brand-50 text-brand-600' : '',
+                  ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
+                  : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100',
+                isAnswered(ans) && i !== idx ? 'border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400' : '',
               ]"
               @click="go(i)"
             >
@@ -75,8 +75,8 @@
           <div
             class="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100"
           >
-            <div class="flex items-center justify-between text-sm font-semibold text-brand-muted">
-              <span class="inline-flex items-center gap-2 text-brand-deep">
+            <div class="flex items-center justify-between text-sm font-semibold text-gray-600 dark:text-gray-400">
+              <span class="inline-flex items-center gap-2 text-gray-900 dark:text-gray-100">
                 <span class="student-pill !text-xs">Câu {{ idx + 1 }}</span>
               </span>
               <span
@@ -86,21 +86,21 @@
               </span>
             </div>
             <div class="mt-4 space-y-4">
-              <div class="prose prose-sm max-w-none text-brand-deep" v-html="q?.text"></div>
+              <div class="prose prose-sm max-w-none text-gray-900 dark:text-gray-100" v-html="q?.text"></div>
 
               <template v-if="q?.type === 'mcq'">
                 <ul class="space-y-3">
                   <li
                     v-for="opt in q.options"
                     :key="opt.key"
-                    class="rounded-2xl border border-slate-200 bg-white transition hover:border-brand-200"
+                    class="rounded-2xl border border-slate-200 bg-white transition hover:border-cyan-200 dark:border-cyan-700"
                   >
                     <label
-                      class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-brand-deep"
+                      class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100"
                     >
                       <input
                         type="radio"
-                        class="h-4 w-4 text-brand-600 focus:ring-brand-500"
+                        class="h-4 w-4 text-cyan-600 dark:text-cyan-400 focus:ring-cyan-500/30"
                         :name="'q_' + idx"
                         :value="opt.key"
                         :checked="answers[idx] === opt.key"
@@ -120,7 +120,7 @@
               <template v-else-if="q?.type === 'tf'">
                 <div class="grid gap-3 sm:grid-cols-2">
                   <label
-                    class="flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-brand-deep transition hover:border-brand-200 hover:bg-brand-50"
+                    class="flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:border-cyan-200 dark:border-cyan-700 hover:bg-cyan-50 dark:bg-cyan-900/20"
                   >
                     <input
                       type="radio"
@@ -133,7 +133,7 @@
                     Đúng
                   </label>
                   <label
-                    class="flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-brand-deep transition hover:border-brand-200 hover:bg-brand-50"
+                    class="flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:border-cyan-200 dark:border-cyan-700 hover:bg-cyan-50 dark:bg-cyan-900/20"
                   >
                     <input
                       type="radio"
@@ -150,7 +150,7 @@
 
               <template v-else>
                 <input
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-brand-deep shadow-sm shadow-slate-100 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 shadow-sm shadow-slate-100 focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30"
                   :value="answers[idx] ?? ''"
                   @input="setAnswer(idx, ($event.target as HTMLInputElement).value)"
                   placeholder="Nhập câu trả lời của bạn..."
@@ -164,7 +164,7 @@
           >
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-deep transition hover:bg-slate-50 disabled:opacity-50"
+              class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:bg-slate-50 disabled:opacity-50"
               :disabled="idx === 0"
               @click="prev"
             >
@@ -172,7 +172,7 @@
             </button>
             <div
               v-if="idx === questions.length - 1 && questions.length > 0"
-              class="text-center text-sm font-semibold text-brand-muted"
+              class="text-center text-sm font-semibold text-gray-600 dark:text-gray-400"
             >
               {{ answeredCount }}/{{ questions.length }} câu đã trả lời
             </div>
@@ -188,7 +188,7 @@
             <button
               v-else
               type="button"
-              class="inline-flex items-center justify-center rounded-2xl border border-brand-200 bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-brand-600 disabled:opacity-50"
+              class="inline-flex items-center justify-center rounded-2xl border border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/200 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 disabled:opacity-50"
               :disabled="idx === questions.length - 1"
               @click="next"
             >
@@ -214,23 +214,23 @@
           class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200"
         >
           <header class="flex items-center justify-between">
-            <h3 class="text-lg font-bold text-brand-deep">Xác nhận nộp bài</h3>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Xác nhận nộp bài</h3>
             <button
               type="button"
-              class="rounded-full p-2 text-brand-muted hover:bg-slate-100"
+              class="rounded-full p-2 text-gray-600 dark:text-gray-400 hover:bg-slate-100"
               aria-label="Đóng"
               @click="showSubmitModal = false"
             >
               ×
             </button>
           </header>
-          <section class="mt-4 text-sm text-brand-deep">
+          <section class="mt-4 text-sm text-gray-900 dark:text-gray-100">
             <p v-html="submitMsg"></p>
           </section>
           <footer class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button
               type="button"
-              class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-muted hover:bg-slate-50"
+              class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-slate-50"
               :disabled="submitting"
               @click="showSubmitModal = false"
             >

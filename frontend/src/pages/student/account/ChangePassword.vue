@@ -31,12 +31,12 @@
                     'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                     touched.current && errs.current
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
                   :aria-label="show.current ? 'Ẩn mật khẩu cũ' : 'Hiện mật khẩu cũ'"
                   @click="show.current = !show.current"
                 >
@@ -98,12 +98,12 @@
                     'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                     touched.new1 && errs.new1
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
                   :aria-label="show.new1 ? 'Ẩn' : 'Hiện'"
                   @click="show.new1 = !show.new1"
                 >
@@ -165,12 +165,12 @@
                     'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                     touched.new2 && errs.new2
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
                   :aria-label="show.new2 ? 'Ẩn' : 'Hiện'"
                   @click="show.new2 = !show.new2"
                 >
@@ -220,7 +220,7 @@
           <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
               :disabled="isSubmitDisabled"
             >
               <span
@@ -282,7 +282,7 @@
                     'w-full rounded-2xl border px-4 py-3 text-center text-lg font-bold tracking-[0.4em] text-slate-900 shadow-sm transition focus-visible:outline-none focus:ring-4',
                     touched.otp && errs.otp
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <p v-if="touched.otp && errs.otp" class="text-xs font-medium text-rose-600">
@@ -293,7 +293,7 @@
               <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
+                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
                   :disabled="saving"
                   @click="submitOtp"
                 >

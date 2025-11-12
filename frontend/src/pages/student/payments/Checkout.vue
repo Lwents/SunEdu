@@ -3,18 +3,18 @@
     <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-500">Checkout</p>
+          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-500 dark:text-cyan-400">Checkout</p>
           <h1 class="text-3xl font-black text-slate-900 sm:text-4xl">Thanh toán</h1>
         </div>
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm shadow-slate-100 transition hover:border-emerald-300"
+          class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm shadow-slate-100 transition hover:border-cyan-300 dark:border-cyan-600"
           @click="loadPlans"
           :disabled="planLoading"
         >
           <span
             v-if="planLoading"
-            class="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-500"
+            class="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-cyan-500"
           ></span>
           <svg
             v-else
@@ -52,7 +52,7 @@
               <input
                 v-model="descriptionText"
                 placeholder="Ví dụ: Thanh toán học phí tháng 11"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               />
               <p class="text-xs text-slate-500">
                 Dòng mô tả sẽ xuất hiện trên màn hình xác nhận của MoMo.
@@ -68,7 +68,7 @@
                 @input="onAmountInput(true)"
                 inputmode="numeric"
                 placeholder="Nhập số tiền, ví dụ 215000"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-right text-lg font-bold text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-right text-lg font-bold text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               />
               <p class="text-xs text-slate-500">
                 <template v-if="selectedPlanId"> Số tiền được cố định từ gói {{ plan }}. </template>
@@ -105,7 +105,7 @@
             <div class="space-y-2">
               <button
                 type="button"
-                class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
                 :disabled="!amountNumber"
                 @click="payWithMomo"
               >
@@ -155,10 +155,10 @@
 
           <div
             v-if="planFeatures.length"
-            class="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4"
+            class="mt-6 rounded-2xl border border-cyan-100 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-900/20/40 p-4"
           >
-            <h3 class="text-sm font-bold text-emerald-800">Quyền lợi gói</h3>
-            <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-emerald-700">
+            <h3 class="text-sm font-bold text-cyan-800 dark:text-cyan-200">Quyền lợi gói</h3>
+            <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-cyan-700 dark:text-cyan-300">
               <li v-for="(feature, idx) in planFeatures" :key="idx">{{ feature }}</li>
             </ul>
           </div>

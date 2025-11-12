@@ -29,7 +29,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   touched.fullname && errs.fullname
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="touched.fullname && errs.fullname" class="text-xs font-medium text-rose-600">
@@ -53,7 +53,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   touched.phone && errs.phone
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="touched.phone && errs.phone" class="text-xs font-medium text-rose-600">
@@ -74,7 +74,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   touched.email && errs.email
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="touched.email && errs.email" class="text-xs font-medium text-rose-600">
@@ -90,7 +90,7 @@
             <div>
               <select
                 v-model="f.relation"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               >
                 <option value="">Chọn</option>
                 <option>Bố</option>
@@ -107,7 +107,7 @@
                 v-model.trim="f.address"
                 rows="3"
                 placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               ></textarea>
             </div>
           </div>
@@ -115,7 +115,7 @@
           <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
               :disabled="saving || !isValid"
             >
               <span

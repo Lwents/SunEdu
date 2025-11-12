@@ -11,7 +11,8 @@
       </div>
 
       <section
-        class="student-card overflow-hidden bg-gradient-to-br from-brand-600 via-emerald-500 to-teal-500 text-white shadow-student-card"
+        class="student-card overflow-hidden bg-gradient-to-br from-sky-400 via-cyan-500 to-blue-500 text-white shadow-ocean-glow-lg animate-ocean-flow"
+        style="background-size: 200% 200%"
       >
         <div class="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/80">
           Continue learning
@@ -34,7 +35,7 @@
             </div>
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2 text-sm font-bold uppercase tracking-wide text-brand-700 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white/90"
+              class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2 text-sm font-bold uppercase tracking-wide text-cyan-700 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white/90 hover:scale-105"
               @click="onResume"
             >
               Tiếp tục học
@@ -46,7 +47,7 @@
           <p class="text-sm text-white/80">Bắt đầu khám phá từ trang Khoá học.</p>
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2 text-sm font-bold uppercase tracking-wide text-brand-700 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white/90"
+            class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2 text-sm font-bold uppercase tracking-wide text-cyan-700 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white/90 hover:scale-105"
             @click="goToCourses"
           >
             Xem khóa học
@@ -58,7 +59,7 @@
         <div class="mb-6 flex items-center justify-between gap-3">
           <div>
             <p class="student-section-title">Khoá học</p>
-            <h2 class="text-2xl font-black text-brand-deep">My Courses</h2>
+            <h2 class="text-2xl font-black text-gray-900 dark:text-gray-100">My Courses</h2>
           </div>
           <button
             type="button"
@@ -84,33 +85,33 @@
               :alt="c.title"
             />
             <div class="mt-4 space-y-3">
-              <h3 class="text-base font-semibold text-brand-deep line-clamp-2">{{ c.title }}</h3>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{{ c.title }}</h3>
               <div class="space-y-1">
-                <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">
+                <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">
                   <span>Progress</span>
                   <span>{{ c.done ? 100 : c.progress }}%</span>
                 </div>
-                <div class="h-2 rounded-full bg-slate-100">
+                <div class="h-2 rounded-full bg-slate-100 dark:bg-gray-700">
                   <div
-                    class="h-2 rounded-full bg-brand-500 transition-all"
+                    class="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all"
                     :style="{ width: `${(c.done ? 100 : c.progress) || 0}%` }"
                   ></div>
                 </div>
               </div>
-              <p class="text-sm font-medium text-brand-muted">
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
                 {{ c.done ? 'Đã hoàn thành' : `Đang học · ${c.progress}%` }}
               </p>
             </div>
           </article>
         </div>
-        <p v-else class="text-sm text-brand-muted">Chưa có khóa học nào.</p>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400">Chưa có khóa học nào.</p>
       </section>
 
       <section class="student-card mt-6">
         <div class="mb-4 flex items-center justify-between gap-3">
           <div>
             <p class="student-section-title">Luyện tập</p>
-            <h2 class="text-2xl font-black text-brand-deep">Practice Exams</h2>
+            <h2 class="text-2xl font-black text-gray-900 dark:text-gray-100">Practice Exams</h2>
           </div>
           <button type="button" class="student-link flex items-center gap-1 text-sm" @click="openExamsList">
             Xem thêm
@@ -125,21 +126,21 @@
             class="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm shadow-slate-100 sm:flex-row sm:items-center"
           >
             <div class="flex flex-1 flex-col">
-              <h3 class="text-lg font-semibold text-brand-deep">{{ e.title }}</h3>
-              <p class="text-sm text-brand-muted">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ e.title }}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
                 Khối {{ e.grade }} · {{ toMin(e.duration) }} phút · Đạt ≥ {{ e.pass }} câu
               </p>
             </div>
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-2xl border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-600 transition hover:bg-brand-50"
+              class="inline-flex items-center justify-center rounded-2xl border border-cyan-200 dark:border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-600 dark:text-cyan-400 transition hover:bg-cyan-50 dark:hover:bg-cyan-900/30"
               @click="openExamDetail(e.id)"
             >
               Làm bài
             </button>
           </li>
         </ul>
-        <p v-else class="text-sm text-brand-muted">Hiện chưa có đề phù hợp.</p>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400">Hiện chưa có đề phù hợp.</p>
       </section>
     </div>
   </div>
