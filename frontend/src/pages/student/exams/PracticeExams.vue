@@ -3,7 +3,7 @@
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
       <header class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-500">
+          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-500 dark:text-cyan-400">
             Practice zone
           </p>
           <h1 class="text-3xl font-black text-slate-900 sm:text-4xl">Kho đề luyện tập</h1>
@@ -22,13 +22,13 @@
               v-model.trim="q"
               @keydown.enter="applyFilters"
               placeholder="Tìm kiếm theo tên đề..."
-              class="w-full rounded-2xl border border-slate-200 bg-white px-11 py-3 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+              class="w-full rounded-2xl border border-slate-200 bg-white px-11 py-3 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
             />
           </div>
           <div class="relative">
             <button
               type="button"
-              class="inline-flex w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm shadow-slate-100 transition hover:border-emerald-300 focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 sm:w-56"
+              class="inline-flex w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm shadow-slate-100 transition hover:border-cyan-300 dark:border-cyan-600 focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:w-56"
               @click="open = !open"
               :aria-expanded="open"
             >
@@ -100,7 +100,7 @@
                 'rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide',
                 e.level === 'advanced'
                   ? 'bg-rose-100 text-rose-700'
-                  : 'bg-emerald-100 text-emerald-700',
+                  : 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300',
               ]"
             >
               {{ labelLevel(e.level) }}
@@ -136,7 +136,7 @@
       class="mt-12 flex items-center justify-center gap-2 px-4"
     >
       <button
-        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:border-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:border-cyan-300 dark:border-cyan-600 disabled:cursor-not-allowed disabled:opacity-40"
         :disabled="page <= 1"
         @click="go(page - 1)"
       >
@@ -149,15 +149,15 @@
         :class="p.sep
           ? 'border-transparent bg-transparent text-slate-400'
           : p.num === page
-            ? 'border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-200'
-            : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300'"
+            ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/200 text-white shadow-lg shadow-ocean-glow'
+            : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-300 dark:border-cyan-600'"
         :disabled="p.sep"
         @click="!p.sep && go(p.num!)"
       >
         {{ p.text }}
       </button>
       <button
-        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:border-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:border-cyan-300 dark:border-cyan-600 disabled:cursor-not-allowed disabled:opacity-40"
         :disabled="page >= totalPages"
         @click="go(page + 1)"
       >

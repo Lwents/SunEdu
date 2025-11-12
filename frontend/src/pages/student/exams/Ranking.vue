@@ -3,21 +3,21 @@
     <div class="student-container max-w-6xl">
       <header class="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/95 px-5 py-5 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-3xl font-black text-brand-deep">🏆 Bảng Xếp Hạng</h1>
-          <p class="mt-1 text-sm text-brand-muted">
+          <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">🏆 Bảng Xếp Hạng</h1>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Vinh danh những học viên có thành tích xuất sắc nhất trong mỗi kỳ thi.
           </p>
         </div>
         <div class="relative w-full max-w-sm" @mouseleave="openSelect = false">
           <button
             type="button"
-            class="flex w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-brand-deep shadow-sm shadow-slate-100 transition hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+            class="flex w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm shadow-slate-100 transition hover:border-cyan-300 dark:border-cyan-600 focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30"
             :disabled="loadingExams"
             @click="openSelect = !openSelect"
           >
             <span v-if="loadingExams">Đang tải đề...</span>
             <span v-else>{{ selectedExamTitle || 'Vui lòng chọn đề thi' }}</span>
-            <svg class="h-4 w-4 text-brand-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg class="h-4 w-4 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25 12 15.75 4.5 8.25" />
             </svg>
           </button>
@@ -28,7 +28,7 @@
             <li
               v-for="e in exams"
               :key="e.id"
-              class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-brand-muted transition hover:bg-slate-50"
+              class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 transition hover:bg-slate-50"
               @click="selectExam(e.id)"
             >
               {{ e.title }}
@@ -50,14 +50,14 @@
 
       <div
         v-else-if="rows.length === 0"
-        class="mt-6 flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-12 text-center text-sm text-brand-muted"
+        class="mt-6 flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-12 text-center text-sm text-gray-600 dark:text-gray-400"
       >
         <img
           src="https://res.cloudinary.com/dapvicdpm/image/upload/v1727116801/temp/leaderboard-empty_u5o8fg.svg"
           alt="No data"
           class="h-32 w-32"
         />
-        <h3 class="mt-4 text-xl font-bold text-brand-deep">Chưa có dữ liệu xếp hạng</h3>
+        <h3 class="mt-4 text-xl font-bold text-gray-900 dark:text-gray-100">Chưa có dữ liệu xếp hạng</h3>
         <p class="mt-2 max-w-md">
           Hiện chưa có ai hoàn thành đề thi này. Hãy là người đầu tiên!
         </p>
@@ -69,15 +69,15 @@
             v-if="rows[1]"
             class="flex flex-col items-center rounded-3xl border border-slate-200 bg-white px-4 py-6 text-center shadow-sm shadow-slate-100"
           >
-            <div class="text-sm font-semibold text-brand-muted">🥈 Hạng 2</div>
+            <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">🥈 Hạng 2</div>
             <img :src="avatarOf(rows[1].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover" />
-            <h3 class="mt-3 text-lg font-bold text-brand-deep">{{ rows[1].name }}</h3>
-            <p class="text-sm text-brand-muted">{{ rows[1].time }}</p>
-            <p class="text-xl font-black text-brand-deep">{{ rows[1].score }} điểm</p>
+            <h3 class="mt-3 text-lg font-bold text-gray-900 dark:text-gray-100">{{ rows[1].name }}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ rows[1].time }}</p>
+            <p class="text-xl font-black text-gray-900 dark:text-gray-100">{{ rows[1].score }} điểm</p>
           </div>
           <div
             v-if="rows[0]"
-            class="flex flex-col items-center rounded-3xl border border-brand-200 bg-gradient-to-br from-brand-500 to-emerald-500 px-4 py-6 text-center text-white shadow-lg shadow-brand-200"
+            class="flex flex-col items-center rounded-3xl border border-cyan-200 dark:border-cyan-700 bg-gradient-to-br from-cyan-500 to-blue-500 px-4 py-6 text-center text-white shadow-lg shadow-cyan-200"
           >
             <div class="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">🥇 Hạng 1</div>
             <img :src="avatarOf(rows[0].name)" alt="avatar" class="mt-3 h-18 w-18 rounded-full border-4 border-white/40 object-cover" />
@@ -89,11 +89,11 @@
             v-if="rows[2]"
             class="flex flex-col items-center rounded-3xl border border-slate-200 bg-white px-4 py-6 text-center shadow-sm shadow-slate-100"
           >
-            <div class="text-sm font-semibold text-brand-muted">🥉 Hạng 3</div>
+            <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">🥉 Hạng 3</div>
             <img :src="avatarOf(rows[2].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover" />
-            <h3 class="mt-3 text-lg font-bold text-brand-deep">{{ rows[2].name }}</h3>
-            <p class="text-sm text-brand-muted">{{ rows[2].time }}</p>
-            <p class="text-xl font-black text-brand-deep">{{ rows[2].score }} điểm</p>
+            <h3 class="mt-3 text-lg font-bold text-gray-900 dark:text-gray-100">{{ rows[2].name }}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ rows[2].time }}</p>
+            <p class="text-xl font-black text-gray-900 dark:text-gray-100">{{ rows[2].score }} điểm</p>
           </div>
         </div>
 
@@ -104,23 +104,23 @@
             class="flex flex-col gap-3 border-b border-slate-100 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
           >
             <div class="flex items-center gap-4">
-              <div class="text-xl font-black text-brand-muted">#{{ getRestRank(index) }}</div>
+              <div class="text-xl font-black text-gray-600 dark:text-gray-400">#{{ getRestRank(index) }}</div>
               <div class="flex items-center gap-3">
                 <img :src="avatarOf(row.name)" alt="avatar" class="h-12 w-12 rounded-full object-cover" />
-                <span class="text-base font-semibold text-brand-deep">{{ row.name }}</span>
+                <span class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ row.name }}</span>
               </div>
             </div>
-            <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-brand-muted">
+            <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-gray-600 dark:text-gray-400">
               <div>
-                <p class="text-lg font-bold text-brand-deep">{{ row.correct }}/{{ row.total }}</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ row.correct }}/{{ row.total }}</p>
                 <p>Câu đúng</p>
               </div>
               <div>
-                <p class="text-lg font-bold text-brand-deep">{{ row.time }}</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ row.time }}</p>
                 <p>Thời gian</p>
               </div>
               <div>
-                <p class="text-lg font-bold text-brand-deep">{{ row.score }}</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ row.score }}</p>
                 <p>Điểm</p>
               </div>
             </div>
@@ -130,7 +130,7 @@
 
       <div v-if="totalPages > 1" class="mt-6 flex items-center justify-center gap-2">
         <button
-          class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-brand-deep transition hover:border-brand-300 disabled:cursor-not-allowed disabled:opacity-40"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:border-cyan-300 dark:border-cyan-600 disabled:cursor-not-allowed disabled:opacity-40"
           :disabled="currentPage <= 1"
           @click="handlePageChange(currentPage - 1)"
         >
@@ -141,17 +141,17 @@
           :key="p.key"
           class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-xl border text-sm font-semibold transition"
           :class="p.sep
-            ? 'border-transparent bg-transparent text-brand-muted'
+            ? 'border-transparent bg-transparent text-gray-600 dark:text-gray-400'
             : p.num === currentPage
-              ? 'border-brand-500 bg-brand-500 text-white shadow-lg shadow-brand-200'
-              : 'border-slate-200 bg-white text-brand-deep hover:border-brand-300'"
+              ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/200 text-white shadow-lg shadow-cyan-200'
+              : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100 hover:border-cyan-300 dark:border-cyan-600'"
           :disabled="p.sep"
           @click="!p.sep && handlePageChange(p.num!)"
         >
           {{ p.text }}
         </button>
         <button
-          class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-brand-deep transition hover:border-brand-300 disabled:cursor-not-allowed disabled:opacity-40"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:border-cyan-300 dark:border-cyan-600 disabled:cursor-not-allowed disabled:opacity-40"
           :disabled="currentPage >= totalPages"
           @click="handlePageChange(currentPage + 1)"
         >
@@ -161,27 +161,27 @@
 
       <div
         v-if="me"
-        class="mt-8 rounded-3xl border border-brand-200 bg-brand-50/80 px-5 py-4 shadow-sm shadow-brand-100"
+        class="mt-8 rounded-3xl border border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20/80 px-5 py-4 shadow-sm shadow-cyan-100"
       >
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex items-center gap-4">
-            <div class="text-2xl font-black text-brand-600">#{{ me.rank }}</div>
+            <div class="text-2xl font-black text-cyan-600 dark:text-cyan-400">#{{ me.rank }}</div>
             <div class="flex items-center gap-3">
               <img :src="avatarOf('Bạn')" alt="avatar" class="h-12 w-12 rounded-full object-cover" />
-              <span class="text-base font-semibold text-brand-deep">Vị trí của bạn</span>
+              <span class="text-base font-semibold text-gray-900 dark:text-gray-100">Vị trí của bạn</span>
             </div>
           </div>
-          <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-brand-muted">
+          <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-gray-600 dark:text-gray-400">
             <div>
-              <p class="text-lg font-bold text-brand-deep">{{ me.correct }}/{{ me.total }}</p>
+              <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ me.correct }}/{{ me.total }}</p>
               <p>Câu đúng</p>
             </div>
             <div>
-              <p class="text-lg font-bold text-brand-deep">{{ me.time }}</p>
+              <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ me.time }}</p>
               <p>Thời gian</p>
             </div>
             <div>
-              <p class="text-lg font-bold text-brand-deep">{{ me.score }}</p>
+              <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ me.score }}</p>
               <p>Điểm</p>
             </div>
           </div>

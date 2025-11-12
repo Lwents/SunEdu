@@ -18,33 +18,16 @@
           </p>
         </div>
 
-        <Transition
-          enter-active-class="transition-opacity duration-200"
-          leave-active-class="transition-opacity duration-200"
-          enter-from-class="opacity-0"
-          leave-to-class="opacity-0"
-        >
-          <div
-            v-if="toast.msg"
-            :class="[
-              'fixed bottom-4 right-4 z-40 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg sm:text-base',
-              toast.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-rose-200 bg-rose-50 text-rose-700',
-            ]"
-          >
-            {{ toast.msg }}
-          </div>
-        </Transition>
-
         <form v-if="ready" class="mt-6 space-y-6" @submit.prevent="saveProfile">
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Ảnh đại diện</label>
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
+              >Ảnh đại diện</label
+            >
             <div class="space-y-2">
               <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <button
                   type="button"
-                  class="group relative inline-flex h-28 w-28 items-center justify-center rounded-3xl border-2 border-dashed border-emerald-200 bg-white/70 p-1 shadow-sm shadow-slate-100 transition hover:border-emerald-500 hover:bg-emerald-50"
+                  class="group relative inline-flex h-28 w-28 items-center justify-center rounded-3xl border-2 border-dashed border-cyan-200 dark:border-cyan-700 bg-white/70 p-1 shadow-sm shadow-slate-100 transition hover:border-cyan-500 dark:border-cyan-600 hover:bg-cyan-50 dark:bg-cyan-900/20"
                   @click="openFile"
                 >
                   <img
@@ -55,7 +38,13 @@
                   <div
                     class="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-3xl bg-slate-900/10 text-[11px] font-semibold text-slate-700 opacity-0 transition group-hover:opacity-100"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
                       <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -73,12 +62,20 @@
                   </div>
                 </button>
               </div>
-              <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onPickFile" />
+              <input
+                ref="fileInput"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="onPickFile"
+              />
             </div>
           </div>
 
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Tên đăng nhập</label>
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
+              >Tên đăng nhập</label
+            >
             <div class="space-y-2">
               <input
                 v-model.trim="form.username"
@@ -86,7 +83,9 @@
                 readonly
                 class="w-full rounded-2xl border border-slate-200 bg-slate-100/80 px-4 py-2.5 text-sm font-semibold text-slate-500 shadow-sm shadow-slate-100"
               />
-              <p class="text-xs text-slate-500">Tên đăng nhập do hệ thống quản lý, không thể đổi.</p>
+              <p class="text-xs text-slate-500">
+                Tên đăng nhập do hệ thống quản lý, không thể đổi.
+              </p>
             </div>
           </div>
 
@@ -103,7 +102,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   errors.fullname
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="errors.fullname" class="text-xs font-medium text-rose-600">
@@ -124,7 +123,7 @@
                   'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                   errors.phone
                     ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                 ]"
               />
               <p v-if="errors.phone" class="text-xs font-medium text-rose-600">
@@ -134,24 +133,26 @@
           </div>
 
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Ngày sinh</label>
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
+              >Ngày sinh</label
+            >
             <div class="space-y-2">
               <div class="flex flex-col gap-3 sm:flex-row">
                 <select
                   v-model.number="dob.day"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[180px]"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[180px]"
                 >
                   <option v-for="d in days" :key="d" :value="d">Ngày {{ d }}</option>
                 </select>
                 <select
                   v-model.number="dob.month"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[180px]"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[180px]"
                 >
                   <option v-for="m in months" :key="m" :value="m">Tháng {{ m }}</option>
                 </select>
                 <select
                   v-model.number="dob.year"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 sm:max-w-[200px]"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[200px]"
                 >
                   <option v-for="y in years" :key="y" :value="y">Năm {{ y }}</option>
                 </select>
@@ -161,15 +162,21 @@
           </div>
 
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Giới tính</label>
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
+              >Giới tính</label
+            >
             <div class="flex flex-wrap gap-3">
               <label
                 class="flex flex-1 min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-2 text-sm font-semibold shadow-sm shadow-slate-100 transition"
-                :class="form.gender === 'male' ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'"
+                :class="
+                  form.gender === 'male'
+                    ? 'border-cyan-400 dark:border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
+                    : 'border-slate-200 text-slate-600'
+                "
               >
                 <input
                   type="radio"
-                  class="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  class="h-4 w-4 border-slate-300 text-cyan-600 dark:text-cyan-400 focus:ring-cyan-500/50"
                   value="male"
                   v-model="form.gender"
                 />
@@ -177,11 +184,15 @@
               </label>
               <label
                 class="flex flex-1 min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-2 text-sm font-semibold shadow-sm shadow-slate-100 transition"
-                :class="form.gender === 'female' ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'"
+                :class="
+                  form.gender === 'female'
+                    ? 'border-cyan-400 dark:border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
+                    : 'border-slate-200 text-slate-600'
+                "
               >
                 <input
                   type="radio"
-                  class="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  class="h-4 w-4 border-slate-300 text-cyan-600 dark:text-cyan-400 focus:ring-cyan-500/50"
                   value="female"
                   v-model="form.gender"
                 />
@@ -202,7 +213,7 @@
                     'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                     errors.email
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <p v-if="errors.email" class="text-xs font-medium text-rose-600">
@@ -219,7 +230,7 @@
                 v-model.trim="form.address"
                 rows="3"
                 placeholder="Có thể để trống"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               ></textarea>
             </div>
           </div>
@@ -232,7 +243,7 @@
               <select
                 v-model.number="selectedProvinceCode"
                 :disabled="provincesLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{ provincesLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố' }}
@@ -245,12 +256,14 @@
           </div>
 
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Quận/Huyện</label>
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
+              >Quận/Huyện</label
+            >
             <div>
               <select
                 v-model.number="selectedDistrictCode"
                 :disabled="!selectedProvinceCode || districtsLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{
@@ -269,12 +282,14 @@
           </div>
 
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Phường/Xã</label>
+            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
+              >Phường/Xã</label
+            >
             <div>
               <select
                 v-model.number="selectedWardCode"
                 :disabled="!selectedDistrictCode || wardsLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-emerald-500 focus-visible:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{
@@ -295,7 +310,7 @@
           <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
               :disabled="saving || !isValidInfo || !isDirty"
               :class="{ 'opacity-80': saving }"
             >
@@ -305,8 +320,13 @@
               ></span>
               {{ saving ? 'ĐANG CẬP NHẬT...' : 'CẬP NHẬT' }}
             </button>
-            <p v-if="!isValidInfo || !isDirty" class="text-center text-xs font-medium text-slate-500 sm:text-right">
-              {{ !isValidInfo ? 'Vui lòng điền đầy đủ thông tin bắt buộc' : 'Chưa có thay đổi nào' }}
+            <p
+              v-if="!isValidInfo || !isDirty"
+              class="text-center text-xs font-medium text-slate-500 sm:text-right"
+            >
+              {{
+                !isValidInfo ? 'Vui lòng điền đầy đủ thông tin bắt buộc' : 'Chưa có thay đổi nào'
+              }}
             </p>
           </div>
         </form>
@@ -336,8 +356,16 @@
         tabindex="-1"
       >
         <div class="mb-4 flex flex-col items-center gap-3">
-          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div
+            class="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-7 w-7"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -353,7 +381,7 @@
         <div class="mt-6">
           <button
             type="button"
-            class="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+            class="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600"
             @click="closeLimitModal"
           >
             ĐÃ HIỂU
@@ -368,8 +396,18 @@
 import { computed, onMounted, reactive, ref, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
-import { authService, type ProfileUpdatePayload, type ProfileDetails } from '@/services/auth.service'
-import { locationService, type DistrictOption, type ProvinceOption, type WardOption } from '@/services/location.service'
+import {
+  authService,
+  type ProfileUpdatePayload,
+  type ProfileDetails,
+} from '@/services/auth.service'
+import {
+  locationService,
+  type DistrictOption,
+  type ProvinceOption,
+  type WardOption,
+} from '@/services/location.service'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -378,18 +416,30 @@ const ready = ref(false)
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024 // 2MB
 const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (2MB)'
 
-function goChangePwd() { router.push({ name: 'student-change-password' }) }
-function goParent() { router.push({ name: 'student-parent' }) }
+function goChangePwd() {
+  router.push({ name: 'student-change-password' })
+}
+function goParent() {
+  router.push({ name: 'student-parent' })
+}
 
 const defaultAvatar = 'https://i.pravatar.cc/80?img=10'
 const profileDetails = ref<ProfileDetails | null>(null)
-const currentAvatar = computed(() => auth.user?.avatar || profileDetails.value?.avatar || profileDetails.value?.avatar_url || defaultAvatar)
+const currentAvatar = computed(
+  () =>
+    auth.user?.avatar ||
+    profileDetails.value?.avatar ||
+    profileDetails.value?.avatar_url ||
+    defaultAvatar,
+)
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const avatarFile = ref<File | null>(null)
 const avatarPreview = ref<string>('')
 
-function openFile() { fileInput.value?.click() }
+function openFile() {
+  fileInput.value?.click()
+}
 
 /** MODAL: thông báo giới hạn dung lượng */
 const limitModal = reactive<{ open: boolean; message: string }>({ open: false, message: '' })
@@ -470,7 +520,11 @@ const years = Array.from({ length: 60 }, (_, i) => 1980 + i)
 const initialJSON = ref<string>('')
 
 function snapshot() {
-  initialJSON.value = JSON.stringify({ ...form, dob: { ...dob }, avatarPreview: avatarPreview.value })
+  initialJSON.value = JSON.stringify({
+    ...form,
+    dob: { ...dob },
+    avatarPreview: avatarPreview.value,
+  })
 }
 
 function formatDateTime(value?: string | Date) {
@@ -488,7 +542,11 @@ function formatDateTime(value?: string | Date) {
 }
 
 const normalizeName = (value?: string | null) =>
-  (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+  (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
 
 function findByName<T extends { name: string }>(list: T[], name?: string | null) {
   if (!name) return undefined
@@ -599,7 +657,7 @@ function applyProfileToForm(profile?: ProfileDetails | null) {
 
   avatarPreview.value = profile.avatar || profile.avatar_url || ''
   if (profile.updatedAt || profile.createdAt) {
-    lastUpdated.value = formatDateTime(profile.updatedAt || profile.createdAt as string)
+    lastUpdated.value = formatDateTime(profile.updatedAt || (profile.createdAt as string))
   }
   snapshot()
 }
@@ -651,7 +709,7 @@ watch(
     errors.phone = form.phone ? '' : 'Vui lòng nhập số điện thoại.'
     errors.email = form.email && !isEmail(form.email) ? 'Email không hợp lệ.' : ''
   },
-  { deep: true }
+  { deep: true },
 )
 
 watch(selectedProvinceCode, (code) => {
@@ -683,14 +741,6 @@ const isDirty = computed(() => {
 /** SAVE */
 const saving = ref(false)
 const lastUpdated = ref('chưa có')
-const toast = reactive<{ msg: string; type: 'success' | 'error' | '' }>({ msg: '', type: '' })
-let toastTimer: any
-function showToast(msg: string, type: 'success' | 'error') {
-  toast.msg = msg
-  toast.type = type
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => (toast.msg = ''), 2500)
-}
 
 async function saveProfile() {
   if (!isValidInfo.value) {
@@ -706,7 +756,8 @@ async function saveProfile() {
       phone: form.phone || undefined,
       email: form.email || undefined,
       gender: form.gender || undefined,
-      avatar_url: avatarPreview.value || profileDetails.value?.avatar || profileDetails.value?.avatar_url,
+      avatar_url:
+        avatarPreview.value || profileDetails.value?.avatar || profileDetails.value?.avatar_url,
       email_updates: form.emailUpdates,
       address: form.address || undefined,
       city: form.city || undefined,

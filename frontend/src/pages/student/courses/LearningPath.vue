@@ -9,7 +9,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-5">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-extrabold text-slate-900">Khối 1–2 (Cơ bản)</h2>
-            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Nền tảng</span>
+            <span class="rounded-full border border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20 px-3 py-1 text-xs font-bold text-cyan-700 dark:text-cyan-300">Nền tảng</span>
           </div>
           <p class="mt-2 text-slate-700">Củng cố Toán, Tiếng Việt, Tiếng Anh với các bài ngắn dễ tiếp thu.</p>
           <ul class="mt-3 space-y-1 text-sm text-slate-700">

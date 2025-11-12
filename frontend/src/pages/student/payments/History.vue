@@ -4,12 +4,12 @@
       <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p class="student-section-title">Thanh toán</p>
-          <h1 class="text-3xl font-black text-brand-deep">Lịch sử thanh toán</h1>
+          <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">Lịch sử thanh toán</h1>
         </div>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
           <select
             v-model="status"
-            class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-deep shadow-sm shadow-slate-100 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+            class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm shadow-slate-100 focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30"
           >
             <option value="">Tất cả trạng thái</option>
             <option value="paid">Thành công</option>
@@ -19,7 +19,7 @@
           </select>
           <button
             type="button"
-            class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-brand-muted shadow-sm shadow-slate-100 transition hover:bg-slate-50 disabled:opacity-60"
+            class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 shadow-sm shadow-slate-100 transition hover:bg-slate-50 disabled:opacity-60"
             :disabled="loading"
             @click="load()"
           >
@@ -35,25 +35,25 @@
           class="grid gap-4 px-5 py-5 sm:grid-cols-[1.2fr,1.2fr,1fr,1fr,1.4fr,1fr]"
         >
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Mã đơn</p>
-            <p class="text-sm font-bold text-brand-deep">{{ item.orderId }}</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">Mã đơn</p>
+            <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ item.orderId }}</p>
           </div>
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Gói</p>
-            <p class="text-sm font-semibold text-brand-deep">{{ item.plan }}</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">Gói</p>
+            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ item.plan }}</p>
           </div>
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Số tiền</p>
-            <p class="text-sm font-semibold text-brand-deep">{{ vnd(item.amount) }}</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">Số tiền</p>
+            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ vnd(item.amount) }}</p>
           </div>
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Phương thức</p>
-            <p class="text-sm font-semibold text-brand-deep">{{ item.method }}</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">Phương thức</p>
+            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ item.method }}</p>
           </div>
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">Ngày & giờ</p>
-            <p class="text-sm font-semibold text-brand-deep">{{ formatDate(item.date) }}</p>
-            <p class="text-xs font-medium text-brand-muted">{{ formatTime(item.date) }}</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">Ngày & giờ</p>
+            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ formatDate(item.date) }}</p>
+            <p class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ formatTime(item.date) }}</p>
           </div>
           <div class="flex items-center">
             <span
@@ -71,14 +71,14 @@
           </div>
         </div>
 
-        <div v-if="!loading && !items.length" class="px-6 py-10 text-center text-sm text-brand-muted">
+        <div v-if="!loading && !items.length" class="px-6 py-10 text-center text-sm text-gray-600 dark:text-gray-400">
           Chưa có giao dịch nào.
         </div>
       </div>
 
       <div class="mt-6 flex justify-end">
         <RouterLink
-          class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-brand-500 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-brand-600"
+          class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600"
           to="/student/payments"
         >
           Quay lại Thanh toán

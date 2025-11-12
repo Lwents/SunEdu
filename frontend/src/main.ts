@@ -2,7 +2,6 @@
 // import { createPinia } from 'pinia'
 // import ElementPlus from 'element-plus'
 
-
 // import App from './App.vue'
 // import router from './router'
 // import "@/styles/tailwind.css"
@@ -13,9 +12,7 @@
 // app.use(router)
 // app.use(ElementPlus)
 
-
 // app.mount('#app')
-
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -23,6 +20,7 @@ import App from './App.vue'
 import router from '@/router'
 import 'element-plus/dist/index.css'
 import '@/styles/tailwind.css'
+import { Toaster } from 'vue-sonner'
 import { useAuthStore } from '@/store/auth.store'
 import { useUiStore } from '@/stores/ui.store'
 import { useIdleLogout } from '@/composables/useIdleLogout'
@@ -39,11 +37,14 @@ if (
   window.location.replace(`https://${host}${pathname}${search}${hash}`)
 }
 
-
 const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 app.use(ElementPlus)
+
+// Register Sonner Toaster component globally
+app.component('Toaster', Toaster)
+
 const authStore = useAuthStore()
 authStore.hydrateFromStorage()
 const uiStore = useUiStore()

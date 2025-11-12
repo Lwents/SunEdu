@@ -5,21 +5,21 @@
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p class="student-section-title">Học tập</p>
-          <h1 class="text-3xl font-black text-brand-deep">Khoá học của tôi</h1>
-          <p class="mt-2 text-sm text-brand-muted">
+          <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">Khoá học của tôi</h1>
+          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Các khóa học bạn đang sở hữu được chia theo từng cấp trình độ, tương ứng với mỗi chặng mục tiêu.
             Hãy chọn trình độ mà bạn muốn bắt đầu nhé.
           </p>
         </div>
         <div class="flex gap-2">
           <router-link
-            class="inline-flex items-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-600 transition hover:bg-slate-50"
+            class="inline-flex items-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-cyan-600 dark:text-cyan-400 transition hover:bg-slate-50"
             :to="{ name: 'student-learning-path' }"
           >
             Lộ trình
           </router-link>
           <router-link
-            class="inline-flex items-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-600 transition hover:bg-slate-50"
+            class="inline-flex items-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-cyan-600 dark:text-cyan-400 transition hover:bg-slate-50"
             :to="{ name: 'student-catalog' }"
           >
             Catalog
@@ -51,7 +51,7 @@
           <div class="relative" @mouseleave="open = false">
             <button
               type="button"
-              class="inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-deep shadow-sm shadow-slate-100 transition hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100 sm:w-56"
+              class="inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm shadow-slate-100 transition hover:border-cyan-300 dark:border-cyan-600 focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:w-56"
               @click="open = !open"
             >
               <span>{{ level || 'Tất cả trình độ' }}</span>
@@ -66,7 +66,7 @@
               <li
                 v-for="lvl in ['', 'Khối 1–2', 'Khối 3–5']"
                 :key="lvl || 'all'"
-                class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-brand-muted transition hover:bg-slate-50 hover:text-brand-600"
+                class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 transition hover:bg-slate-50 hover:text-cyan-600 dark:text-cyan-400"
                 @click="setLevel(lvl as '' | 'Khối 1–2' | 'Khối 3–5')"
               >
                 {{ lvl || 'Tất cả trình độ' }}
@@ -74,15 +74,15 @@
             </ul>
           </div>
 
-            <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-brand-deep shadow-sm shadow-slate-100">
-              <svg class="h-4 w-4 text-brand-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 shadow-sm shadow-slate-100">
+              <svg class="h-4 w-4 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 21l-4.3-4.3" />
                 <circle cx="11" cy="11" r="7" />
               </svg>
               <input
                 v-model.trim="q"
                 placeholder="Tìm khóa học..."
-                class="w-full border-none bg-transparent text-sm font-medium text-brand-deep placeholder:text-brand-muted focus:outline-none"
+                class="w-full border-none bg-transparent text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-600 dark:text-gray-400 focus:outline-none"
               />
             </div>
         </div>
@@ -92,10 +92,10 @@
         <section v-if="baseList.length" class="student-card mt-6 space-y-6">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 class="text-xl font-bold text-brand-deep">Khối 1–2 (Cơ bản)</h3>
-              <p class="text-sm text-brand-muted">{{ baseList.length }} môn</p>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Khối 1–2 (Cơ bản)</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ baseList.length }} môn</p>
             </div>
-            <div class="flex items-center gap-3 text-sm font-semibold text-brand-muted">
+            <div class="flex items-center gap-3 text-sm font-semibold text-gray-600 dark:text-gray-400">
               <span>🏆 {{ baseTrophies.earned }}/{{ baseTrophies.total }}</span>
               <router-link
                 class="student-link text-sm"
@@ -117,7 +117,7 @@
                 <img :src="c.thumbnail" :alt="c.title" class="h-40 w-full object-cover" />
                 <button
                   type="button"
-                  class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/90 p-2 text-brand-600 shadow-lg shadow-slate-300 transition hover:scale-105"
+                  class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/90 p-2 text-cyan-600 dark:text-cyan-400 shadow-lg shadow-slate-300 transition hover:scale-105"
                   title="Vào học"
                   @click.stop="playFirst(c.id)"
                 >
@@ -127,13 +127,13 @@
                 </button>
               </div>
               <div class="mt-4 space-y-3">
-                <h4 class="text-base font-semibold text-brand-deep line-clamp-2">{{ c.title }}</h4>
-                <div class="flex items-center justify-between text-sm text-brand-muted">
-                  <span class="inline-flex items-center gap-2 font-semibold" :class="c.done ? 'text-brand-600' : ''">
-                    <span class="h-2 w-2 rounded-full" :class="c.done ? 'bg-brand-500' : 'bg-amber-400'"></span>
+                <h4 class="text-base font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{{ c.title }}</h4>
+                <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <span class="inline-flex items-center gap-2 font-semibold" :class="c.done ? 'text-cyan-600 dark:text-cyan-400' : ''">
+                    <span class="h-2 w-2 rounded-full" :class="c.done ? 'bg-cyan-50 dark:bg-cyan-900/200' : 'bg-amber-400'"></span>
                     {{ c.done ? 'Đã hoàn thành' : `Đang học · ${c.progress}%` }}
                   </span>
-                  <span class="font-semibold text-brand-deep">🏆 {{ c.score }}</span>
+                  <span class="font-semibold text-gray-900 dark:text-gray-100">🏆 {{ c.score }}</span>
                 </div>
               </div>
             </article>
@@ -143,10 +143,10 @@
         <section v-if="midList.length" class="student-card mt-6 space-y-6">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 class="text-xl font-bold text-brand-deep">Khối 3–5 (Nâng cao)</h3>
-              <p class="text-sm text-brand-muted">{{ midList.length }} môn</p>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Khối 3–5 (Nâng cao)</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ midList.length }} môn</p>
             </div>
-            <div class="flex items-center gap-3 text-sm font-semibold text-brand-muted">
+            <div class="flex items-center gap-3 text-sm font-semibold text-gray-600 dark:text-gray-400">
               <span>🏆 {{ midTrophies.earned }}/{{ midTrophies.total }}</span>
               <router-link
                 class="student-link text-sm"
@@ -168,7 +168,7 @@
                 <img :src="c.thumbnail" :alt="c.title" class="h-40 w-full object-cover" />
                 <button
                   type="button"
-                  class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/90 p-2 text-brand-600 shadow-lg shadow-slate-300 transition hover:scale-105"
+                  class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/90 p-2 text-cyan-600 dark:text-cyan-400 shadow-lg shadow-slate-300 transition hover:scale-105"
                   title="Vào học"
                   @click.stop="playFirst(c.id)"
                 >
@@ -178,13 +178,13 @@
                 </button>
               </div>
               <div class="mt-4 space-y-3">
-                <h4 class="text-base font-semibold text-brand-deep line-clamp-2">{{ c.title }}</h4>
-                <div class="flex items-center justify-between text-sm text-brand-muted">
-                  <span class="inline-flex items-center gap-2 font-semibold" :class="c.done ? 'text-brand-600' : ''">
-                    <span class="h-2 w-2 rounded-full" :class="c.done ? 'bg-brand-500' : 'bg-amber-400'"></span>
+                <h4 class="text-base font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{{ c.title }}</h4>
+                <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <span class="inline-flex items-center gap-2 font-semibold" :class="c.done ? 'text-cyan-600 dark:text-cyan-400' : ''">
+                    <span class="h-2 w-2 rounded-full" :class="c.done ? 'bg-cyan-50 dark:bg-cyan-900/200' : 'bg-amber-400'"></span>
                     {{ c.done ? 'Đã hoàn thành' : `Đang học · ${c.progress}%` }}
                   </span>
-                  <span class="font-semibold text-brand-deep">🏆 {{ c.score }}</span>
+                  <span class="font-semibold text-gray-900 dark:text-gray-100">🏆 {{ c.score }}</span>
                 </div>
               </div>
             </article>
@@ -196,8 +196,8 @@
         <section class="student-card mt-6 space-y-6">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 class="text-xl font-bold text-brand-deep">Khóa học bổ trợ</h3>
-              <p class="text-sm text-brand-muted">{{ suppList.length }} khóa</p>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Khóa học bổ trợ</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ suppList.length }} khóa</p>
             </div>
             <router-link class="student-link text-sm" :to="{ name: 'student-catalog' }">
               Tìm thêm ›
@@ -213,20 +213,20 @@
             >
               <div class="relative h-40 w-full overflow-hidden">
                 <img :src="s.thumbnail" :alt="s.title" class="h-full w-full object-cover" />
-                <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-brand-deep">
+                <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-900 dark:text-gray-100">
                   {{ s.tag }}
                 </span>
               </div>
               <div class="flex flex-1 flex-col space-y-3 p-4">
-                <h4 class="text-base font-semibold text-brand-deep line-clamp-2">{{ s.title }}</h4>
-                <div class="mt-auto flex items-center justify-between text-sm text-brand-muted">
-                  <span class="inline-flex items-center gap-2 font-semibold text-brand-600">
-                    <span class="h-2 w-2 rounded-full bg-brand-500"></span>
+                <h4 class="text-base font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{{ s.title }}</h4>
+                <div class="mt-auto flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <span class="inline-flex items-center gap-2 font-semibold text-cyan-600 dark:text-cyan-400">
+                    <span class="h-2 w-2 rounded-full bg-cyan-50 dark:bg-cyan-900/200"></span>
                     Phù hợp {{ toLevelLabel(s.grade) }}
                   </span>
                   <button
                     type="button"
-                    class="rounded-2xl border border-brand-200 px-4 py-1.5 text-xs font-semibold text-brand-600 transition hover:bg-brand-50"
+                    class="rounded-2xl border border-cyan-200 dark:border-cyan-700 px-4 py-1.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400 transition hover:bg-cyan-50 dark:bg-cyan-900/20"
                     @click.stop="enroll(s.id)"
                   >
                     Tham gia
@@ -240,7 +240,7 @@
 
       <div
         v-if="activeTab === 'main' && (baseList.length || midList.length)"
-        class="mt-6 flex flex-wrap items-center gap-3 rounded-3xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-brand-deep shadow-sm shadow-slate-100"
+        class="mt-6 flex flex-wrap items-center gap-3 rounded-3xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 shadow-sm shadow-slate-100"
       >
         <span>🏆 Tổng số cúp đã đạt</span>
         <b>{{ baseTrophies.earned + midTrophies.earned }}/{{ baseTrophies.total + midTrophies.total }}</b>
@@ -248,7 +248,7 @@
 
       <div
         v-if="(activeTab === 'main' && baseList.length + midList.length === 0) || (activeTab === 'supp' && !suppList.length)"
-        class="mt-6 rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-10 text-center text-sm text-brand-muted"
+        class="mt-6 rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-10 text-center text-sm text-gray-600 dark:text-gray-400"
       >
         Không có khóa học phù hợp.
       </div>

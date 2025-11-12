@@ -15,25 +15,6 @@
           </h2>
         </div>
 
-        <Transition
-          enter-active-class="transition-opacity duration-200"
-          leave-active-class="transition-opacity duration-200"
-          enter-from-class="opacity-0"
-          leave-to-class="opacity-0"
-        >
-          <div
-            v-if="toast.msg"
-            :class="[
-              'fixed bottom-4 right-4 z-40 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg sm:text-base',
-              toast.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-rose-200 bg-rose-50 text-rose-700',
-            ]"
-          >
-            {{ toast.msg }}
-          </div>
-        </Transition>
-
         <form class="mt-6 space-y-6" @submit.prevent="changePassword">
           <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
             <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
@@ -50,12 +31,12 @@
                     'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                     touched.current && errs.current
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
                   :aria-label="show.current ? 'Ẩn mật khẩu cũ' : 'Hiện mật khẩu cũ'"
                   @click="show.current = !show.current"
                 >
@@ -117,12 +98,12 @@
                     'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                     touched.new1 && errs.new1
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
                   :aria-label="show.new1 ? 'Ẩn' : 'Hiện'"
                   @click="show.new1 = !show.new1"
                 >
@@ -184,12 +165,12 @@
                     'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
                     touched.new2 && errs.new2
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
                   :aria-label="show.new2 ? 'Ẩn' : 'Hiện'"
                   @click="show.new2 = !show.new2"
                 >
@@ -239,7 +220,7 @@
           <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
               :disabled="isSubmitDisabled"
             >
               <span
@@ -262,7 +243,9 @@
             class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-10 backdrop-blur-sm"
             @click.self="closeOtpModal"
           >
-            <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200">
+            <div
+              class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200"
+            >
               <div class="flex items-start justify-between">
                 <div>
                   <h3 class="mt-1 text-xl font-bold text-slate-900">Nhập mã OTP xác thực</h3>
@@ -276,7 +259,14 @@
                   aria-label="Đóng"
                   @click="closeOtpModal"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    class="h-5 w-5"
+                  >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -292,7 +282,7 @@
                     'w-full rounded-2xl border px-4 py-3 text-center text-lg font-bold tracking-[0.4em] text-slate-900 shadow-sm transition focus-visible:outline-none focus:ring-4',
                     touched.otp && errs.otp
                       ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-100',
+                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
                   ]"
                 />
                 <p v-if="touched.otp && errs.otp" class="text-xs font-medium text-rose-600">
@@ -303,7 +293,7 @@
               <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-emerald-500 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
+                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
                   :disabled="saving"
                   @click="submitOtp"
                 >
@@ -336,6 +326,7 @@
 import { reactive, ref, watch, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -424,15 +415,6 @@ const isSubmitDisabled = computed(() => {
 
 const saving = ref(false)
 
-const toast = reactive<{ msg: string; type: 'success' | 'error' | '' }>({ msg: '', type: '' })
-let toastTimer: number | undefined
-function showToast(msg: string, type: 'success' | 'error') {
-  toast.msg = msg
-  toast.type = type
-  clearTimeout(toastTimer)
-  toastTimer = window.setTimeout(() => (toast.msg = ''), 2500)
-}
-
 async function changePassword() {
   touched.current = touched.new1 = touched.new2 = true
   if (!credentialsValid.value) return
@@ -509,7 +491,10 @@ async function sendOtp(showSuccess = true) {
     return true
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Không gửi được OTP. Thử lại sau.'
-    if (message.toLowerCase().includes('mật khẩu') && message.toLowerCase().includes('không chính xác')) {
+    if (
+      message.toLowerCase().includes('mật khẩu') &&
+      message.toLowerCase().includes('không chính xác')
+    ) {
       errs.current = message
       touched.current = true
     }

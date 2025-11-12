@@ -2,25 +2,37 @@
   <div class="space-y-6">
     <!-- Header -->
     <div class="text-center">
-      <div
-        class="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 animate-bounce-slow"
-      >
-        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-          />
-        </svg>
-      </div>
       <h2 class="text-2xl font-bold text-gray-900 mb-2">Đặt lại mật khẩu</h2>
       <p class="text-sm text-gray-600">Tạo mật khẩu mới cho tài khoản của bạn</p>
     </div>
 
+    <!-- Success Alert -->
+    <div
+      v-if="status === 'success'"
+      class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700 animate-fade-in"
+      role="alert"
+    >
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        <div>
+          <p class="font-medium">Đặt lại mật khẩu thành công!</p>
+          <p class="mt-1">
+            Đang chuyển hướng đến trang đăng nhập trong
+            <span class="font-semibold">{{ countdown }}s</span>...
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Error Alert -->
     <div
-      v-if="status === 'error'"
+      v-else-if="status === 'error'"
       class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 animate-shake"
       role="alert"
     >
@@ -37,7 +49,7 @@
     </div>
 
     <!-- Form -->
-    <form @submit.prevent="submit" class="space-y-5" autocomplete="off">
+    <form v-if="status !== 'success'" @submit.prevent="submit" class="space-y-5" autocomplete="off">
       <!-- Password -->
       <div class="form-group">
         <label for="password" class="form-label">
@@ -233,6 +245,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
 import { useRoute, useRouter } from 'vue-router'
+import { showToast } from '@/utils/toast'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -248,6 +261,7 @@ const status = ref<'idle' | 'success' | 'error'>('idle')
 const errMessage = ref('')
 const token = ref('')
 const email = ref('')
+const countdown = ref(10)
 
 const validPassword = computed(() => password.value.length >= 6)
 const validConfirm = computed(() => confirm.value === password.value && confirm.value.length >= 6)
@@ -278,11 +292,26 @@ async function submit() {
 
   try {
     await auth.resetPassword(email.value, token.value, password.value)
-    alert('Đặt lại mật khẩu thành công!')
-    router.push('/auth/login')
+    status.value = 'success'
+
+    // Hiển thị toast thành công
+    showToast('Đặt lại mật khẩu thành công!', 'success')
+
+    // Đếm ngược từ 10 giây
+    countdown.value = 10
+    const interval = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        clearInterval(interval)
+        router.push('/auth/login')
+      }
+    }, 1000)
   } catch (e: any) {
     status.value = 'error'
     errMessage.value = e?.message || 'Đặt lại mật khẩu thất bại.'
+
+    // Hiển thị toast lỗi
+    showToast(e?.message || 'Đặt lại mật khẩu thất bại.', 'error')
   } finally {
     loading.value = false
   }
@@ -352,18 +381,19 @@ async function submit() {
   cursor: not-allowed !important;
 }
 
-@keyframes bounce-slow {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
+@keyframes fade-in {
+  from {
+    opacity: 0;
     transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.animate-bounce-slow {
-  animation: bounce-slow 3s ease-in-out infinite;
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
 }
 
 @keyframes shake {

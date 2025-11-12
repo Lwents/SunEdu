@@ -1,7 +1,12 @@
 // src/store/auth.store.ts
 import { defineStore } from 'pinia'
 import router from '@/router'
-import { authService, type Role, type AuthUser, type ProfileUpdatePayload } from '@/services/auth.service'
+import {
+  authService,
+  type Role,
+  type AuthUser,
+  type ProfileUpdatePayload,
+} from '@/services/auth.service'
 import { ElMessage } from 'element-plus'
 
 export const useAuthStore = defineStore('auth', {
@@ -60,7 +65,6 @@ export const useAuthStore = defineStore('auth', {
         this.redirectByRole(user.role)
         return { token, refresh, user }
       } catch (err: any) {
-        ElMessage.error(err?.message || 'Đăng nhập thất bại')
         throw err
       }
     },
