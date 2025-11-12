@@ -51,6 +51,12 @@ jobs:
               cp .env.production .env
               chmod 600 .env
               
+              # Override DB_HOST for Docker deployment
+              if command -v docker >/dev/null 2>&1; then
+                echo "🐳 Setting DB_HOST=db for Docker network"
+                sed -i 's/DB_HOST=.*/DB_HOST=db/' .env
+              fi
+              
               # Merge with local overrides if exists
               if [ -f ".env.local.override" ]; then
                 echo "🔀 Merging with .env.local.override"
