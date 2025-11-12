@@ -1,13 +1,5 @@
 <template>
-  <div class="nav" :style="{ height: computedHeight }">
-    <img
-      v-if="show"
-      :src="logo"
-      alt="SmartEdu Logo"
-      class="logo-smartedu"
-      :style="{ height: computedHeight }"
-    />
-  </div>
+
 </template>
 
 <script setup>

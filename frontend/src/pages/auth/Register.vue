@@ -355,6 +355,7 @@ UI xóa những
 import { ref, reactive } from 'vue'
 import { authService } from '@/services/auth.service'
 import { useRouter } from 'vue-router'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 
@@ -475,27 +476,6 @@ const onSubmit = async () => {
   } finally {
     loading.value = false
   }
-}
-
-// ✅ Toast UI
-function showToast(message: string, type: 'success' | 'error') {
-  const toast = document.createElement('div')
-  toast.className = `toast-notification ${type === 'success' ? 'toast-success' : 'toast-error'}`
-  toast.innerHTML = `
-    <strong>${type === 'success' ? '✅' : '❌'} ${message}</strong>
-  `
-  document.body.appendChild(toast)
-
-  requestAnimationFrame(() => {
-    toast.style.transform = 'translateX(0)'
-    toast.style.opacity = '1'
-  })
-
-  setTimeout(() => {
-    toast.style.transform = 'translateX(400px)'
-    toast.style.opacity = '0'
-    setTimeout(() => toast.remove(), 300)
-  }, 3000)
 }
 </script>
 
@@ -749,102 +729,6 @@ function showToast(message: string, type: 'success' | 'error') {
 }
 .login-link-text:hover {
   color: #5568d3;
-}
-
-/* ==== TOAST ==== */
-:global(.toast-notification) {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  max-width: calc(100vw - 2rem);
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-  border-radius: 12px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-  z-index: 9999;
-  transform: translateX(400px);
-  opacity: 0;
-  transition: all 0.3s ease-out;
-}
-
-:global(.toast-success) {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.98), rgba(118, 75, 162, 0.98));
-  border: 1px solid rgba(102, 126, 234, 0.5);
-}
-
-:global(.toast-error) {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.98), rgba(220, 38, 38, 0.98));
-  border: 1px solid rgba(239, 68, 68, 0.5);
-}
-
-:global(.toast-icon-wrap) {
-  width: 2rem;
-  height: 2rem;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 10px;
-}
-
-:global(.toast-icon) {
-  width: 1.25rem;
-  height: 1.25rem;
-  color: white;
-  stroke-width: 2.5;
-}
-:global(.toast-body) {
-  flex: 1;
-  min-width: 0;
-}
-:global(.toast-title) {
-  font-weight: 900;
-  font-size: 0.875rem;
-  color: white;
-  margin-bottom: 0.25rem;
-}
-:global(.toast-msg) {
-  font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.95);
-  line-height: 1.3;
-}
-
-:global(.toast-bar) {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  width: 100%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0.7),
-    rgba(255, 255, 255, 0.3)
-  );
-  background-size: 200% 100%;
-  animation:
-    bar-shrink 3.5s linear forwards,
-    bar-shimmer 1.5s linear infinite;
-}
-@keyframes bar-shrink {
-  from {
-    width: 100%;
-  }
-  to {
-    width: 0%;
-  }
-}
-@keyframes bar-shimmer {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
 }
 
 /* RESPONSIVE */

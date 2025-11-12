@@ -5,7 +5,10 @@
       <!-- Header -->
       <div class="mb-5 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <button class="rounded-xl border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50" @click="goBack">
+          <button
+            class="rounded-xl border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50"
+            @click="goBack"
+          >
             ← Quay lại
           </button>
           <h1 class="text-2xl font-semibold">Thư viện nội dung</h1>
@@ -19,8 +22,15 @@
       <div class="mb-5 grid grid-cols-1 gap-3 md:grid-cols-3">
         <!-- Search -->
         <div class="md:col-span-2">
-          <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2">
-            <svg viewBox="0 0 24 24" class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor">
+          <div
+            class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="h-5 w-5 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+            >
               <circle cx="11" cy="11" r="8" stroke-width="2" />
               <path d="M21 21l-4.3-4.3" stroke-width="2" />
             </svg>
@@ -36,12 +46,20 @@
 
         <!-- Filters -->
         <div class="grid grid-cols-2 gap-2">
-          <select v-model="gradeBand" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm" @change="fetchList(1)">
+          <select
+            v-model="gradeBand"
+            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+            @change="fetchList(1)"
+          >
             <option value="">Tất cả khối</option>
             <option value="Khối 1–2">Khối 1–2</option>
             <option value="Khối 3–5">Khối 3–5</option>
           </select>
-          <select v-model="ctype" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm" @change="fetchList(1)">
+          <select
+            v-model="ctype"
+            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+            @change="fetchList(1)"
+          >
             <option value="">Tất cả loại</option>
             <option value="video">Video</option>
             <option value="pdf">PDF</option>
@@ -53,7 +71,11 @@
 
       <!-- List (loading) -->
       <div v-if="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div v-for="i in pageSize" :key="'skel-'+i" class="rounded-2xl border border-slate-200 bg-white p-4">
+        <div
+          v-for="i in pageSize"
+          :key="'skel-' + i"
+          class="rounded-2xl border border-slate-200 bg-white p-4"
+        >
           <div class="mb-2 h-12 w-12 animate-pulse rounded-xl bg-slate-200"></div>
           <div class="mb-2 h-4 w-3/4 animate-pulse rounded bg-slate-200"></div>
           <div class="h-3 w-2/3 animate-pulse rounded bg-slate-100"></div>
@@ -67,15 +89,21 @@
           :key="item.id"
           class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 hover:shadow-sm"
         >
-          <div class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-600">
+          <div
+            class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-600"
+          >
             {{ item.type.toUpperCase() }}
           </div>
 
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
               <h3 class="truncate font-semibold">{{ item.title }}</h3>
-              <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{{ subjectLabel(item.subject) }}</span>
-              <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{{ item.gradeBand }}</span>
+              <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{{
+                subjectLabel(item.subject)
+              }}</span>
+              <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{{
+                item.gradeBand
+              }}</span>
             </div>
             <div class="mt-1 text-xs text-slate-500">
               Cập nhật {{ item.updatedAt }}
@@ -102,18 +130,30 @@
 
       <!-- Pager -->
       <div v-if="totalPages > 1" class="mt-6 flex items-center justify-center gap-2">
-        <button class="rounded-xl border px-3 py-2 text-sm" :disabled="page<=1" @click="fetchList(page-1)">‹</button>
+        <button
+          class="rounded-xl border px-3 py-2 text-sm"
+          :disabled="page <= 1"
+          @click="fetchList(page - 1)"
+        >
+          ‹
+        </button>
         <button
           v-for="p in pagesToShow"
           :key="p.key"
           class="rounded-xl border px-3 py-2 text-sm"
-          :class="{ 'bg-sky-600 text-white border-sky-600': p.num===page, 'opacity-70': p.sep }"
+          :class="{ 'bg-sky-600 text-white border-sky-600': p.num === page, 'opacity-70': p.sep }"
           :disabled="p.sep"
           @click="!p.sep && fetchList(p.num!)"
         >
           {{ p.text }}
         </button>
-        <button class="rounded-xl border px-3 py-2 text-sm" :disabled="page>=totalPages" @click="fetchList(page+1)">›</button>
+        <button
+          class="rounded-xl border px-3 py-2 text-sm"
+          :disabled="page >= totalPages"
+          @click="fetchList(page + 1)"
+        >
+          ›
+        </button>
       </div>
     </main>
   </div>
@@ -166,10 +206,15 @@ const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.v
 
 /* Dịch tên môn */
 const subjectLabel = (s: Subject) =>
-  s === 'math' ? 'Toán' :
-  s === 'vietnamese' ? 'Tiếng Việt' :
-  s === 'english' ? 'Tiếng Anh' :
-  s === 'science' ? 'Khoa học' : 'Lịch sử'
+  s === 'math'
+    ? 'Toán'
+    : s === 'vietnamese'
+      ? 'Tiếng Việt'
+      : s === 'english'
+        ? 'Tiếng Anh'
+        : s === 'science'
+          ? 'Khoa học'
+          : 'Lịch sử'
 
 /* Debounce search */
 let debounceTimer: number | null = null
@@ -186,11 +231,12 @@ async function ensureServiceLoaded() {
   try {
     const mod: unknown = await import('@/services/course.service')
     if (
-      typeof mod === 'object' && mod !== null &&
+      typeof mod === 'object' &&
+      mod !== null &&
       'contentService' in (mod as Record<string, unknown>) &&
       typeof (mod as any).contentService?.list === 'function'
     ) {
-      contentServiceList = ((mod as any).contentService.list) as ListFn
+      contentServiceList = (mod as any).contentService.list as ListFn
     } else {
       contentServiceList = null // không đúng shape → dùng mock
     }
@@ -205,8 +251,8 @@ function mockList(params: ListParams): Promise<ListResult> {
   const pg = params.page ?? 1
   const all: ContentItem[] = Array.from({ length: 60 }).map((_, i) => {
     const id = i + 1
-    const subj = (['math','vietnamese','english','science','history'] as Subject[])[id % 5]
-    const ty = (['video','pdf','doc','quiz'] as Ctype[])[id % 4]
+    const subj = (['math', 'vietnamese', 'english', 'science', 'history'] as Subject[])[id % 5]
+    const ty = (['video', 'pdf', 'doc', 'quiz'] as Ctype[])[id % 4]
     const band: GradeBand = id % 2 ? 'Khối 3–5' : 'Khối 1–2'
     const meta: ContentItem['meta'] = {}
     if (ty === 'video') meta.duration = `${6 + (id % 10)} phút`
@@ -219,25 +265,25 @@ function mockList(params: ListParams): Promise<ListResult> {
       type: ty,
       gradeBand: band,
       updatedAt: new Date(Date.now() - id * 864e5).toLocaleDateString(),
-      meta
+      meta,
     }
   })
 
   let filtered = all
   if (params.q) {
     const key = params.q.toLowerCase()
-    filtered = filtered.filter(i =>
-      i.title.toLowerCase().includes(key) ||
-      subjectLabel(i.subject).toLowerCase().includes(key)
+    filtered = filtered.filter(
+      (i) =>
+        i.title.toLowerCase().includes(key) || subjectLabel(i.subject).toLowerCase().includes(key),
     )
   }
-  if (params.gradeBand) filtered = filtered.filter(i => i.gradeBand === params.gradeBand)
-  if (params.type) filtered = filtered.filter(i => i.type === params.type)
+  if (params.gradeBand) filtered = filtered.filter((i) => i.gradeBand === params.gradeBand)
+  if (params.type) filtered = filtered.filter((i) => i.type === params.type)
 
   const start = (pg - 1) * size
   return Promise.resolve({
     items: filtered.slice(start, start + size),
-    total: filtered.length
+    total: filtered.length,
   })
 }
 
@@ -253,12 +299,10 @@ async function fetchList(p = page.value) {
       gradeBand: gradeBand.value || undefined,
       type: ctype.value || undefined,
       page: page.value,
-      pageSize: pageSize.value
+      pageSize: pageSize.value,
     }
 
-    const res = contentServiceList
-      ? await contentServiceList(params)
-      : await mockList(params)
+    const res = contentServiceList ? await contentServiceList(params) : await mockList(params)
 
     items.value = res.items
     total.value = res.total
@@ -278,14 +322,14 @@ const pagesToShow = computed(() => {
   const windowSize = 7
   const arr: { key: string; num?: number; text: string; sep?: boolean }[] = []
   const push = (n: number) => arr.push({ key: 'p' + n, num: n, text: String(n) })
-  const sep  = (k: string) => arr.push({ key: k, text: '…', sep: true })
+  const sep = (k: string) => arr.push({ key: k, text: '…', sep: true })
 
   if (max <= windowSize + 2) {
     for (let i = 1; i <= max; i++) push(i)
   } else {
     push(1)
     const start = Math.max(2, cur - 2)
-    const end   = Math.min(max - 1, cur + 2)
+    const end = Math.min(max - 1, cur + 2)
     if (start > 2) sep('s')
     for (let i = start; i <= end; i++) push(i)
     if (end < max - 1) sep('e')
@@ -311,5 +355,8 @@ onMounted(() => fetchList(1))
 </script>
 
 <style scoped>
-:host, .min-h-screen { overflow-x: hidden; }
+:host,
+.min-h-screen {
+  overflow-x: hidden;
+}
 </style>

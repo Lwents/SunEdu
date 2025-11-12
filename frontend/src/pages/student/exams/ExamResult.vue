@@ -8,7 +8,7 @@
         <span class="score-value">{{ score }}</span>
         <span class="score-total">/ {{ total }}</span>
       </div>
-      
+
       <p class="percentage" :style="{ color: resultStatus.color }">
         Đạt {{ percentage.toFixed(0) }}%
       </p>
@@ -22,8 +22,7 @@
         <router-link
           class="btn primary"
           :to="{ name: 'student-exams-ranking' }"
-          style="color: black; border: 1px;" 
-
+          style="color: black; border: 1px"
         >
           Xem bảng xếp hạng
         </router-link>
@@ -36,10 +35,10 @@
           <h2>Chi tiết bài làm</h2>
           <p>Hiển thị {{ paginatedAnswers.length }} câu hỏi trên trang {{ currentPage }}</p>
         </div>
-        
-        <div 
-          v-for="(answer, index) in paginatedAnswers" 
-          :key="answer.originalIndex" 
+
+        <div
+          v-for="(answer, index) in paginatedAnswers"
+          :key="answer.originalIndex"
           class="question-review"
           :class="{ correct: isAnswerCorrect(answer), incorrect: !isAnswerCorrect(answer) }"
         >
@@ -48,18 +47,30 @@
             <div class="q-text" v-html="answer.questionText"></div>
           </div>
           <div class="answer-details">
-            <p>Đáp án của bạn: <span class="user-answer">{{ answer.userAnswer || 'Chưa trả lời' }}</span></p>
-            <p>Đáp án đúng: <span class="correct-answer">{{ answer.correctAnswer }}</span></p>
+            <p>
+              Đáp án của bạn:
+              <span class="user-answer">{{ answer.userAnswer || 'Chưa trả lời' }}</span>
+            </p>
+            <p>
+              Đáp án đúng: <span class="correct-answer">{{ answer.correctAnswer }}</span>
+            </p>
           </div>
-          <div v-if="answer.userAnswer !== answer.correctAnswer && answer.explanation" class="explanation">
+          <div
+            v-if="answer.userAnswer !== answer.correctAnswer && answer.explanation"
+            class="explanation"
+          >
             <strong>Giải thích:</strong> {{ answer.explanation }}
           </div>
         </div>
 
         <div v-if="totalPages > 1" class="pagination-controls">
-          <button class="btn-page" :disabled="currentPage === 1" @click="prevPage">‹ Trang trước</button>
+          <button class="btn-page" :disabled="currentPage === 1" @click="prevPage">
+            ‹ Trang trước
+          </button>
           <span class="page-info">Trang {{ currentPage }} / {{ totalPages }}</span>
-          <button class="btn-page" :disabled="currentPage === totalPages" @click="nextPage">Trang sau ›</button>
+          <button class="btn-page" :disabled="currentPage === totalPages" @click="nextPage">
+            Trang sau ›
+          </button>
         </div>
       </div>
     </Transition>
@@ -67,72 +78,77 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
-const showReview = ref(false);
-const userAnswers = ref<any[]>([]);
-const route = useRoute();
+const showReview = ref(false)
+const userAnswers = ref<any[]>([])
+const route = useRoute()
 
 // --- Cấu hình Phân trang ---
-const currentPage = ref(1);
-const itemsPerPage = 10; // Hiển thị 10 câu mỗi trang
+const currentPage = ref(1)
+const itemsPerPage = 10 // Hiển thị 10 câu mỗi trang
 
 // Dữ liệu mẫu nếu không nhận được gì từ trang trước
 const mockUserAnswers = [
-  { questionText: 'Có lỗi xảy ra, không nhận được dữ liệu bài làm.', userAnswer: '', correctAnswer: '', explanation: 'Vui lòng quay lại và thử nộp bài lần nữa.' }
-];
+  {
+    questionText: 'Có lỗi xảy ra, không nhận được dữ liệu bài làm.',
+    userAnswer: '',
+    correctAnswer: '',
+    explanation: 'Vui lòng quay lại và thử nộp bài lần nữa.',
+  },
+]
 
 function persistAnswers(answers: any[]) {
   try {
-    const key = route.params.id ? `examResult:${route.params.id}` : 'examResult:last';
+    const key = route.params.id ? `examResult:${route.params.id}` : 'examResult:last'
     sessionStorage.setItem(
       key,
-      JSON.stringify({ examId: route.params.id, answers, savedAt: Date.now() })
-    );
+      JSON.stringify({ examId: route.params.id, answers, savedAt: Date.now() }),
+    )
   } catch (error) {
-    console.warn('Không thể lưu tạm kết quả:', error);
+    console.warn('Không thể lưu tạm kết quả:', error)
   }
 }
 
 function loadStoredAnswers(): any[] | null {
-  const keys: string[] = [];
-  if (route.params.id) keys.push(`examResult:${route.params.id}`);
-  keys.push('examResult:last');
+  const keys: string[] = []
+  if (route.params.id) keys.push(`examResult:${route.params.id}`)
+  keys.push('examResult:last')
 
   for (const key of keys) {
-    const raw = sessionStorage.getItem(key);
-    if (!raw) continue;
+    const raw = sessionStorage.getItem(key)
+    if (!raw) continue
     try {
-      const payload = JSON.parse(raw);
+      const payload = JSON.parse(raw)
       if (Array.isArray(payload?.answers) && payload.answers.length) {
-        sessionStorage.removeItem(key);
-        return payload.answers;
+        sessionStorage.removeItem(key)
+        return payload.answers
       }
     } catch (error) {
-      console.warn('Không đọc được kết quả đã lưu:', error);
+      console.warn('Không đọc được kết quả đã lưu:', error)
     }
   }
-  return null;
+  return null
 }
 
 onMounted(() => {
   const answersFromState =
-    history.state && Array.isArray(history.state.userAnswers) ? history.state.userAnswers : null;
+    history.state && Array.isArray(history.state.userAnswers) ? history.state.userAnswers : null
   if (answersFromState?.length) {
-    userAnswers.value = answersFromState;
-    persistAnswers(answersFromState);
-    return;
+    userAnswers.value = answersFromState
+    persistAnswers(answersFromState)
+    return
   }
 
-  const stored = loadStoredAnswers();
+  const stored = loadStoredAnswers()
   if (stored?.length) {
-    userAnswers.value = stored;
+    userAnswers.value = stored
   } else {
-    console.warn('Không tìm thấy dữ liệu bài làm, đang sử dụng dữ liệu giả (mock data).');
-    userAnswers.value = mockUserAnswers;
+    console.warn('Không tìm thấy dữ liệu bài làm, đang sử dụng dữ liệu giả (mock data).')
+    userAnswers.value = mockUserAnswers
   }
-});
+})
 
 function normalizeAnswer(val: any): string {
   if (Array.isArray(val)) {
@@ -140,21 +156,21 @@ function normalizeAnswer(val: any): string {
       .map((v) => (v ?? '').toString().trim().toLowerCase())
       .filter(Boolean)
       .sort()
-      .join('|');
+      .join('|')
   }
-  return (val ?? '').toString().trim().toLowerCase();
+  return (val ?? '').toString().trim().toLowerCase()
 }
 
 function isAnswerCorrect(answer: { userAnswer: any; correctAnswer: any }) {
-  return normalizeAnswer(answer.userAnswer) === normalizeAnswer(answer.correctAnswer);
+  return normalizeAnswer(answer.userAnswer) === normalizeAnswer(answer.correctAnswer)
 }
 
-const total = computed(() => userAnswers.value.length);
-const score = computed(() => userAnswers.value.filter((a) => isAnswerCorrect(a)).length);
+const total = computed(() => userAnswers.value.length)
+const score = computed(() => userAnswers.value.filter((a) => isAnswerCorrect(a)).length)
 const percentage = computed(() => {
-  if (total.value === 0 || userAnswers.value === mockUserAnswers) return 0;
-  return (score.value / total.value) * 100;
-});
+  if (total.value === 0 || userAnswers.value === mockUserAnswers) return 0
+  return (score.value / total.value) * 100
+})
 
 const resultStatus = computed(() => {
   if (userAnswers.value === mockUserAnswers) {
@@ -163,9 +179,17 @@ const resultStatus = computed(() => {
   if (percentage.value >= 80) {
     return { tone: 'success', message: 'Xuất sắc! Bạn đã làm rất tốt! 🎉', color: '#16a34a' }
   } else if (percentage.value >= 50) {
-    return { tone: 'warning', message: 'Khá tốt! Cùng cố gắng hơn ở lần sau nhé. 👍', color: '#f59e0b' }
+    return {
+      tone: 'warning',
+      message: 'Khá tốt! Cùng cố gắng hơn ở lần sau nhé. 👍',
+      color: '#f59e0b',
+    }
   }
-  return { tone: 'danger', message: 'Đừng nản lòng, hãy xem lại và thử lại nhé! 💪', color: '#ef4444' }
+  return {
+    tone: 'danger',
+    message: 'Đừng nản lòng, hãy xem lại và thử lại nhé! 💪',
+    color: '#ef4444',
+  }
 })
 
 const toneClass = computed(() => {
@@ -182,44 +206,44 @@ const toneClass = computed(() => {
 })
 
 // --- Logic Phân trang ---
-const totalPages = computed(() => Math.ceil(userAnswers.value.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(userAnswers.value.length / itemsPerPage))
 
 const paginatedAnswers = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
   // Thêm originalIndex để giữ đúng số thứ tự câu hỏi
   return userAnswers.value.slice(start, end).map((answer, index) => ({
     ...answer,
-    originalIndex: start + index
-  }));
-});
+    originalIndex: start + index,
+  }))
+})
 
 function nextPage() {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++;
-    scrollToReviewTop();
+    currentPage.value++
+    scrollToReviewTop()
   }
 }
 
 function prevPage() {
   if (currentPage.value > 1) {
-    currentPage.value--;
-    scrollToReviewTop();
+    currentPage.value--
+    scrollToReviewTop()
   }
 }
 
 function toggleReview() {
-  showReview.value = !showReview.value;
+  showReview.value = !showReview.value
   // Reset về trang 1 mỗi khi mở lại
-  if(showReview.value) {
-    currentPage.value = 1;
+  if (showReview.value) {
+    currentPage.value = 1
   }
 }
 
 function scrollToReviewTop() {
-  const reviewElement = document.querySelector('.review-section');
+  const reviewElement = document.querySelector('.review-section')
   if (reviewElement) {
-    reviewElement.scrollIntoView({ behavior: 'smooth' });
+    reviewElement.scrollIntoView({ behavior: 'smooth' })
   }
 }
 </script>
@@ -308,7 +332,9 @@ function scrollToReviewTop() {
   font-weight: 700;
   font-size: 0.95rem;
   border: 1px solid transparent;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btn:hover {
@@ -365,7 +391,9 @@ function scrollToReviewTop() {
   padding: 1.5rem;
   margin-bottom: 1.25rem;
   background: #f8fafc;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .question-review.correct {
@@ -432,7 +460,9 @@ function scrollToReviewTop() {
   font-weight: 600;
   background: white;
   color: #475569;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .btn-page:disabled {

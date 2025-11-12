@@ -1,7 +1,9 @@
 <template>
   <div class="student-shell">
     <div class="student-container max-w-6xl">
-      <header class="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/95 px-5 py-5 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between">
+      <header
+        class="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/95 px-5 py-5 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div>
           <p class="student-section-title">Đề luyện tập</p>
           <h1 class="text-2xl font-black text-brand-deep">{{ exam?.title || 'Đề luyện tập' }}</h1>
@@ -15,7 +17,11 @@
         <div class="flex items-center gap-3">
           <div
             class="inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-bold"
-            :class="timeLeft <= 60 ? 'border-rose-200 bg-rose-50 text-rose-600' : 'border-slate-200 bg-white text-brand-deep'"
+            :class="
+              timeLeft <= 60
+                ? 'border-rose-200 bg-rose-50 text-rose-600'
+                : 'border-slate-200 bg-white text-brand-deep'
+            "
           >
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <path
@@ -43,7 +49,9 @@
       </div>
 
       <main v-else class="mt-6 grid gap-6 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
-        <section class="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100">
+        <section
+          class="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100"
+        >
           <h3 class="text-base font-bold text-brand-deep">Danh sách câu hỏi</h3>
           <div class="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-6">
             <button
@@ -51,7 +59,9 @@
               :key="i"
               class="flex h-10 items-center justify-center rounded-2xl border text-sm font-semibold transition"
               :class="[
-                i === idx ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-brand-deep',
+                i === idx
+                  ? 'border-brand-500 bg-brand-50 text-brand-700'
+                  : 'border-slate-200 bg-white text-brand-deep',
                 isAnswered(ans) && i !== idx ? 'border-brand-200 bg-brand-50 text-brand-600' : '',
               ]"
               @click="go(i)"
@@ -62,12 +72,16 @@
         </section>
 
         <section class="space-y-4">
-          <div class="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100">
+          <div
+            class="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100"
+          >
             <div class="flex items-center justify-between text-sm font-semibold text-brand-muted">
               <span class="inline-flex items-center gap-2 text-brand-deep">
                 <span class="student-pill !text-xs">Câu {{ idx + 1 }}</span>
               </span>
-              <span class="rounded-full border border-slate-200 px-3 py-1 text-xs uppercase tracking-[0.3em]">
+              <span
+                class="rounded-full border border-slate-200 px-3 py-1 text-xs uppercase tracking-[0.3em]"
+              >
                 {{ q?.type }}
               </span>
             </div>
@@ -81,7 +95,9 @@
                     :key="opt.key"
                     class="rounded-2xl border border-slate-200 bg-white transition hover:border-brand-200"
                   >
-                    <label class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-brand-deep">
+                    <label
+                      class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-brand-deep"
+                    >
                       <input
                         type="radio"
                         class="h-4 w-4 text-brand-600 focus:ring-brand-500"
@@ -90,7 +106,9 @@
                         :checked="answers[idx] === opt.key"
                         @change="setAnswer(idx, opt.key)"
                       />
-                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-sm">
+                      <span
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-sm"
+                      >
                         {{ opt.key }}
                       </span>
                       <span class="flex-1" v-html="opt.text"></span>
@@ -141,7 +159,9 @@
             </div>
           </div>
 
-          <div class="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            class="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between"
+          >
             <button
               type="button"
               class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-deep transition hover:bg-slate-50 disabled:opacity-50"
@@ -190,7 +210,9 @@
         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4"
         @click.self="showSubmitModal = false"
       >
-        <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200">
+        <div
+          class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200"
+        >
           <header class="flex items-center justify-between">
             <h3 class="text-lg font-bold text-brand-deep">Xác nhận nộp bài</h3>
             <button
@@ -230,73 +252,99 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, computed, shallowRef, ref, nextTick } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { onMounted, onBeforeUnmount, computed, shallowRef, ref, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 // --- Dữ liệu cục bộ thay thế cho Store ---
 const exams = ref([
-  { id: 1, title: 'Đề thi thử TOEIC Reading Part 5', level: 'basic' as const, durationSec: 25 * 60, passCount: 20 },
-  { id: 2, title: 'Kiểm tra kiến thức Vue.js nâng cao', level: 'advanced' as const, durationSec: 30 * 60, passCount: 25 },
-  { id: 3, title: 'Đề thi thử cuối kỳ môn Lập trình Web', level: 'basic' as const, durationSec: 60 * 60, passCount: 36 }
-]);
+  {
+    id: 1,
+    title: 'Đề thi thử TOEIC Reading Part 5',
+    level: 'basic' as const,
+    durationSec: 25 * 60,
+    passCount: 20,
+  },
+  {
+    id: 2,
+    title: 'Kiểm tra kiến thức Vue.js nâng cao',
+    level: 'advanced' as const,
+    durationSec: 30 * 60,
+    passCount: 25,
+  },
+  {
+    id: 3,
+    title: 'Đề thi thử cuối kỳ môn Lập trình Web',
+    level: 'basic' as const,
+    durationSec: 60 * 60,
+    passCount: 36,
+  },
+])
 
-type Mcq = { type: 'mcq'; text: string; options: { key: string; text: string }[]; answer: string };
-type Tf  = { type: 'tf';  text: string; answer: 'T' | 'F' };
-type Fill = { type: 'fill'; text: string; answer: string };
-type Q = Mcq | Tf | Fill;
+type Mcq = { type: 'mcq'; text: string; options: { key: string; text: string }[]; answer: string }
+type Tf = { type: 'tf'; text: string; answer: 'T' | 'F' }
+type Fill = { type: 'fill'; text: string; answer: string }
+type Q = Mcq | Tf | Fill
 
-const router = useRouter(); 
-const route = useRoute();
+const router = useRouter()
+const route = useRoute()
 
-const exam = computed(() => exams.value.find(x => String(x.id) === String(route.params.id)));
+const exam = computed(() => exams.value.find((x) => String(x.id) === String(route.params.id)))
 
-const loading = ref(true); 
-const questions = shallowRef<Q[]>([]); 
-const answers = shallowRef<(string | null)[]>([]); 
-const idx = ref(0); 
-const submitting = ref(false);
-const duration = ref(exam.value?.durationSec || 20 * 60); 
-const timeLeft = ref(duration.value); 
-let timer: number | null = null;
+const loading = ref(true)
+const questions = shallowRef<Q[]>([])
+const answers = shallowRef<(string | null)[]>([])
+const idx = ref(0)
+const submitting = ref(false)
+const duration = ref(exam.value?.durationSec || 20 * 60)
+const timeLeft = ref(duration.value)
+let timer: number | null = null
 
-const q = computed(() => questions.value[idx.value]);
-const answeredCount = computed(() => answers.value.filter(v => (v ?? '').toString().trim() !== '').length);
+const q = computed(() => questions.value[idx.value])
+const answeredCount = computed(
+  () => answers.value.filter((v) => (v ?? '').toString().trim() !== '').length,
+)
 
-function labelLevel(l?: 'basic' | 'advanced') { return l === 'advanced' ? 'Nâng cao' : 'Cơ bản' }
-function fmtTime(s: number) { const m = Math.floor(s / 60); const ss = s % 60; return `${m.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}` }
+function labelLevel(l?: 'basic' | 'advanced') {
+  return l === 'advanced' ? 'Nâng cao' : 'Cơ bản'
+}
+function fmtTime(s: number) {
+  const m = Math.floor(s / 60)
+  const ss = s % 60
+  return `${m.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}`
+}
 
 // ===== Popup nộp bài =====
-const showSubmitModal = ref(false);
+const showSubmitModal = ref(false)
 const submitMsg = computed(() => {
-  const unanswered = questions.value.length - answeredCount.value;
+  const unanswered = questions.value.length - answeredCount.value
   return unanswered > 0
     ? `Bạn còn <b>${unanswered}</b> câu chưa trả lời. Bạn có chắc chắn muốn nộp bài không?`
-    : 'Bạn đã trả lời hết các câu hỏi. Xác nhận nộp bài?';
-});
+    : 'Bạn đã trả lời hết các câu hỏi. Xác nhận nộp bài?'
+})
 
 // Mở popup khi ấn nút "Nộp bài"
 function submit() {
-  showSubmitModal.value = true;
+  showSubmitModal.value = true
 }
 
 // Thực sự nộp bài khi người dùng xác nhận trong popup
 async function confirmSubmit() {
-  if (submitting.value) return; 
-  submitting.value = true; 
-  stopTimer(); 
-  await nextTick();
-  
+  if (submitting.value) return
+  submitting.value = true
+  stopTimer()
+  await nextTick()
+
   const userAnswersData = questions.value.map((question, index) => {
     return {
       questionText: question.text,
       userAnswer: (answers.value[index] ?? 'Chưa trả lời').toString().trim(),
       correctAnswer: question.answer,
-      explanation: `Đây là giải thích cho câu ${index + 1}.` 
-    };
-  });
+      explanation: `Đây là giải thích cho câu ${index + 1}.`,
+    }
+  })
 
-  showSubmitModal.value = false;
-  
+  showSubmitModal.value = false
+
   const payload = {
     examId: route.params.id,
     answers: userAnswersData,
@@ -309,74 +357,115 @@ async function confirmSubmit() {
     console.warn('Không thể lưu tạm kết quả bài làm:', err)
   }
 
-  router.push({ 
+  router.push({
     name: 'student-exam-result',
     params: { id: route.params.id },
     state: {
-      userAnswers: userAnswersData
-    }
-  });
+      userAnswers: userAnswersData,
+    },
+  })
 
-  submitting.value = false;
+  submitting.value = false
 }
 
 // ===== Các hàm sẵn có =====
-function goBack() { 
-  if (window.confirm('Bạn có chắc chắn muốn thoát không? Mọi tiến trình làm bài sẽ không được lưu lại.')) {
-    router.back();
+function goBack() {
+  if (
+    window.confirm(
+      'Bạn có chắc chắn muốn thoát không? Mọi tiến trình làm bài sẽ không được lưu lại.',
+    )
+  ) {
+    router.back()
   }
 }
-function go(i: number) { if (i >= 0 && i < questions.value.length) idx.value = i }
-function next() { if (idx.value < questions.value.length - 1) idx.value++ }
-function prev() { if (idx.value > 0) idx.value-- }
-function isAnswered(v: string | null) { return (v ?? '').toString().trim() !== '' }
-function stopTimer() { if (timer) { clearInterval(timer); timer = null } }
+function go(i: number) {
+  if (i >= 0 && i < questions.value.length) idx.value = i
+}
+function next() {
+  if (idx.value < questions.value.length - 1) idx.value++
+}
+function prev() {
+  if (idx.value > 0) idx.value--
+}
+function isAnswered(v: string | null) {
+  return (v ?? '').toString().trim() !== ''
+}
+function stopTimer() {
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
+}
 
-function setAnswer(i: number, val: string) { 
-  const next = answers.value.slice(); 
-  next[i] = val; 
-  answers.value = next;
+function setAnswer(i: number, val: string) {
+  const next = answers.value.slice()
+  next[i] = val
+  answers.value = next
 }
 
 // Các hàm tạo câu hỏi mẫu
-function makeMcq(i: number): Mcq { const letters = ['A', 'B', 'C', 'D']; const correct = letters[i % 4]; return { type: 'mcq', text: `Nội dung câu hỏi trắc nghiệm số <b>${i}</b>. Đâu là đáp án đúng cho phép tính: <b>${i} + ${i}</b>?`, options: letters.map(k => ({ key: k, text: (k === correct ? String(i + i) : String(i + i + (k.charCodeAt(0) % 3 - 1))) })), answer: correct } }
-function makeTf(i: number): Tf { return { type: 'tf', text: `Xét tính đúng sai của mệnh đề sau: "<b>${i} là một số chẵn</b>"`, answer: (i % 2 === 0 ? 'T' : 'F') } }
-function makeFill(i: number): Fill { return { type: 'fill', text: `Điền kết quả đúng cho phép tính sau: <b>${i} × 2</b>`, answer: String(i * 2) } }
+function makeMcq(i: number): Mcq {
+  const letters = ['A', 'B', 'C', 'D']
+  const correct = letters[i % 4]
+  return {
+    type: 'mcq',
+    text: `Nội dung câu hỏi trắc nghiệm số <b>${i}</b>. Đâu là đáp án đúng cho phép tính: <b>${i} + ${i}</b>?`,
+    options: letters.map((k) => ({
+      key: k,
+      text: k === correct ? String(i + i) : String(i + i + ((k.charCodeAt(0) % 3) - 1)),
+    })),
+    answer: correct,
+  }
+}
+function makeTf(i: number): Tf {
+  return {
+    type: 'tf',
+    text: `Xét tính đúng sai của mệnh đề sau: "<b>${i} là một số chẵn</b>"`,
+    answer: i % 2 === 0 ? 'T' : 'F',
+  }
+}
+function makeFill(i: number): Fill {
+  return {
+    type: 'fill',
+    text: `Điền kết quả đúng cho phép tính sau: <b>${i} × 2</b>`,
+    answer: String(i * 2),
+  }
+}
 
 async function buildQuestions(total = 60, chunk = 20) {
-  const buffer: Q[] = []; 
-  questions.value = []; 
-  answers.value = [];
+  const buffer: Q[] = []
+  questions.value = []
+  answers.value = []
   for (let i = 1; i <= total; i++) {
-    const t = i % 3 === 1 ? makeMcq(i) : i % 3 === 2 ? makeTf(i) : makeFill(i);
-    buffer.push(t);
+    const t = i % 3 === 1 ? makeMcq(i) : i % 3 === 2 ? makeTf(i) : makeFill(i)
+    buffer.push(t)
     if (i % chunk === 0 || i === total) {
-      questions.value = questions.value.concat(buffer);
-      answers.value = answers.value.concat(Array(buffer.length).fill(null));
-      buffer.length = 0;
-      await new Promise(r => requestAnimationFrame(() => r(null)));
+      questions.value = questions.value.concat(buffer)
+      answers.value = answers.value.concat(Array(buffer.length).fill(null))
+      buffer.length = 0
+      await new Promise((r) => requestAnimationFrame(() => r(null)))
     }
   }
 }
 
 onMounted(async () => {
-  const numberOfQuestions = exam.value?.passCount ? exam.value.passCount + 10 : 60;
-  await buildQuestions(numberOfQuestions, 20);
-  
-  loading.value = false;
-  timeLeft.value = exam.value?.durationSec || 20 * 60;
-  
-  timer = window.setInterval(() => {
-    timeLeft.value--;
-    if (timeLeft.value <= 0) {
-      clearInterval(timer!);
-      // Hết giờ: tự động nộp (giữ đúng hành vi cũ, không hiện alert)
-      confirmSubmit();
-    }
-  }, 1000) as unknown as number;
-});
+  const numberOfQuestions = exam.value?.passCount ? exam.value.passCount + 10 : 60
+  await buildQuestions(numberOfQuestions, 20)
 
-onBeforeUnmount(() => { 
-  stopTimer(); 
-});
+  loading.value = false
+  timeLeft.value = exam.value?.durationSec || 20 * 60
+
+  timer = window.setInterval(() => {
+    timeLeft.value--
+    if (timeLeft.value <= 0) {
+      clearInterval(timer!)
+      // Hết giờ: tự động nộp (giữ đúng hành vi cũ, không hiện alert)
+      confirmSubmit()
+    }
+  }, 1000) as unknown as number
+})
+
+onBeforeUnmount(() => {
+  stopTimer()
+})
 </script>
