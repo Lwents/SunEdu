@@ -33,6 +33,7 @@ db.sqlite3-journal
 # Environment variables (CRITICAL - không được commit!)
 .env
 .env.local
+.env.production
 .env.local.override
 .env.*.local
 
