@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen bg-gradient-to-br from-slate-50 via-green-50/30 to-slate-50 relative overflow-x-hidden"
+    class="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50/30 to-slate-50 relative overflow-x-hidden"
   >
     <!-- Decorative Background -->
     <div
@@ -13,7 +13,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-3 mb-2">
             <div
-              class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30"
+              class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30"
             >
               <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -36,7 +36,7 @@
         <button
           @click="loadPlans"
           :disabled="planLoading"
-          class="inline-flex items-center gap-2 px-5 py-3 bg-white border-2 border-slate-200 rounded-xl font-semibold text-slate-700 hover:border-green-500 hover:bg-green-50 hover:text-green-700 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none group"
+          class="inline-flex items-center gap-2 px-5 py-3 bg-white border-2 border-slate-200 rounded-xl font-semibold text-slate-700 hover:border-cyan-500 dark:border-cyan-600 hover:bg-cyan-50 dark:bg-cyan-900/20 hover:text-cyan-700 dark:text-cyan-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none group"
         >
           <svg
             v-if="!planLoading"
@@ -54,7 +54,7 @@
           </svg>
           <div
             v-else
-            class="w-5 h-5 border-2 border-slate-300 border-t-green-600 rounded-full animate-spin"
+            class="w-5 h-5 border-2 border-slate-300 border-t-cyan-600 rounded-full animate-spin"
           ></div>
           <span>{{ planLoading ? 'Đang tải...' : 'Làm mới' }}</span>
         </button>
@@ -92,7 +92,7 @@
         <select
           v-model="selectedPlanId"
           :disabled="planLoading"
-          class="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-xl font-semibold text-slate-900 cursor-pointer hover:border-green-500 focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA3LjVMMTAgMTIuNUwxNSA3LjUiIHN0cm9rZT0iIzY0NzQ4YiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=')] bg-[length:20px] bg-[position:right_1rem_center] bg-no-repeat pr-12"
+          class="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-xl font-semibold text-slate-900 cursor-pointer hover:border-cyan-500 dark:border-cyan-600 focus:border-cyan-500 dark:border-cyan-600 focus:ring-4 focus:ring-cyan-500/30 transition-all duration-200 appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA3LjVMMTAgMTIuNUwxNSA3LjUiIHN0cm9rZT0iIzY0NzQ4YiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=')] bg-[length:20px] bg-[position:right_1rem_center] bg-no-repeat pr-12"
         >
           <option v-for="plan in plans" :key="plan.id" :value="plan.id">
             {{ plan.name }} • {{ vnd(plan.price) }} • {{ plan.durationDays }} ngày
@@ -104,7 +104,7 @@
       <div class="mb-16">
         <div class="flex items-center gap-3 mb-6">
           <div
-            class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center"
+            class="w-8 h-8 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center"
           >
             <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -121,7 +121,7 @@
         <div class="grid md:grid-cols-2 gap-6">
           <!-- MoMo Payment Method -->
           <div
-            class="relative group bg-white/90 backdrop-blur-xl border-2 border-green-200 shadow-xl shadow-green-100/50 rounded-2xl p-6 sm:p-7 hover:shadow-2xl hover:shadow-green-200/60 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+            class="relative group bg-white/90 backdrop-blur-xl border-2 border-cyan-200 dark:border-cyan-700 shadow-xl shadow-cyan-100/50 rounded-2xl p-6 sm:p-7 hover:shadow-2xl hover:shadow-cyan-200/60 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
           >
             <!-- Recommended Badge -->
             <div class="absolute top-5 right-5 z-10">
@@ -141,7 +141,7 @@
 
             <!-- Gradient Background -->
             <div
-              class="absolute inset-0 bg-gradient-to-br from-green-50 via-emerald-50/50 to-transparent opacity-60 rounded-2xl"
+              class="absolute inset-0 bg-gradient-to-br from-sky-50 via-cyan-50/50 to-transparent opacity-60 rounded-2xl"
             ></div>
 
             <!-- Content -->
@@ -149,7 +149,7 @@
               <!-- Header -->
               <div class="flex items-center gap-4 mb-5">
                 <div
-                  class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-green-500/40 flex-shrink-0"
+                  class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/40 flex-shrink-0"
                 >
                   <svg
                     class="w-8 h-8 text-white"
@@ -175,9 +175,9 @@
               <div class="space-y-2.5 mb-5">
                 <div class="flex items-center gap-2.5">
                   <div
-                    class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0"
+                    class="w-5 h-5 bg-cyan-100 dark:bg-cyan-900/30 rounded-full flex items-center justify-center flex-shrink-0"
                   >
-                    <svg class="w-3 h-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                    <svg class="w-3 h-3 text-cyan-600 dark:text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fill-rule="evenodd"
                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -189,9 +189,9 @@
                 </div>
                 <div class="flex items-center gap-2.5">
                   <div
-                    class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0"
+                    class="w-5 h-5 bg-cyan-100 dark:bg-cyan-900/30 rounded-full flex items-center justify-center flex-shrink-0"
                   >
-                    <svg class="w-3 h-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                    <svg class="w-3 h-3 text-cyan-600 dark:text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fill-rule="evenodd"
                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -203,9 +203,9 @@
                 </div>
                 <div class="flex items-center gap-2.5">
                   <div
-                    class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0"
+                    class="w-5 h-5 bg-cyan-100 dark:bg-cyan-900/30 rounded-full flex items-center justify-center flex-shrink-0"
                   >
-                    <svg class="w-3 h-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                    <svg class="w-3 h-3 text-cyan-600 dark:text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fill-rule="evenodd"
                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -231,7 +231,7 @@
                   <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide"
                     >Tổng thanh toán</span
                   >
-                  <span class="text-xl font-black text-green-600">{{
+                  <span class="text-xl font-black text-cyan-600 dark:text-cyan-400">{{
                     vnd(displayPlan.price)
                   }}</span>
                 </div>
@@ -241,7 +241,7 @@
               <button
                 @click="goCheckout('momo')"
                 :disabled="loadingMethod === 'momo'"
-                class="w-full py-4 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 group"
+                class="w-full py-4 px-6 bg-gradient-to-r from-cyan-600 to-cyan-600 hover:from-cyan-700 hover:to-cyan-700 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/50 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 group"
               >
                 <div
                   v-if="loadingMethod === 'momo'"
@@ -488,10 +488,10 @@
           >
             <div class="flex items-center gap-4">
               <div
-                class="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"
+                class="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-cyan-100 to-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0"
               >
                 <svg
-                  class="w-6 sm:w-7 h-6 sm:h-7 text-green-600"
+                  class="w-6 sm:w-7 h-6 sm:h-7 text-cyan-600 dark:text-cyan-400"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -635,7 +635,7 @@
                     <span class="text-sm font-semibold text-slate-900">{{ item.plan }}</span>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="text-sm font-black text-green-600">{{ vnd(item.amount) }}</span>
+                    <span class="text-sm font-black text-cyan-600 dark:text-cyan-400">{{ vnd(item.amount) }}</span>
                   </td>
                   <td class="px-6 py-4">
                     <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg">
@@ -658,7 +658,7 @@
                     <span
                       :class="[
                         'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide',
-                        item.status === 'success' ? 'bg-green-100 text-green-700' : '',
+                        item.status === 'success' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : '',
                         item.status === 'pending' ? 'bg-amber-100 text-amber-700' : '',
                         item.status === 'failed' ? 'bg-red-100 text-red-700' : '',
                       ]"
@@ -666,7 +666,7 @@
                       <span
                         :class="[
                           'w-1.5 h-1.5 rounded-full',
-                          item.status === 'success' ? 'bg-green-500' : '',
+                          item.status === 'success' ? 'bg-cyan-50 dark:bg-cyan-900/200' : '',
                           item.status === 'pending' ? 'bg-amber-500' : '',
                           item.status === 'failed' ? 'bg-red-500' : '',
                         ]"
@@ -732,7 +732,7 @@
               <span
                 :class="[
                   'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase',
-                  item.status === 'success' ? 'bg-green-100 text-green-700' : '',
+                  item.status === 'success' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' : '',
                   item.status === 'pending' ? 'bg-amber-100 text-amber-700' : '',
                   item.status === 'failed' ? 'bg-red-100 text-red-700' : '',
                 ]"
@@ -740,7 +740,7 @@
                 <span
                   :class="[
                     'w-1.5 h-1.5 rounded-full',
-                    item.status === 'success' ? 'bg-green-500' : '',
+                    item.status === 'success' ? 'bg-cyan-50 dark:bg-cyan-900/200' : '',
                     item.status === 'pending' ? 'bg-amber-500' : '',
                     item.status === 'failed' ? 'bg-red-500' : '',
                   ]"
@@ -757,7 +757,7 @@
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-xs text-slate-500 font-semibold uppercase">Số tiền</span>
-                <span class="text-base font-black text-green-600">{{ vnd(item.amount) }}</span>
+                <span class="text-base font-black text-cyan-600 dark:text-cyan-400">{{ vnd(item.amount) }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-xs text-slate-500 font-semibold uppercase">Phương thức</span>

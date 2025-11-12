@@ -3,8 +3,8 @@
     <div class="student-container">
       <header class="mb-6">
         <p class="student-section-title">Chứng chỉ</p>
-        <h1 class="text-3xl font-black text-brand-deep">Chứng chỉ của tôi</h1>
-        <p class="mt-2 text-sm text-brand-muted">
+        <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">Chứng chỉ của tôi</h1>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Các chứng chỉ bạn đã đạt được sau khi hoàn thành bài thi.
         </p>
       </header>
@@ -20,8 +20,8 @@
         >
           <img :src="c.thumbnail" :alt="c.title" class="h-40 w-full object-cover" />
           <div class="flex flex-1 flex-col space-y-2 p-4">
-            <h3 class="text-lg font-semibold text-brand-deep">{{ c.title }}</h3>
-            <p class="text-sm text-brand-muted">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ c.title }}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
               Điểm {{ c.score }}/{{ c.total }} · Ngày cấp {{ c.issuedAt }}
             </p>
             <div class="mt-auto flex items-center justify-end gap-2">
@@ -34,7 +34,7 @@
 
       <div
         v-else
-        class="mt-6 rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-10 text-center text-sm text-brand-muted"
+        class="mt-6 rounded-3xl border border-dashed border-slate-200 bg-white/80 px-6 py-10 text-center text-sm text-gray-600 dark:text-gray-400"
       >
         Bạn chưa có chứng chỉ nào.
       </div>

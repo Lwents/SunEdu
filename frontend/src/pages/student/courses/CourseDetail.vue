@@ -3,11 +3,11 @@
   <div class="student-shell" v-if="course">
     <div class="student-container max-w-6xl">
       <div
-        class="mb-4 flex flex-col gap-2 text-sm font-semibold text-brand-muted sm:flex-row sm:items-center sm:justify-between"
+        class="mb-4 flex flex-col gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400 sm:flex-row sm:items-center sm:justify-between"
       >
         <button
           type="button"
-          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-deep transition hover:bg-slate-50 sm:w-auto"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:bg-slate-50 sm:w-auto"
           @click="goBack"
         >
           ‹ Rời khỏi đây
@@ -26,9 +26,9 @@
             @ended="markDone(currentLesson?.id)"
           ></video>
           <div class="space-y-1 px-6 py-5">
-            <p class="student-section-title text-xs text-brand-muted">Bài học hiện tại</p>
-            <h2 class="text-2xl font-bold text-brand-deep">{{ course.title }}</h2>
-            <p class="text-sm text-brand-muted">
+            <p class="student-section-title text-xs text-gray-600 dark:text-gray-400">Bài học hiện tại</p>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ course.title }}</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
               {{ currentFlatIndex + 1 }}. {{ currentLesson?.title }}
             </p>
           </div>
@@ -46,7 +46,7 @@
                   d="M18 2a16 16 0 1 1 0 32a16 16 0 1 1 0-32"
                 />
                 <path
-                  class="text-brand-500"
+                  class="text-cyan-500"
                   stroke="currentColor"
                   stroke-width="3"
                   stroke-linecap="round"
@@ -55,13 +55,13 @@
                   d="M18 2a16 16 0 1 1 0 32a16 16 0 1 1 0-32"
                 />
               </svg>
-              <span class="absolute text-lg font-black text-brand-deep">{{ progressPct }}%</span>
+              <span class="absolute text-lg font-black text-gray-900 dark:text-gray-100">{{ progressPct }}%</span>
             </div>
             <div>
-              <p class="text-sm font-semibold uppercase tracking-[0.3em] text-brand-muted">
+              <p class="text-sm font-semibold uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">
                 Nội dung khóa học
               </p>
-              <p class="text-base font-bold text-brand-deep">{{ doneCount }}/{{ totalCount }} bài học</p>
+              <p class="text-base font-bold text-gray-900 dark:text-gray-100">{{ doneCount }}/{{ totalCount }} bài học</p>
             </div>
           </div>
 
@@ -73,13 +73,13 @@
             >
               <button
                 type="button"
-                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-semibold text-brand-deep"
+                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100"
                 @click="toggle(si)"
               >
                 <span class="flex-1 text-sm">{{ si + 1 }}. {{ sec.title }}</span>
-                <span class="text-xs text-brand-muted">{{ sec.items.length }}</span>
+                <span class="text-xs text-gray-600 dark:text-gray-400">{{ sec.items.length }}</span>
                 <svg
-                  class="h-4 w-4 text-brand-muted transition"
+                  class="h-4 w-4 text-gray-600 dark:text-gray-400 transition"
                   :class="{ 'rotate-180': openIndex === si }"
                   viewBox="0 0 24 24"
                   fill="none"
@@ -104,21 +104,21 @@
                     :class="[
                       'flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm transition',
                       String(it.id) === String(currentLesson?.id)
-                        ? 'bg-brand-50 text-brand-700'
-                        : 'bg-white text-brand-deep hover:bg-slate-50',
+                        ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
+                        : 'bg-white text-gray-900 dark:text-gray-100 hover:bg-slate-50',
                       it.done ? 'font-semibold' : '',
                     ]"
                     @click="goToLesson(si, li)"
                   >
                     <div class="flex items-center gap-2">
-                      <span class="text-xs font-semibold text-brand-muted">{{ li + 1 }}</span>
+                      <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">{{ li + 1 }}</span>
                       <span>{{ it.title }}</span>
                     </div>
-                    <div class="flex items-center gap-3 text-xs text-brand-muted">
+                    <div class="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
                       <span>{{ formatDuration(it.durationMinutes) }}</span>
                       <svg
                         v-if="it.done"
-                        class="h-4 w-4 text-brand-500"
+                        class="h-4 w-4 text-cyan-500"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -137,18 +137,18 @@
         <div class="order-3 flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-deep transition hover:bg-slate-50 disabled:opacity-50"
+            class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:bg-slate-50 disabled:opacity-50"
             :disabled="!prevLesson"
             @click="goPrev"
           >
             ‹ Bài trước
           </button>
-          <div class="text-center text-xs font-semibold uppercase tracking-[0.3em] text-brand-muted">
+          <div class="text-center text-xs font-semibold uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">
             {{ doneCount }}/{{ totalCount }} bài hoàn thành
           </div>
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-2xl border border-brand-200 bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-brand-600 disabled:opacity-50"
+            class="inline-flex items-center justify-center rounded-2xl border border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/200 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 disabled:opacity-50"
             :disabled="!nextLesson"
             @click="goNext"
           >
@@ -159,7 +159,7 @@
     </div>
   </div>
 
-  <div v-else class="grid min-h-screen place-items-center text-brand-muted">Đang tải…</div>
+  <div v-else class="grid min-h-screen place-items-center text-gray-600 dark:text-gray-400">Đang tải…</div>
 </template>
 
 <script setup lang="ts">
