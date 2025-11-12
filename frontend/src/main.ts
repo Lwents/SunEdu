@@ -23,7 +23,7 @@ import App from './App.vue'
 import router from '@/router'
 import 'element-plus/dist/index.css'
 import '@/styles/tailwind.css'
-import '@/styles/toast.css'
+import { Toaster } from 'vue-sonner'
 import { useAuthStore } from '@/store/auth.store'
 import { useUiStore } from '@/stores/ui.store'
 import { useIdleLogout } from '@/composables/useIdleLogout'
@@ -45,6 +45,10 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 app.use(ElementPlus)
+
+// Register Sonner Toaster component globally
+app.component('Toaster', Toaster)
+
 const authStore = useAuthStore()
 authStore.hydrateFromStorage()
 const uiStore = useUiStore()
