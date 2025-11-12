@@ -26,7 +26,7 @@ services:
     depends_on:
       - db
     env_file:
-      - .env.local
+      - .env
     environment:
       DB_NAME: elearning
       DB_USER: elearning
