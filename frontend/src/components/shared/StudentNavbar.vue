@@ -19,18 +19,18 @@
           <RouterLink
             :to="item.path"
             @click="handleClick(item.path)"
-            class="group relative rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
-            :class="isActive(item.path) ? 'text-emerald-600' : 'text-gray-600 hover:text-gray-900'"
+            class="group relative rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
+            :class="isActive(item.path) ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-600 hover:text-gray-900'"
           >
-            <span class="absolute inset-0 -z-10 rounded-lg bg-gradient-to-r from-emerald-50 to-blue-50 opacity-0 transition-all duration-300 group-hover:opacity-100"></span>
+            <span class="absolute inset-0 -z-10 rounded-lg bg-gradient-to-r from-cyan-50 to-sky-50 opacity-0 transition-all duration-300 group-hover:opacity-100"></span>
             <span class="relative z-10">{{ item.label }}</span>
             <span 
-              class="absolute bottom-0 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-gradient-to-r from-emerald-500 via-blue-500 to-emerald-500 bg-[length:200%_100%] transition-all duration-500"
+              class="absolute bottom-0 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-cyan-500 bg-[length:200%_100%] transition-all duration-500"
               :class="isActive(item.path) ? 'w-4/5 animate-gradient-x' : 'w-0 group-hover:w-4/5'"
             ></span>
             <span 
               v-if="clickedItem === item.path" 
-              class="absolute inset-0 rounded-lg bg-[radial-gradient(circle,rgba(16,185,129,0.4)_0%,transparent_70%)] pointer-events-none animate-ripple-out"
+              class="absolute inset-0 rounded-lg bg-[radial-gradient(circle,rgba(6,182,212,0.4)_0%,transparent_70%)] pointer-events-none animate-ripple-out"
             ></span>
           </RouterLink>
         </li>
@@ -49,19 +49,19 @@
           >
             <div class="relative">
               <!-- Glow ring -->
-              <div class="absolute inset-[-4px] rounded-full bg-gradient-to-br from-emerald-500/50 via-blue-500/50 to-emerald-500/50 bg-[length:200%_200%] opacity-0 blur-[8px] transition-opacity duration-400 animate-gradient-rotate group-hover:opacity-100"></div>
+              <div class="absolute inset-[-4px] rounded-full bg-gradient-to-br from-cyan-500/50 via-sky-500/50 to-cyan-500/50 bg-[length:200%_200%] opacity-0 blur-[8px] transition-opacity duration-400 animate-gradient-rotate group-hover:opacity-100"></div>
               
               <!-- Avatar image -->
               <img
-                class="relative z-10 h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-md transition-all duration-300 group-hover:ring-emerald-400"
+                class="relative z-10 h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-md transition-all duration-300 group-hover:ring-cyan-400"
                 :src="avatarSrc"
                 alt="avatar"
               />
               
               <!-- Online status indicator -->
               <span class="absolute -bottom-0.5 -right-0.5 flex items-center justify-center z-20">
-                <span class="absolute h-3 w-3 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 animate-pulse-custom"></span>
-                <span class="relative h-2.5 w-2.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 border-2 border-white shadow-[0_0_0_1px_rgba(16,185,129,0.2),0_2px_4px_rgba(0,0,0,0.2)]"></span>
+                <span class="absolute h-3 w-3 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-400 animate-pulse-custom"></span>
+                <span class="relative h-2.5 w-2.5 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-400 border-2 border-white shadow-[0_0_0_1px_rgba(6,182,212,0.2),0_2px_4px_rgba(0,0,0,0.2)]"></span>
               </span>
             </div>
           </button>
@@ -83,8 +83,8 @@
               <div class="px-3 py-3 border-b border-gray-100 mb-2">
                 <div class="flex items-center gap-2 mb-1">
                   <p class="text-sm font-semibold text-gray-800">{{ displayName }}</p>
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-50 text-[10px] font-semibold text-emerald-700">
-                    <span class="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 animate-pulse"></span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-br from-cyan-100 to-cyan-50 text-[10px] font-semibold text-cyan-700 dark:text-cyan-800">
+                    <span class="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-400 animate-pulse"></span>
                     Online
                   </span>
                 </div>
@@ -96,7 +96,7 @@
                 <!-- ⭐ THÊM LẠI PROFILE LINK ⭐ -->
                 <RouterLink
                   to="/student/account/profile"
-                  class="menu-item group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-blue-50 hover:text-emerald-700 hover:translate-x-1"
+                  class="menu-item group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-cyan-50 to-sky-50 hover:text-cyan-700 dark:hover:text-cyan-300 hover:translate-x-1"
                   @click="avatarOpen = false"
                 >
                   <svg
@@ -113,6 +113,28 @@
                     />
                   </svg>
                   <span>Tài khoản</span>
+                </RouterLink>
+
+                <!-- Nạp tiền -->
+                <RouterLink
+                  to="/student/payments"
+                  class="menu-item group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-cyan-50 to-sky-50 hover:text-cyan-700 dark:hover:text-cyan-300 hover:translate-x-1"
+                  @click="avatarOpen = false"
+                >
+                  <svg
+                    class="h-5 w-5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                    />
+                  </svg>
+                  <span>Nạp tiền</span>
                 </RouterLink>
 
                 <!-- Logout button -->
@@ -144,7 +166,7 @@
         <div class="md:hidden">
           <button
             @click="open = !open"
-            class="relative h-11 w-11 rounded-xl transition-all duration-300 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-blue-50 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+            class="relative h-11 w-11 rounded-xl transition-all duration-300 hover:bg-gradient-to-br hover:from-cyan-50 hover:to-sky-50 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
             aria-label="Mở menu"
           >
             <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-[5px]">
@@ -188,7 +210,7 @@
             class="mobile-link group flex items-center justify-between rounded-xl px-4 py-3.5 text-base font-medium transition-all duration-300"
             :class="
               isActive(item.path)
-                ? 'bg-gradient-to-r from-emerald-50 to-blue-50 text-emerald-700 shadow-sm'
+                ? 'bg-gradient-to-r from-cyan-50 to-sky-50 text-cyan-700 dark:text-cyan-300 shadow-sm'
                 : 'text-gray-600 hover:bg-gray-50 hover:translate-x-2'
             "
             :style="{ transitionDelay: `${index * 50}ms` }"
@@ -197,7 +219,7 @@
             <span>{{ item.label }}</span>
             <svg
               class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-2"
-              :class="{ 'text-emerald-600': isActive(item.path) }"
+              :class="{ 'text-cyan-600 dark:text-cyan-400': isActive(item.path) }"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -250,7 +272,7 @@ const menu = [
   { path: '/student/dashboard', label: 'Trang chủ' },
   { path: '/student/courses', label: 'Khóa học' },
   { path: '/student/exams', label: 'Ôn luyện & Thi' },
-  { path: '/student/payments', label: 'Thanh toán' },
+  { path: '/student/games', label: 'Trò chơi' },
 ]
 
 // Click outside handlers
@@ -315,7 +337,7 @@ function handleClick(path: string) {
   top: 0;
   height: 100%;
   width: 3px;
-  background: linear-gradient(180deg, #10b981, #3b82f6);
+  background: linear-gradient(180deg, #06b6d4, #0ea5e9);
   transform: scaleY(0);
   transform-origin: top;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -338,7 +360,7 @@ function handleClick(path: string) {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #10b981, #3b82f6);
+  background: linear-gradient(90deg, #06b6d4, #0ea5e9);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);

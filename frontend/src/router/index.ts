@@ -361,18 +361,26 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Bảng xếp hạng' },
       },
 
+      // Games
+      {
+        path: 'games',
+        name: 'student-games',
+        component: () => import('@/pages/student/games/Games.vue'),
+        meta: { title: 'Trò chơi' },
+      },
+
       // Payments & Account
       {
         path: 'payments',
         name: 'student-payments',
         component: () => import('@/pages/student/payments/Payments.vue'),
-        meta: { title: 'Thanh toán' },
+        meta: { title: 'Nạp tiền' },
       },
       {
         path: 'payments/history',
         name: 'student-payments-history',
         component: () => import('@/pages/student/payments/History.vue'),
-        meta: { title: 'Lịch sử thanh toán' },
+        meta: { title: 'Lịch sử nạp tiền' },
       },
       {
         path: 'account/profile',
@@ -402,7 +410,7 @@ const routes: RouteRecordRaw[] = [
         path: 'payments/checkout',
         name: 'student-payments-checkout',
         component: () => import('@/pages/student/payments/Checkout.vue'),
-        meta: { title: 'Thanh toán' },
+        meta: { title: 'Nạp tiền' },
       },
     ],
   },

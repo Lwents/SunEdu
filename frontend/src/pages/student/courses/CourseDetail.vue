@@ -148,7 +148,7 @@
           </div>
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-2xl border border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/200 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 disabled:opacity-50"
+            class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
             :disabled="!nextLesson"
             @click="goNext"
           >
