@@ -310,7 +310,7 @@
           <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:text-sm"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 sm:w-auto sm:text-sm"
               :disabled="saving || !isValidInfo || !isDirty"
               :class="{ 'opacity-80': saving }"
             >
@@ -321,12 +321,10 @@
               {{ saving ? 'ĐANG CẬP NHẬT...' : 'CẬP NHẬT' }}
             </button>
             <p
-              v-if="!isValidInfo || !isDirty"
+              v-if="!isValidInfo"
               class="text-center text-xs font-medium text-slate-500 sm:text-right"
             >
-              {{
-                !isValidInfo ? 'Vui lòng điền đầy đủ thông tin bắt buộc' : 'Chưa có thay đổi nào'
-              }}
+              Vui lòng điền đầy đủ thông tin bắt buộc
             </p>
           </div>
         </form>
@@ -381,7 +379,7 @@
         <div class="mt-6">
           <button
             type="button"
-            class="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-50 dark:bg-cyan-900/200 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600"
+            class="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600"
             @click="closeLimitModal"
           >
             ĐÃ HIỂU

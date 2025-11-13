@@ -1,5 +1,15 @@
 <template>
-
+  <div v-if="show" class="nav">
+    <img 
+      :src="logo" 
+      alt="SmartEdu Logo" 
+      class="logo-smartedu"
+      :style="{ 
+        height: computedHeight,
+        transform: `scale(${scale})`
+      }"
+    />
+  </div>
 </template>
 
 <script setup>

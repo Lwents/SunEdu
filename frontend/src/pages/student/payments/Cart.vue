@@ -2,7 +2,7 @@
   <div class="student-shell">
     <div class="student-container">
       <div class="mb-4">
-        <p class="student-section-title">Thanh toán</p>
+        <p class="student-section-title">Nạp tiền</p>
         <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">Giỏ hàng</h1>
       </div>
 
@@ -48,7 +48,7 @@
             :disabled="!items.length"
             @click="goCheckout"
           >
-            Thanh toán
+            Nạp tiền
           </button>
         </div>
       </div>
@@ -86,7 +86,7 @@ function remove(id: number) {
 function goCheckout() {
   router.push({
     name: 'student-payments-checkout',
-    query: { amount: String(total.value), plan: items[0]?.name || 'Thanh toán' }
+    query: { amount: String(total.value), plan: items[0]?.name || 'Nạp tiền' }
   })
 }
 </script>

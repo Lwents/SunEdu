@@ -3,8 +3,8 @@
     <div class="student-container">
       <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p class="student-section-title">Thanh toán</p>
-          <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">Lịch sử thanh toán</h1>
+          <p class="student-section-title">Nạp tiền</p>
+          <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">Lịch sử nạp tiền</h1>
         </div>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
           <select
@@ -81,7 +81,7 @@
           class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600"
           to="/student/payments"
         >
-          Quay lại Thanh toán
+          Quay lại Nạp tiền
         </RouterLink>
       </div>
     </div>
