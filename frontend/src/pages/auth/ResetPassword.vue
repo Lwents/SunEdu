@@ -2,8 +2,8 @@
   <div class="space-y-6">
     <!-- Header -->
     <div class="text-center">
-      <h2 class="text-2xl font-bold text-gray-900 mb-2">Đặt lại mật khẩu</h2>
-      <p class="text-sm text-gray-600">Tạo mật khẩu mới cho tài khoản của bạn</p>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Tạo mật khẩu mới</h2>
+      <p class="text-sm text-gray-600">Nhập mật khẩu mới cho tài khoản của bạn</p>
     </div>
 
     <!-- Success Alert -->
@@ -21,7 +21,7 @@
           />
         </svg>
         <div>
-          <p class="font-medium">Đặt lại mật khẩu thành công!</p>
+          <p class="font-medium">Cập nhật mật khẩu thành công!</p>
           <p class="mt-1">
             Đang chuyển hướng đến trang đăng nhập trong
             <span class="font-semibold">{{ countdown }}s</span>...
@@ -211,7 +211,7 @@
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           ></path>
         </svg>
-        <span v-if="!loading">Đặt lại mật khẩu</span>
+        <span v-if="!loading">Cập nhật mật khẩu</span>
         <span v-else>Đang xử lý...</span>
       </button>
 
@@ -295,7 +295,7 @@ async function submit() {
     status.value = 'success'
 
     // Hiển thị toast thành công
-    showToast('Đặt lại mật khẩu thành công!', 'success')
+    showToast('Cập nhật mật khẩu thành công!', 'success')
 
     // Đếm ngược từ 10 giây
     countdown.value = 10
@@ -308,10 +308,10 @@ async function submit() {
     }, 1000)
   } catch (e: any) {
     status.value = 'error'
-    errMessage.value = e?.message || 'Đặt lại mật khẩu thất bại.'
+    errMessage.value = e?.message || 'Cập nhật mật khẩu thất bại.'
 
     // Hiển thị toast lỗi
-    showToast(e?.message || 'Đặt lại mật khẩu thất bại.', 'error')
+    showToast(e?.message || 'Cập nhật mật khẩu thất bại.', 'error')
   } finally {
     loading.value = false
   }
