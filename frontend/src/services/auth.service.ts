@@ -238,7 +238,7 @@ export const authService = {
   },
 
   async resetPassword(email: string, token: string, newPassword: string): Promise<void> {
-    if (!email || !token || !newPassword) throw new Error('Thiếu thông tin đặt lại mật khẩu')
+    if (!email || !token || !newPassword) throw new Error('Thiếu thông tin cập nhật mật khẩu')
     await http.post('/account/password/reset/confirm/', {
       email,
       reset_token: token,
