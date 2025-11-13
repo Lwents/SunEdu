@@ -16,10 +16,10 @@
         </div>
         <div class="flex items-center gap-3">
           <div
-            class="inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-bold"
+            class="inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-bold transition-all duration-300"
             :class="
-              timeLeft <= 60
-                ? 'border-rose-200 bg-rose-50 text-rose-600'
+              timeLeft <= 300
+                ? 'border-rose-300 bg-rose-100 text-rose-700 animate-pulse'
                 : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100'
             "
           >
@@ -93,10 +93,14 @@
                   <li
                     v-for="opt in q.options"
                     :key="opt.key"
-                    class="rounded-2xl border border-slate-200 bg-white transition hover:border-cyan-200 dark:border-cyan-700"
+                    class="rounded-2xl border transition cursor-pointer"
+                    :class="answers[idx] === opt.key 
+                      ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 ring-2 ring-cyan-200 dark:ring-cyan-800' 
+                      : 'border-slate-200 bg-white hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-cyan-50/50'"
                   >
                     <label
-                      class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100"
+                      class="flex items-center gap-3 px-4 py-3 text-sm font-semibold cursor-pointer"
+                      :class="answers[idx] === opt.key ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-900 dark:text-gray-100'"
                     >
                       <input
                         type="radio"
@@ -107,7 +111,8 @@
                         @change="setAnswer(idx, opt.key)"
                       />
                       <span
-                        class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-sm"
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold"
+                        :class="answers[idx] === opt.key ? 'bg-cyan-500 text-white' : 'bg-slate-100 text-gray-700'"
                       >
                         {{ opt.key }}
                       </span>
@@ -120,7 +125,10 @@
               <template v-else-if="q?.type === 'tf'">
                 <div class="grid gap-3 sm:grid-cols-2">
                   <label
-                    class="flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:border-cyan-200 dark:border-cyan-700 hover:bg-cyan-50 dark:bg-cyan-900/20"
+                    class="flex items-center justify-center rounded-2xl border px-4 py-3 text-sm font-semibold transition cursor-pointer"
+                    :class="answers[idx] === 'T'
+                      ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-200 dark:ring-cyan-800'
+                      : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100 hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-cyan-50/50'"
                   >
                     <input
                       type="radio"
@@ -133,7 +141,10 @@
                     Đúng
                   </label>
                   <label
-                    class="flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:border-cyan-200 dark:border-cyan-700 hover:bg-cyan-50 dark:bg-cyan-900/20"
+                    class="flex items-center justify-center rounded-2xl border px-4 py-3 text-sm font-semibold transition cursor-pointer"
+                    :class="answers[idx] === 'F'
+                      ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-200 dark:ring-cyan-800'
+                      : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100 hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-cyan-50/50'"
                   >
                     <input
                       type="radio"
@@ -188,7 +199,7 @@
             <button
               v-else
               type="button"
-              class="inline-flex items-center justify-center rounded-2xl border border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/200 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 disabled:opacity-50"
+              class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
               :disabled="idx === questions.length - 1"
               @click="next"
             >
@@ -254,6 +265,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, computed, shallowRef, ref, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { showToast } from '@/utils/toast'
 
 // --- Dữ liệu cục bộ thay thế cho Store ---
 const exams = ref([
@@ -370,13 +382,11 @@ async function confirmSubmit() {
 
 // ===== Các hàm sẵn có =====
 function goBack() {
-  if (
-    window.confirm(
-      'Bạn có chắc chắn muốn thoát không? Mọi tiến trình làm bài sẽ không được lưu lại.',
-    )
-  ) {
+  // Show warning toast and go back after a short delay
+  showToast('Mọi tiến trình làm bài sẽ không được lưu lại.', 'warning')
+  setTimeout(() => {
     router.back()
-  }
+  }, 1500)
 }
 function go(i: number) {
   if (i >= 0 && i < questions.value.length) idx.value = i

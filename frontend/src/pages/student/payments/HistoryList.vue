@@ -16,7 +16,7 @@
             />
           </svg>
         </div>
-        <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Lịch sử thanh toán</h2>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Lịch sử nạp tiền</h2>
       </div>
       <div class="flex items-center gap-3">
         <select
@@ -58,7 +58,7 @@
             <div class="text-2xl sm:text-3xl font-black text-slate-900 mb-0.5 truncate">
               {{ vnd(totalPaid) }}
             </div>
-            <div class="text-xs sm:text-sm text-slate-600 font-medium">Tổng thanh toán</div>
+            <div class="text-xs sm:text-sm text-slate-600 font-medium">Tổng nạp</div>
           </div>
         </div>
       </div>
@@ -232,7 +232,7 @@
         </div>
       </div>
       <div v-else class="p-6 text-center text-slate-600">
-        Lịch sử thanh toán của bạn sẽ hiển thị ở đây
+        Lịch sử nạp tiền của bạn sẽ hiển thị ở đây
       </div>
     </div>
   </section>

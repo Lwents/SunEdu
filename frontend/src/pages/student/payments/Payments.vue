@@ -25,39 +25,13 @@
               </svg>
             </div>
             <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Thanh toán
+              Nạp tiền
             </h1>
           </div>
           <p class="text-slate-600 text-sm sm:text-base ml-13">
-            Chọn gói học phù hợp và thanh toán an toàn
+            Chọn gói học phù hợp và nạp tiền an toàn
           </p>
         </div>
-
-        <button
-          @click="loadPlans"
-          :disabled="planLoading"
-          class="inline-flex items-center gap-2 px-5 py-3 bg-white border-2 border-slate-200 rounded-xl font-semibold text-slate-700 hover:border-cyan-500 dark:border-cyan-600 hover:bg-cyan-50 dark:bg-cyan-900/20 hover:text-cyan-700 dark:text-cyan-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none group"
-        >
-          <svg
-            v-if="!planLoading"
-            class="w-5 h-5 group-hover:rotate-180 transition-transform duration-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <div
-            v-else
-            class="w-5 h-5 border-2 border-slate-300 border-t-cyan-600 rounded-full animate-spin"
-          ></div>
-          <span>{{ planLoading ? 'Đang tải...' : 'Làm mới' }}</span>
-        </button>
       </div>
 
       <!-- Plan Selector (if multiple plans) -->
@@ -115,7 +89,7 @@
               />
             </svg>
           </div>
-          <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Phương thức thanh toán</h2>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Phương thức nạp tiền</h2>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
@@ -167,7 +141,7 @@
                 </div>
                 <div class="flex-1">
                   <h3 class="text-xl font-black text-slate-900 mb-0.5">Ví MoMo</h3>
-                  <p class="text-sm text-slate-600">Thanh toán nhanh chóng & an toàn</p>
+                  <p class="text-sm text-slate-600">Nạp tiền nhanh chóng & an toàn</p>
                 </div>
               </div>
 
@@ -229,7 +203,7 @@
                 </div>
                 <div class="flex justify-between items-center pt-2.5 border-t-2 border-slate-200">
                   <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide"
-                    >Tổng thanh toán</span
+                    >Tổng nạp</span
                   >
                   <span class="text-xl font-black text-cyan-600 dark:text-cyan-400">{{
                     vnd(displayPlan.price)
@@ -259,7 +233,7 @@
                     clip-rule="evenodd"
                   />
                 </svg>
-                <span>Thanh toán với MoMo</span>
+                <span>Nạp tiền với MoMo</span>
               </button>
 
               <!-- Security Note -->
@@ -278,7 +252,7 @@
                   />
                 </svg>
                 <span class="text-xs text-blue-700 leading-relaxed"
-                  >Bạn sẽ được chuyển đến cổng thanh toán an toàn của MoMo</span
+                  >Bạn sẽ được chuyển đến cổng nạp tiền an toàn của MoMo</span
                 >
               </div>
             </div>
@@ -394,7 +368,7 @@
                 </div>
                 <div class="flex justify-between items-center pt-2.5 border-t-2 border-slate-200">
                   <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide"
-                    >Tổng thanh toán</span
+                    >Tổng nạp</span
                   >
                   <span class="text-xl font-black text-slate-700">{{
                     vnd(displayPlan.price)
@@ -459,7 +433,7 @@
                 />
               </svg>
             </div>
-            <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Lịch sử thanh toán</h2>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Lịch sử nạp tiền</h2>
           </div>
 
           <select
@@ -509,7 +483,7 @@
                 <div class="text-2xl sm:text-3xl font-black text-slate-900 mb-0.5 truncate">
                   {{ vnd(totalSuccess) }}
                 </div>
-                <div class="text-xs sm:text-sm text-slate-600 font-medium">Tổng thanh toán</div>
+            <div class="text-xs sm:text-sm text-slate-600 font-medium">Tổng nạp</div>
               </div>
             </div>
           </div>
@@ -715,7 +689,7 @@
               </svg>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mb-2">Chưa có giao dịch nào</h3>
-            <p class="text-sm text-slate-600">Lịch sử thanh toán của bạn sẽ hiển thị ở đây</p>
+            <p class="text-sm text-slate-600">Lịch sử nạp tiền của bạn sẽ hiển thị ở đây</p>
           </div>
         </div>
 
@@ -818,7 +792,7 @@
               </svg>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mb-2">Chưa có giao dịch nào</h3>
-            <p class="text-sm text-slate-600">Lịch sử thanh toán của bạn sẽ hiển thị ở đây</p>
+            <p class="text-sm text-slate-600">Lịch sử nạp tiền của bạn sẽ hiển thị ở đây</p>
           </div>
         </div>
       </div>
@@ -829,10 +803,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { showToast } from '@/utils/toast'
 
 import { paymentService, type SubscriptionPlan } from '@/services/payment.service'
-import HistoryList from '@/components/payments/HistoryList.vue'
+import HistoryList from '@/pages/student/payments/HistoryList.vue'
 
 const router = useRouter()
 
@@ -841,7 +815,7 @@ const planLoading = ref(false)
 const selectedPlanId = ref<string>('')
 const fallbackPlan: SubscriptionPlan = {
   id: '',
-  name: 'Thanh toán tuỳ chỉnh',
+  name: 'Nạp tiền tuỳ chỉnh',
   price: 0,
   durationDays: 0,
   features: [],
@@ -866,7 +840,7 @@ async function loadPlans() {
     }
   } catch (err: any) {
     console.error(err)
-    ElMessage.error(err?.message || 'Không tải được danh sách gói')
+    showToast(err?.message || 'Không tải được danh sách gói', 'error')
   } finally {
     planLoading.value = false
   }
@@ -876,7 +850,7 @@ async function goCheckout(method: 'momo' | 'bank') {
   if (loadingMethod.value) return
   const plan = displayPlan.value
   if (!plan.id && method === 'bank') {
-    ElMessage.info('Phương thức VietQR đang nâng cấp')
+    showToast('Phương thức VietQR đang nâng cấp', 'info')
     return
   }
   loadingMethod.value = method
@@ -949,6 +923,6 @@ function statusText(st: string) {
   return ({ success: 'Thành công', pending: 'Đang xử lý', failed: 'Thất bại' } as any)[st] || st
 }
 function viewDetail(item: Transaction) {
-  alert(`Chi tiết: ${item.orderId}`)
+  showToast(`Chi tiết: ${item.orderId}`, 'info')
 }
 </script>

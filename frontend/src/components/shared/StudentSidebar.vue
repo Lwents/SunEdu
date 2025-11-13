@@ -12,7 +12,7 @@
         >Bài kiểm tra</RouterLink
       >
       <RouterLink to="/student/payments" class="block p-2 rounded hover:bg-purple-100"
-        >Thanh toán</RouterLink
+        >Nạp tiền</RouterLink
       >
       <RouterLink to="/student/account" class="block p-2 rounded hover:bg-purple-100"
         >Tài khoản</RouterLink
