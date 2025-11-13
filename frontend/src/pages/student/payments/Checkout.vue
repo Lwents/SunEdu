@@ -4,7 +4,7 @@
       <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <p class="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-500 dark:text-cyan-400">Checkout</p>
-          <h1 class="text-3xl font-black text-slate-900 sm:text-4xl">Thanh toán</h1>
+          <h1 class="text-3xl font-black text-slate-900 sm:text-4xl">Nạp tiền</h1>
         </div>
         <button
           type="button"
@@ -38,7 +38,7 @@
         <section
           class="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-xl shadow-slate-100"
         >
-          <h2 class="text-lg font-bold text-slate-900">Thanh toán qua MoMo</h2>
+          <h2 class="text-lg font-bold text-slate-900">Nạp tiền qua MoMo</h2>
           <p class="mt-2 text-sm text-slate-500">
             Chọn gói và bấm nút bên dưới, bạn sẽ được chuyển đến cổng MoMo Collection Link để hoàn
             tất.
@@ -47,11 +47,11 @@
           <div class="mt-6 space-y-6">
             <div class="space-y-2">
               <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Nội dung hiển thị khi thanh toán
+                Nội dung hiển thị khi nạp tiền
               </label>
               <input
                 v-model="descriptionText"
-                placeholder="Ví dụ: Thanh toán học phí tháng 11"
+                placeholder="Ví dụ: Nạp học phí tháng 11"
                 class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
               />
               <p class="text-xs text-slate-500">
@@ -81,7 +81,7 @@
             >
               <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Số tiền thanh toán
+                  Số tiền nạp
                 </p>
                 <p class="text-2xl font-black text-slate-900">{{ vnd(amountNumber) }}</p>
               </div>
@@ -96,8 +96,8 @@
                 Các bước thực hiện
               </h3>
               <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-600">
-                <li>Mở app MoMo hoặc chọn liên kết thanh toán được chuyển tới.</li>
-                <li>Kiểm tra thông tin đơn hàng, số tiền và xác nhận thanh toán.</li>
+                <li>Mở app MoMo hoặc chọn liên kết nạp tiền được chuyển tới.</li>
+                <li>Kiểm tra thông tin đơn hàng, số tiền và xác nhận nạp tiền.</li>
                 <li>Sau khi hoàn tất, hệ thống sẽ tự đồng bộ trạng thái.</li>
               </ol>
             </div>
@@ -113,10 +113,10 @@
                   v-if="isMomoLoading"
                   class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"
                 ></span>
-                {{ isMomoLoading ? 'Đang chuyển hướng...' : 'Thanh toán với MoMo' }}
+                {{ isMomoLoading ? 'Đang chuyển hướng...' : 'Nạp tiền với MoMo' }}
               </button>
               <p class="text-xs text-slate-500">
-                Bạn sẽ được chuyển đến trang thanh toán an toàn của MoMo.
+                Bạn sẽ được chuyển đến trang nạp tiền an toàn của MoMo.
               </p>
             </div>
           </div>
@@ -148,7 +148,7 @@
             </div>
             <div class="h-px bg-slate-200"></div>
             <div class="flex items-center justify-between text-base font-black text-slate-900">
-              <span>Tổng thanh toán</span>
+              <span>Tổng nạp</span>
               <b>{{ vnd(amountNumber) }}</b>
             </div>
           </div>
@@ -171,7 +171,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { showToast } from '@/utils/toast'
 
 import {
   paymentService,
@@ -184,7 +184,7 @@ const route = useRoute()
 const plans = ref<SubscriptionPlan[]>([])
 const planLoading = ref(false)
 const selectedPlanId = ref(typeof route.query.planId === 'string' ? route.query.planId : '')
-const fallbackPlanLabel = ref(String(route.query.plan || 'Thanh toán tuỳ chỉnh'))
+const fallbackPlanLabel = ref(String(route.query.plan || 'Nạp tiền tuỳ chỉnh'))
 const plan = ref(fallbackPlanLabel.value)
 
 const amountText = ref(String(route.query.amount || '0'))
@@ -195,8 +195,8 @@ const amountNumber = computed(() => {
 const descriptionText = ref(
   typeof route.query.description === 'string' ? route.query.description : '',
 )
-const description = computed(() => descriptionText.value || `Thanh toán ${plan.value}`)
-const planDisplay = computed(() => plan.value || 'Thanh toán tuỳ chỉnh')
+const description = computed(() => descriptionText.value || `Nạp tiền ${plan.value}`)
+const planDisplay = computed(() => plan.value || 'Nạp tiền tuỳ chỉnh')
 
 const selectedPlan = computed(
   () => plans.value.find((item) => item.id === selectedPlanId.value) || null,
@@ -236,7 +236,7 @@ function syncPlanWithSelection() {
       return
     }
   } else {
-    plan.value = fallbackPlanLabel.value || 'Thanh toán tuỳ chỉnh'
+    plan.value = fallbackPlanLabel.value || 'Nạp tiền tuỳ chỉnh'
   }
 }
 
@@ -251,7 +251,7 @@ onMounted(() => {
 const isMomoLoading = ref(false)
 async function payWithMomo() {
   if (!amountNumber.value) {
-    ElMessage.warning('Vui lòng nhập số tiền hợp lệ')
+    showToast('Vui lòng nhập số tiền hợp lệ', 'warning')
     return
   }
   isMomoLoading.value = true
@@ -264,11 +264,11 @@ async function payWithMomo() {
     payload.flow = 'pay_with_method'
 
     const res = await paymentService.initiateMomo(payload)
-    ElMessage.success('Đang chuyển đến MoMo...')
+    showToast('Đang chuyển đến MoMo...', 'success')
     const target = res.payUrl || res.deeplink || res.qrCodeUrl
     if (target) window.location.href = target
   } catch (err: any) {
-    ElMessage.error(err?.message || 'Không khởi tạo được thanh toán MoMo')
+    showToast(err?.message || 'Không khởi tạo được yêu cầu nạp MoMo', 'error')
   } finally {
     isMomoLoading.value = false
   }
@@ -282,7 +282,7 @@ function onAmountInput(manual = false) {
   amountText.value = amountText.value.replace(/[^\d]/g, '')
   if (manual) {
     selectedPlanId.value = ''
-    fallbackPlanLabel.value = 'Thanh toán tuỳ chỉnh'
+    fallbackPlanLabel.value = 'Nạp tiền tuỳ chỉnh'
     plan.value = fallbackPlanLabel.value
   }
 }
