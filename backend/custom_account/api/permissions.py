@@ -52,3 +52,28 @@ class IsSelf(BasePermission):
         # obj ở đây là instance của UserModel
         return obj.id == request.user.id
 
+
+class IsOwnerOrAdmin(BasePermission):
+    """
+    Custom permission to allow access if the user is an admin or the owner of the object.
+    """
+
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        # Allow admin users
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
+        # Allow owner of the object
+        # Check if obj has owner attribute
+        if hasattr(obj, 'owner'):
+            return obj.owner == request.user
+        elif hasattr(obj, 'owner_id'):
+            return obj.owner_id == request.user.id
+
+        # Default deny
+        return False

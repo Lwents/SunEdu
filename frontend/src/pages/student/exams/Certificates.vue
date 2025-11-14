@@ -59,9 +59,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-let examService: any
-try { examService = (await import('@/services/exam.service')).examService } catch {}
-
 const items = ref<any[]>([])
 const err = ref('')
 const show = ref(false)
@@ -69,7 +66,13 @@ const viewing = ref<any>(null)
 
 onMounted(async () => {
   try {
-    items.value = examService?.certificates ? await examService.certificates() : mockCerts()
+    const examServiceModule = await import('@/services/exam.service')
+    const examService = examServiceModule.examService
+    if (examService && typeof (examService as any).certificates === 'function') {
+      items.value = await (examService as any).certificates()
+    } else {
+      items.value = mockCerts()
+    }
   } catch (e:any) {
     err.value = e?.message || String(e)
     items.value = mockCerts()
@@ -77,25 +80,48 @@ onMounted(async () => {
 })
 
 function view(c:any){ viewing.value = c; show.value = true }
-function download(c:any){
-  // demo: tải ảnh; thực tế trả file pdf từ server
-  const a = document.createElement('a')
-  a.href = c.pdf || c.image || c.thumbnail
-  a.download = (c.title || 'certificate') + '.pdf'
-  a.click()
+async function download(c:any){
+  try {
+    // Thử tải PDF từ server
+    if (c.pdf) {
+      const response = await fetch(c.pdf)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = (c.title || 'certificate') + '.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } else if (c.image || c.thumbnail) {
+      // Fallback: tải ảnh
+      const a = document.createElement('a')
+      a.href = c.image || c.thumbnail
+      a.download = (c.title || 'certificate') + '.png'
+      a.click()
+    }
+  } catch (e: any) {
+    console.error('Download error:', e)
+    alert('Không thể tải chứng chỉ. Vui lòng thử lại sau.')
+  }
 }
 
 /* ------- MOCK ------- */
 function mockCerts(){
-  return Array.from({length:4}).map((_,i)=>({
-    id: i+1,
-    title: `Chứng chỉ Đề #${i+1}`,
-    score: 90 - i*5,
-    total: 100,
-    issuedAt: '2025-03-1' + i,
-    thumbnail: `https://picsum.photos/seed/cert-${i}/640/360`,
-    image: `https://picsum.photos/seed/cert-${i}/960/540`,
-    pdf: ''
-  }))
+  const result = []
+  for (let i = 0; i < 4; i++) {
+    result.push({
+      id: i+1,
+      title: `Chứng chỉ Đề #${i+1}`,
+      score: 90 - i*5,
+      total: 100,
+      issuedAt: '2025-03-1' + i,
+      thumbnail: `https://picsum.photos/seed/cert-${i}/640/360`,
+      image: `https://picsum.photos/seed/cert-${i}/960/540`,
+      pdf: ''
+    })
+  }
+  return result
 }
 </script>

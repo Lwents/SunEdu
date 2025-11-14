@@ -82,9 +82,10 @@
             </div>
 
             <div class="mt-4 grid grid-cols-2 gap-2">
-              <button class="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Xem bài</button>
+              <button class="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50" @click="openGrading(s)">Xem bài</button>
               <button
                 class="rounded-xl bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+                @click="openGrading(s)"
               >
                 {{ s.status === 'graded' ? 'Sửa điểm' : 'Chấm điểm' }}
               </button>
@@ -131,11 +132,13 @@
                     <div class="flex flex-nowrap items-center gap-2">
                       <button
                         class="rounded-xl border px-3 py-1.5 text-sm hover:bg-slate-50 whitespace-nowrap min-w-[96px]"
+                        @click="openGrading(s)"
                       >
                         Xem bài
                       </button>
                       <button
                         class="rounded-xl bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700 whitespace-nowrap min-w-[96px]"
+                        @click="openGrading(s)"
                       >
                         {{ s.status === 'graded' ? 'Sửa điểm' : 'Chấm điểm' }}
                       </button>
@@ -151,6 +154,87 @@
           </div>
         </div>
       </template>
+
+      <!-- Modal chấm điểm -->
+      <div
+        v-if="gradingRow"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        @click.self="closeGrading"
+      >
+        <div class="w-full max-w-4xl rounded-2xl bg-white p-6 max-h-[90vh] overflow-y-auto">
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Chấm điểm: {{ gradingRow.studentName }}</h3>
+            <button
+              class="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-50"
+              @click="closeGrading"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm">
+              <div>
+                <span class="text-slate-500">Lớp:</span>
+                <span class="ml-2 font-medium">{{ gradingRow.classCode }}</span>
+              </div>
+              <div>
+                <span class="text-slate-500">Nộp lúc:</span>
+                <span class="ml-2 font-medium">{{ gradingRow.submittedAt }}</span>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div
+                v-for="(q, idx) in mockQuestions"
+                :key="idx"
+                class="rounded-xl border border-slate-200 p-4"
+              >
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="font-semibold">Câu {{ idx + 1 }}</span>
+                  <span class="text-sm text-slate-500">{{ q.score }} điểm</span>
+                </div>
+                <p class="mb-3 text-sm">{{ q.text }}</p>
+                <div class="rounded-lg bg-slate-50 p-3">
+                  <div class="mb-2 text-xs font-medium text-slate-600">Câu trả lời của học sinh:</div>
+                  <div class="text-sm">{{ mockAnswers[idx] || 'Chưa trả lời' }}</div>
+                </div>
+                <div class="mt-3">
+                  <label class="mb-1 block text-sm font-medium">Điểm chấm (0 - {{ q.score }})</label>
+                  <input
+                    v-model.number="gradingScores[idx]"
+                    type="number"
+                    :min="0"
+                    :max="q.score"
+                    step="0.5"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between rounded-xl bg-sky-50 p-4">
+              <span class="font-semibold">Tổng điểm:</span>
+              <span class="text-xl font-bold text-sky-600">{{ totalScore.toFixed(1) }} / {{ maxScore }}</span>
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-end gap-3">
+            <button
+              class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50"
+              @click="closeGrading"
+            >
+              Hủy
+            </button>
+            <button
+              class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+              @click="saveGrade"
+            >
+              Lưu điểm
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </template>
@@ -178,6 +262,11 @@ const rows = ref<Row[]>([])
 
 const q = ref('')
 const only = ref<'all' | RowStatus>('all')
+
+const gradingRow = ref<Row | null>(null)
+const gradingScores = ref<number[]>([])
+const mockQuestions = ref<Array<{ text: string; score: number }>>([])
+const mockAnswers = ref<string[]>([])
 
 type DetailFn = (id: string | number) => Promise<any>
 let detailFn: DetailFn | undefined
@@ -255,6 +344,59 @@ watch(() => route.params.id, (nv) => {
   load(id.value)
 })
 onBeforeUnmount(() => { if (ft) window.clearTimeout(ft) })
+
+function openGrading(row: Row) {
+  gradingRow.value = row
+  // Mock: tạo câu hỏi và câu trả lời mẫu
+  mockQuestions.value = Array.from({ length: 5 }).map((_, i) => ({
+    text: `Câu hỏi mẫu số ${i + 1}?`,
+    score: 2
+  }))
+  mockAnswers.value = Array.from({ length: 5 }).map((_, i) => 
+    `Đáp án mẫu ${i + 1} của học sinh`
+  )
+  // Khởi tạo điểm từ điểm hiện tại hoặc 0
+  gradingScores.value = Array(mockQuestions.value.length).fill(0)
+  if (row.score !== null) {
+    // Giả sử điểm được chia đều (thực tế cần lấy từ backend)
+    const avgScore = row.score / mockQuestions.value.length
+    gradingScores.value = Array(mockQuestions.value.length).fill(avgScore)
+  }
+}
+
+function closeGrading() {
+  gradingRow.value = null
+  gradingScores.value = []
+  mockQuestions.value = []
+  mockAnswers.value = []
+}
+
+const totalScore = computed(() => {
+  return gradingScores.value.reduce((sum, s) => sum + (s || 0), 0)
+})
+
+const maxScore = computed(() => {
+  return mockQuestions.value.reduce((sum, q) => sum + q.score, 0)
+})
+
+function saveGrade() {
+  if (!gradingRow.value) return
+  
+  const row = rows.value.find(r => r.id === gradingRow.value!.id)
+  if (row) {
+    row.score = totalScore.value
+    row.status = 'graded'
+  }
+  
+  console.log('SAVE_GRADE', {
+    submissionId: gradingRow.value.id,
+    scores: gradingScores.value,
+    totalScore: totalScore.value
+  })
+  
+  alert('Đã lưu điểm thành công!')
+  closeGrading()
+}
 </script>
 
 <style scoped>

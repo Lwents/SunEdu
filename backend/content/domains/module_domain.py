@@ -76,3 +76,42 @@ class ModuleDomain:
             for l_m in model.lessons_prefetched:
                 m.lessons.append(LessonDomain.from_model(l_m))
         return m
+
+
+# Command classes for module operations
+class CreateModuleDomain:
+    """Command object for creating a module."""
+    def __init__(self, course_id: str, title: str, position: int = 0):
+        self.course_id = course_id
+        self.title = title
+        self.position = position
+
+    def validate(self):
+        if not self.course_id:
+            raise DomainValidationError("Module course_id required.")
+        if not self.title or not self.title.strip():
+            raise DomainValidationError("Module title required.")
+
+
+class UpdateModuleDomain:
+    """Command object for updating a module."""
+    def __init__(self, title: Optional[str] = None, position: Optional[int] = None):
+        self.title = title
+        self.position = position
+
+    def validate(self):
+        if self.title is not None and (not self.title or not self.title.strip()):
+            raise DomainValidationError("Module title cannot be empty.")
+
+
+class ReorderModulesDomain:
+    """Command object for reordering modules."""
+    def __init__(self, course_id: str, module_positions: List[Tuple[str, int]]):
+        self.course_id = course_id
+        self.module_positions = module_positions
+
+    def validate(self):
+        if not self.course_id:
+            raise DomainValidationError("Course ID required.")
+        if not self.module_positions:
+            raise DomainValidationError("Module positions required.")

@@ -4,7 +4,7 @@ import api from '@/config/axios'
 export type ID = string | number
 type Granularity = 'day' | 'week' | 'month'
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 // ===== Types =====
 export interface DateRange { from?: string; to?: string; granularity?: Granularity }
@@ -44,7 +44,7 @@ export const reportService = {
     // ---------- Revenue ----------
     async revenueTimeseries(params: DateRange): Promise<RevenuePoint[]> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/admin/reports/revenue/timeseries', { params })
+            const { data } = await api.get('/api/admin/reports/revenue/', { params: { ...params, type: 'timeseries' } })
             return data
         }
         const now = new Date()
@@ -84,7 +84,7 @@ export const reportService = {
 
     async revenueByGateway(params: DateRange): Promise<RevenueByGateway[]> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/admin/reports/revenue/by-gateway', { params })
+            const { data } = await api.get('/api/admin/reports/revenue/', { params: { ...params, type: 'by-gateway' } })
             return data
         }
         const base = ['VNPay', 'Momo', 'QR', 'Bank'] as RevenueByGateway['gateway'][]
@@ -93,7 +93,7 @@ export const reportService = {
 
     async revenueTopCourses(params: DateRange): Promise<RevenueTopCourse[]> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/admin/reports/revenue/top-courses', { params })
+            const { data } = await api.get('/api/admin/reports/revenue/', { params: { ...params, type: 'top-courses' } })
             return data
         }
         return Array.from({ length: 10 }).map((_, i) => ({
@@ -107,7 +107,7 @@ export const reportService = {
 
     async exportRevenueCsv(params: DateRange): Promise<Blob> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/admin/reports/revenue/export', { params, responseType: 'blob' })
+            const { data } = await api.get('/api/admin/reports/revenue/export/', { params, responseType: 'blob' })
             return data
         }
         const rows = await this.revenueTimeseries(params)
@@ -118,11 +118,11 @@ export const reportService = {
 
     // ---------- Users ----------
     async userKpis(params: DateRange): Promise<UserKPIs> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/users/kpis', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/users/', { params: { ...params, type: 'kpis' } }); return data }
         return { dau: 812, mau: 4321, newUsers: 213, activeUsers: 2760 }
     },
     async userSeries(params: DateRange): Promise<UserSeriesPoint[]> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/users/timeseries', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/users/', { params: { ...params, type: 'timeseries' } }); return data }
         const now = new Date()
         const from = params.from ? new Date(params.from) : new Date(now.getTime() - 29 * 864e5)
         const to = params.to ? new Date(params.to) : now
@@ -133,7 +133,7 @@ export const reportService = {
         }))
     },
     async userByRole(params: DateRange): Promise<UserByRole[]> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/users/by-role', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/users/', { params: { ...params, type: 'by-role' } }); return data }
         return [
             { role: 'admin', count: 8 },
             { role: 'teacher', count: 134 },
@@ -149,18 +149,18 @@ export const reportService = {
 
     // ---------- Learning ----------
     async learningKpis(params: DateRange): Promise<LearningKPIs> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/learning/kpis', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/learning/', { params: { ...params, type: 'kpis' } }); return data }
         return { avgCompletion: 62, avgScore: 74, avgTimeSpentMin: 38 }
     },
     async completionSeries(params: DateRange): Promise<CompletionPoint[]> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/learning/completion', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/learning/', { params: { ...params, type: 'completion' } }); return data }
         const now = new Date()
         const from = params.from ? new Date(params.from) : new Date(now.getTime() - 29 * 864e5)
         const to = params.to ? new Date(params.to) : now
         return daysBetween(from, to).map((d, i) => ({ date: fmt(d), completion: Math.round(45 + seed(i + 99) * 35) }))
     },
     async scoreBySubject(params: DateRange): Promise<ScoreBySubject[]> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/learning/score-by-subject', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/learning/', { params: { ...params, type: 'score-by-subject' } }); return data }
         return [
             { subject: 'Toán', avgScore: 78 },
             { subject: 'Tiếng Việt', avgScore: 74 },
@@ -170,7 +170,7 @@ export const reportService = {
         ]
     },
     async atRiskStudents(params: DateRange): Promise<AtRiskRow[]> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/learning/at-risk', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/learning/', { params: { ...params, type: 'at-risk' } }); return data }
         return Array.from({ length: 12 }).map((_, i) => ({
             userId: 500 + i, name: `HS ${500 + i}`, className: `Lớp ${(i % 5) + 1}${String.fromCharCode(65 + (i % 3))}`,
             progress: 15 + i * 3, lastActiveAt: new Date(Date.now() - (i + 1) * 864e5).toISOString()
@@ -185,11 +185,11 @@ export const reportService = {
 
     // ---------- Content ----------
     async contentKpis(params: DateRange): Promise<ContentKPIs> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/content/kpis', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/content/', { params: { ...params, type: 'kpis' } }); return data }
         return { totalPublished: 182, totalEnrollments: 7630, avgRating: 4.3 }
     },
     async viewsBySubject(params: DateRange): Promise<ViewsBySubject[]> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/content/views-by-subject', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/content/', { params: { ...params, type: 'views-by-subject' } }); return data }
         return [
             { subject: 'Toán', views: 18230 },
             { subject: 'Tiếng Việt', views: 13210 },
@@ -199,7 +199,7 @@ export const reportService = {
         ]
     },
     async topContents(params: DateRange): Promise<TopContentRow[]> {
-        if (!USE_MOCK) { const { data } = await api.get('/admin/reports/content/top', { params }); return data }
+        if (!USE_MOCK) { const { data } = await api.get('/api/admin/reports/content/', { params: { ...params, type: 'top' } }); return data }
         return Array.from({ length: 10 }).map((_, i) => ({
             courseId: 300 + i, title: `Khoá học hot #${300 + i}`,
             views: 10000 + i * 900, enrollments: 400 + i * 30, rating: +(4 + (i % 5) * 0.1).toFixed(1)

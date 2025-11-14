@@ -191,6 +191,19 @@ class CreateExplorationDomain:
         # DomainEvents.raise(ExplorationCreatedEvent(exploration))
         return exploration
 
+
+class UpdateExplorationDomain:
+    """Command object for updating an exploration."""
+    def __init__(self, title: Optional[str] = None, language: Optional[str] = None,
+                 initial_state_name: Optional[str] = None):
+        self.title = title
+        self.language = language
+        self.initial_state_name = initial_state_name
+
+    def validate(self):
+        if self.title is not None and (not self.title or not self.title.strip()):
+            raise DomainValidationError("Exploration title cannot be empty.")
+
 class CreateStateDomain:
     """
     Domain service for adding a new state to an exploration.

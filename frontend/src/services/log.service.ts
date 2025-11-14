@@ -2,7 +2,7 @@
 import api from '@/config/axios'
 
 export type ID = string | number
-const USE_MOCK = true
+const USE_MOCK = false
 
 export type LogResult = 'success' | 'failed'
 export type TargetType = 'user' | 'course' | 'exam' | 'payment' | 'config' | 'system' | 'security'
@@ -46,8 +46,27 @@ export interface PageResult<T> {
 export const logService = {
     async list(params: LogQuery): Promise<PageResult<LogItem>> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/admin/logs', { params })
-            return data
+            const { data } = await api.get('/api/admin/activity-logs/', { params })
+            // Map backend response to frontend format
+            return {
+                items: data.items.map((item: any) => ({
+                    id: item.id,
+                    ts: item.timestamp,
+                    actorId: item.userId,
+                    actorName: item.userEmail,
+                    actorRole: 'admin', // Placeholder
+                    action: item.action || 'login',
+                    targetType: undefined,
+                    targetId: item.userId,
+                    result: item.status === 'success' ? 'success' : 'failed',
+                    ip: item.ip,
+                    userAgent: item.userAgent,
+                    traceId: undefined,
+                    message: item.status,
+                    meta: item.details || {}
+                })),
+                total: data.total
+            }
         }
         const size = params.pageSize ?? 20
         const page = params.page ?? 1

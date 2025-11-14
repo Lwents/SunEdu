@@ -161,7 +161,7 @@ const routes: RouteRecordRaw[] = [
     component: TeacherLayout,
     meta: { role: 'instructor' },
     children: [
-      { path: '', redirect: '/instructor/dashboard' },
+      { path: '', redirect: '/teacher/dashboard' },
       {
         path: 'dashboard',
         component: () => import('@/pages/teacher/dashboard/dashboard.vue'),
@@ -244,10 +244,22 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Bài kiểm tra' },
       },
       {
+        path: 'exams/new',
+        name: 'teacher-exam-new',
+        component: () => import('@/pages/teacher/exams/ExamCreate.vue'),
+        meta: { title: 'Tạo bài kiểm tra' },
+      },
+      {
         path: 'exams/:id',
         name: 'teacher-exam-detail',
         component: () => import('@/pages/teacher/exams/ExamDetail.vue'),
         meta: { title: (to: any) => `Đề #${to.params.id}` },
+      },
+      {
+        path: 'exams/:id/edit',
+        name: 'teacher-exam-edit',
+        component: () => import('@/pages/teacher/exams/ExamEdit.vue'),
+        meta: { title: (to: any) => `Sửa đề #${to.params.id}` },
       },
       {
         path: 'exams/:id/grading',

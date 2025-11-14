@@ -31,3 +31,29 @@ class SubjectDomain:
     def from_model(cls, model):
         # model expected to have .id, .title, .slug
         return cls(title=model.title, slug=model.slug, id=str(model.id))
+
+
+class CreateSubjectDomain:
+    """Command object for creating a subject."""
+    def __init__(self, title: str, slug: str):
+        self.title = title
+        self.slug = slug
+
+    def validate(self):
+        if not self.title or not self.title.strip():
+            raise DomainValidationError("Subject title required.")
+        if not self.slug or " " in self.slug:
+            raise DomainValidationError("Subject slug required and cannot contain spaces.")
+
+
+class UpdateSubjectDomain:
+    """Command object for updating a subject."""
+    def __init__(self, title: Optional[str] = None, slug: Optional[str] = None):
+        self.title = title
+        self.slug = slug
+
+    def validate(self):
+        if self.title is not None and (not self.title or not self.title.strip()):
+            raise DomainValidationError("Subject title cannot be empty.")
+        if self.slug is not None and (not self.slug or " " in self.slug):
+            raise DomainValidationError("Subject slug cannot be empty or contain spaces.")
