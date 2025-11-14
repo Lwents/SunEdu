@@ -108,15 +108,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-// import services thực sau này
-// import { reportService } from '@/services/report.service'
+import { dashboardService } from '@/services/dashboard.service'
 
 const range = ref<[Date, Date] | null>(null)
 const granularity = ref<'day' | 'week' | 'month'>('day')
 
-// mock state (khi nối API thì thay)
 const kpis = reactive({
   dau: 0,
   signups7d: 0,
@@ -143,14 +141,19 @@ function percent(v: number) {
 
 async function fetchAll() {
   try {
-    // const data = await reportService.getDashboard({ range: range.value, granularity: granularity.value })
-    // map vào state
+    const data = await dashboardService.getDashboard()
+    Object.assign(kpis, data.kpis)
+    topCourses.value = data.topCourses
+    recentTransactions.value = data.recentTransactions
+    pendingApprovals.value = data.pendingApprovals
+    Object.assign(security, data.security)
+    Object.assign(system, data.system)
   } catch (e) {
     ElMessage.error('Không tải được dữ liệu dashboard')
   }
 }
 
-// onMounted(() => fetchAll())
+onMounted(() => fetchAll())
 </script>
 
 <!-- KpiCard nhỏ gọn -->

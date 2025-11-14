@@ -7,7 +7,15 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 import sitemap from 'vite-plugin-sitemap'
 
 export default defineConfig(({ mode }) => ({
-  plugins: [vue(), vueDevTools(), vueJsx(), sitemap({ hostname: 'https://smartedu.click' })],
+  plugins: [
+    vue(), 
+    vueDevTools(), 
+    vueJsx(), 
+    sitemap({ 
+      hostname: 'https://smartedu.click',
+      readable: true,
+    })
+  ],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
