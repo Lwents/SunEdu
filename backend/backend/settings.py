@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'ai_personalization',
     'events',
     'payments',
+    'admin_api',
 
     # Allauth                                                                                                            
     'allauth',                                                                                                                  

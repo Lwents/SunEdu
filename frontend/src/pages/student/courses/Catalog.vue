@@ -16,30 +16,46 @@
       </div>
 
       <!-- filters -->
-      <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div class="relative flex-1">
-          <input
-            v-model.trim="q"
-            @keyup.enter="load"
-            placeholder="Tìm khóa học…"
-            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-800 outline-none ring-sky-100 focus:ring-4"
-          />
-          <svg class="pointer-events-none absolute right-3 top-2.5 h-5 w-5 stroke-slate-400" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 21l-4.3-4.3"/><circle cx="11" cy="11" r="7"/></svg>
+      <div class="mt-5 space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div class="relative flex-1">
+            <input
+              v-model.trim="q"
+              @keyup.enter="load"
+              placeholder="Tìm khóa học…"
+              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-800 outline-none ring-sky-100 focus:ring-4"
+            />
+            <svg class="pointer-events-none absolute right-3 top-2.5 h-5 w-5 stroke-slate-400" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 21l-4.3-4.3"/><circle cx="11" cy="11" r="7"/></svg>
+          </div>
+
+          <select v-model="grade" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm" @change="load">
+            <option :value="undefined">Tất cả khối</option>
+            <option v-for="g in [1,2,3,4,5]" :key="g" :value="g">Khối {{ g }}</option>
+          </select>
+
+          <select v-model="subject" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm" @change="load">
+            <option :value="undefined">Tất cả môn</option>
+            <option v-for="s in subjects" :key="s.value" :value="s.value">{{ s.label }}</option>
+          </select>
+
+          <select v-model="sortBy" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm" @change="load">
+            <option value="updatedAt">Mới nhất</option>
+            <option value="createdAt">Cũ nhất</option>
+            <option value="title">Tên A-Z</option>
+            <option value="enrollments">Nhiều học viên</option>
+          </select>
         </div>
 
-        <select v-model="grade" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">
-          <option :value="undefined">Tất cả khối</option>
-          <option v-for="g in [1,2,3,4,5]" :key="g" :value="g">Khối {{ g }}</option>
-        </select>
-
-        <select v-model="subject" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">
-          <option :value="undefined">Tất cả môn</option>
-          <option v-for="s in subjects" :key="s.value" :value="s.value">{{ s.label }}</option>
-        </select>
-
-        <button @click="load" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800">
-          Làm mới
-        </button>
+        <div class="flex items-center justify-between text-sm text-slate-600">
+          <span>Tìm thấy {{ total }} khóa học</span>
+          <button
+            v-if="q || grade || subject"
+            class="text-cyan-600 hover:text-cyan-700"
+            @click="clearFilters"
+          >
+            Xóa bộ lọc
+          </button>
+        </div>
       </div>
 
       <!-- grid -->
@@ -75,14 +91,34 @@
       </div>
 
       <!-- pager & empty -->
-      <div class="mt-6 flex items-center justify-center gap-3">
-        <button :disabled="page<=1" @click="page--; load()"
-                class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40">
+      <div v-if="totalPages > 1" class="mt-6 flex items-center justify-center gap-2">
+        <button
+          :disabled="page <= 1"
+          @click="goToPage(page - 1)"
+          class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40 hover:bg-slate-50"
+        >
           ‹ Trước
         </button>
-        <span class="text-sm text-slate-600">Trang <b>{{ page }}</b></span>
-        <button @click="page++; load()"
-                class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+        <div class="flex gap-1">
+          <button
+            v-for="p in visiblePages"
+            :key="p"
+            class="rounded-xl border px-3 py-2 text-sm font-semibold transition"
+            :class="
+              p === page
+                ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            "
+            @click="goToPage(p)"
+          >
+            {{ p }}
+          </button>
+        </div>
+        <button
+          :disabled="page >= totalPages"
+          @click="goToPage(page + 1)"
+          class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40 hover:bg-slate-50"
+        >
           Sau ›
         </button>
       </div>
@@ -97,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { courseService, type Subject } from '@/services/course.service'
 
@@ -107,15 +143,60 @@ const route = useRoute()
 const items = ref<any[]>([])
 const err = ref('')
 const loading = ref(false)
+const total = ref(0)
 
 const q = ref('')
 const grade = ref<number | undefined>()
 const subject = ref<Subject | undefined>()
+const sortBy = ref<'updatedAt' | 'title' | 'enrollments' | 'createdAt'>('updatedAt')
 const page = ref(1)
 const pageSize = 20
 const subjects = courseService.subjects()
 
-function subjectLabel(s: Subject){ return subjects.find(x=>x.value===s)?.label || s }
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
+
+const visiblePages = computed(() => {
+  const max = totalPages.value
+  const current = page.value
+  const pages: number[] = []
+  
+  if (max <= 7) {
+    for (let i = 1; i <= max; i++) pages.push(i)
+  } else {
+    if (current <= 3) {
+      for (let i = 1; i <= 5; i++) pages.push(i)
+    } else if (current >= max - 2) {
+      for (let i = max - 4; i <= max; i++) pages.push(i)
+    } else {
+      for (let i = current - 2; i <= current + 2; i++) pages.push(i)
+    }
+  }
+  return pages
+})
+
+function subjectLabel(s: Subject){
+  for (let i = 0; i < subjects.length; i++) {
+    if (subjects[i].value === s) {
+      return subjects[i].label
+    }
+  }
+  return s
+}
+
+function clearFilters() {
+  q.value = ''
+  grade.value = undefined
+  subject.value = undefined
+  page.value = 1
+  load()
+}
+
+function goToPage(p: number) {
+  if (p >= 1 && p <= totalPages.value) {
+    page.value = p
+    load()
+  }
+}
 
 async function load(){
   try{
@@ -126,9 +207,12 @@ async function load(){
       subject: subject.value as any,
       status: 'published',
       page: page.value,
-      pageSize
+      pageSize,
+      sortBy: sortBy.value,
+      sortDir: sortBy.value === 'title' ? 'ascending' : 'descending',
     })
     items.value = res.items
+    total.value = res.total || res.items.length
     err.value = ''
   }catch(e:any){ err.value = e?.message || String(e)}
   finally{ loading.value = false }
@@ -140,7 +224,7 @@ function open(id: number | string){
 onMounted(() => {
   // nhận filter từ LearningPath (query.grade)
   const g = Number(route.query.grade || '')
-  if (!Number.isNaN(g) && g >= 1 && g <= 5) grade.value = g
+  if (!isNaN(g) && g >= 1 && g <= 5) grade.value = g
   load()
 })
 </script>

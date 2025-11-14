@@ -59,7 +59,7 @@ export interface PageParams {
 }
 export interface PageResult<T> { items: T[]; total: number }
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 const SUBJECTS: Subject[] = ['math', 'vietnamese', 'english', 'science', 'history']
 function subjectLabel(s: Subject) {
@@ -72,11 +72,20 @@ function subjectLabel(s: Subject) {
 
 // ====== SERVICE ======
 export const courseService = {
-  // LIST
-  async list(params: PageParams): Promise<PageResult<CourseSummary>> {
+  // LIST - Support both admin and student endpoints
+  async list(params: PageParams, useAdminEndpoint = false): Promise<PageResult<CourseSummary>> {
     if (!USE_MOCK) {
-      const { data } = await api.get('/admin/courses', { params })
-      return data
+      const endpoint = useAdminEndpoint ? '/api/admin/courses/' : '/api/content/courses/'
+      const { data } = await api.get(endpoint, { params })
+      // Backend returns array or paginated object
+      if (Array.isArray(data)) {
+        return { items: data, total: data.length }
+      }
+      // Handle paginated response
+      return {
+        items: data.results || data.items || [],
+        total: data.count || data.total || 0
+      }
     }
     const size = params.pageSize ?? 20
     const page = params.page ?? 1
@@ -131,10 +140,11 @@ export const courseService = {
     return { items: list, total }
   },
 
-  // DETAIL
-  async detail(id: ID): Promise<CourseDetail> {
+  // DETAIL - Support both admin and student endpoints
+  async detail(id: ID, useAdminEndpoint = false): Promise<CourseDetail> {
     if (!USE_MOCK) {
-      const { data } = await api.get(`/admin/courses/${id}`)
+      const endpoint = useAdminEndpoint ? `/api/admin/courses/${id}/` : `/api/content/courses/${id}/`
+      const { data } = await api.get(endpoint)
       return data
     }
     const grade = (((Number(id) || 1) % 5) + 1) as Grade
@@ -182,32 +192,57 @@ export const courseService = {
   },
 
   // CREATE / UPDATE
-  create(payload: Partial<CourseDetail>) {
-    if (!USE_MOCK) return api.post('/admin/courses', payload)
+  create(payload: Partial<CourseDetail>, useAdminEndpoint = false) {
+    if (!USE_MOCK) {
+      const endpoint = useAdminEndpoint ? '/api/admin/courses/' : '/api/content/courses/'
+      return api.post(endpoint, payload)
+    }
     return Promise.resolve({ ok: true })
   },
-  update(id: ID, payload: Partial<CourseDetail>) {
-    if (!USE_MOCK) return api.put(`/admin/courses/${id}`, payload)
+  update(id: ID, payload: Partial<CourseDetail>, useAdminEndpoint = false) {
+    if (!USE_MOCK) {
+      const endpoint = useAdminEndpoint ? `/api/admin/courses/${id}/` : `/api/content/courses/${id}/`
+      return api.patch(endpoint, payload)
+    }
     return Promise.resolve({ ok: true })
+  },
+  
+  // ENROLL (student only)
+  async enroll(courseId: ID): Promise<{ success: boolean }> {
+    if (!USE_MOCK) {
+      const { data } = await api.post(`/api/content/courses/${courseId}/enroll/`)
+      return data
+    }
+    return Promise.resolve({ success: true })
+  },
+  async unenroll(courseId: ID): Promise<{ success: boolean }> {
+    if (!USE_MOCK) {
+      const { data } = await api.delete(`/api/content/courses/${courseId}/enroll/`)
+      return data
+    }
+    return Promise.resolve({ success: true })
   },
 
   // STATUS / ACTIONS
-  approve(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/approve`) },
-  reject(id: ID, reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/reject`, { reason }) },
-  publish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/publish`) },
-  unpublish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/unpublish`) },
-  archive(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/archive`) },
-  restore(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/restore`) },
+  approve(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/approve/`) },
+  reject(id: ID, reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/reject/`, { reason }) },
+  publish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/publish/`) },
+  unpublish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/unpublish/`) },
+  archive(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/archive/`) },
+  restore(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/restore/`) },
 
   // BULK (tuỳ chọn dùng ở trang duyệt)
-  bulkApprove(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/approve', { ids }) },
-  bulkReject(ids: ID[], reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/reject', { ids, reason }) },
-  bulkPublish(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/publish', { ids }) },
-  bulkArchive(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/archive', { ids }) },
+  bulkApprove(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/api/admin/courses/bulk/', { action: 'approve', ids }) },
+  bulkReject(ids: ID[], reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/api/admin/courses/bulk/', { action: 'reject', ids, reason }) },
+  bulkPublish(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/api/admin/courses/bulk/', { action: 'publish', ids }) },
+  bulkArchive(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/api/admin/courses/bulk/', { action: 'archive', ids }) },
 
   // FILTER OPTIONS
   async listTeachers(): Promise<{ id: ID; name: string }[]> {
-    if (!USE_MOCK) { const { data } = await api.get('/admin/teachers'); return data }
+    if (!USE_MOCK) { 
+      const { data } = await api.get('/api/account/admin/users/', { params: { role: 'instructor' } })
+      return data.map((u: any) => ({ id: u.id, name: u.email || u.username }))
+    }
     return Array.from({ length: 15 }).map((_, i) => ({ id: i + 1, name: `GV ${i + 1}` }))
   },
   subjects(): { label: string; value: Subject }[] {

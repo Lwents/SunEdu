@@ -31,6 +31,9 @@ urlpatterns = [
     path('api/account/', include("custom_account.urls")),
     path('api/ai_personalization/', include('ai_personalization.urls')),
     path('api/payments/', include('payments.urls')),
+    path('api/content/', include('content.urls')),
+    # path('api/activities/', include('activities.urls')),  # Temporarily disabled - missing views
+    path('api/admin/', include('admin_api.urls')),
     path("", home),
 
     path("api/auth/", include("dj_rest_auth.urls")),

@@ -1,13 +1,15 @@
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Iterable, Tuple
+from typing import Optional, List, Dict, Any, Iterable, Tuple, TYPE_CHECKING
 from collections import deque
 
 from content.services.exceptions import DomainValidationError, NotFoundError, InvalidOperation
 from content.domains.content_block_domain import ContentBlockDomain
-from content.domains.lesson_domain import LessonDomain
 from content.domains.value_objects import CreateLessonVersionCommand
+
+if TYPE_CHECKING:
+    from content.domains.lesson_domain import LessonDomain
 
 
 
