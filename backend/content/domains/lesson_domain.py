@@ -101,5 +101,61 @@ class LessonDomain:
             for v_m in model.versions_prefetched:
                 l.versions.append(LessonVersionDomain.from_model(v_m))
         return l
-    
 
+
+# Command classes for lesson operations
+class CreateLessonDomain:
+    """Command object for creating a lesson."""
+    def __init__(self, module_id: str, title: str, position: int = 0, content_type: str = "lesson"):
+        self.module_id = module_id
+        self.title = title
+        self.position = position
+        self.content_type = content_type
+
+    def validate(self):
+        if not self.module_id:
+            raise DomainValidationError("Lesson module_id required.")
+        if not self.title or not self.title.strip():
+            raise DomainValidationError("Lesson title required.")
+        if self.content_type not in LessonDomain.VALID_CONTENT_TYPES:
+            raise DomainValidationError("Invalid lesson content_type.")
+
+
+class UpdateLessonDomain:
+    """Command object for updating a lesson."""
+    def __init__(self, title: Optional[str] = None, position: Optional[int] = None, content_type: Optional[str] = None):
+        self.title = title
+        self.position = position
+        self.content_type = content_type
+
+    def validate(self):
+        if self.title is not None and (not self.title or not self.title.strip()):
+            raise DomainValidationError("Lesson title cannot be empty.")
+        if self.content_type is not None and self.content_type not in LessonDomain.VALID_CONTENT_TYPES:
+            raise DomainValidationError("Invalid lesson content_type.")
+
+
+class PublishLessonDomain:
+    """Command object for publishing a lesson."""
+    def __init__(self, lesson_id: str, version: int):
+        self.lesson_id = lesson_id
+        self.version = version
+
+    def validate(self):
+        if not self.lesson_id:
+            raise DomainValidationError("Lesson ID required.")
+        if self.version < 1:
+            raise DomainValidationError("Version must be >= 1.")
+
+
+class ReorderLessonsDomain:
+    """Command object for reordering lessons."""
+    def __init__(self, module_id: str, lesson_positions: List[Tuple[str, int]]):
+        self.module_id = module_id
+        self.lesson_positions = lesson_positions
+
+    def validate(self):
+        if not self.module_id:
+            raise DomainValidationError("Module ID required.")
+        if not self.lesson_positions:
+            raise DomainValidationError("Lesson positions required.")

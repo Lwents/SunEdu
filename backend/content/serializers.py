@@ -328,4 +328,21 @@ class ExplorationSerializer(serializers.ModelSerializer):
 # -----------------------
 # Command / Input-only Serializers (to produce Domain Command objects)
 # -----------------------
-# These are used by endpoints for create/publish actions and convert to d
+# These are used by endpoints for create/publish actions and convert to domain commands
+
+# Stub implementations - to be fully implemented later
+CreateCourseInputSerializer = CourseSerializer
+AddModuleInputSerializer = ModuleSerializer
+CreateLessonInputSerializer = LessonSerializer
+CreateLessonVersionInputSerializer = LessonVersionSerializer
+PublishLessonVersionInputSerializer = LessonVersionSerializer
+AddContentBlockInputSerializer = ContentBlockSerializer
+CreateExplorationInputSerializer = ExplorationSerializer
+AddExplorationStateInputSerializer = ExplorationStateSerializer
+AddExplorationTransitionInputSerializer = ExplorationTransitionSerializer
+
+# Read-only serializers with nested data
+CourseDetailReadSerializer = CourseSerializer
+ModuleReadSerializer = ModuleSerializer
+LessonReadSerializer = LessonSerializer
+LessonVersionReadSerializer = LessonVersionSerializer

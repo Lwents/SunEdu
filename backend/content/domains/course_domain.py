@@ -171,3 +171,59 @@ class CourseDomain:
                 mod_d = ModuleDomain.from_model(mod_m)
                 c.modules.append(mod_d)
         return c
+
+
+# Command classes for course operations
+class CreateCourseDomain:
+    """Command object for creating a course."""
+    def __init__(self, title: str, subject_id: Optional[str] = None, description: Optional[str] = None,
+                 grade: Optional[str] = None, owner_id: Optional[int] = None, slug: Optional[str] = None):
+        self.title = title
+        self.subject_id = subject_id
+        self.description = description
+        self.grade = grade
+        self.owner_id = owner_id
+        self.slug = slug
+
+    def validate(self):
+        if not self.title or not self.title.strip():
+            raise DomainValidationError("Course title required.")
+
+
+class UpdateCourseDomain:
+    """Command object for updating a course."""
+    def __init__(self, title: Optional[str] = None, subject_id: Optional[str] = None,
+                 description: Optional[str] = None, grade: Optional[str] = None, slug: Optional[str] = None):
+        self.title = title
+        self.subject_id = subject_id
+        self.description = description
+        self.grade = grade
+        self.slug = slug
+
+    def validate(self):
+        if self.title is not None and (not self.title or not self.title.strip()):
+            raise DomainValidationError("Course title cannot be empty.")
+
+
+class CoursePublishDomain:
+    """Command object for publishing a course."""
+    def __init__(self, course_id: str, require_all_lessons_published: bool = False):
+        self.course_id = course_id
+        self.require_all_lessons_published = require_all_lessons_published
+
+    def validate(self):
+        if not self.course_id:
+            raise DomainValidationError("Course ID required.")
+
+
+class CourseAssignOwnerDomain:
+    """Command object for assigning owner to a course."""
+    def __init__(self, course_id: str, owner_id: int):
+        self.course_id = course_id
+        self.owner_id = owner_id
+
+    def validate(self):
+        if not self.course_id:
+            raise DomainValidationError("Course ID required.")
+        if not self.owner_id:
+            raise DomainValidationError("Owner ID required.")

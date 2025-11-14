@@ -34,7 +34,7 @@
         </div>
         <div class="flex gap-2">
           <button class="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50" @click="toGrading">Chấm bài</button>
-          <button class="rounded-2xl bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700">
+          <button class="rounded-2xl bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700" @click="toEdit">
             Sửa đề
           </button>
         </div>
@@ -220,6 +220,9 @@ async function load(currentId = id.value) {
 /** Actions */
 function toGrading() {
   router.push({ path: `/teacher/exams/${id.value}/grading` })
+}
+function toEdit() {
+  router.push({ path: `/teacher/exams/${id.value}/edit` })
 }
 
 /** Lifecycle */

@@ -1,7 +1,271 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const activeGame = ref<string | null>(null)
+const gameScore = ref(0)
+const gameTime = ref(0)
+const currentQuestion = ref(0)
+const questions = ref<any[]>([])
+
+// Quiz Game
+const quizQuestions = ref([
+  {
+    id: 1,
+    question: '2 + 2 = ?',
+    options: ['3', '4', '5', '6'],
+    correct: 1,
+  },
+  {
+    id: 2,
+    question: 'Thủ đô của Việt Nam là?',
+    options: ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Huế'],
+    correct: 0,
+  },
+  {
+    id: 3,
+    question: 'Từ nào viết đúng chính tả?',
+    options: ['giải thưởng', 'dải thưởng', 'rải thưởng', 'gải thưởng'],
+    correct: 0,
+  },
+])
+
+// Word Match Game
+const wordPairs = ref([
+  { left: 'Mèo', right: 'Cat' },
+  { left: 'Chó', right: 'Dog' },
+  { left: 'Nhà', right: 'House' },
+  { left: 'Trường', right: 'School' },
+])
+
+const selectedLeft = ref<string | null>(null)
+const selectedRight = ref<string | null>(null)
+const matchedPairs = ref<Record<string, boolean>>({})
+
+function startGame(type: string) {
+  activeGame.value = type
+  gameScore.value = 0
+  gameTime.value = 0
+  currentQuestion.value = 0
+  matchedPairs.value = {}
+  selectedLeft.value = null
+  selectedRight.value = null
+
+  if (type === 'quiz') {
+    questions.value = [...quizQuestions.value]
+  }
+
+  // Start timer
+  const timer = setInterval(() => {
+    gameTime.value++
+  }, 1000)
+
+  // Store timer to clear later
+  ;(window as any).gameTimer = timer
+}
+
+function stopGame() {
+  activeGame.value = null
+  if ((window as any).gameTimer) {
+    clearInterval((window as any).gameTimer)
+  }
+}
+
+function answerQuiz(optionIndex: number) {
+  const q = questions.value[currentQuestion.value]
+  if (optionIndex === q.correct) {
+    gameScore.value += 10
+  }
+  if (currentQuestion.value < questions.value.length - 1) {
+    currentQuestion.value++
+  } else {
+    finishGame()
+  }
+}
+
+function selectWord(side: 'left' | 'right', word: string) {
+  if (side === 'left') {
+    selectedLeft.value = word
+  } else {
+    selectedRight.value = word
+  }
+
+  if (selectedLeft.value && selectedRight.value) {
+    const pair = wordPairs.value.find(
+      (p) => p.left === selectedLeft.value && p.right === selectedRight.value,
+    )
+    if (pair) {
+      const key = `${pair.left}-${pair.right}`
+      matchedPairs.value[key] = true
+      gameScore.value += 20
+      selectedLeft.value = null
+      selectedRight.value = null
+
+      if (Object.keys(matchedPairs.value).length === wordPairs.value.length) {
+        finishGame()
+      }
+    } else {
+      setTimeout(() => {
+        selectedLeft.value = null
+        selectedRight.value = null
+      }, 500)
+    }
+  }
+}
+
+function finishGame() {
+  setTimeout(() => {
+    alert(`Chúc mừng! Bạn đạt ${gameScore.value} điểm trong ${gameTime.value} giây!`)
+    stopGame()
+  }, 500)
+}
+</script>
+
 <template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50/30 to-slate-50">
-    <!-- Header -->
-    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Game Modal -->
+    <div
+      v-if="activeGame"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+    >
+      <div class="w-full max-w-4xl rounded-3xl bg-white p-6">
+        <!-- Quiz Game -->
+        <div v-if="activeGame === 'quiz' && questions.length">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-2xl font-bold">Trắc nghiệm nhanh</h2>
+            <div class="flex items-center gap-4">
+              <div class="text-sm">
+                <span class="font-semibold">Điểm:</span> {{ gameScore }}
+              </div>
+              <div class="text-sm">
+                <span class="font-semibold">Thời gian:</span> {{ gameTime }}s
+              </div>
+              <button
+                class="rounded-lg border px-3 py-1 text-sm hover:bg-slate-50"
+                @click="stopGame"
+              >
+                Thoát
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="mb-2 text-sm text-slate-600">
+              Câu {{ currentQuestion + 1 }}/{{ questions.length }}
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-slate-200">
+              <div
+                class="h-full bg-cyan-500 transition-all"
+                :style="{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }"
+              ></div>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <h3 class="text-xl font-semibold">
+              {{ questions[currentQuestion].question }}
+            </h3>
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                v-for="(option, idx) in questions[currentQuestion].options"
+                :key="idx"
+                class="rounded-xl border-2 border-slate-200 bg-white p-4 text-left font-semibold transition hover:border-cyan-500 hover:bg-cyan-50"
+                @click="answerQuiz(idx)"
+              >
+                {{ option }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Word Match Game -->
+        <div v-else-if="activeGame === 'word-match'">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-2xl font-bold">Ghép từ</h2>
+            <div class="flex items-center gap-4">
+              <div class="text-sm">
+                <span class="font-semibold">Điểm:</span> {{ gameScore }}
+              </div>
+              <div class="text-sm">
+                <span class="font-semibold">Đã ghép:</span> {{ Object.keys(matchedPairs).length }}/{{ wordPairs.length }}
+              </div>
+              <button
+                class="rounded-lg border px-3 py-1 text-sm hover:bg-slate-50"
+                @click="stopGame"
+              >
+                Thoát
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <h3 class="mb-3 font-semibold">Tiếng Việt</h3>
+              <div class="space-y-2">
+                <button
+                  v-for="pair in wordPairs"
+                  :key="pair.left"
+                  class="w-full rounded-xl border-2 p-3 text-left font-semibold transition"
+                  :class="
+                    matchedPairs[`${pair.left}-${pair.right}`]
+                      ? 'border-emerald-500 bg-emerald-50 opacity-50'
+                      : selectedLeft === pair.left
+                        ? 'border-cyan-500 bg-cyan-50'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                  "
+                  :disabled="!!matchedPairs[`${pair.left}-${pair.right}`]"
+                  @click="selectWord('left', pair.left)"
+                >
+                  {{ pair.left }}
+                </button>
+              </div>
+            </div>
+            <div>
+              <h3 class="mb-3 font-semibold">Tiếng Anh</h3>
+              <div class="space-y-2">
+                <button
+                  v-for="pair in wordPairs"
+                  :key="pair.right"
+                  class="w-full rounded-xl border-2 p-3 text-left font-semibold transition"
+                  :class="
+                    matchedPairs[`${pair.left}-${pair.right}`]
+                      ? 'border-emerald-500 bg-emerald-50 opacity-50'
+                      : selectedRight === pair.right
+                        ? 'border-cyan-500 bg-cyan-50'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                  "
+                  :disabled="!!matchedPairs[`${pair.left}-${pair.right}`]"
+                  @click="selectWord('right', pair.right)"
+                >
+                  {{ pair.right }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Puzzle Game -->
+        <div v-else-if="activeGame === 'puzzle'">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-2xl font-bold">Đố vui</h2>
+            <button
+              class="rounded-lg border px-3 py-1 text-sm hover:bg-slate-50"
+              @click="stopGame"
+            >
+              Thoát
+            </button>
+          </div>
+          <div class="text-center">
+            <p class="text-slate-600">Trò chơi đang được phát triển...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-20">
+      <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center gap-3 mb-3">
           <div
@@ -57,6 +321,7 @@
             </p>
             <button
               class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/40"
+              @click="startGame('quiz')"
             >
               <span>Chơi ngay</span>
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -97,6 +362,7 @@
             </p>
             <button
               class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-gradient-to-r from-sky-500 to-sky-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-sky-500/40"
+              @click="startGame('word-match')"
             >
               <span>Chơi ngay</span>
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,6 +403,7 @@
             </p>
             <button
               class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/40"
+              @click="startGame('puzzle')"
             >
               <span>Chơi ngay</span>
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,7 +448,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-// Game page component
-</script>
