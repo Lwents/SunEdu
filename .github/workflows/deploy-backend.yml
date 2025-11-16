@@ -27,65 +27,45 @@ jobs:
           script: |
             set -euo pipefail
 
-            # Quick disk space check
-            echo "📊 Current disk space:"
-            DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
-            echo "Disk usage: ${DISK_USAGE}%"
-            
-            # Only cleanup if disk usage > 80%
-            if [ "$DISK_USAGE" -gt 80 ]; then
-              echo "🧹 Disk usage high (${DISK_USAGE}%), starting cleanup..."
-              
-              # Quick Docker cleanup (parallel where possible)
-              if command -v docker >/dev/null 2>&1; then
-                echo "🐳 Quick Docker cleanup..."
-                docker container prune -f &> /dev/null || true
-                docker image prune -a -f &> /dev/null || true
-                docker volume prune -f &> /dev/null || true
-              fi
-              
-              # Quick log cleanup (only very old files)
-              find /var/www/SunEdu/backend/logs -type f -name "*.log" -mtime +30 -delete 2>/dev/null || true
-              find /var/www/SunEdu/backend/runtime_logs -type f -name "*.log" -mtime +30 -delete 2>/dev/null || true
-              
-              echo "✅ Quick cleanup done"
-            else
-              echo "✅ Disk space OK, skipping cleanup"
-            fi
-            
-            # Git operations (fast-forward only)
+            echo "🧹 Cleaning up disk space..."
+
+            # Show current disk usage
+            echo "📊 Current disk usage:"
+            df -h /
+
+            # Clean Docker system (remove unused images, containers, volumes)
+            echo "🐳 Cleaning Docker..."
+            docker system prune -af --volumes || true
+
+            # Clean old Python cache and pip cache
+            echo "🐍 Cleaning Python cache..."
+            find /var/www/SunEdu -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+            find /var/www/SunEdu -type f -name "*.pyc" -delete 2>/dev/null || true
+            rm -rf ~/.cache/pip/* || true
+
+            # Clean apt cache
+            echo "📦 Cleaning apt cache..."
+            sudo apt-get clean || true
+            sudo rm -rf /var/lib/apt/lists/* || true
+
+            # Show disk usage after cleanup
+            echo "📊 Disk usage after cleanup:"
+            df -h /
+
+            echo "✅ Cleanup complete!"
+            echo ""
+
+            echo "📥 Updating code from Git..."
             cd /var/www/SunEdu
-            echo "📥 Fetching latest changes..."
-            git fetch origin main --depth=1
+            git fetch origin main
             git reset --hard origin/main
 
-            # Optimize venv: reuse if exists, only update if needed
+            echo "🐍 Setting up Python virtual environment..."
             VENV="/var/www/SunEdu/backend/.venv"
-            REQUIREMENTS_HASH=$(md5sum backend/requirements.txt 2>/dev/null | cut -d' ' -f1 || echo "new")
-            VENV_HASH_FILE="$VENV/.requirements_hash"
-            
-            if [ -d "$VENV" ] && [ -f "$VENV_HASH_FILE" ]; then
-              OLD_HASH=$(cat "$VENV_HASH_FILE" 2>/dev/null || echo "")
-              if [ "$REQUIREMENTS_HASH" = "$OLD_HASH" ]; then
-                echo "✅ Virtual environment up to date, skipping reinstall"
-                "$VENV/bin/pip" install --upgrade pip --quiet
-              else
-                echo "📦 Requirements changed, updating packages..."
-                "$VENV/bin/pip" install --upgrade pip --quiet
-                "$VENV/bin/pip" install -r backend/requirements.txt --quiet --no-cache-dir
-                echo "$REQUIREMENTS_HASH" > "$VENV_HASH_FILE"
-              fi
-            else
-              echo "📦 Creating new virtual environment..."
-              rm -rf "$VENV"
-              python3 -m venv "$VENV"
-              "$VENV/bin/pip" install --upgrade pip --quiet
-              "$VENV/bin/pip" install -r backend/requirements.txt --quiet --no-cache-dir
-              echo "$REQUIREMENTS_HASH" > "$VENV_HASH_FILE"
-            fi
-            
-            # Quick Python cache cleanup (non-blocking)
-            find /var/www/SunEdu/backend -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null & || true
+            rm -rf "$VENV"
+            python3 -m venv "$VENV"
+            "$VENV/bin/pip" install --upgrade pip --no-cache-dir
+            "$VENV/bin/pip" install -r backend/requirements.txt --no-cache-dir
 
             cd backend
 
@@ -133,61 +113,70 @@ jobs:
             fi
 
             if command -v docker >/dev/null 2>&1; then
-              echo "🐳 Deploying with Docker Compose: $COMPOSE_FILE"
-              
-              # Quick stop old services (parallel, non-blocking)
-              {
-                systemctl stop sunedu-backend 2>/dev/null || true
-                systemctl disable sunedu-backend 2>/dev/null || true
-              } &
-              {
-                systemctl stop sunedu-celery 2>/dev/null || true
-                systemctl disable sunedu-celery 2>/dev/null || true
-              } &
-              
-              # Kill processes on ports (non-blocking)
-              sudo lsof -ti:8000 | xargs -r sudo kill -9 2>/dev/null || true
-              sudo lsof -ti:5432 | xargs -r sudo kill -9 2>/dev/null || true
-              
-              # Wait for background jobs
-              wait
-              
-              # Stop old containers (with timeout)
-              timeout 15 docker compose -f "$COMPOSE_FILE" down 2>/dev/null || docker compose -f "$COMPOSE_FILE" down || true
-              
-              # Build with cache and start services
-              echo "🔨 Building and starting services..."
-              docker compose -f "$COMPOSE_FILE" build --parallel
+              echo[object Object]Deploying with Docker Compose: $COMPOSE_FILE"
+
+              # Stop old systemd services to free up ports
+              if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
+                echo "⏹️  Stopping sunedu-backend.service..."
+                sudo systemctl stop sunedu-backend || true
+                sudo systemctl disable sunedu-backend || true
+              fi
+
+              if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
+                echo "⏹️  Stopping sunedu-celery.service..."
+                sudo systemctl stop sunedu-celery || true
+                sudo systemctl disable sunedu-celery || true
+              fi
+
+              # Kill any process using port 8000
+              echo "🔍 Checking for processes on port 8000..."
+              sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
+
+              # Kill any process using port 5432 (PostgreSQL)
+              sudo lsof -ti:5432 | xargs -r sudo kill -9 || true
+
+              # Wait a bit for ports to be freed
+              sleep 2
+
+              # Stop and remove old containers
+              echo "🛑 Stopping old containers..."
+              docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans || true
+
+              # Remove old images to save space
+              echo "🗑️ Removing old images..."
+              docker images | grep sunedu | awk '{print $3}' | xargs -r docker rmi -f || true
+
+              # Build with no-cache to ensure fresh build (but clean)
+              echo "🔨 Building new images..."
+              docker compose -f "$COMPOSE_FILE" build --no-cache --pull
+
+              # Start all services (db + web)
+              echo "🚀 Starting services..."
               docker compose -f "$COMPOSE_FILE" up -d
-              
-              # Optimized health check (faster, smarter)
-              echo "⏳ Waiting for services to be ready..."
-              MAX_WAIT=45
-              WAIT_COUNT=0
-              while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-                # Check if containers are running
-                if docker compose -f "$COMPOSE_FILE" ps | grep -qE "Up.*\(healthy\)"; then
+
+              # Wait for services to be healthy
+              echo "⏳ Waiting for services to be healthy..."
+              for i in {1..30}; do
+                if docker compose -f "$COMPOSE_FILE" ps | grep -q "healthy"; then
                   echo "✅ Services are healthy"
                   break
-                elif docker compose -f "$COMPOSE_FILE" ps | grep -qE "Up.*running"; then
-                  # If running but not healthy, wait a bit more then check if web responds
-                  sleep 3
-                  if curl -sf http://localhost:8000 >/dev/null 2>&1 || \
-                     docker compose -f "$COMPOSE_FILE" exec -T web echo "ok" >/dev/null 2>&1; then
-                    echo "✅ Services are ready"
-                    break
-                  fi
                 fi
-                sleep 2
-                WAIT_COUNT=$((WAIT_COUNT + 2))
-                if [ $((WAIT_COUNT % 10)) -eq 0 ]; then
-                  echo "⏳ Still waiting... (${WAIT_COUNT}s/${MAX_WAIT}s)"
-                fi
+                echo "⏳ Waiting... ($i/30)"
+                sleep 3
               done
-              
+
               # Show container status
+              echo "📊 Container status:"
               docker compose -f "$COMPOSE_FILE" ps
-              
+
+              # Show final disk usage
+              echo "📊 Final disk usage:"
+              df -h /
+
+              # Clean up build cache after deployment
+              echo "🧹 Final cleanup..."
+              docker builder prune -af || true
+
               echo "✅ Docker deployment complete!"
             else
               echo "❌ Docker not installed!"
