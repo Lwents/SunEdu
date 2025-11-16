@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 """
 Script to create or update Django superuser
-Usage: python create_superuser.py [username] [password] [email]
+Usage: 
+  python create_superuser.py [username] [password] [email]
+  Or set environment variables: DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, DJANGO_SUPERUSER_EMAIL
+  Or password will be prompted if not provided
 """
 import os
 import sys
+import getpass
 import django
 
 # Setup Django
@@ -16,9 +20,27 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-def create_or_update_superuser(username='admin', password='lekien2004', email='admin@example.com'):
+def create_or_update_superuser(username=None, password=None, email=None):
     """Create or update a superuser"""
     try:
+        # Get username
+        if not username:
+            username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin')
+        
+        # Get password - NEVER use default password
+        if not password:
+            password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
+            if not password:
+                # Prompt for password if not in environment
+                password = getpass.getpass(f'Enter password for superuser "{username}": ')
+                if not password:
+                    print("✗ Error: Password is required")
+                    sys.exit(1)
+        
+        # Get email
+        if not email:
+            email = os.environ.get('DJANGO_SUPERUSER_EMAIL', f'{username}@example.com')
+        
         user = User.objects.filter(username=username).first()
         
         if user:
@@ -63,9 +85,9 @@ def create_or_update_superuser(username='admin', password='lekien2004', email='a
         sys.exit(1)
 
 if __name__ == '__main__':
-    username = sys.argv[1] if len(sys.argv) > 1 else 'admin'
-    password = sys.argv[2] if len(sys.argv) > 2 else 'lekien2004'
-    email = sys.argv[3] if len(sys.argv) > 3 else 'admin@example.com'
+    username = sys.argv[1] if len(sys.argv) > 1 else None
+    password = sys.argv[2] if len(sys.argv) > 2 else None
+    email = sys.argv[3] if len(sys.argv) > 3 else None
     
     create_or_update_superuser(username, password, email)
 
