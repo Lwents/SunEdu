@@ -1,68 +1,65 @@
 <template>
-  <div class="student-shell">
-    <div class="student-container max-w-6xl">
-      <header
-        class="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/95 px-5 py-5 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div>
-          <p class="student-section-title">Đề luyện tập</p>
-          <h1 class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ exam?.title || 'Đề luyện tập' }}</h1>
-          <p class="mt-1 flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
-            <span>{{ labelLevel(exam?.level) }}</span>
-            <span>• {{ Math.round((exam?.durationSec || 0) / 60) }} phút</span>
-            <span>• {{ questions.length }} câu</span>
-            <span>• Đạt ≥ {{ exam?.passCount || Math.ceil(questions.length * 0.6) }} câu</span>
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-bold transition-all duration-300"
-            :class="
-              timeLeft <= 300
-                ? 'border-rose-300 bg-rose-100 text-rose-700 animate-pulse'
-                : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100'
-            "
-          >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                fill-rule="evenodd"
-                d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            <span>{{ fmtTime(timeLeft) }}</span>
+  <div class="min-h-screen bg-slate-50 py-8">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <header class="mb-6 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900">{{ exam?.title || 'Đề luyện tập' }}</h1>
+            <p class="mt-1 flex flex-wrap gap-3 text-sm text-slate-600">
+              <span>{{ labelLevel(exam?.level) }}</span>
+              <span>• {{ Math.round((exam?.durationSec || 0) / 60) }} phút</span>
+              <span>• {{ questions.length }} câu</span>
+              <span>• Đạt ≥ {{ exam?.passCount || Math.ceil(questions.length * 0.6) }} câu</span>
+            </p>
           </div>
-          <button
-            type="button"
-            class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 transition hover:bg-slate-50"
-            @click="goBack"
-          >
-            Thoát
-          </button>
+          <div class="flex items-center gap-3">
+            <div
+              class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
+              :class="
+                timeLeft <= 300
+                  ? 'border-red-300 bg-red-50 text-red-700'
+                  : 'border-slate-200 bg-white text-slate-900'
+              "
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span>{{ fmtTime(timeLeft) }}</span>
+            </div>
+            <button
+              type="button"
+              class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              @click="goBack"
+            >
+              Thoát
+            </button>
+          </div>
         </div>
       </header>
 
-      <div v-if="loading" class="student-card mt-6 space-y-3">
-        <div class="h-4 w-2/3 animate-pulse rounded bg-slate-200/70"></div>
-        <div class="h-32 animate-pulse rounded-3xl bg-slate-100"></div>
-        <div class="h-4 w-3/4 animate-pulse rounded bg-slate-200/70"></div>
+      <div v-if="loading" class="space-y-3">
+        <div class="h-4 w-2/3 animate-pulse rounded bg-slate-200"></div>
+        <div class="h-32 animate-pulse rounded-lg bg-slate-100"></div>
+        <div class="h-4 w-3/4 animate-pulse rounded bg-slate-200"></div>
       </div>
 
-      <main v-else class="mt-6 grid gap-6 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
-        <section
-          class="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100"
-        >
-          <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Danh sách câu hỏi</h3>
-          <div class="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-6">
+      <main v-else class="grid gap-6 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
+        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-base font-semibold text-slate-900 mb-4">Danh sách câu hỏi</h3>
+          <div class="grid grid-cols-5 gap-2 sm:grid-cols-6">
             <button
               v-for="(ans, i) in answers"
               :key="i"
-              class="flex h-10 items-center justify-center rounded-2xl border text-sm font-semibold transition"
+              class="flex h-10 items-center justify-center rounded-lg border text-sm font-semibold transition"
               :class="[
                 i === idx
-                  ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
-                  : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100',
-                isAnswered(ans) && i !== idx ? 'border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400' : '',
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-white text-slate-900',
+                isAnswered(ans) && i !== idx ? 'border-blue-500 bg-blue-50 text-blue-700' : '',
               ]"
               @click="go(i)"
             >
@@ -72,39 +69,33 @@
         </section>
 
         <section class="space-y-4">
-          <div
-            class="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100"
-          >
-            <div class="flex items-center justify-between text-sm font-semibold text-gray-600 dark:text-gray-400">
-              <span class="inline-flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                <span class="student-pill !text-xs">Câu {{ idx + 1 }}</span>
-              </span>
-              <span
-                class="rounded-full border border-slate-200 px-3 py-1 text-xs uppercase tracking-[0.3em]"
-              >
+          <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between text-sm font-semibold text-slate-600 mb-4">
+              <span class="text-slate-900">Câu {{ idx + 1 }}</span>
+              <span class="rounded-full border border-slate-200 px-3 py-1 text-xs uppercase">
                 {{ q?.type }}
               </span>
             </div>
-            <div class="mt-4 space-y-4">
-              <div class="prose prose-sm max-w-none text-gray-900 dark:text-gray-100" v-html="q?.text"></div>
+            <div class="space-y-4">
+              <div class="prose prose-sm max-w-none text-slate-900" v-html="q?.text"></div>
 
               <template v-if="q?.type === 'mcq'">
                 <ul class="space-y-3">
                   <li
                     v-for="opt in q.options"
                     :key="opt.key"
-                    class="rounded-2xl border transition cursor-pointer"
+                    class="rounded-lg border transition cursor-pointer"
                     :class="answers[idx] === opt.key 
-                      ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 ring-2 ring-cyan-200 dark:ring-cyan-800' 
-                      : 'border-slate-200 bg-white hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-cyan-50/50'"
+                      ? 'border-slate-900 bg-slate-50 ring-2 ring-slate-200' 
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'"
                   >
                     <label
                       class="flex items-center gap-3 px-4 py-3 text-sm font-semibold cursor-pointer"
-                      :class="answers[idx] === opt.key ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-900 dark:text-gray-100'"
+                      :class="answers[idx] === opt.key ? 'text-slate-900' : 'text-slate-700'"
                     >
                       <input
                         type="radio"
-                        class="h-4 w-4 text-cyan-600 dark:text-cyan-400 focus:ring-cyan-500/30"
+                        class="h-4 w-4 text-slate-900 focus:ring-slate-200"
                         :name="'q_' + idx"
                         :value="opt.key"
                         :checked="answers[idx] === opt.key"
@@ -112,7 +103,7 @@
                       />
                       <span
                         class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold"
-                        :class="answers[idx] === opt.key ? 'bg-cyan-500 text-white' : 'bg-slate-100 text-gray-700'"
+                        :class="answers[idx] === opt.key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'"
                       >
                         {{ opt.key }}
                       </span>
@@ -125,10 +116,10 @@
               <template v-else-if="q?.type === 'tf'">
                 <div class="grid gap-3 sm:grid-cols-2">
                   <label
-                    class="flex items-center justify-center rounded-2xl border px-4 py-3 text-sm font-semibold transition cursor-pointer"
+                    class="flex items-center justify-center rounded-lg border px-4 py-3 text-sm font-semibold transition cursor-pointer"
                     :class="answers[idx] === 'T'
-                      ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-200 dark:ring-cyan-800'
-                      : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100 hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-cyan-50/50'"
+                      ? 'border-slate-900 bg-slate-50 text-slate-900 ring-2 ring-slate-200'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
                   >
                     <input
                       type="radio"
@@ -141,10 +132,10 @@
                     Đúng
                   </label>
                   <label
-                    class="flex items-center justify-center rounded-2xl border px-4 py-3 text-sm font-semibold transition cursor-pointer"
+                    class="flex items-center justify-center rounded-lg border px-4 py-3 text-sm font-semibold transition cursor-pointer"
                     :class="answers[idx] === 'F'
-                      ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-200 dark:ring-cyan-800'
-                      : 'border-slate-200 bg-white text-gray-900 dark:text-gray-100 hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-cyan-50/50'"
+                      ? 'border-slate-900 bg-slate-50 text-slate-900 ring-2 ring-slate-200'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
                   >
                     <input
                       type="radio"
@@ -161,7 +152,7 @@
 
               <template v-else>
                 <input
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 shadow-sm shadow-slate-100 focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30"
+                  class="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
                   :value="answers[idx] ?? ''"
                   @input="setAnswer(idx, ($event.target as HTMLInputElement).value)"
                   placeholder="Nhập câu trả lời của bạn..."
@@ -170,12 +161,10 @@
             </div>
           </div>
 
-          <div
-            class="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between"
-          >
+          <div class="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:bg-slate-50 disabled:opacity-50"
+              class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
               :disabled="idx === 0"
               @click="prev"
             >
@@ -183,14 +172,14 @@
             </button>
             <div
               v-if="idx === questions.length - 1 && questions.length > 0"
-              class="text-center text-sm font-semibold text-gray-600 dark:text-gray-400"
+              class="text-center text-sm font-semibold text-slate-600"
             >
               {{ answeredCount }}/{{ questions.length }} câu đã trả lời
             </div>
             <button
               v-if="idx === questions.length - 1 && questions.length > 0"
               type="button"
-              class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 disabled:opacity-50"
+              class="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition disabled:opacity-50"
               :disabled="submitting"
               @click="submit"
             >
@@ -199,7 +188,7 @@
             <button
               v-else
               type="button"
-              class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
+              class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition disabled:opacity-50"
               :disabled="idx === questions.length - 1"
               @click="next"
             >
@@ -221,27 +210,25 @@
         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4"
         @click.self="showSubmitModal = false"
       >
-        <div
-          class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200"
-        >
-          <header class="flex items-center justify-between">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Xác nhận nộp bài</h3>
+        <div class="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-lg">
+          <header class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-slate-900">Xác nhận nộp bài</h3>
             <button
               type="button"
-              class="rounded-full p-2 text-gray-600 dark:text-gray-400 hover:bg-slate-100"
+              class="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
               aria-label="Đóng"
               @click="showSubmitModal = false"
             >
               ×
             </button>
           </header>
-          <section class="mt-4 text-sm text-gray-900 dark:text-gray-100">
+          <section class="mb-6 text-sm text-slate-900">
             <p v-html="submitMsg"></p>
           </section>
-          <footer class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <footer class="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button
               type="button"
-              class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-slate-50"
+              class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
               :disabled="submitting"
               @click="showSubmitModal = false"
             >
@@ -249,7 +236,7 @@
             </button>
             <button
               type="button"
-              class="rounded-2xl border border-transparent bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-rose-600 disabled:opacity-50"
+              class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition disabled:opacity-50"
               :disabled="submitting"
               @click="confirmSubmit"
             >

@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     'events',
     'payments',
     'admin_api',
+    'teacher_api',
+    'student_api',
 
     # Allauth                                                                                                            
     'allauth',                                                                                                                  
@@ -168,6 +170,9 @@ STATIC_ROOT = Path('/var/www/elearning/staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path('/var/www/elearning/media')
 
+LOG_DIR = BASE_DIR / 'runtime_logs'
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 # -------------------------------
 # Email / SMTP
 # -------------------------------
@@ -247,7 +252,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs/ai_personalization.log',
+            'filename': LOG_DIR / 'ai_personalization.log',
             'formatter': 'verbose',
         },
         'console': {'level': 'DEBUG', 'class': 'logging.StreamHandler', 'formatter': 'verbose'},

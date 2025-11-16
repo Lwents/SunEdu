@@ -190,7 +190,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'courses/new',
         name: 'teacher-course-new',
-        component: () => import('@/pages/teacher/courses/CourseCreate.vue'),
+        component: () => import('@/pages/teacher/courses/CourseCreateWizard.vue'),
         meta: { title: 'Tạo khoá học' },
       },
       {
@@ -277,6 +277,13 @@ const routes: RouteRecordRaw[] = [
       //students feedback
       {
         path: 'students',
+        name: 'teacher-students',
+        component: () => import('@/pages/teacher/students/Students.vue'),
+        meta: { title: 'Học viên của tôi' },
+      },
+      {
+        path: 'students/progress',
+        name: 'teacher-students-progress',
         component: () => import('@/pages/teacher/students/StudentProgress.vue'),
         meta: { title: 'Tiến độ học viên' },
       },
@@ -285,6 +292,21 @@ const routes: RouteRecordRaw[] = [
         name: 'teacher-students-feedback',
         component: () => import('@/pages/teacher/students/Feedback.vue'),
         meta: { title: 'Phản hồi học viên' },
+      },
+      // Course Content Management
+      {
+        path: 'courses/:id/content',
+        name: 'teacher-course-content',
+        component: () => import('@/pages/teacher/courses/CourseContent.vue'),
+        props: true,
+        meta: { title: 'Quản lý nội dung khóa học' },
+      },
+      {
+        path: 'lessons/:id/edit',
+        name: 'teacher-lesson-edit',
+        component: () => import('@/pages/teacher/courses/LessonEdit.vue'),
+        props: true,
+        meta: { title: 'Chỉnh sửa bài học' },
       },
     ],
   },
@@ -448,31 +470,35 @@ const router = createRouter({
 // Guard đơn giản theo role + tự hydrate từ localStorage
 router.beforeEach((to, _from, next) => {
   const auth = useAuthStore()
-  if (!auth.user) auth.hydrateFromStorage()
+  // Hydrate từ storage nếu chưa có user nhưng có token
+  if (!auth.user && (auth.token || localStorage.getItem('accessToken'))) {
+    auth.hydrateFromStorage()
+  }
 
-  console.log('User role:', auth.user?.role)
+  // Kiểm tra cả token và user để đảm bảo đã đăng nhập
+  const isAuthenticated = auth.isAuthenticated && auth.user && auth.token
 
   // Đã đăng nhập mà vào /auth → đẩy về khu đúng role
-  if (to.path.startsWith('/auth') && auth.user) {
-    auth.redirectByRole(auth.user.role)
+  if (to.path.startsWith('/auth') && isAuthenticated) {
+    auth.redirectByRole(auth.user!.role)
     return
   }
 
   // Chưa đăng nhập mà vào khu riêng → đẩy về login
   const needRole = to.meta.role as 'admin' | 'instructor' | 'student' | undefined
-  if (needRole && !auth.user) {
+  if (needRole && !isAuthenticated) {
     next('/auth/login')
     return
   }
 
   // Sai role → đẩy về khu đúng
-  if (needRole && auth.user && auth.user.role !== needRole) {
+  if (needRole && isAuthenticated && auth.user && auth.user.role !== needRole) {
     auth.redirectByRole(auth.user.role)
     return
   }
 
   // Nếu đang ở "/" mà đã login → về dashboard theo role
-  if (to.path === '/' && auth.user) {
+  if (to.path === '/' && isAuthenticated && auth.user) {
     auth.redirectByRole(auth.user.role)
     return
   }

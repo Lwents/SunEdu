@@ -149,6 +149,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { showToast } from '@/utils/toast'
 
 /** ===== Types ===== */
 type Assignment = {
@@ -273,16 +274,16 @@ const pagesToShow = computed(() => {
 
 /** ===== Actions (demo) ===== */
 function createAssignment() {
-  alert('Tạo bài tập (demo). Gắn router/Modal của bạn ở đây.')
+  showToast('Tạo bài tập (demo). Gắn router/Modal của bạn ở đây.', 'info')
 }
 function viewAssignment(id: number) {
-  alert(`Xem bài tập #${id} (demo)`)
+  showToast(`Xem bài tập #${id} (demo)`, 'info')
 }
 function gradeAssignment(id: number) {
-  alert(`Chấm điểm bài tập #${id} (demo)`)
+  showToast(`Chấm điểm bài tập #${id} (demo)`, 'info')
 }
 function editAssignment(id: number) {
-  alert(`Sửa bài tập #${id} (demo)`)
+  showToast(`Sửa bài tập #${id} (demo)`, 'info')
 }
 
 /** ===== Mount & route change ===== */

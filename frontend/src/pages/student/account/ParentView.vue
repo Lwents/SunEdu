@@ -1,96 +1,115 @@
 <!-- src/pages/student/account/ParentInfo.vue -->
 <template>
-  <div class="student-shell">
-    <div class="student-container">
-      <div class="student-tabs flex items-center gap-1 sm:gap-2">
-        <button type="button" class="student-tab" @click="goProfile">CÁ NHÂN</button>
-        <button type="button" class="student-tab" @click="goChangePwd">ĐỔI MẬT KHẨU</button>
-        <button type="button" class="student-tab student-tab--active">PHỤ HUYNH</button>
+  <div class="min-h-screen bg-slate-50">
+    <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+      <!-- Tabs -->
+      <div class="mb-6 flex items-center gap-2 border-b border-slate-200">
+        <button
+          type="button"
+          class="px-4 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          @click="goProfile"
+        >
+          Cá nhân
+        </button>
+        <button
+          type="button"
+          class="px-4 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          @click="goChangePwd"
+        >
+          Đổi mật khẩu
+        </button>
+        <button
+          type="button"
+          class="border-b-2 border-slate-900 px-4 py-3 text-sm font-semibold text-slate-900"
+        >
+          Phụ huynh
+        </button>
       </div>
 
-      <div class="student-card mt-4">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 class="text-base font-extrabold uppercase tracking-wide text-slate-900 sm:text-lg">
-            THÔNG TIN PHỤ HUYNH
-          </h2>
+      <!-- Main Card -->
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 px-6 py-4">
+          <h2 class="text-lg font-semibold text-slate-900">Thông tin phụ huynh</h2>
         </div>
 
-        <form v-if="!loading" class="mt-6 space-y-6" @submit.prevent="save">
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
-              Họ tên phụ huynh <span class="text-rose-500">*</span>
+        <form v-if="!loading" class="p-6 space-y-6" @submit.prevent="save">
+          <!-- Full Name -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">
+              Họ tên phụ huynh <span class="text-red-500">*</span>
             </label>
-            <div class="space-y-2">
+            <div class="space-y-1">
               <input
                 v-model.trim="f.fullname"
-                placeholder="Ví dụ: Nguyễn Văn B"
+                placeholder="Nhập họ tên phụ huynh"
                 @blur="touched.fullname = true"
                 :class="[
-                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  'w-full rounded-lg border px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                   touched.fullname && errs.fullname
-                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                    ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                    : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                 ]"
               />
-              <p v-if="touched.fullname && errs.fullname" class="text-xs font-medium text-rose-600">
+              <p v-if="touched.fullname && errs.fullname" class="text-xs text-red-600">
                 {{ errs.fullname }}
               </p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
-              Số điện thoại <span class="text-rose-500">*</span>
+          <!-- Phone -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">
+              Số điện thoại <span class="text-red-500">*</span>
             </label>
-            <div class="space-y-2">
+            <div class="space-y-1">
               <input
                 v-model.trim="f.phone"
                 type="tel"
                 inputmode="tel"
-                placeholder="09xxxxxxxx"
+                placeholder="Nhập số điện thoại"
                 @blur="touched.phone = true"
                 :class="[
-                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  'w-full rounded-lg border px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                   touched.phone && errs.phone
-                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                    ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                    : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                 ]"
               />
-              <p v-if="touched.phone && errs.phone" class="text-xs font-medium text-rose-600">
+              <p v-if="touched.phone && errs.phone" class="text-xs text-red-600">
                 {{ errs.phone }}
               </p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Email</label>
-            <div class="space-y-2">
+          <!-- Email -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Email</label>
+            <div class="space-y-1">
               <input
                 v-model.trim="f.email"
                 type="email"
                 placeholder="parent@example.com"
                 @blur="touched.email = true"
                 :class="[
-                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  'w-full rounded-lg border px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                   touched.email && errs.email
-                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                    ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                    : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                 ]"
               />
-              <p v-if="touched.email && errs.email" class="text-xs font-medium text-rose-600">
+              <p v-if="touched.email && errs.email" class="text-xs text-red-600">
                 {{ errs.email }}
               </p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
-              >Mối quan hệ</label
-            >
+          <!-- Relation -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Mối quan hệ</label>
             <div>
               <select
                 v-model="f.relation"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
               >
                 <option value="">Chọn</option>
                 <option>Bố</option>
@@ -100,34 +119,36 @@
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Địa chỉ</label>
+          <!-- Address -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Địa chỉ</label>
             <div>
               <textarea
                 v-model.trim="f.address"
                 rows="3"
-                placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
+                placeholder="Nhập địa chỉ"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
               ></textarea>
             </div>
           </div>
 
-          <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+          <!-- Submit Button -->
+          <div class="flex flex-col gap-3 pt-4 border-t border-slate-200 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 sm:w-auto sm:text-sm"
+              class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="saving || !isValid"
             >
               <span
                 v-if="saving"
-                class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"
+                class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
               ></span>
-              {{ saving ? 'ĐANG LƯU...' : 'LƯU THÔNG TIN' }}
+              {{ saving ? 'Đang lưu...' : 'Lưu thông tin' }}
             </button>
           </div>
         </form>
 
-        <div v-else class="mt-6 text-sm font-medium text-slate-500">Đang tải thông tin…</div>
+        <div v-else class="p-6 text-sm text-slate-500">Đang tải thông tin…</div>
       </div>
     </div>
   </div>

@@ -59,18 +59,82 @@ class SubjectSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     subject = serializers.PrimaryKeyRelatedField(queryset=models.Subject.objects.all(), allow_null=True, required=False)
+    subject_slug = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
     owner = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), allow_null=True, required=False)
     title = serializers.CharField(max_length=255)
     description = serializers.CharField(allow_blank=True, required=False)
+    introduction = serializers.CharField(allow_blank=True, required=False, help_text="Giới thiệu chi tiết về khóa học")
     grade = serializers.CharField(max_length=16, allow_blank=True, required=False)
     slug = serializers.SlugField(max_length=255, required=False, allow_null=True)
     published = serializers.BooleanField(default=False)
     published_at = serializers.DateTimeField(read_only=True)
+    # Status field: computed from published boolean
+    # 'draft' = not published, 'published' = published, 'archived' = not published (can be extended later)
+    status = serializers.SerializerMethodField()
+    enrollments = serializers.SerializerMethodField()
+    lessonsCount = serializers.SerializerMethodField()
+    video_url = serializers.URLField(required=False, allow_blank=True, allow_null=True, help_text="URL video khóa học (ví dụ: YouTube hoặc link video trực tiếp)")
+    video_file = serializers.FileField(required=False, allow_null=True, help_text="File video khóa học (nếu không dùng URL)")
+    price = serializers.DecimalField(max_digits=10, decimal_places=0, required=False, default=0, help_text="Giá khóa học (0 = miễn phí)")
+    thumbnail = serializers.ImageField(required=False, allow_null=True, help_text="Ảnh bìa khóa học")
 
     class Meta:
         model = models.Course
-        fields = ["id", "subject", "title", "description", "grade", "owner", "slug", "published", "published_at"]
-        read_only_fields = ["id", "published_at"]
+        fields = ["id", "subject", "subject_slug", "title", "description", "introduction", "grade", "owner", "slug", "published", "published_at", "status", "enrollments", "lessonsCount", "video_url", "video_file", "price", "thumbnail"]
+        read_only_fields = ["id", "published_at", "status", "enrollments", "lessonsCount"]
+
+    def get_status(self, obj):
+        """Compute status from published boolean"""
+        if obj.published:
+            return "published"
+        # For now, we only have draft and published. Archived can be added later if needed.
+        return "draft"
+    
+    def get_enrollments(self, obj):
+        """Get enrollment count"""
+        if hasattr(obj, 'enrollments_count'):
+            return obj.enrollments_count
+        return obj.enrollments.count() if hasattr(obj, 'enrollments') else 0
+    
+    def get_lessonsCount(self, obj):
+        """Get total published lessons count"""
+        from content.models import Lesson
+        return Lesson.objects.filter(module__course=obj, published=True).count()
+
+    def validate(self, attrs):
+        # If subject_slug is provided, try to find Subject by slug
+        subject_slug = attrs.get("subject_slug")
+        if subject_slug and not attrs.get("subject"):
+            # Map frontend subject names to backend slugs and titles
+            subject_mapping = {
+                "math": {"slug": "toan", "title": "Toán"},
+                "vietnamese": {"slug": "tieng-viet", "title": "Tiếng Việt"},
+                "english": {"slug": "tieng-anh", "title": "Tiếng Anh"},
+                "science": {"slug": "khoa-hoc", "title": "Khoa học"},
+                "history": {"slug": "lich-su", "title": "Lịch sử"}
+            }
+            mapping = subject_mapping.get(subject_slug, {"slug": subject_slug, "title": subject_slug.title()})
+            slug = mapping["slug"]
+            title = mapping["title"]
+            
+            # Try to find by slug first
+            subject = models.Subject.objects.filter(slug=slug).first()
+            if not subject:
+                # Try to find by title
+                subject = models.Subject.objects.filter(title__icontains=title).first()
+            if not subject:
+                # Create if not found
+                subject = models.Subject.objects.create(slug=slug, title=title)
+            attrs["subject"] = subject
+        
+        # Remove empty file fields to avoid validation errors
+        # If thumbnail is empty string or None, remove it
+        if 'thumbnail' in attrs and (attrs['thumbnail'] is None or attrs['thumbnail'] == ''):
+            attrs.pop('thumbnail', None)
+        if 'video_file' in attrs and (attrs['video_file'] is None or attrs['video_file'] == ''):
+            attrs.pop('video_file', None)
+            
+        return attrs
 
     def to_domain(self) -> CourseDomain:
         """
@@ -86,19 +150,33 @@ class CourseSerializer(serializers.ModelSerializer):
             description=d.get("description"),
             grade=d.get("grade"),
             owner_id=(owner.id if owner else None),
-            slug=d.get("slug")
+            slug=d.get("slug"),
+            introduction=d.get("introduction"),
+            video_url=d.get("video_url"),
+            price=float(d.get("price", 0)) if d.get("price") is not None else 0
         )
         course.validate()
         return course
 
     @staticmethod
     def from_domain(domain: CourseDomain) -> Dict[str, Any]:
-        return domain.to_dict()
+        result = domain.to_dict()
+        # Add status field computed from published
+        result['status'] = 'published' if domain.published else 'draft'
+        # Add thumbnail and video_file URLs if available
+        from django.conf import settings
+        if hasattr(domain, 'thumbnail') and domain.thumbnail:
+            thumb_str = str(domain.thumbnail)
+            result['thumbnail'] = f"{settings.MEDIA_URL}{thumb_str}" if not thumb_str.startswith('http') else thumb_str
+        if hasattr(domain, 'video_file') and domain.video_file:
+            video_str = str(domain.video_file)
+            result['video_file'] = f"{settings.MEDIA_URL}{video_str}" if not video_str.startswith('http') else video_str
+        return result
 
 
 class ModuleSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
-    course = serializers.PrimaryKeyRelatedField(queryset=models.Course.objects.all())
+    course = serializers.PrimaryKeyRelatedField(queryset=models.Course.objects.all(), required=False, allow_null=True)
     title = serializers.CharField(max_length=255)
     position = serializers.IntegerField(default=0, min_value=0)
 
@@ -107,10 +185,14 @@ class ModuleSerializer(serializers.ModelSerializer):
         fields = ["id", "course", "title", "position"]
         read_only_fields = ["id"]
 
-    def to_domain(self) -> ModuleDomain:
+    def to_domain(self, course_id=None) -> ModuleDomain:
         d = self.validated_data
+        # Use course_id from parameter if provided, otherwise from data
+        course_id_value = course_id or _maybe_pk_to_id(d.get("course"))
+        if not course_id_value:
+            raise serializers.ValidationError("course_id is required")
         domain = ModuleDomain(
-            course_id=_maybe_pk_to_id(d["course"]),
+            course_id=str(course_id_value),
             title=d["title"],
             position=d.get("position", 0)
         )
@@ -205,11 +287,15 @@ class LessonSerializer(serializers.ModelSerializer):
     position = serializers.IntegerField(default=0, min_value=0)
     content_type = serializers.ChoiceField(choices=[("lesson", "Lesson"), ("exploration", "Exploration"), ("exercise", "Exercise"), ("quiz", "Quiz")], default="lesson")
     published = serializers.BooleanField(default=False)
+    introduction = serializers.CharField(allow_blank=True, required=False, help_text="Giới thiệu bài học")
+    video_url = serializers.URLField(allow_blank=True, required=False, allow_null=True, help_text="URL video bài học")
+    video_file = serializers.FileField(required=False, allow_null=True, help_text="File video bài học")
+    requires_exercise_completion = serializers.BooleanField(default=False, help_text="Yêu cầu hoàn thành bài tập trước khi tiếp tục")
     versions = LessonVersionSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.Lesson
-        fields = ["id", "module", "title", "position", "content_type", "published", "versions"]
+        fields = ["id", "module", "title", "position", "content_type", "published", "introduction", "video_url", "video_file", "requires_exercise_completion", "versions"]
         read_only_fields = ["id", "versions"]
 
     def to_domain(self) -> LessonDomain:
@@ -323,6 +409,42 @@ class ExplorationSerializer(serializers.ModelSerializer):
     @staticmethod
     def from_domain(domain: ExplorationDomain) -> Dict[str, Any]:
         return domain.to_dict()
+
+
+class ContentLibrarySerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
+    title = serializers.CharField(max_length=255)
+    subject = serializers.ChoiceField(choices=[
+        ('math', 'Toán'),
+        ('vietnamese', 'Tiếng Việt'),
+        ('english', 'Tiếng Anh'),
+        ('science', 'Khoa học'),
+        ('history', 'Lịch sử')
+    ])
+    type = serializers.ChoiceField(choices=[
+        ('video', 'Video'),
+        ('pdf', 'PDF'),
+        ('doc', 'Tài liệu'),
+        ('quiz', 'Quiz')
+    ])
+    grade_band = serializers.ChoiceField(choices=[
+        ('Khối 1–2', 'Khối 1–2'),
+        ('Khối 3–5', 'Khối 3–5')
+    ])
+    owner = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=True)
+    meta = serializers.JSONField(default=dict, required=False)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    updatedAt = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.ContentLibrary
+        fields = ["id", "title", "subject", "type", "grade_band", "owner", "meta", "created_at", "updated_at", "updatedAt"]
+        read_only_fields = ["id", "owner", "created_at", "updated_at", "updatedAt"]
+
+    def get_updatedAt(self, obj):
+        """Format updated_at for frontend"""
+        return obj.updated_at.strftime('%d/%m/%Y') if obj.updated_at else ''
 
 
 # -----------------------

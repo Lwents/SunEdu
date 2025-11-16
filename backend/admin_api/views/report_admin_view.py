@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from django.db.models import Sum, Count, Avg, Q
 from django.utils import timezone
+from django.db.models import F
 from django.http import HttpResponse
 import csv
 from rest_framework import status
@@ -10,8 +11,9 @@ from rest_framework.permissions import IsAuthenticated
 
 from admin_api.permissions import IsAdmin
 from payments.models import Payment
-from content.models import Course
+from content.models import Course, Enrollment, LessonProgress
 from custom_account.models import UserModel
+from progress.models import UserProgress, UserLessonProgress
 
 
 class AdminRevenueReportView(APIView):
@@ -226,21 +228,116 @@ class AdminLearningReportView(APIView):
         to_date = request.query_params.get('to')
 
         if report_type == 'kpis':
-            # Placeholder - need progress/learning models
+            # Calculate average completion percentage
+            all_progress = UserProgress.objects.all()
+            if all_progress.exists():
+                avg_completion = all_progress.aggregate(avg=Avg('progress_percentage'))['avg'] or 0
+            else:
+                avg_completion = 0
+            
+            # Calculate average exercise score
+            all_lesson_progress = LessonProgress.objects.filter(exercise_score__isnull=False)
+            if all_lesson_progress.exists():
+                avg_score = all_lesson_progress.aggregate(avg=Avg('exercise_score'))['avg'] or 0
+            else:
+                avg_score = 0
+            
+            # Calculate average time spent (placeholder - need actual time tracking)
+            avg_time_spent = 38  # Placeholder
+            
             return Response({
-                'avgCompletion': 62,
-                'avgScore': 74,
-                'avgTimeSpentMin': 38
+                'avgCompletion': round(float(avg_completion), 2),
+                'avgScore': round(float(avg_score), 2),
+                'avgTimeSpentMin': avg_time_spent
             }, status=status.HTTP_200_OK)
         elif report_type == 'completion':
-            # Placeholder
-            return Response([], status=status.HTTP_200_OK)
+            # Get completion rates by date (time series)
+            from_date = request.query_params.get('from')
+            to_date = request.query_params.get('to')
+            
+            if not from_date:
+                from_date = (timezone.now() - timedelta(days=30)).date()
+            else:
+                from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
+            
+            if not to_date:
+                to_date = timezone.now().date()
+            else:
+                to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
+            
+            completion_data = []
+            current_date = from_date
+            while current_date <= to_date:
+                # Get average completion for this date
+                progress_records = UserProgress.objects.filter(
+                    updated_at__date=current_date
+                )
+                if progress_records.exists():
+                    avg_completion = progress_records.aggregate(avg=Avg('progress_percentage'))['avg'] or 0
+                else:
+                    # If no data for this date, use overall average
+                    all_progress = UserProgress.objects.all()
+                    avg_completion = all_progress.aggregate(avg=Avg('progress_percentage'))['avg'] or 0
+                
+                completion_data.append({
+                    'date': current_date.strftime('%Y-%m-%d'),
+                    'completion': round(float(avg_completion), 2)
+                })
+                current_date += timedelta(days=1)
+            
+            return Response(completion_data, status=status.HTTP_200_OK)
         elif report_type == 'score-by-subject':
-            # Placeholder
-            return Response([], status=status.HTTP_200_OK)
+            # Get scores by subject
+            subject_map = {
+                'math': 'Toán',
+                'vietnamese': 'Tiếng Việt',
+                'english': 'Tiếng Anh',
+                'science': 'Khoa học',
+                'history': 'Lịch sử'
+            }
+            
+            subjects = {}
+            lesson_progresses = LessonProgress.objects.filter(exercise_score__isnull=False).select_related('lesson__module__course__subject')
+            for lp in lesson_progresses:
+                if lp.lesson and lp.lesson.module and lp.lesson.module.course and lp.lesson.module.course.subject:
+                    subject_slug = lp.lesson.module.course.subject.slug
+                    if subject_slug not in subjects:
+                        subjects[subject_slug] = {'scores': [], 'count': 0}
+                    subjects[subject_slug]['scores'].append(float(lp.exercise_score))
+                    subjects[subject_slug]['count'] += 1
+            
+            result = []
+            for subject_slug, data in subjects.items():
+                avg_score = sum(data['scores']) / len(data['scores']) if data['scores'] else 0
+                subject_name = subject_map.get(subject_slug, subject_slug)
+                result.append({
+                    'subject': subject_name,
+                    'avgScore': round(avg_score, 2)
+                })
+            return Response(result, status=status.HTTP_200_OK)
         elif report_type == 'at-risk':
-            # Placeholder
-            return Response([], status=status.HTTP_200_OK)
+            # Find students with low completion rates
+            at_risk_progress = UserProgress.objects.filter(progress_percentage__lt=30).select_related('user', 'user__profile', 'course')
+            result = []
+            for progress in at_risk_progress[:50]:  # Limit to 50
+                # Get student name from profile or email
+                student_name = progress.user.email
+                if hasattr(progress.user, 'profile') and progress.user.profile and progress.user.profile.display_name:
+                    student_name = progress.user.profile.display_name
+                elif progress.user.username:
+                    student_name = progress.user.username
+                
+                # Get class/grade from course
+                class_name = progress.course.grade or 'N/A'
+                
+                result.append({
+                    'userId': str(progress.user.id),
+                    'name': student_name,
+                    'className': class_name,
+                    'progress': round(float(progress.progress_percentage), 2),
+                    'lastActiveAt': progress.updated_at.isoformat() if progress.updated_at else None
+                })
+            return Response(result, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid report type'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -256,19 +353,64 @@ class AdminContentReportView(APIView):
 
         if report_type == 'kpis':
             total_published = Course.objects.filter(published=True).count()
-            # Placeholder for enrollments and rating
+            total_enrollments = Enrollment.objects.count()
+            # Rating placeholder - need rating model
             return Response({
                 'totalPublished': total_published,
-                'totalEnrollments': 0,  # Placeholder
-                'avgRating': 4.3  # Placeholder
+                'totalEnrollments': total_enrollments,
+                'avgRating': 4.3  # Placeholder - need rating model
             }, status=status.HTTP_200_OK)
         elif report_type == 'views-by-subject':
-            # Placeholder
-            return Response([], status=status.HTTP_200_OK)
+            # Get enrollments by subject (using as views)
+            subject_map = {
+                'math': 'Toán',
+                'vietnamese': 'Tiếng Việt',
+                'english': 'Tiếng Anh',
+                'science': 'Khoa học',
+                'history': 'Lịch sử'
+            }
+            
+            subjects = {}
+            enrollments = Enrollment.objects.select_related('course__subject')
+            for enrollment in enrollments:
+                if enrollment.course and enrollment.course.subject:
+                    subject_slug = enrollment.course.subject.slug
+                    if subject_slug not in subjects:
+                        subjects[subject_slug] = 0
+                    subjects[subject_slug] += 1
+            
+            result = []
+            for subject_slug, count in subjects.items():
+                subject_name = subject_map.get(subject_slug, subject_slug)
+                result.append({
+                    'subject': subject_name,
+                    'views': count
+                })
+            return Response(result, status=status.HTTP_200_OK)
         elif report_type == 'top':
-            # Placeholder
-            return Response([], status=status.HTTP_200_OK)
+            # Get top courses by enrollments
+            top_courses = Course.objects.filter(published=True).annotate(
+                enrollments_count=Count('enrollments', distinct=True)
+            ).order_by('-enrollments_count')[:10]
+            
+            result = []
+            for course in top_courses:
+                # Use enrollments as views (placeholder)
+                views = course.enrollments_count * 3  # Estimate views as 3x enrollments
+                # Rating placeholder - need rating model
+                rating = 4.3  # Placeholder
+                
+                result.append({
+                    'courseId': str(course.id),
+                    'title': course.title,
+                    'views': views,
+                    'enrollments': course.enrollments_count,
+                    'rating': round(rating, 1)
+                })
+            return Response(result, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid report type'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 

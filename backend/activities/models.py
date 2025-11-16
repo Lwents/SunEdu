@@ -6,7 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 # Create your models here.
 class Exercise(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    lesson = models.ForeignKey('content.Lesson', on_delete=models.CASCADE, related_name='exercises')
+    lesson = models.ForeignKey('content.Lesson', on_delete=models.CASCADE, related_name='exercises', null=True, blank=True)
     title = models.CharField(max_length=255)
     type = models.CharField(
         max_length=32,
@@ -122,3 +122,54 @@ class FileUploadAnswer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     attempt_answer = models.OneToOneField('ExerciseAnswer', on_delete=models.CASCADE, related_name='file_upload')
     file = models.FileField(upload_to='exercise_answers/')
+
+
+# Teacher Feedback Model
+class TeacherFeedback(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_feedbacks')
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_feedbacks')
+    course = models.ForeignKey('content.Course', on_delete=models.SET_NULL, null=True, blank=True, related_name='feedbacks')
+    message = models.TextField()
+    rating = models.FloatField(default=0.0, validators=[MinValueValidator(0), MaxValueValidator(10)])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = ('Teacher Feedback')
+        verbose_name_plural = ('Teacher Feedbacks')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Feedback from {self.teacher} to {self.student}"
+
+
+# Notification Model
+class Notification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    type = models.CharField(
+        max_length=32,
+        choices=[
+            ('info', 'Info'),
+            ('success', 'Success'),
+            ('warning', 'Warning'),
+            ('error', 'Error'),
+        ],
+        default='info'
+    )
+    category = models.CharField(max_length=64, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    metadata = models.JSONField(default=dict, blank=True)  # e.g., {'feedback_id': '...', 'course_id': '...'}
+
+    class Meta:
+        verbose_name = ('Notification')
+        verbose_name_plural = ('Notifications')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} - {self.user}"

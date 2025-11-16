@@ -25,6 +25,12 @@
         <h1 class="text-2xl font-semibold">{{ c.title }}</h1>
         <div class="flex gap-2">
           <button
+            class="rounded-xl border border-slate-300 px-4 py-2 font-semibold text-gray-700 hover:bg-slate-50"
+            @click="goContent(c.id)"
+          >
+            Quản lý nội dung
+          </button>
+          <button
             class="rounded-xl bg-sky-600 px-4 py-2 font-semibold text-white"
             @click="goEdit(c.id)"
           >
@@ -201,6 +207,10 @@ function retryLoad() {
 
 function goEdit(cid: number | string) {
   router.push({ path: `/teacher/courses/${cid}/edit` })
+}
+
+function goContent(cid: number | string) {
+  router.push({ name: 'teacher-course-content', params: { id: cid } })
 }
 
 function statusText(s: CourseStatus) {

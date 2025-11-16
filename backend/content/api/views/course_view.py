@@ -5,9 +5,11 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from custom_account.api.permissions import IsOwnerOrAdmin
 from content import models
+from content.models import Course
 from content.serializers import (
     SubjectSerializer, CourseSerializer, ModuleSerializer, LessonSerializer,
     LessonVersionSerializer, ContentBlockSerializer, ExplorationSerializer,
@@ -29,6 +31,7 @@ from content.services.content_block_service import ContentBlockService
 from content.services.exploration_service import (
     ExplorationService, ExplorationStateService, ExplorationTransitionService
 )
+from content.domains.course_domain import CourseDomain
 
 # Create service instances
 course_service = CourseService()
@@ -42,34 +45,161 @@ class CourseListCreateView(generics.ListCreateAPIView):
     """
     serializer_class = CourseSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]  # Cho phép upload file khi tạo mới
 
     def get_queryset(self):
         qs = models.Course.objects.all()
+        
+        # For students, only show published courses
+        if self.request.user.is_authenticated:
+            user_role = getattr(self.request.user, 'role', None)
+            if user_role == 'student':
+                # Students can only see published courses
+                qs = qs.filter(published=True)
+            elif user_role == 'instructor' and not self.request.user.is_staff:
+                # Instructors see only their own courses (both published and unpublished)
+                qs = qs.filter(owner=self.request.user)
+        else:
+            # Unauthenticated users can only see published courses
+            qs = qs.filter(published=True)
+        
         subject_id = self.request.query_params.get("subject_id")
         published = self.request.query_params.get("published")
         if subject_id:
             qs = qs.filter(subject_id=subject_id)
+        # Allow explicit published filter for instructors/admins (override default for students)
         if published is not None:
-            qs = qs.filter(published=(published.lower() == "true"))
+            # Only allow this filter for non-student users
+            user_role = getattr(self.request.user, 'role', None) if self.request.user.is_authenticated else None
+            if user_role != 'student' or self.request.user.is_staff:
+                qs = qs.filter(published=(published.lower() == "true"))
+        
+        # Annotate enrollments count for performance
+        from django.db.models import Count
+        qs = qs.annotate(enrollments_count=Count('enrollments'))
+        
         return qs
 
     def create(self, request, *args, **kwargs):
-        serializer = CreateCourseInputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        cmd = serializer.to_domain()
-        created_domain = course_service.create_course(cmd)
-        return Response(CourseDetailReadSerializer.from_domain(created_domain), status=status.HTTP_201_CREATED)
+        try:
+            # Handle FormData - create a mutable copy
+            if hasattr(request.data, 'copy'):
+                data = request.data.copy()
+            else:
+                data = dict(request.data)
+            
+            # Remove empty file fields from data to avoid validation errors
+            # FormData sends empty strings for file fields when not provided
+            for field in ['thumbnail', 'video_file']:
+                if field in data:
+                    value = data[field]
+                    if value == '' or value is None or (hasattr(value, 'name') and not value.name):
+                        data.pop(field, None)
+            
+            # Handle video_url - remove if empty
+            if 'video_url' in data and (data['video_url'] == '' or data['video_url'] is None):
+                data.pop('video_url', None)
+            
+            serializer = CreateCourseInputSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            validated_data = serializer.validated_data
+            
+            # Convert to CreateCourseDomain
+            from content.domains.course_domain import CreateCourseDomain
+            subject = validated_data.get("subject")
+            cmd = CreateCourseDomain(
+                title=validated_data["title"],
+                subject_id=str(subject.id) if subject else None,
+                description=validated_data.get("description"),
+                introduction=validated_data.get("introduction"),
+                grade=validated_data.get("grade"),
+                owner_id=request.user.id if request.user.is_authenticated else None,
+                slug=validated_data.get("slug"),
+                video_url=validated_data.get("video_url") or None,
+                price=float(validated_data.get("price", 0) or 0)
+            )
+            
+            # Create course
+            created_domain = course_service.create_course(cmd)
+            
+            # Update course model with file uploads (only if files are actually provided)
+            course_model = Course.objects.get(id=created_domain.id)
+            if 'thumbnail' in request.FILES and request.FILES['thumbnail']:
+                course_model.thumbnail = request.FILES['thumbnail']
+            if 'video_file' in request.FILES and request.FILES['video_file']:
+                course_model.video_file = request.FILES['video_file']
+            course_model.save()
+            created_domain = CourseDomain.from_model(course_model)
+            
+            return Response(CourseDetailReadSerializer.from_domain(created_domain), status=status.HTTP_201_CREATED)
+        except Exception as e:
+            import traceback
+            error_detail = str(e)
+            traceback_str = traceback.format_exc()
+            # Log error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error creating course: {error_detail}\n{traceback_str}")
+            return Response(
+                {"detail": f"Error creating course: {error_detail}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class CourseDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    GET /api/courses/{id}/
+    GET /api/courses/{id}/     -> public read, authenticated can read
     PATCH /api/courses/{id}/   (owner or admin)
     DELETE /api/courses/{id}/  (owner or admin)
     """
     queryset = models.Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrAdmin]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]  # Cho phép upload file
+    
+    def get_object(self):
+        """Override to check if student can access unpublished courses"""
+        obj = super().get_object()
+        # Check if user is student trying to access unpublished course
+        if self.request.user.is_authenticated:
+            user_role = getattr(self.request.user, 'role', None)
+            if user_role == 'student' and not obj.published:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("This course is not available yet.")
+        elif not obj.published:
+            # Unauthenticated users cannot see unpublished courses
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("This course is not available yet.")
+        return obj
+    
+    def check_object_permissions(self, request, obj):
+        """
+        Override to allow read for all authenticated users, but restrict write/delete to owner or admin.
+        """
+        if request.method in permissions.SAFE_METHODS:
+            # Allow read for all authenticated users (but unpublished courses are blocked in get_object)
+            if not request.user or not request.user.is_authenticated:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("Authentication required")
+            return
+        # For write/delete, check IsOwnerOrAdmin
+        permission = IsOwnerOrAdmin()
+        if not permission.has_object_permission(request, self, obj):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to perform this action")
+
+    def destroy(self, request, *args, **kwargs):
+        """Override destroy to ensure proper permission check and error handling"""
+        instance = self.get_object()
+        try:
+            # Permission is already checked in check_object_permissions
+            instance.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response(
+                {"detail": f"Error deleting course: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", True)
@@ -77,10 +207,41 @@ class CourseDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         updates = serializer.validated_data
-        # prefer passing an "update DTO" to service; if service accepts dict, pass dict
-        updated_domain = course_service.update_course(course_id=instance.id, update_data=updates)
+        # Convert dict to UpdateCourseDomain
+        from content.domains.course_domain import UpdateCourseDomain
+        # Handle published field
+        published = updates.get('published')
+        if published is not None and isinstance(published, str):
+            # Handle string "true"/"false" from FormData
+            published = published.lower() == 'true'
+        elif published is not None and isinstance(published, bool):
+            pass  # Already boolean
+        else:
+            published = None
+        
+        update_domain = UpdateCourseDomain(
+            title=updates.get('title'),
+            description=updates.get('description'),
+            grade=updates.get('grade'),
+            slug=updates.get('slug'),
+            subject_id=str(updates.get('subject').id) if updates.get('subject') else None,
+            introduction=updates.get('introduction'),
+            price=float(updates.get('price')) if updates.get('price') is not None else None,
+            published=published
+        )
+        updated_domain = course_service.update_course(course_id=instance.id, update_data=update_domain)
         if not updated_domain:
             return Response({"detail": "Not found or cannot update"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Also handle file uploads if provided
+        if 'thumbnail' in request.FILES and request.FILES['thumbnail']:
+            instance.thumbnail = request.FILES['thumbnail']
+        if 'video_file' in request.FILES and request.FILES['video_file']:
+            instance.video_file = request.FILES['video_file']
+        if 'thumbnail' in request.FILES or 'video_file' in request.FILES:
+            instance.save()
+            updated_domain = CourseDomain.from_model(instance)
+        
         return Response(CourseDetailReadSerializer.from_domain(updated_domain))
 
 
@@ -93,15 +254,31 @@ class CoursePublishView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
 
     def post(self, request, course_id: str):
-        # minimal validation
+        # Handle both "require_all_lessons_published" and "published" in request
+        # Frontend may send {"published": true}, backend also supports {"require_all_lessons_published": false}
         require_all = request.data.get("require_all_lessons_published", False)
+        # If published is explicitly False, don't publish
+        published_flag = request.data.get("published", True)
+        if published_flag is False or published_flag == "false":
+            # Unpublish instead
+            course = Course.objects.get(id=course_id)
+            course.published = False
+            course.save()
+            updated = course_service.get_course(course_id)
+            return Response(CourseDetailReadSerializer.from_domain(updated))
+        
         # get current domain via service
         course_domain = course_service.get_course(course_id)
         if not course_domain:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
         try:
             # domain has publish() with rule enforcement; we call service to persist
-            course_service.publish_course(course_id=course_id, publish_data=type("D", (), {"published": True, "require_all_lessons_published": require_all}))
+            from content.domains.course_domain import CoursePublishDomain
+            publish_domain = CoursePublishDomain(
+                course_id=course_id,
+                require_all_lessons_published=require_all
+            )
+            course_service.publish_course(course_id=course_id, publish_data=publish_domain)
             # fetch updated
             updated = course_service.get_course(course_id)
             return Response(CourseDetailReadSerializer.from_domain(updated))
@@ -123,6 +300,15 @@ class CourseEnrollView(APIView):
             course = course_service.get_course(course_id)
             if not course:
                 return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Check if course is published (students can only enroll in published courses)
+            user_role = getattr(request.user, 'role', None)
+            if user_role == 'student' and not course.published:
+                return Response(
+                    {"detail": "Cannot enroll in unpublished course"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             course_service.enroll_user(course_id=course_id, user_id=request.user.id)
             return Response({"success": True}, status=status.HTTP_200_OK)
         except AttributeError:

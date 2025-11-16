@@ -6,7 +6,7 @@
       <div class="mb-4 sm:mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-xl font-semibold sm:text-2xl">Bài kiểm tra</h1>
         <button
-          class="w-full sm:w-auto rounded-xl bg-sky-600 px-4 py-2.5 font-semibold text-white hover:bg-sky-700 active:bg-sky-800"
+          class="w-full sm:w-auto rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white hover:bg-slate-800"
           @click="createExam"
         >
           + Tạo bài kiểm tra
@@ -129,7 +129,7 @@
               class="flex-1 sm:flex-none rounded-xl border px-3 py-2 text-sm hover:bg-slate-50 active:bg-slate-100"
               @click="openGrading(e.id)"
             >
-              Chấm
+              Xem bài làm
             </button>
           </div>
         </article>
@@ -168,7 +168,7 @@
               v-for="p in pagesToShow"
               :key="p.key"
               class="mx-0.5 rounded-xl border px-3 py-2 text-sm"
-              :class="{ 'bg-sky-600 text-white border-sky-600': p.num===page, 'opacity-70 cursor-default': p.sep }"
+              :class="{ 'bg-slate-900 text-white border-slate-900': p.num===page, 'opacity-70 cursor-default': p.sep }"
               :disabled="p.sep"
               @click="!p.sep && fetchList(p.num!)"
             >
@@ -388,7 +388,7 @@ onBeforeUnmount(() => {
 /* ===== Custom select (fix icon & height cross-browser) ===== */
 .select-base{
   @apply w-full rounded-2xl border border-slate-200 bg-white px-3 pr-8 py-2 text-sm leading-6 outline-none;
-  @apply focus:ring-2 focus:ring-sky-500/30 focus:border-sky-400;
+  @apply focus:ring-2 focus:ring-slate-200 focus:border-slate-900;
   appearance: none;          /* Chrome/Safari */
   -webkit-appearance: none;  /* iOS Safari */
   -moz-appearance: none;     /* Firefox */

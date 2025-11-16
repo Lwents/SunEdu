@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from dj_rest_auth.jwt_auth import get_refresh_view
 
 from custom_account.api.views.auth_view import GoogleLogin
@@ -32,8 +34,11 @@ urlpatterns = [
     path('api/ai_personalization/', include('ai_personalization.urls')),
     path('api/payments/', include('payments.urls')),
     path('api/content/', include('content.urls')),
-    # path('api/activities/', include('activities.urls')),  # Temporarily disabled - missing views
+    path('api/activities/', include('activities.urls')),
+    # path('api/assignments/', include('assignments.urls')),  # Temporarily disabled - import errors
     path('api/admin/', include('admin_api.urls')),
+    path('api/teacher/', include('teacher_api.urls')),
+    path('api/student/', include('student_api.urls')),
     path("", home),
 
     path("api/auth/", include("dj_rest_auth.urls")),
@@ -42,3 +47,7 @@ urlpatterns = [
 
     path('api/auth/token/refresh/', get_refresh_view().as_view(), name='token_refresh'),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
