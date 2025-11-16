@@ -250,36 +250,71 @@ function formatDate(iso?: string) {
 async function loadPaths() {
   loading.value = true
   try {
-    // Mock data - thay bằng API call thực tế
-    personalizedPaths.value = [
-      {
-        id: 1,
-        courseId: 1,
-        courseTitle: 'Toán lớp 3',
-        progress: 65,
-        completedSteps: 13,
-        totalSteps: 20,
-        createdAt: new Date().toISOString(),
-        nextSteps: [
-          { title: 'Bài 14: Phép nhân', completed: false, current: true },
-          { title: 'Bài 15: Phép chia', completed: false, current: false },
-          { title: 'Bài 16: Ôn tập', completed: false, current: false },
-        ],
-      },
-      {
-        id: 2,
-        courseId: 2,
-        courseTitle: 'Tiếng Việt lớp 4',
-        progress: 30,
-        completedSteps: 6,
-        totalSteps: 20,
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        nextSteps: [
-          { title: 'Bài 7: Từ đồng nghĩa', completed: false, current: true },
-          { title: 'Bài 8: Từ trái nghĩa', completed: false, current: false },
-        ],
-      },
-    ]
+    // Load enrolled courses
+    const { items: courses } = await courseService.list({ page: 1, pageSize: 50, status: 'published' })
+    
+    // Calculate personalized paths based on student progress
+    personalizedPaths.value = await Promise.all(
+      (courses || []).map(async (course: any) => {
+        // Get course detail to calculate progress
+        try {
+          const courseDetail = await courseService.detail(course.id)
+          const sections = courseDetail.sections || []
+          const totalLessons = sections.reduce((sum: number, sec: any) => sum + (sec.lessons?.length || 0), 0)
+          const completedLessons = sections.reduce((sum: number, sec: any) => {
+            return sum + (sec.lessons?.filter((l: any) => (l as any).completed).length || 0)
+          }, 0)
+          
+          const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+          
+          // Determine difficulty level based on progress
+          let difficulty = 'easy'
+          if (progress >= 80) difficulty = 'hard'
+          else if (progress >= 50) difficulty = 'medium'
+          
+          // Get next steps (lessons not completed)
+          const nextSteps: any[] = []
+          let foundCurrent = false
+          for (const section of sections) {
+            for (const lesson of (section.lessons || [])) {
+              const lessonAny = lesson as any
+              if (!lessonAny.completed) {
+                nextSteps.push({
+                  title: lesson.title,
+                  completed: false,
+                  current: !foundCurrent,
+                  lessonId: lesson.id,
+                })
+                if (!foundCurrent) foundCurrent = true
+                if (nextSteps.length >= 3) break // Show max 3 next steps
+              }
+            }
+            if (nextSteps.length >= 3) break
+          }
+          
+          return {
+            id: course.id,
+            courseId: course.id,
+            courseTitle: course.title,
+            progress,
+            completedSteps: completedLessons,
+            totalSteps: totalLessons,
+            difficulty,
+            createdAt: course.createdAt || new Date().toISOString(),
+            nextSteps,
+          }
+        } catch (e) {
+          console.error(`Error loading course ${course.id}:`, e)
+          return null
+        }
+      })
+    )
+    
+    // Filter out null values
+    personalizedPaths.value = personalizedPaths.value.filter(p => p !== null)
+    
+    // Sort by progress (descending)
+    personalizedPaths.value.sort((a, b) => b.progress - a.progress)
   } catch (e: any) {
     console.error('Load paths error:', e)
   } finally {

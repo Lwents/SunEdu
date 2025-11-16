@@ -3,7 +3,7 @@
   <div class="mx-auto max-w-5xl p-6">
     <!-- Progress Steps -->
     <div class="mb-8">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between px-8">
         <div
           v-for="(step, index) in steps"
           :key="index"
@@ -57,7 +57,7 @@
     </div>
 
     <!-- Step Content -->
-    <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
+    <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg mx-auto">
       <!-- Step 1: Thông tin cơ bản -->
       <div v-if="currentStep === 0" class="space-y-6">
         <h2 class="text-2xl font-bold text-gray-900">Thông tin cơ bản</h2>
@@ -251,13 +251,22 @@
                     <span>{{ lesson.video_file ? 'Video file' : 'Video URL' }}</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  class="rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                  @click="removeLesson(mIdx, lIdx)"
-                >
-                  Xóa
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                    @click="editLesson(mIdx, lIdx)"
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                    @click="removeLesson(mIdx, lIdx)"
+                  >
+                    Xóa
+                  </button>
+                </div>
               </div>
               <div v-if="!module.lessons.length" class="text-sm text-gray-400 italic px-3 py-2">
                 Chưa có bài học
@@ -269,9 +278,9 @@
 
       <!-- Step 3: Xem lại -->
       <div v-if="currentStep === 2" class="space-y-6">
-        <h2 class="text-2xl font-bold text-gray-900">Xem lại và hoàn tất</h2>
+        <h2 class="text-2xl font-bold text-gray-900 text-center">Xem lại và hoàn tất</h2>
         
-        <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-6">
+        <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-6 max-w-2xl mx-auto">
           <div>
             <h3 class="font-semibold text-gray-900 mb-2">Thông tin khóa học</h3>
             <div class="space-y-1 text-sm text-gray-700">
@@ -309,8 +318,18 @@
         >
           Quay lại
         </button>
+        <div v-if="currentStep === 2" class="flex-1 flex justify-center">
+          <button
+            type="button"
+            class="rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+            :disabled="submitting || !canSubmit"
+            @click="submit"
+          >
+            {{ submitting ? 'Đang tạo...' : 'Tạo khóa học' }}
+          </button>
+        </div>
         <button
-          v-if="currentStep < steps.length - 1"
+          v-else-if="currentStep < steps.length - 1"
           type="button"
           class="rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
           :disabled="!canProceed"
@@ -318,15 +337,7 @@
         >
           Tiếp theo
         </button>
-        <button
-          v-else
-          type="button"
-          class="rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-          :disabled="submitting || !canSubmit"
-          @click="submit"
-        >
-          {{ submitting ? 'Đang tạo...' : 'Tạo khóa học' }}
-        </button>
+        <div v-else class="flex-1"></div>
       </div>
     </div>
 
@@ -342,14 +353,15 @@
           v-model.trim="newModuleTitle"
           type="text"
           class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-          placeholder="Tên chương"
+          :placeholder="`Chương ${modules.length + 1}`"
           @keyup.enter="addModule"
         />
+        <p class="mt-2 text-xs text-gray-500">Để trống để tự động đặt tên "Chương {{ modules.length + 1 }}"</p>
         <div class="mt-4 flex justify-end gap-3">
           <button
             type="button"
             class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            @click="showAddModule = false"
+            @click="showAddModule = false; newModuleTitle = ''"
           >
             Hủy
           </button>
@@ -364,14 +376,14 @@
       </div>
     </div>
 
-    <!-- Add Lesson Modal -->
+    <!-- Add/Edit Lesson Modal -->
     <div
       v-if="showAddLessonModuleIdx !== null"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto"
-      @click.self="showAddLessonModuleIdx = null"
+      @click.self="cancelAddLesson"
     >
       <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl my-8">
-        <h3 class="mb-4 text-lg font-bold">Thêm bài học mới</h3>
+        <h3 class="mb-4 text-lg font-bold">{{ editingLessonIdx !== null ? 'Sửa bài học' : 'Thêm bài học mới' }}</h3>
         
         <div class="space-y-4">
           <!-- Tên bài học -->
@@ -465,7 +477,10 @@
                   </button>
                 </div>
                 <p class="mt-1 text-xs text-gray-500">
-                  Hỗ trợ: MP4, AVI, MOV. Tối đa 500MB
+                  Hỗ trợ: MP4, AVI, MOV. Tối đa 5MB
+                </p>
+                <p v-if="newLessonVideoFile" class="mt-1 text-xs text-green-600">
+                  Đã chọn: {{ newLessonVideoFile.name }} ({{ formatFileSize(newLessonVideoFile.size) }})
                 </p>
               </div>
             </div>
@@ -478,15 +493,15 @@
             class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             @click="cancelAddLesson"
           >
-            Hủy
+            {{ editingLessonIdx !== null ? 'Hủy' : 'Đóng' }}
           </button>
           <button
             type="button"
             class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
             :disabled="!newLessonTitle.trim()"
-            @click="addLesson"
+            @click="editingLessonIdx !== null ? saveLesson() : addLesson()"
           >
-            Thêm
+            {{ editingLessonIdx !== null ? 'Lưu' : 'Thêm' }}
           </button>
         </div>
       </div>
@@ -529,6 +544,7 @@ const modules = ref<Array<{ id?: string; title: string; lessons: Array<{ id?: st
 const showAddModule = ref(false)
 const newModuleTitle = ref('')
 const showAddLessonModuleIdx = ref<number | null>(null)
+const editingLessonIdx = ref<number | null>(null) // Index của bài học đang sửa
 const newLessonTitle = ref('')
 const newLessonVideoType = ref<'url' | 'file'>('url')
 const newLessonVideoUrl = ref('')
@@ -573,13 +589,32 @@ function onPickThumbnail(e: Event) {
 }
 
 function addModule() {
-  if (!newModuleTitle.value.trim()) return
+  // Tự động đánh số chương nếu không nhập tên hoặc nếu tên trùng với pattern "Chương X"
+  const nextModuleNumber = modules.value.length + 1
+  let autoTitle = newModuleTitle.value.trim()
+  
+  // Nếu không nhập hoặc nhập rỗng, tự động tạo tên
+  if (!autoTitle) {
+    autoTitle = `Chương ${nextModuleNumber}`
+  } else {
+    // Nếu nhập tên có pattern "Chương X", tự động tăng số
+    const match = autoTitle.match(/^Chương\s*(\d+)$/i)
+    if (match) {
+      const currentNum = parseInt(match[1])
+      if (currentNum === nextModuleNumber - 1) {
+        // Nếu số trùng với số chương hiện tại, tự động tăng
+        autoTitle = `Chương ${nextModuleNumber}`
+      }
+    }
+  }
+  
   modules.value.push({
-    title: newModuleTitle.value,
+    title: autoTitle,
     lessons: []
   })
   newModuleTitle.value = ''
   showAddModule.value = false
+  showToast('Đã thêm chương thành công!', 'success')
 }
 
 async function removeModule(index: number) {
@@ -601,7 +636,11 @@ function updateModuleTitle(index: number) {
 
 function showAddLesson(moduleIdx: number) {
   showAddLessonModuleIdx.value = moduleIdx
-  newLessonTitle.value = ''
+  editingLessonIdx.value = null // Reset editing mode
+  // Tự động đánh số bài học
+  const module = modules.value[moduleIdx]
+  const nextLessonNumber = (module?.lessons?.length || 0) + 1
+  newLessonTitle.value = `Bài ${moduleIdx + 1}.${nextLessonNumber}`
   newLessonVideoType.value = 'url'
   newLessonVideoUrl.value = ''
   newLessonVideoFile.value = null
@@ -610,25 +649,54 @@ function showAddLesson(moduleIdx: number) {
   }
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+}
+
 function onPickLessonVideo(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
   if (!file.type.startsWith('video/')) {
-    showToast('Vui lòng chọn file video', 'warning')
+    showToast('Vui lòng chọn file video (MP4, AVI, MOV)', 'error')
     input.value = ''
     return
   }
-  if (file.size > 500 * 1024 * 1024) {
-    showToast('File video tối đa 500MB', 'warning')
+  const maxSize = 5 * 1024 * 1024 // 5MB
+  if (file.size > maxSize) {
+    const fileSize = formatFileSize(file.size)
+    const maxSizeStr = formatFileSize(maxSize)
+    showToast(`File video quá lớn! Kích thước: ${fileSize}, tối đa: ${maxSizeStr}`, 'error')
     input.value = ''
     return
   }
   newLessonVideoFile.value = file
 }
 
+function editLesson(moduleIdx: number, lessonIdx: number) {
+  showAddLessonModuleIdx.value = moduleIdx
+  editingLessonIdx.value = lessonIdx
+  const lesson = modules.value[moduleIdx].lessons[lessonIdx]
+  newLessonTitle.value = lesson.title
+  if (lesson.video_url) {
+    newLessonVideoType.value = 'url'
+    newLessonVideoUrl.value = lesson.video_url
+  } else if (lesson.video_file) {
+    newLessonVideoType.value = 'file'
+    newLessonVideoFile.value = lesson.video_file
+  } else {
+    newLessonVideoType.value = 'url'
+    newLessonVideoUrl.value = ''
+  }
+}
+
 function cancelAddLesson() {
   showAddLessonModuleIdx.value = null
+  editingLessonIdx.value = null
   newLessonTitle.value = ''
   newLessonVideoUrl.value = ''
   newLessonVideoFile.value = null
@@ -637,12 +705,34 @@ function cancelAddLesson() {
   }
 }
 
+function saveLesson() {
+  if (showAddLessonModuleIdx.value === null || editingLessonIdx.value === null || !newLessonTitle.value.trim()) return
+  const module = modules.value[showAddLessonModuleIdx.value]
+  const lesson = module.lessons[editingLessonIdx.value]
+  if (lesson) {
+    lesson.title = newLessonTitle.value.trim()
+    if (newLessonVideoType.value === 'url' && newLessonVideoUrl.value.trim()) {
+      lesson.video_url = newLessonVideoUrl.value.trim()
+      delete lesson.video_file
+    } else if (newLessonVideoType.value === 'file' && newLessonVideoFile.value) {
+      lesson.video_file = newLessonVideoFile.value
+      delete lesson.video_url
+    } else {
+      // Nếu không có video nào, xóa cả hai
+      delete lesson.video_url
+      delete lesson.video_file
+    }
+    showToast('Đã cập nhật bài học thành công!', 'success')
+    cancelAddLesson()
+  }
+}
+
 function addLesson() {
   if (showAddLessonModuleIdx.value === null || !newLessonTitle.value.trim()) return
   const module = modules.value[showAddLessonModuleIdx.value]
   if (module) {
-    const lesson: { id?: string; title: string; video_url?: string; video_file?: File } = {
-      title: newLessonTitle.value
+    const lesson: { id?: string; title: string; video_url?: string; video_file?: File; editing?: boolean } = {
+      title: newLessonTitle.value.trim()
     }
     if (newLessonVideoType.value === 'url' && newLessonVideoUrl.value.trim()) {
       lesson.video_url = newLessonVideoUrl.value.trim()
@@ -650,13 +740,17 @@ function addLesson() {
       lesson.video_file = newLessonVideoFile.value
     }
     module.lessons.push(lesson)
-    newLessonTitle.value = ''
+    // Giữ modal mở và tự động tạo tên cho bài tiếp theo
+    const nextLessonNumber = module.lessons.length + 1
+    newLessonTitle.value = `Bài ${showAddLessonModuleIdx.value + 1}.${nextLessonNumber}`
     newLessonVideoUrl.value = ''
     newLessonVideoFile.value = null
+    newLessonVideoType.value = 'url' // Reset về URL
     if (newLessonVideoFileInput.value) {
       newLessonVideoFileInput.value.value = ''
     }
-    showAddLessonModuleIdx.value = null
+    showToast('Đã thêm bài học thành công! Bạn có thể thêm tiếp hoặc đóng modal.', 'success')
+    // Không đóng modal để có thể thêm tiếp
   }
 }
 

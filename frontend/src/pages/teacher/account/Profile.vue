@@ -39,7 +39,7 @@
                 title="Đổi ảnh đại diện"
               >
                 <img
-                  :src="preview || form.avatar || fallback120"
+                  :src="preview || auth.user?.avatar || form.avatar || fallback120"
                   class="h-20 w-20 rounded-full object-cover ring-2 ring-slate-200 transition-all hover:ring-blue-300"
                   alt="avatar"
                 />
@@ -248,16 +248,32 @@ const user = computed<AuthUser | null>(() => auth.user)
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024 // 2MB
 const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (2MB)'
 
-/** fallback */
-const fallback120 = computed(() => user.value?.avatar || 'https://i.pravatar.cc/120?img=5')
+/** fallback - đồng bộ với navbar */
+const defaultAvatar = 'https://i.pravatar.cc/120?img=5'
+const fallback120 = computed(() => {
+  const userAvatar = user.value?.avatar
+  if (userAvatar) {
+    // Nếu avatar là base64 (data URL), dùng trực tiếp
+    if (userAvatar.startsWith('data:')) {
+      return userAvatar
+    }
+    // Nếu avatar là URL, kiểm tra xem có phải là full URL không
+    if (userAvatar.startsWith('http://') || userAvatar.startsWith('https://')) {
+      return userAvatar
+    }
+    // Nếu là relative path, thêm base URL
+    return userAvatar
+  }
+  return defaultAvatar
+})
 
 /** form state */
 const original = reactive({
   name: user.value?.name ?? '',
   email: user.value?.email ?? '',
   phone: user.value?.phone ?? '',
-  title: user.value?.title ?? '',
-  bio: user.value?.bio ?? '',
+  title: (user.value as any)?.title ?? '',
+  bio: (user.value as any)?.bio ?? '',
   avatar: user.value?.avatar ?? '',
 })
 const form = reactive({ ...original })
@@ -338,10 +354,24 @@ const onSave = async () => {
   if (!validate()) return
   loading.value = true
   try {
-    const payload: Partial<AuthUser> = { ...form }
-    if (preview.value) payload.avatar = preview.value
+    const payload: any = {
+      full_name: form.name,
+      email: form.email,
+      phone: form.phone,
+      title: form.title,
+      bio: form.bio,
+    }
+    if (preview.value) {
+      payload.avatar_url = preview.value
+    }
+    // updateProfile sẽ tự động cập nhật auth.user.avatar và persist
     await auth.updateProfile(payload)
-    Object.assign(original, { ...form, avatar: preview.value ?? form.avatar })
+    // Đảm bảo avatar được cập nhật trong original và form từ store
+    const updatedAvatar = auth.user?.avatar ?? preview.value ?? form.avatar
+    Object.assign(original, { ...form, avatar: updatedAvatar })
+    form.avatar = updatedAvatar
+    // Clear preview sau khi lưu thành công
+    preview.value = null
     saved.value = true
     setTimeout(() => (saved.value = false), 2000)
   } finally {
@@ -363,8 +393,8 @@ watch(user, (u) => {
     name: u.name ?? '',
     email: u.email ?? '',
     phone: u.phone ?? '',
-    title: u.title ?? '',
-    bio: u.bio ?? '',
+    title: (u as any)?.title ?? '',
+    bio: (u as any)?.bio ?? '',
     avatar: u.avatar ?? '',
   })
   resetForm()

@@ -80,7 +80,7 @@
           class="flex flex-wrap items-center gap-3 sm:gap-4 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 hover:shadow-sm transition"
         >
           <img
-            :src="student.avatar || fallbackAvatar(student)"
+            :src="getStudentAvatar(student)"
             :alt="student.name"
             class="h-12 w-12 rounded-full object-cover border-2 border-slate-200"
           />
@@ -346,8 +346,27 @@ function openFeedback(id: string | number) {
   router.push({ path: '/teacher/students/feedback', query: { id: String(id) } })
 }
 
-function fallbackAvatar(student: TeacherStudent) {
-  return `https://i.pravatar.cc/100?u=${encodeURIComponent(String(student.id))}`
+function getStudentAvatar(student: TeacherStudent): string {
+  let avatarUrl = student.avatar || null
+  
+  // Handle relative URLs - backend có thể trả về full URL hoặc relative
+  if (avatarUrl && !avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://') && !avatarUrl.startsWith('data:')) {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const baseUrl = apiUrl.replace(/\/+$/, '')
+    // Nếu là relative path, thêm /media/ prefix
+    if (avatarUrl.startsWith('/')) {
+      avatarUrl = `${baseUrl}${avatarUrl}`
+    } else {
+      avatarUrl = `${baseUrl}/media/${avatarUrl}`
+    }
+  }
+  
+  // Fallback
+  if (!avatarUrl) {
+    return `https://i.pravatar.cc/100?u=${encodeURIComponent(String(student.id))}`
+  }
+  
+  return avatarUrl
 }
 
 // Debounce fetch
