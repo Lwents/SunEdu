@@ -36,9 +36,9 @@ WORKDIR /app
 COPY --chown=nobody:nogroup . .
 
 # Tạo thư mục logs và file log
-RUN mkdir -p /app/logs /app/staticfiles /app/media && \
+RUN mkdir -p /app/logs /app/staticfiles /app/media /app/runtime_logs && \
     touch /app/logs/ai_personalization.log && \
-    chown -R nobody:nogroup /app/logs /app/staticfiles /app/media
+    chown -R nobody:nogroup /app/logs /app/staticfiles /app/media /app/runtime_logs
 
 # Remove unnecessary files to reduce image size
 RUN find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
