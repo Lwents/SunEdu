@@ -11,7 +11,7 @@
             <CardHeader title="Thao tác nhanh" />
             <div class="grid grid-cols-2 gap-2 p-3 sm:grid-cols-4 sm:gap-3 sm:p-4">
               <QuickAction label="Tạo khoá học" :onClick="goCreateCourse"><IconPlus /></QuickAction>
-              <QuickAction label="Chấm điểm bài tập" :onClick="goGradeAssignments"><IconClipboard /></QuickAction>
+              <QuickAction label="Xem bài kiểm tra" :onClick="goGradeAssignments"><IconClipboard /></QuickAction>
               <QuickAction label="Tạo bài kiểm tra" :onClick="goCreateExam"><IconFile /></QuickAction>
               <QuickAction label="Xem báo cáo" :onClick="goReports"><IconChart /></QuickAction>
             </div>
@@ -30,7 +30,7 @@
               <template v-else-if="myCourses.length">
                 <CourseItem
                   v-for="c in myCourses"
-                  :key="c.id"
+                  :key="String(c.id)"
                   :title="c.title"
                   :students="c.enrolled"
                   :status="statusLabel(c.status)"
@@ -78,11 +78,12 @@ import { courseService, type CourseStatus, type CourseSummary } from '@/services
 
 type Status = CourseStatus
 type TeacherCourse = {
-  id: number
+  id: string | number
   title: string
   enrolled: number
   lessons: number
   status: Status
+  numericId?: number // For sparkline calculation
 }
 
 const loading = ref(true)
@@ -92,20 +93,29 @@ const totals = ref({ courses: 0, students: 0, assignments: 0 })
 async function loadCourses() {
   try {
     const { items } = await courseService.list({ page: 1, pageSize: 8 })
-    source.value = (items as CourseSummary[]).map((c) => ({
-      id: Number(c.id),
+    source.value = (items as CourseSummary[]).map((c) => {
+      // Keep id as string (UUID) to avoid NaN issues
+      const courseId = String(c.id)
+      // For sparkline, use a numeric hash of the UUID
+      const numericId = courseId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+      return {
+        id: courseId as any, // Store as string but type as any for compatibility
       title: c.title,
-      enrolled: c.enrollments,
-      lessons: c.lessonsCount,
-      status: c.status as Status
-    }))
-  } catch {
+        enrolled: Number(c.enrollments) || 0,
+        lessons: c.lessonsCount || 0,
+        status: c.status as Status,
+        numericId // For sparkline calculation
+      }
+    })
+  } catch (e) {
+    console.error('Error loading courses:', e)
     source.value = Array.from({ length: 5 }, (_, i) => ({
-      id: i + 1,
+      id: String(i + 1),
       title: `Khoá học #${i + 1}`,
       enrolled: 20 + i * 7,
       lessons: 8 + i * 3,
-      status: (i % 2 === 0 ? 'published' : 'draft') as Status
+      status: (i % 2 === 0 ? 'published' : 'draft') as Status,
+      numericId: i + 1
     }))
   } finally {
     loading.value = false
@@ -150,10 +160,14 @@ onMounted(async () => {
 })
 
 type Pt = { x: number; y: number }
-function sparkFor(id: number, enrolled: number): Pt[] {
+function sparkFor(id: number | string, enrolled: number): Pt[] {
   const n = 6
+  // Convert string UUID to numeric for sparkline
+  const numericId = typeof id === 'string' 
+    ? id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    : id
   return Array.from({ length: n }, (_, i) => {
-    const y = 6 + ((id * (i + 3) + enrolled) % 13)
+    const y = 6 + ((numericId * (i + 3) + enrolled) % 13)
     return { x: i + 1, y }
   })
 }
@@ -208,28 +222,86 @@ const QuickAction = defineComponent({
   }
 })
 
-const Sparkline = defineComponent({
-  name: 'Sparkline',
+const BarChart = defineComponent({
+  name: 'BarChart',
   props: { data: { type: Array as PropType<Pt[]>, required: true } },
   setup(props) {
+    const animatedHeights = ref<number[]>([])
+    const isAnimating = ref(false)
+    
+    onMounted(() => {
+      // Start animation when component mounts
+      isAnimating.value = true
+      const pts = props.data
+      const ys = pts.map((p) => p.y)
+      const minY = Math.min(...ys)
+      const maxY = Math.max(...ys)
+      const range = maxY - minY || 1
+      
+      // Initialize heights to 0
+      animatedHeights.value = new Array(pts.length).fill(0)
+      
+      // Animate each bar
+      const duration = 800
+      const startTime = Date.now()
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        
+        // Easing function (ease-out)
+        const easeOut = 1 - Math.pow(1 - progress, 3)
+        
+        animatedHeights.value = pts.map((p) => {
+          const normalized = (p.y - minY) / range
+          return normalized * easeOut
+        })
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          isAnimating.value = false
+        }
+      }
+      
+      requestAnimationFrame(animate)
+    })
+    
     const d = computed(() => {
       const pts = props.data
-      const xs = pts.map((p) => p.x),
-        ys = pts.map((p) => p.y)
-      const minX = Math.min(...xs),
-        maxX = Math.max(...xs)
-      const minY = Math.min(...ys),
-        maxY = Math.max(...ys)
-      const w = 120,
-        h = 36,
-        pad = 2
-      const sx = (x: number) => pad + ((w - 2 * pad) * (x - minX)) / (maxX - minX || 1)
-      const sy = (y: number) => h - (pad + ((h - 2 * pad) * (y - minY)) / (maxY - minY || 1))
-      return pts.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x)},${sy(p.y)}`).join(' ')
+      const w = 120
+      const h = 40
+      const barWidth = (w - 8) / pts.length - 2
+      const maxBarHeight = h - 8
+      
+      return pts.map((p, i) => {
+        const x = 4 + i * (barWidth + 2)
+        const height = (animatedHeights.value[i] || 0) * maxBarHeight
+        const y = h - 4 - height
+        return { x, y, width: barWidth, height: Math.max(height, 2) }
+      })
     })
+    
     return () => (
-      <svg viewBox="0 0 120 36" class="block h-7 w-20 leading-none sm:h-9 sm:w-28">
-        <path d={d.value} fill="none" stroke="currentColor" style={{ strokeWidth: 2 }} class="text-slate-700" />
+      <svg viewBox="0 0 120 40" class="block h-8 w-24 leading-none sm:h-10 sm:w-32">
+        <defs>
+          <linearGradient id="bar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style={{ stopColor: 'rgb(14, 165, 233)', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: 'rgb(56, 189, 248)', stopOpacity: 0.8 }} />
+          </linearGradient>
+        </defs>
+        {d.value.map((bar, i) => (
+          <rect
+            key={i}
+            x={bar.x}
+            y={bar.y}
+            width={bar.width}
+            height={bar.height}
+            fill="url(#bar-gradient)"
+            rx="2"
+            style={{ transition: 'all 0.3s ease' }}
+          />
+        ))}
       </svg>
     )
   }
@@ -255,7 +327,7 @@ const CourseItem = defineComponent({
           <div class="text-[10px] text-slate-500 sm:text-xs">{p.students} học viên</div>
         </div>
         <div class="ml-auto shrink-0 flex items-center justify-end">
-          <Sparkline data={p.data as Pt[]} />
+          <BarChart data={p.data as Pt[]} />
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {p.status ? (
@@ -353,8 +425,14 @@ function statusLabel(s: Status) {
 }
 
 const router = useRouter()
-function openCourse(id: number) {
-  router.push({ path: `/teacher/courses/${id}` })
+function openCourse(id: number | string) {
+  // Ensure id is a string (UUID) not NaN
+  const courseId = String(id)
+  if (courseId === 'NaN' || !courseId) {
+    console.error('Invalid course ID:', id)
+    return
+  }
+  router.push({ path: `/teacher/courses/${courseId}` })
 }
 const has = (name: string) => router.getRoutes().some((r) => r.name === (name as any))
 const go = (name: string, path: string) => (has(name) ? router.push({ name }) : router.push({ path }))

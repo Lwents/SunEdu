@@ -39,6 +39,13 @@ from activities.services import (
 from activities.services import ServiceError, NotFoundError, ValidationError, PermissionDenied
 from activities.api.permissions import IsAdminOrReadOnly
 
+class IsTeacherOrAdmin(permissions.BasePermission):
+    """Allow teachers and admins."""
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return bool(request.user.is_staff or (hasattr(request.user, 'role') and request.user.role in ['teacher', 'admin']))
+
 
 # -----------------------
 # Question & Choice endpoints
@@ -47,10 +54,14 @@ class ExerciseQuestionCreateView(APIView):
     """
     POST /api/activities/exercises/{exercise_id}/questions/  -> add a question under an exercise
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def post(self, request: Request, exercise_id: str):
-        serializer = QuestionModelSerializer(data=request.data)
+        # Merge exercise_id from URL into data if not provided
+        data = request.data.copy()
+        if exercise_id and 'exercise' not in data:
+            data['exercise'] = exercise_id
+        serializer = QuestionModelSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         q_domain = serializer.to_domain()
         try:
@@ -78,7 +89,7 @@ class QuestionChoiceCreateView(APIView):
     """
     POST /api/activities/questions/{question_id}/choices/
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def post(self, request: Request, question_id: str):
         serializer = ChoiceModelSerializer(data=request.data)

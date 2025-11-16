@@ -13,6 +13,14 @@ services:
     ports:
       - "5433:5432"
 
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   web:
     build: .
     restart: always
@@ -26,6 +34,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     env_file:
       - .env
     environment:
@@ -34,7 +43,11 @@ services:
       DB_PASSWORD: 123456
       DB_HOST: db
       DB_PORT: 5432
+      REDIS_URL: redis://redis:6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
       SECRET_KEY: dev-secret-elearing
 
 volumes:
   postgres_data:
+  redis_data:

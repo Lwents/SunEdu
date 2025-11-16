@@ -29,16 +29,22 @@ class CourseDomain:
                  slug: Optional[str] = None,
                  id: Optional[str] = None,
                  published: bool = False,
-                 published_at: Optional[datetime] = None):
+                 published_at: Optional[datetime] = None,
+                 introduction: Optional[str] = None,
+                 video_url: Optional[str] = None,
+                 price: float = 0):
         self.id = id or str(uuid.uuid4())
         self.title = title
         self.subject_id = subject_id
         self.description = description
+        self.introduction = introduction
         self.grade = grade
         self.owner_id = owner_id
         self.slug = slug
         self.published = published
         self.published_at = published_at
+        self.video_url = video_url
+        self.price = price
         # contained aggregates (in-memory)
         self.modules: List["ModuleDomain"] = []
         self.validate()
@@ -148,11 +154,16 @@ class CourseDomain:
             "title": self.title,
             "subject_id": self.subject_id,
             "description": self.description,
+            "introduction": self.introduction,
             "grade": self.grade,
             "owner_id": self.owner_id,
             "slug": self.slug,
             "published": self.published,
             "published_at": self.published_at,
+            "video_url": self.video_url,
+            "video_file": getattr(self, 'video_file', None),
+            "price": self.price,
+            "thumbnail": getattr(self, 'thumbnail', None),
             "modules": [m.to_dict() for m in self.modules]
         }
 
@@ -162,9 +173,25 @@ class CourseDomain:
         Optional helper: nếu có Django model, mapping sang domain.
         model expected to have attributes and related loaders for modules->lessons->versions.
         """
-        c = cls(title=model.title, subject_id=(str(model.subject.id) if getattr(model,'subject',None) else None),
-                description=model.description, grade=model.grade, owner_id=(getattr(model,'owner',None).id if getattr(model,'owner',None) else None),
-                slug=getattr(model,'slug',None), id=str(model.id), published=model.published, published_at=getattr(model,'published_at',None))
+        c = cls(
+            title=model.title, 
+            subject_id=(str(model.subject.id) if getattr(model,'subject',None) else None),
+            description=model.description, 
+            introduction=getattr(model, 'introduction', None),
+            grade=model.grade, 
+            owner_id=(getattr(model,'owner',None).id if getattr(model,'owner',None) else None),
+            slug=getattr(model,'slug',None), 
+            id=str(model.id), 
+            published=model.published, 
+            published_at=getattr(model,'published_at',None),
+            video_url=getattr(model, 'video_url', None),
+            price=float(getattr(model, 'price', 0) or 0)
+        )
+        # Set thumbnail and video_file separately as they're not in __init__
+        if hasattr(model, 'thumbnail') and model.thumbnail:
+            c.thumbnail = str(model.thumbnail)
+        if hasattr(model, 'video_file') and model.video_file:
+            c.video_file = str(model.video_file)
         # If model has prefetched modules/lessons/versions we can build nested domain objects
         if hasattr(model, "modules_prefetched") and model.modules_prefetched:
             for mod_m in model.modules_prefetched:
@@ -177,13 +204,17 @@ class CourseDomain:
 class CreateCourseDomain:
     """Command object for creating a course."""
     def __init__(self, title: str, subject_id: Optional[str] = None, description: Optional[str] = None,
-                 grade: Optional[str] = None, owner_id: Optional[int] = None, slug: Optional[str] = None):
+                 grade: Optional[str] = None, owner_id: Optional[int] = None, slug: Optional[str] = None,
+                 introduction: Optional[str] = None, video_url: Optional[str] = None, price: float = 0):
         self.title = title
         self.subject_id = subject_id
         self.description = description
+        self.introduction = introduction
         self.grade = grade
         self.owner_id = owner_id
         self.slug = slug
+        self.video_url = video_url
+        self.price = price
 
     def validate(self):
         if not self.title or not self.title.strip():
@@ -193,12 +224,16 @@ class CreateCourseDomain:
 class UpdateCourseDomain:
     """Command object for updating a course."""
     def __init__(self, title: Optional[str] = None, subject_id: Optional[str] = None,
-                 description: Optional[str] = None, grade: Optional[str] = None, slug: Optional[str] = None):
+                 description: Optional[str] = None, grade: Optional[str] = None, slug: Optional[str] = None,
+                 introduction: Optional[str] = None, price: Optional[float] = None, published: Optional[bool] = None):
         self.title = title
         self.subject_id = subject_id
         self.description = description
         self.grade = grade
         self.slug = slug
+        self.introduction = introduction
+        self.price = price
+        self.published = published
 
     def validate(self):
         if self.title is not None and (not self.title or not self.title.strip()):

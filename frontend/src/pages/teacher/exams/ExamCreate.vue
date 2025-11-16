@@ -375,6 +375,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { examService, type ExamDetail, type Question, type QType, type Level, type ExamStatus } from '@/services/exam.service'
+import { showToast } from '@/utils/toast'
+import { showConfirm } from '@/utils/confirm'
 
 const router = useRouter()
 
@@ -488,16 +490,16 @@ function saveQuestion() {
 
   if (currentQuestion.type === 'single' || currentQuestion.type === 'multi') {
     if (!currentQuestion.choices || currentQuestion.choices.length < 2) {
-      alert('Cần ít nhất 2 đáp án')
+      showToast('Cần ít nhất 2 đáp án', 'warning')
       return
     }
     const answer = currentQuestion.answer
     if (!Array.isArray(answer) || answer.length === 0) {
-      alert('Vui lòng chọn ít nhất một đáp án đúng')
+      showToast('Vui lòng chọn ít nhất một đáp án đúng', 'warning')
       return
     }
     if (currentQuestion.type === 'single' && answer.length > 1) {
-      alert('Câu hỏi trắc nghiệm 1 đáp án chỉ được chọn 1 đáp án đúng')
+      showToast('Câu hỏi trắc nghiệm 1 đáp án chỉ được chọn 1 đáp án đúng', 'warning')
       return
     }
     question = {
@@ -520,7 +522,7 @@ function saveQuestion() {
     const answers = fillAnswersText.value.split('\n').filter(s => s.trim())
     const blanks = currentQuestion.blanks || 2
     if (answers.length < blanks) {
-      alert(`Cần ít nhất ${blanks} đáp án`)
+      showToast(`Cần ít nhất ${blanks} đáp án`, 'warning')
       return
     }
     question = {
@@ -533,7 +535,7 @@ function saveQuestion() {
     } as Question
   } else if (currentQuestion.type === 'match') {
     if (!currentQuestion.pairs || currentQuestion.pairs.length < 2) {
-      alert('Cần ít nhất 2 cặp')
+      showToast('Cần ít nhất 2 cặp', 'warning')
       return
     }
     question = {
@@ -546,7 +548,7 @@ function saveQuestion() {
   } else if (currentQuestion.type === 'order') {
     const items = orderItemsText.value.split('\n').filter(s => s.trim())
     if (items.length < 2) {
-      alert('Cần ít nhất 2 mục để sắp xếp')
+      showToast('Cần ít nhất 2 mục để sắp xếp', 'warning')
       return
     }
     question = {
@@ -601,8 +603,16 @@ function editQuestion(index: number) {
   showAddQuestion.value = true
 }
 
-function removeQuestion(index: number) {
-  if (form.questions && confirm('Bạn có chắc muốn xóa câu hỏi này?')) {
+async function removeQuestion(index: number) {
+  if (!form.questions) return
+  const confirmed = await showConfirm({
+    message: 'Bạn có chắc muốn xóa câu hỏi này?',
+    title: 'Xác nhận xóa câu hỏi',
+    type: 'danger',
+    confirmText: 'Xóa',
+    cancelText: 'Hủy'
+  })
+  if (confirmed) {
     form.questions.splice(index, 1)
   }
 }
@@ -615,16 +625,17 @@ function closeQuestionModal() {
 
 async function submit() {
   if (!canSubmit.value) {
-    alert('Vui lòng điền đầy đủ thông tin và thêm ít nhất một câu hỏi')
+    showToast('Vui lòng điền đầy đủ thông tin và thêm ít nhất một câu hỏi', 'warning')
     return
   }
 
   submitting.value = true
   try {
     await examService.create(form)
+    showToast('Đã tạo đề thi thành công!', 'success')
     router.push({ path: '/teacher/exams' })
   } catch (e: any) {
-    alert(e?.message || 'Tạo đề thi thất bại')
+    showToast(e?.message || 'Tạo đề thi thất bại', 'error')
   } finally {
     submitting.value = false
   }

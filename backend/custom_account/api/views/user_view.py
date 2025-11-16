@@ -154,10 +154,34 @@ class AdminUserListView(RoleBasedOutputMixin, APIView):
 
     def get(self, request):
         try:
-            # Service returns a list of DOMAIN ENTITIES
-            user_domains: list[UserDomain] = self.user_service.list_all_users_for_admin()
+            # Get query parameters
+            role = request.query_params.get('role')
+            page = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('pageSize', request.query_params.get('page_size', 50)))
             
-            return Response({"instance": user_domains}, status=status.HTTP_200_OK)
+            # Service returns paginated result with DOMAIN ENTITIES
+            result = self.user_service.list_all_users_for_admin(role=role, page=page, page_size=page_size)
+            
+            # Convert domain entities to dict for response
+            users_data = []
+            for user_domain in result['results']:
+                users_data.append({
+                    'id': user_domain.id,
+                    'username': user_domain.username,
+                    'email': user_domain.email,
+                    'role': user_domain.role,
+                    'is_staff': user_domain.is_staff,
+                    'is_active': user_domain.is_active,
+                    'phone': getattr(user_domain, 'phone', None)
+                })
+            
+            return Response({
+                'results': users_data,
+                'count': result['count'],
+                'page': result['page'],
+                'page_size': result['page_size'],
+                'total_pages': result['total_pages']
+            }, status=status.HTTP_200_OK)
         
         except Exception as e:
             return Response(

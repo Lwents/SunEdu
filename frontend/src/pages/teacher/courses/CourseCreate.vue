@@ -45,7 +45,7 @@
         </label>
 
         <div class="form-field md:col-span-2">
-          <span class="label-text">Ảnh khoá học <b class="text-rose-600">*</b></span>
+          <span class="label-text">Ảnh khoá học (tuỳ chọn)</span>
           <div class="file-upload-area">
             <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onPickCover" />
             <button type="button" class="btn-secondary" @click="fileInput?.click()">
@@ -57,41 +57,15 @@
             <span v-else class="file-info text-gray-500">Chưa có ảnh nào được chọn</span>
           </div>
           <img v-if="coverPreview" :src="coverPreview" alt="Xem trước ảnh" class="image-preview" />
-          <p class="hint-text">Hỗ trợ: JPG/PNG. Tối đa 2MB. (Bắt buộc)</p>
+          <p class="hint-text">Hỗ trợ: JPG/PNG. Tối đa 2MB.</p>
           <p v-if="coverErr" class="error-text">{{ coverErr }}</p>
         </div>
 
-        <div class="form-field md:col-span-2">
-          <span class="label-text">Video bài học (tuỳ chọn)</span>
-          <div class="file-upload-area">
-            <input
-              ref="videosInput"
-              type="file"
-              multiple
-              :accept="acceptVideos"
-              class="hidden"
-              @change="onPickVideos"
-            />
-            <button type="button" class="btn-secondary" @click="videosInput?.click()">
-              Thêm video
-            </button>
-            <span v-if="videoFiles.length" class="file-info">
-              Đã chọn {{ videoFiles.length }} video.
-            </span>
-            <span v-else class="file-info text-gray-500">Chưa có video nào được chọn</span>
-          </div>
-
-          <video v-if="videoPreview" :src="videoPreview" controls class="video-preview"></video>
-
-          <ul v-if="videoFiles.length" class="video-list">
-            <li v-for="(f, i) in videoFiles" :key="'v' + i" class="video-item">
-              <span class="truncate">{{ f.name }}</span>
-              <span class="video-size">{{ (f.size / 1024 / 1024).toFixed(1) }} MB</span>
-            </li>
-          </ul>
-          <p class="hint-text">Tối đa 200MB/video; tổng ≤500MB.</p>
-          <p v-if="videoErr" class="error-text">{{ videoErr }}</p>
-        </div>
+        <label class="form-field">
+          <span class="label-text">Giá khóa học (VNĐ)</span>
+          <input v-model.number="f.price" type="number" min="0" step="1000" class="input-field" placeholder="0" />
+          <p class="hint-text">Nhập 0 để khóa học miễn phí</p>
+        </label>
         
         <label class="form-field md:col-span-2">
           <span class="label-text">Trạng thái</span>
@@ -102,8 +76,14 @@
         </label>
 
         <label class="form-field md:col-span-2">
-          <span class="label-text">Mô tả</span>
-          <textarea v-model.trim="f.description" rows="4" class="input-field resize-y" placeholder="Mô tả chi tiết về khóa học"></textarea>
+          <span class="label-text">Mô tả ngắn</span>
+          <textarea v-model.trim="f.description" rows="3" class="input-field resize-y" placeholder="Mô tả ngắn gọn về khóa học"></textarea>
+        </label>
+
+        <label class="form-field md:col-span-2">
+          <span class="label-text">Giới thiệu chi tiết <b class="text-rose-600">*</b></span>
+          <textarea v-model.trim="f.introduction" rows="8" class="input-field resize-y" placeholder="Giới thiệu chi tiết về khóa học (sẽ hiển thị ở trang chi tiết khóa học)" required></textarea>
+          <p class="hint-text">Nội dung này sẽ hiển thị ở trang chi tiết khóa học cho học sinh</p>
         </label>
       </div>
 
@@ -121,18 +101,23 @@
 import { reactive, ref, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { courseService, type CourseDetail, type Grade, type Level, type CourseStatus, type Subject } from '@/services/course.service'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 
 /** Form theo schema service */
 const f = reactive<Partial<CourseDetail> & {
   lessonsCount?: number
+  price?: number
+  introduction?: string
 }>({
   title: '',
   subject: 'math' as Subject,
   grade: 3 as Grade,
   level: 'basic' as Level,
   description: '',
+  introduction: '',
+  price: 0,
   lessonsCount: 24,
   status: 'draft' as CourseStatus
 })
@@ -155,82 +140,42 @@ function onPickCover(e: Event) {
   coverPreview.value = URL.createObjectURL(file)
 }
 
-/* ---------- VIDEO BÀI HỌC ---------- */
-const videosInput = ref<HTMLInputElement | null>(null)
-const videoFiles = ref<File[]>([])
-const videoPreview = ref<string>('')
-const videoErr = ref('')
-
-const acceptVideos = computed(() =>
-  ['video/mp4', 'video/webm', 'video/quicktime'].join(',')
-)
-
-function onPickVideos(e: Event) {
-  videoErr.value = ''
-  const input = e.target as HTMLInputElement
-  const files = Array.from(input.files ?? [])
-  const allowed = ['video/mp4', 'video/webm', 'video/quicktime']
-  const valid: File[] = []
-
-  for (const file of files) {
-    if (!allowed.includes(file.type)) continue
-    if (file.size > 200 * 1024 * 1024) { videoErr.value = `File ${file.name} vượt 200MB, đã bỏ qua.`; continue }
-    valid.push(file)
-  }
-  const total = valid.reduce((s, f) => s + f.size, 0)
-  if (total > 500 * 1024 * 1024) { videoErr.value = 'Tổng dung lượng video vượt 500MB.'; input.value=''; return }
-
-  videoFiles.value = valid
-  if (videoPreview.value) URL.revokeObjectURL(videoPreview.value)
-  videoPreview.value = videoFiles.value.length ? URL.createObjectURL(videoFiles.value[0]) : ''
-}
-
 /* ---------- SUBMIT ---------- */
 onBeforeUnmount(() => {
   if (coverPreview.value) URL.revokeObjectURL(coverPreview.value)
-  if (videoPreview.value) URL.revokeObjectURL(videoPreview.value)
 })
 
 const submitting = ref(false)
-const canSubmit = computed(() => Boolean(f.title && coverFile.value))
+const canSubmit = computed(() => Boolean(f.title && f.introduction))
 
 async function submit() {
   if (!canSubmit.value) {
-    alert('Vui lòng điền đầy đủ Tên khoá học và chọn Ảnh khoá học.');
-    return;
+    showToast('Vui lòng điền đầy đủ Tên khoá học và Giới thiệu chi tiết.', 'warning')
+    return
   }
   submitting.value = true
   try {
-    // Nếu back-end của bạn nhận multipart, dùng FormData:
+    // Tạo FormData để upload file
     const fd = new FormData()
     fd.append('title', f.title!)
     fd.append('grade', String(f.grade!))
-    fd.append('subject', f.subject!)
-    fd.append('level', f.level!)
-    fd.append('status', f.status!)
-    if (f.description) fd.append('description', f.description)
-    if (f.lessonsCount) fd.append('lessonsCount', String(f.lessonsCount))
-    if (coverFile.value) fd.append('thumbnail', coverFile.value)       // ảnh
-    videoFiles.value.forEach(v => fd.append('videos[]', v)) // video optional
-    // await api.post('/admin/courses', fd)                // hoặc endpoint của bạn
+    fd.append('subject_slug', f.subject!)
+    fd.append('description', f.description || '')
+    fd.append('introduction', f.introduction || '')
+    fd.append('price', String(f.price || 0))
+    
+    // Upload ảnh bìa (nếu có)
+    if (coverFile.value) {
+      fd.append('thumbnail', coverFile.value)
+    }
 
-    // Với mock service hiện tại: truyền Partial<CourseDetail>
-    await courseService.create({
-      title: f.title,
-      grade: f.grade,
-      subject: f.subject,
-      level: f.level,
-      status: f.status,
-      description: f.description,
-      // mock không lưu file, nhưng bạn vẫn có thể lưu lessonsCount để hiển thị sau
-      durationMinutes: 0, // Giá trị mặc định
-      sections: [] // Giá trị mặc định
-    } as Partial<CourseDetail>)
+    // Gọi API với FormData
+    await courseService.create(fd as any)
 
-    alert('Đã tạo khoá học (mock).');
-    router.push({ path: '/teacher/courses' });
+    showToast('Đã tạo khoá học thành công!', 'success')
+    router.push({ path: '/teacher/courses' })
   } catch (e: any) {
-    alert(e?.message || 'Tạo khoá học thất bại.');
+    showToast(e?.message || 'Tạo khoá học thất bại.', 'error')
   } finally {
     submitting.value = false;
   }

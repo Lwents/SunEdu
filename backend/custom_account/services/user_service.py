@@ -148,17 +148,42 @@ def delete_user(user_id):
     UserModel.delete(user_to_delete)
     
 
-def list_all_users_for_admin() -> List[UserDomain]:
+def list_all_users_for_admin(role: Optional[str] = None, page: int = 1, page_size: int = 50) -> Dict[str, Any]:
     """
-    Gets all users as a list of UserDomain entities.
+    Gets all users as a list of UserDomain entities with pagination and filtering.
 
     This follows the style of 'register_user', where the service
     layer interacts with the Model but returns Domain Entities.
     """
-    user_models = UserModel.objects.all().order_by('id')
-    # [print(user.is_staff) for user in user_models]
+    queryset = UserModel.objects.all().order_by('id')
+    
+    # Filter by role if provided
+    if role:
+        # Map frontend role names to backend role names
+        role_mapping = {
+            'instructor': 'teacher',
+            'teacher': 'teacher',
+            'student': 'student',
+            'admin': 'admin'
+        }
+        backend_role = role_mapping.get(role, role)
+        queryset = queryset.filter(role=backend_role)
+    
+    # Pagination
+    total = queryset.count()
+    start = (page - 1) * page_size
+    end = start + page_size
+    user_models = queryset[start:end]
+    
     user_domains = [UserDomain.from_model(user) for user in user_models]
-    return user_domains
+    
+    return {
+        'results': user_domains,
+        'count': total,
+        'page': page,
+        'page_size': page_size,
+        'total_pages': (total + page_size - 1) // page_size
+    }
 
 @transaction.atomic
 def synchronize_roles() -> dict:

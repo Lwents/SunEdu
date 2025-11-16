@@ -93,6 +93,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.warn('Logout API error:', error)
       }
+      // Clear state trước
       this.token = null
       this.user = null
       localStorage.removeItem('auth')
@@ -100,7 +101,8 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('refreshToken')
       sessionStorage.removeItem('accessToken')
       sessionStorage.removeItem('refreshToken')
-      router.push('/')
+      // Không redirect ở đây, để component tự xử lý redirect
+      // router.push('/')
     },
 
     redirectByRole(role: Role) {

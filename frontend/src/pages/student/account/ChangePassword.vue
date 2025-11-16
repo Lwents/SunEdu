@@ -1,43 +1,62 @@
 <!-- src/pages/student/account/ChangePassword.vue -->
 <template>
-  <div class="student-shell">
-    <div class="student-container">
-      <div class="student-tabs flex items-center gap-1 sm:gap-2">
-        <button type="button" class="student-tab" @click="goProfile">CÁ NHÂN</button>
-        <button type="button" class="student-tab student-tab--active">ĐỔI MẬT KHẨU</button>
-        <button type="button" class="student-tab" @click="goParent">PHỤ HUYNH</button>
+  <div class="min-h-screen bg-slate-50">
+    <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+      <!-- Tabs -->
+      <div class="mb-6 flex items-center gap-2 border-b border-slate-200">
+        <button
+          type="button"
+          class="px-4 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          @click="goProfile"
+        >
+          Cá nhân
+        </button>
+        <button
+          type="button"
+          class="border-b-2 border-slate-900 px-4 py-3 text-sm font-semibold text-slate-900"
+        >
+          Đổi mật khẩu
+        </button>
+        <button
+          type="button"
+          class="px-4 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          @click="goParent"
+        >
+          Phụ huynh
+        </button>
       </div>
 
-      <div class="student-card mt-4">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 class="text-base font-extrabold uppercase tracking-wide text-slate-900 sm:text-lg">
-            ĐỔI MẬT KHẨU
-          </h2>
+      <!-- Main Card -->
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 px-6 py-4">
+          <h2 class="text-lg font-semibold text-slate-900">Đổi mật khẩu</h2>
         </div>
 
-        <form class="mt-6 space-y-6" @submit.prevent="changePassword">
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
-              Mật khẩu hiện tại <span class="text-rose-500">*</span>
+        <form class="p-6 space-y-6" @submit.prevent="changePassword">
+          <!-- Current Password -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">
+              Mật khẩu hiện tại <span class="text-red-500">*</span>
             </label>
-            <div class="space-y-2">
+            <div class="space-y-1">
               <div class="relative">
                 <input
                   :type="show.current ? 'text' : 'password'"
                   v-model.trim="pwd.current"
                   autocomplete="current-password"
+                  placeholder="Nhập mật khẩu hiện tại"
                   @blur="touched.current = true"
                   :class="[
-                    'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                    'w-full rounded-lg border px-3 py-2 pr-10 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                     touched.current && errs.current
-                      ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                      ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                      : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
-                  :aria-label="show.current ? 'Ẩn mật khẩu cũ' : 'Hiện mật khẩu cũ'"
+                  class="absolute inset-y-0 right-0 inline-flex h-full w-10 items-center justify-center text-slate-400 transition hover:text-slate-600 focus:outline-none"
+                  :aria-label="show.current ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
                   @click="show.current = !show.current"
                 >
                   <svg
@@ -77,33 +96,35 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="touched.current && errs.current" class="text-xs font-medium text-rose-600">
+              <p v-if="touched.current && errs.current" class="text-xs text-red-600">
                 {{ errs.current }}
               </p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
-              Mật khẩu mới <span class="text-rose-500">*</span>
+          <!-- New Password -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">
+              Mật khẩu mới <span class="text-red-500">*</span>
             </label>
-            <div class="space-y-2">
+            <div class="space-y-1">
               <div class="relative">
                 <input
                   :type="show.new1 ? 'text' : 'password'"
                   v-model.trim="pwd.new1"
                   autocomplete="new-password"
+                  placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
                   @blur="touched.new1 = true"
                   :class="[
-                    'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                    'w-full rounded-lg border px-3 py-2 pr-10 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                     touched.new1 && errs.new1
-                      ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                      ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                      : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
+                  class="absolute inset-y-0 right-0 inline-flex h-full w-10 items-center justify-center text-slate-400 transition hover:text-slate-600 focus:outline-none"
                   :aria-label="show.new1 ? 'Ẩn' : 'Hiện'"
                   @click="show.new1 = !show.new1"
                 >
@@ -144,33 +165,35 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="touched.new1 && errs.new1" class="text-xs font-medium text-rose-600">
+              <p v-if="touched.new1 && errs.new1" class="text-xs text-red-600">
                 {{ errs.new1 }}
               </p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
-              Nhập lại mật khẩu mới <span class="text-rose-500">*</span>
+          <!-- Confirm New Password -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">
+              Nhập lại mật khẩu mới <span class="text-red-500">*</span>
             </label>
-            <div class="space-y-2">
+            <div class="space-y-1">
               <div class="relative">
                 <input
                   :type="show.new2 ? 'text' : 'password'"
                   v-model.trim="pwd.new2"
                   autocomplete="new-password"
+                  placeholder="Nhập lại mật khẩu mới"
                   @blur="touched.new2 = true"
                   :class="[
-                    'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                    'w-full rounded-lg border px-3 py-2 pr-10 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                     touched.new2 && errs.new2
-                      ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                      ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                      : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                   ]"
                 />
                 <button
                   type="button"
-                  class="absolute inset-y-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
+                  class="absolute inset-y-0 right-0 inline-flex h-full w-10 items-center justify-center text-slate-400 transition hover:text-slate-600 focus:outline-none"
                   :aria-label="show.new2 ? 'Ẩn' : 'Hiện'"
                   @click="show.new2 = !show.new2"
                 >
@@ -211,27 +234,29 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="touched.new2 && errs.new2" class="text-xs font-medium text-rose-600">
+              <p v-if="touched.new2 && errs.new2" class="text-xs text-red-600">
                 {{ errs.new2 }}
               </p>
             </div>
           </div>
 
-          <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+          <!-- Submit Button -->
+          <div class="flex flex-col gap-3 pt-4 border-t border-slate-200 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 sm:w-auto sm:text-sm"
+              class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="isSubmitDisabled"
             >
               <span
                 v-if="saving || otp.sending"
-                class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"
+                class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
               ></span>
-              CẬP NHẬT MẬT KHẨU
+              {{ saving || otp.sending ? 'Đang xử lý...' : 'Cập nhật mật khẩu' }}
             </button>
           </div>
         </form>
 
+        <!-- OTP Modal -->
         <Transition
           enter-active-class="transition-opacity duration-200"
           leave-active-class="transition-opacity duration-150"
@@ -240,22 +265,20 @@
         >
           <div
             v-if="otpModalVisible"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-10 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4"
             @click.self="closeOtpModal"
           >
-            <div
-              class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200"
-            >
+            <div class="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-lg">
               <div class="flex items-start justify-between">
                 <div>
-                  <h3 class="mt-1 text-xl font-bold text-slate-900">Nhập mã OTP xác thực</h3>
-                  <p class="text-sm text-slate-500">
+                  <h3 class="text-lg font-semibold text-slate-900">Nhập mã OTP xác thực</h3>
+                  <p class="mt-1 text-sm text-slate-500">
                     OTP đã gửi tới {{ otp.sentTo || maskedEmail || 'email của bạn' }}.
                   </p>
                 </div>
                 <button
                   type="button"
-                  class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                  class="rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                   aria-label="Đóng"
                   @click="closeOtpModal"
                 >
@@ -264,7 +287,7 @@
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="1.5"
+                    stroke-width="2"
                     class="h-5 w-5"
                   >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -272,20 +295,21 @@
                 </button>
               </div>
 
-              <div class="mt-6 space-y-2">
+              <div class="mt-6 space-y-1">
                 <input
                   v-model.trim="otp.code"
                   maxlength="6"
                   inputmode="numeric"
+                  placeholder="000000"
                   @blur="touched.otp = true"
                   :class="[
-                    'w-full rounded-2xl border px-4 py-3 text-center text-lg font-bold tracking-[0.4em] text-slate-900 shadow-sm transition focus-visible:outline-none focus:ring-4',
+                    'w-full rounded-lg border px-4 py-3 text-center text-lg font-semibold tracking-[0.4em] text-slate-900 transition focus:outline-none focus:ring-2',
                     touched.otp && errs.otp
-                      ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                      ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                      : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                   ]"
                 />
-                <p v-if="touched.otp && errs.otp" class="text-xs font-medium text-rose-600">
+                <p v-if="touched.otp && errs.otp" class="text-xs text-red-600">
                   {{ errs.otp }}
                 </p>
               </div>
@@ -293,19 +317,19 @@
               <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                  class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
                   :disabled="saving"
                   @click="submitOtp"
                 >
                   <span
                     v-if="saving"
-                    class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"
+                    class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
                   ></span>
-                  XÁC NHẬN
+                  Xác nhận
                 </button>
                 <button
                   type="button"
-                  class="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-600 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-300 disabled:cursor-not-allowed disabled:border-slate-100 disabled:text-slate-400 sm:w-auto"
+                  class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
                   :disabled="otp.countdown > 0 || otp.sending"
                   @click="sendOtp()"
                 >

@@ -55,14 +55,17 @@ def list_exercises(filters: Dict[str, Any] = None) -> List[ExerciseDomain]:
 @transaction.atomic
 def save_exercise(domain: ExerciseDomain) -> ExerciseDomain:
     """Create or update exercise with nested questions/choices."""
+    # lesson_id can be None for standalone exercises
+    defaults = {
+        'title': domain.title,
+        'type': domain.type,
+    }
+    if domain.lesson_id:
+        defaults['lesson_id'] = domain.lesson_id
+    # Note: settings stored in ExerciseSettings model, not directly in Exercise
     ex, _ = ExerciseModel.objects.update_or_create(
         id=domain.id,
-        defaults=dict(
-            lesson_id=domain.lesson_id,
-            title=domain.title,
-            type=domain.type,
-            settings=domain.settings or {},
-        )
+        defaults=defaults
     )
 
     # Sync questions

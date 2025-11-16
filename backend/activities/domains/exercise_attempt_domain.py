@@ -4,7 +4,7 @@ from typing import TypedDict, Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 
-from activities.domains.exercise_attempt_domain import ExerciseAttemptDomain
+# Removed circular import
 from activities.domains.exercise_answer_domain import ExerciseAnswerDomain
 from activities.domains.question_domain import QuestionDomain
 from activities.domains.exercise_domain import ExerciseDomain
