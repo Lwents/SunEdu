@@ -27,6 +27,65 @@ jobs:
           script: |
             set -euo pipefail
 
+            # Cleanup before deployment to free up disk space
+            echo "🧹 Starting cleanup to free up disk space..."
+            
+            # Check disk space before cleanup
+            echo "📊 Disk space before cleanup:"
+            df -h / | tail -1
+            
+            # Cleanup Docker resources
+            if command -v docker >/dev/null 2>&1; then
+              echo "🐳 Cleaning up Docker resources..."
+              
+              # Remove stopped containers
+              docker container prune -f || true
+              
+              # Remove unused images (keep last 2)
+              docker image prune -a -f || true
+              
+              # Remove unused volumes
+              docker volume prune -f || true
+              
+              # Remove unused networks
+              docker network prune -f || true
+              
+              # Remove build cache
+              docker builder prune -a -f || true
+              
+              echo "✅ Docker cleanup complete"
+            fi
+            
+            # Cleanup old log files (keep last 7 days)
+            echo "📝 Cleaning up old log files..."
+            find /var/www/SunEdu/backend/logs -type f -name "*.log" -mtime +7 -delete 2>/dev/null || true
+            find /var/www/SunEdu/backend/runtime_logs -type f -name "*.log" -mtime +7 -delete 2>/dev/null || true
+            
+            # Cleanup Python cache files
+            echo "🐍 Cleaning up Python cache..."
+            find /var/www/SunEdu/backend -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+            find /var/www/SunEdu/backend -type f -name "*.pyc" -delete 2>/dev/null || true
+            
+            # Cleanup old .venv if exists (will be recreated)
+            if [ -d "/var/www/SunEdu/backend/.venv" ]; then
+              echo "🗑️  Removing old virtual environment..."
+              rm -rf /var/www/SunEdu/backend/.venv
+            fi
+            
+            # Cleanup git objects and refs
+            cd /var/www/SunEdu
+            if [ -d ".git" ]; then
+              echo "📦 Cleaning up git objects..."
+              git gc --prune=now --aggressive 2>/dev/null || true
+            fi
+            
+            # Check disk space after cleanup
+            echo "📊 Disk space after cleanup:"
+            df -h / | tail -1
+            
+            echo "✅ Cleanup complete, proceeding with deployment..."
+            
+            # Now proceed with git operations
             cd /var/www/SunEdu
             git fetch origin main
             git reset --hard origin/main
