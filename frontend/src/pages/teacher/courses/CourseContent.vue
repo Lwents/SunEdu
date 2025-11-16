@@ -3,7 +3,9 @@
   <div class="mx-auto max-w-6xl p-6">
     <div class="mb-6 flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Quản lý nội dung khóa học</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          Quản lý nội dung khóa học
+        </h1>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ courseTitle }}</p>
       </div>
       <button
@@ -34,12 +36,16 @@
         <!-- Module Header -->
         <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div class="flex items-center gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 font-bold">
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 font-bold"
+            >
               {{ mIdx + 1 }}
             </div>
             <div>
               <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ module.title }}</h3>
-              <p class="text-xs text-gray-500">{{ lessonsByModule[module.id]?.length || 0 }} bài học</p>
+              <p class="text-xs text-gray-500">
+                {{ lessonsByModule[module.id]?.length || 0 }} bài học
+              </p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -76,7 +82,13 @@
               <div>
                 <p class="font-medium text-gray-900 dark:text-gray-100">{{ lesson.title }}</p>
                 <p class="text-xs text-gray-500">
-                  {{ lesson.content_type === 'lesson' ? 'Bài học' : lesson.content_type === 'exercise' ? 'Bài tập' : 'Khám phá' }}
+                  {{
+                    lesson.content_type === 'lesson'
+                      ? 'Bài học'
+                      : lesson.content_type === 'exercise'
+                        ? 'Bài tập'
+                        : 'Khám phá'
+                  }}
                   <span v-if="lesson.published" class="ml-2 text-emerald-600">• Đã xuất bản</span>
                   <span v-else class="ml-2 text-amber-600">• Nháp</span>
                 </p>
@@ -97,14 +109,22 @@
               </button>
             </div>
           </div>
-          <div v-if="!lessonsByModule[module.id]?.length" class="px-6 py-8 text-center text-sm text-gray-500">
+          <div
+            v-if="!lessonsByModule[module.id]?.length"
+            class="px-6 py-8 text-center text-sm text-gray-500"
+          >
             Chưa có bài học nào. Nhấn "+ Thêm bài học" để thêm.
           </div>
         </div>
       </div>
 
-      <div v-if="!modules.length" class="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
-        <p class="text-gray-600 dark:text-gray-400">Chưa có chương nào. Nhấn "+ Thêm chương mới" để bắt đầu.</p>
+      <div
+        v-if="!modules.length"
+        class="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center"
+      >
+        <p class="text-gray-600 dark:text-gray-400">
+          Chưa có chương nào. Nhấn "+ Thêm chương mới" để bắt đầu.
+        </p>
       </div>
     </div>
 
@@ -187,9 +207,11 @@
               <button
                 type="button"
                 class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition"
-                :class="lessonForm.videoType === 'url' 
-                  ? 'border-cyan-500 bg-cyan-50 text-cyan-700' 
-                  : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'"
+                :class="
+                  lessonForm.videoType === 'url'
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                    : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'
+                "
                 @click="lessonForm.videoType = 'url'"
               >
                 Video URL
@@ -197,15 +219,17 @@
               <button
                 type="button"
                 class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition"
-                :class="lessonForm.videoType === 'file' 
-                  ? 'border-cyan-500 bg-cyan-50 text-cyan-700' 
-                  : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'"
+                :class="
+                  lessonForm.videoType === 'file'
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                    : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'
+                "
                 @click="lessonForm.videoType = 'file'"
               >
                 Tải video lên
               </button>
             </div>
-            
+
             <!-- Video URL Input -->
             <div v-if="lessonForm.videoType === 'url'">
               <input
@@ -216,7 +240,7 @@
               />
               <p class="mt-1 text-xs text-gray-500">Có thể thêm sau khi tạo bài học</p>
             </div>
-            
+
             <!-- Video File Upload -->
             <div v-else>
               <input
@@ -227,7 +251,9 @@
                 @change="onVideoFileChange"
               />
               <p v-if="lessonForm.videoFile" class="mt-1 text-xs text-emerald-600">
-                Đã chọn: {{ lessonForm.videoFile.name }} ({{ formatFileSize(lessonForm.videoFile.size) }})
+                Đã chọn: {{ lessonForm.videoFile.name }} ({{
+                  formatFileSize(lessonForm.videoFile.size)
+                }})
               </p>
               <p v-else class="mt-1 text-xs text-gray-500">
                 Chọn file video (MP4, AVI, MOV, v.v.) - Tối đa 500MB
@@ -284,23 +310,23 @@ const moduleForm = ref({ title: '' })
 const showAddLessonModuleId = ref<string | null>(null)
 const editingLesson = ref<Lesson | null>(null)
 const videoFileInput = ref<HTMLInputElement | null>(null)
-const lessonForm = ref<{ 
+const lessonForm = ref<{
   title: string
   content_type: Lesson['content_type']
   video_url: string
   videoType: 'url' | 'file'
   videoFile: File | null
-}>({ 
-  title: '', 
+}>({
+  title: '',
   content_type: 'lesson',
   video_url: '',
   videoType: 'url',
-  videoFile: null
+  videoFile: null,
 })
 
 async function loadCourse() {
   try {
-    const course = await courseService.detail(courseId, true)
+    const course = await courseService.detail(courseId)
     courseTitle.value = course.title
   } catch (e: any) {
     console.error('Error loading course:', e)
@@ -323,12 +349,12 @@ async function loadModules() {
 
 function showAddLesson(moduleId: ID) {
   showAddLessonModuleId.value = String(moduleId)
-  lessonForm.value = { 
-    title: '', 
-    content_type: 'lesson', 
+  lessonForm.value = {
+    title: '',
+    content_type: 'lesson',
     video_url: '',
     videoType: 'url',
-    videoFile: null
+    videoFile: null,
   }
   editingLesson.value = null
   if (videoFileInput.value) {
@@ -366,7 +392,7 @@ function formatFileSize(bytes: number): string {
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 
 function editModule(module: Module) {
@@ -377,10 +403,12 @@ function editModule(module: Module) {
 
 function editLesson(lesson: Lesson) {
   editingLesson.value = lesson
-  lessonForm.value = { 
-    title: lesson.title, 
+  lessonForm.value = {
+    title: lesson.title,
     content_type: lesson.content_type,
-    video_url: (lesson as any).video_url || ''
+    video_url: (lesson as any).video_url || '',
+    videoType: 'url',
+    videoFile: null,
   }
   showAddLessonModuleId.value = String(lesson.module)
 }
@@ -398,12 +426,12 @@ function closeModuleModal() {
 function closeLessonModal() {
   showAddLessonModuleId.value = null
   editingLesson.value = null
-  lessonForm.value = { 
-    title: '', 
-    content_type: 'lesson', 
+  lessonForm.value = {
+    title: '',
+    content_type: 'lesson',
     video_url: '',
     videoType: 'url',
-    videoFile: null
+    videoFile: null,
   }
   if (videoFileInput.value) {
     videoFileInput.value.value = ''
@@ -419,7 +447,7 @@ async function saveModule() {
     } else {
       await contentService.createModule(courseId, {
         title: moduleForm.value.title,
-        course: courseId
+        course: courseId,
       })
     }
     closeModuleModal()
@@ -448,7 +476,7 @@ async function saveLesson() {
         // Update with video_url or other fields
         const lessonData: any = {
           title: lessonForm.value.title,
-          content_type: lessonForm.value.content_type
+          content_type: lessonForm.value.content_type,
         }
         if (lessonForm.value.video_url && lessonForm.value.video_url.trim()) {
           lessonData.video_url = lessonForm.value.video_url.trim()
@@ -471,14 +499,18 @@ async function saveLesson() {
         const lessonData: any = {
           title: lessonForm.value.title,
           content_type: lessonForm.value.content_type,
-          module: showAddLessonModuleId.value
+          module: showAddLessonModuleId.value,
         }
-        
+
         // Add video_url if provided
-        if (lessonForm.value.videoType === 'url' && lessonForm.value.video_url && lessonForm.value.video_url.trim()) {
+        if (
+          lessonForm.value.videoType === 'url' &&
+          lessonForm.value.video_url &&
+          lessonForm.value.video_url.trim()
+        ) {
           lessonData.video_url = lessonForm.value.video_url.trim()
         }
-        
+
         await contentService.createLesson(showAddLessonModuleId.value, lessonData)
       }
     }
@@ -499,7 +531,7 @@ async function deleteModule(moduleId: ID) {
     title: 'Xác nhận xóa chương',
     type: 'danger',
     confirmText: 'Xóa',
-    cancelText: 'Hủy'
+    cancelText: 'Hủy',
   })
   if (!confirmed) return
   try {
@@ -517,7 +549,7 @@ async function deleteLesson(lessonId: ID) {
     title: 'Xác nhận xóa bài học',
     type: 'danger',
     confirmText: 'Xóa',
-    cancelText: 'Hủy'
+    cancelText: 'Hủy',
   })
   if (!confirmed) return
   try {
