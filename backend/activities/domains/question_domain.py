@@ -1,8 +1,11 @@
 import re
 import uuid
-from typing import TypedDict, Optional, List, Dict, Any
+from typing import TypedDict, Optional, List, Dict, Any, TYPE_CHECKING
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
+
+if TYPE_CHECKING:
+    from activities.domains.choice_domain import ChoiceDomain
 
 
 # ---------- Helpers ----------
@@ -31,7 +34,7 @@ class QuestionDomain:
     ALLOWED_TYPES = {"mcq", "short_answer", "matching"}
 
     def __init__(self, id: str, exercise_id: str, prompt: str, meta: Optional[Dict[str, Any]] = None,
-                 choices: Optional[List[ChoiceDomain]] = None, hints: Optional[List[str]] = None):
+                 choices: Optional[List["ChoiceDomain"]] = None, hints: Optional[List[str]] = None):
         self.id = id
         self.exercise_id = exercise_id
         self.prompt = prompt
@@ -41,6 +44,7 @@ class QuestionDomain:
 
     @classmethod
     def from_model(cls, model) -> "QuestionDomain":
+        from activities.domains.choice_domain import ChoiceDomain
         choices = [ChoiceDomain.from_model(c) for c in getattr(model, 'choices').all()] if hasattr(model, 'choices') else []
         hints = [h.text for h in getattr(model, 'hints').all()] if hasattr(model, 'hints') else []
         return cls(

@@ -10,3 +10,12 @@ class IsAdmin(BasePermission):
         return request.user.is_staff or (hasattr(request.user, 'role') and request.user.role == 'admin')
 
 
+
+
+
+
+
+
+
+
+

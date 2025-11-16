@@ -84,7 +84,7 @@ class LessonDomain:
         self.published = False
 
     def to_dict(self):
-        return {
+        result = {
             "id": self.id,
             "module_id": self.module_id,
             "title": self.title,
@@ -93,13 +93,41 @@ class LessonDomain:
             "published": self.published,
             "versions": [v.to_dict() for v in self.versions]
         }
+        # Add new fields if available
+        if hasattr(self, 'introduction'):
+            result['introduction'] = self.introduction
+        if hasattr(self, 'video_url'):
+            result['video_url'] = self.video_url
+        if hasattr(self, 'video_file'):
+            result['video_file'] = self.video_file
+        if hasattr(self, 'requires_exercise_completion'):
+            result['requires_exercise_completion'] = self.requires_exercise_completion
+        return result
 
     @classmethod
     def from_model(cls, model):
         l = cls(module_id=str(getattr(model,'module_id',None) or ""), title=model.title, position=model.position, content_type=model.content_type, published=model.published, id=str(model.id))
+        # Add new fields
+        if hasattr(model, 'introduction'):
+            l.introduction = model.introduction
+        if hasattr(model, 'video_url'):
+            l.video_url = model.video_url
+        if hasattr(model, 'video_file') and model.video_file:
+            l.video_file = str(model.video_file)
+        if hasattr(model, 'requires_exercise_completion'):
+            l.requires_exercise_completion = model.requires_exercise_completion
+        # Load versions - kiểm tra cả prefetched và related
         if hasattr(model, "versions_prefetched") and model.versions_prefetched:
             for v_m in model.versions_prefetched:
                 l.versions.append(LessonVersionDomain.from_model(v_m))
+        elif hasattr(model, 'versions'):
+            # Nếu không có prefetch, load trực tiếp từ related manager
+            try:
+                from content.domains.lesson_version_domain import LessonVersionDomain
+                for v_m in model.versions.all():
+                    l.versions.append(LessonVersionDomain.from_model(v_m))
+            except Exception:
+                pass  # Nếu không load được, bỏ qua
         return l
 
 

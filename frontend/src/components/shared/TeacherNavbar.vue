@@ -1,43 +1,28 @@
 <!-- src/components/navbar/TeacherNavbar.vue -->
 <template>
-  <nav
-    class="sticky top-0 z-50 h-14 sm:h-16 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm"
-  >
+  <nav class="sticky top-0 z-50 h-14 sm:h-16 bg-white border-b border-slate-200 shadow-sm">
     <div class="mx-auto flex h-full max-w-7xl items-center justify-between px-3 sm:px-4 lg:px-8">
       <!-- Logo -->
       <div class="flex items-center gap-3">
         <RouterLink
           to="/teacher/dashboard"
-          class="logo-wrapper group relative inline-block transition-transform duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.08] hover:-rotate-[3deg]"
+          class="inline-block transition hover:opacity-80"
         >
-          <div
-            class="logo-glow absolute inset-[-15px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.3)_0%,rgba(20,184,166,0.2)_30%,transparent_70%)] opacity-0 blur-[20px] transition-all duration-500 ease-out animate-float group-hover:opacity-100 group-hover:scale-110"
-          ></div>
-          <LogoSmartEdu :size="90" class="relative z-10" />
+          <LogoSmartEdu :size="90" />
         </RouterLink>
       </div>
 
       <!-- Desktop Menu -->
-      <ul class="hidden items-center gap-2 md:flex">
+      <ul class="hidden items-center gap-1 md:flex">
         <li v-for="item in menu" :key="item.path">
           <RouterLink
             :to="item.path"
-            @click="handleClick(item.path)"
-            class="group relative rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
-            :class="isActive(item.path) ? 'text-emerald-600' : 'text-gray-600 hover:text-gray-900'"
+            class="rounded-lg px-4 py-2.5 text-sm font-medium transition"
+            :class="isActive(item.path) 
+              ? 'bg-slate-900 text-white' 
+              : 'text-slate-700 hover:bg-slate-100'"
           >
-            <span
-              class="absolute inset-0 -z-10 rounded-lg bg-gradient-to-r from-emerald-50 to-blue-50 opacity-0 transition-all duration-300 group-hover:opacity-100"
-            ></span>
-            <span class="relative z-10">{{ item.label }}</span>
-            <span
-              class="absolute bottom-0 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-gradient-to-r from-emerald-500 via-blue-500 to-emerald-500 bg-[length:200%_100%] transition-all duration-500"
-              :class="isActive(item.path) ? 'w-4/5 animate-gradient-x' : 'w-0 group-hover:w-4/5'"
-            ></span>
-            <span
-              v-if="clickedItem === item.path"
-              class="absolute inset-0 rounded-lg bg-[radial-gradient(circle,rgba(16,185,129,0.4)_0%,transparent_70%)] pointer-events-none animate-ripple-out"
-            ></span>
+            {{ item.label }}
           </RouterLink>
         </li>
       </ul>
@@ -46,70 +31,48 @@
       <div class="flex items-center gap-3">
         <!-- Notification Bell Component for Teacher -->
         <NotificationBell :user-id="auth.user?.id" role="teacher" />
+        
         <!-- Avatar Dropdown -->
         <div class="relative" ref="avatarWrapper">
           <button
             @click="avatarOpen = !avatarOpen"
-            class="group relative flex items-center gap-2 transition-all duration-300 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+            class="flex items-center gap-2 transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-slate-200 rounded-lg"
           >
-            <div class="relative">
-              <div
-                class="absolute inset-[-4px] rounded-full bg-gradient-to-br from-emerald-500/50 via-blue-500/50 to-emerald-500/50 bg-[length:200%_200%] opacity-0 blur-[8px] transition-opacity duration-400 animate-gradient-rotate group-hover:opacity-100"
-              ></div>
-              <img
-                class="relative z-10 h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-md transition-all duration-300 group-hover:ring-emerald-400"
-                :src="avatarSrc"
-                alt="avatar"
-              />
-              <span class="absolute -bottom-0.5 -right-0.5 flex items-center justify-center z-20">
-                <span
-                  class="absolute h-3 w-3 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 animate-pulse-custom"
-                ></span>
-                <span
-                  class="relative h-2.5 w-2.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 border-2 border-white shadow-[0_0_0_1px_rgba(16,185,129,0.2),0_2px_4px_rgba(0,0,0,0.2)]"
-                ></span>
-              </span>
-            </div>
+            <img
+              class="h-10 w-10 rounded-full object-cover border-2 border-slate-200"
+              :src="avatarSrc"
+              alt="avatar"
+            />
           </button>
 
           <!-- Dropdown Menu -->
           <Transition
             enter-active-class="transition ease-out duration-200"
-            enter-from-class="transform opacity-0 scale-90 -translate-y-3"
-            enter-to-class="transform opacity-100 scale-100 translate-y-0"
+            enter-from-class="transform opacity-0 scale-95"
+            enter-to-class="transform opacity-100 scale-100"
             leave-active-class="transition ease-in duration-150"
-            leave-from-class="transform opacity-100 scale-100 translate-y-0"
-            leave-to-class="opacity-0 scale-90 -translate-y-3"
+            leave-from-class="transform opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
           >
             <div
               v-if="avatarOpen"
-              class="absolute right-0 z-30 mt-3 w-56 origin-top-right rounded-2xl border border-gray-200/50 bg-white/95 p-2 shadow-2xl shadow-gray-400/20 backdrop-blur-xl ring-1 ring-black/5"
+              class="absolute right-0 z-30 mt-2 w-56 rounded-lg border border-slate-200 bg-white shadow-lg p-2"
             >
               <!-- User info -->
-              <div class="px-3 py-3 border-b border-gray-100 mb-2">
-                <div class="flex items-center gap-2 mb-1">
-                  <p class="text-sm font-semibold text-gray-800">{{ displayName }}</p>
-                  <span
-                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-50 text-[10px] font-semibold text-emerald-700"
-                  >
-                    <span
-                      class="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 animate-pulse"
-                    ></span>
-                    Online
-                  </span>
-                </div>
-                <p class="text-xs text-gray-500 truncate">{{ displayEmail }}</p>
+              <div class="px-3 py-3 border-b border-slate-200 mb-2">
+                <p class="text-sm font-semibold text-slate-900">{{ displayName }}</p>
+                <p class="text-xs text-slate-500 truncate mt-0.5">{{ displayEmail }}</p>
               </div>
 
               <!-- Menu items -->
               <div class="py-1 space-y-1">
                 <RouterLink
                   to="/teacher/account/profile"
-                  class="menu-item group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-blue-50 hover:text-emerald-700 hover:translate-x-1"
+                  class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition"
                   @click="avatarOpen = false"
                 >
                   <svg
-                    class="h-5 w-5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                    class="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -126,10 +89,10 @@
 
                 <button
                   @click="showConfirm = true"
-                  class="menu-item group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-600 transition-all duration-300 hover:bg-red-50 hover:translate-x-1"
+                  class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
                 >
                   <svg
-                    class="h-5 w-5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                    class="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -152,25 +115,25 @@
         <div class="md:hidden">
           <button
             @click="open = !open"
-            class="relative h-11 w-11 rounded-xl transition-all duration-300 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-blue-50 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+            class="p-2 rounded-lg hover:bg-slate-100 transition"
             aria-label="Mở menu"
           >
-            <div
-              class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-[5px]"
-            >
-              <span
-                class="block w-5 h-0.5 bg-gradient-to-r from-gray-600 to-gray-800 rounded-sm transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-center"
-                :class="{ 'rotate-45 translate-y-[7px]': open }"
-              ></span>
-              <span
-                class="block w-5 h-0.5 bg-gradient-to-r from-gray-600 to-gray-800 rounded-sm transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-                :class="{ 'opacity-0 scale-0': open }"
-              ></span>
-              <span
-                class="block w-5 h-0.5 bg-gradient-to-r from-gray-600 to-gray-800 rounded-sm transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-center"
-                :class="{ '-rotate-45 -translate-y-[7px]': open }"
-              ></span>
-            </div>
+            <svg class="h-6 w-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                v-if="!open"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+              <path
+                v-else
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
       </div>
@@ -178,47 +141,32 @@
 
     <!-- Mobile Menu -->
     <Transition
-      enter-active-class="transition ease-out duration-300"
-      enter-from-class="opacity-0 -translate-y-4"
+      enter-active-class="transition ease-out duration-200"
+      enter-from-class="opacity-0 -translate-y-2"
       enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition ease-in duration-200"
+      leave-active-class="transition ease-in duration-150"
       leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 -translate-y-4"
+      leave-to-class="opacity-0 -translate-y-2"
     >
       <div
         v-if="open"
         ref="mobileMenuWrapper"
-        class="md:hidden border-t border-gray-200/50 bg-white/95 backdrop-blur-xl animate-slide-down"
+        class="md:hidden border-t border-slate-200 bg-white"
       >
-        <div class="space-y-2 px-3 pt-3 pb-4">
+        <div class="space-y-1 px-3 py-3">
           <RouterLink
-            v-for="(item, index) in menu"
+            v-for="item in menu"
             :key="item.path"
             :to="item.path"
-            class="mobile-link group flex items-center justify-between rounded-xl px-4 py-3.5 text-base font-medium transition-all duration-300"
+            class="block rounded-lg px-4 py-3 text-base font-medium transition"
             :class="
               isActive(item.path)
-                ? 'bg-gradient-to-r from-emerald-50 to-blue-50 text-emerald-700 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50 hover:translate-x-2'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-700 hover:bg-slate-50'
             "
-            :style="{ transitionDelay: `${index * 50}ms` }"
             @click="open = false"
           >
-            <span>{{ item.label }}</span>
-            <svg
-              class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-2"
-              :class="{ 'text-emerald-600': isActive(item.path) }"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            {{ item.label }}
           </RouterLink>
         </div>
       </div>
@@ -292,82 +240,23 @@ async function handleLogout() {
 
     if (typeof auth.logout === 'function') {
       await auth.logout()
+    } else {
+      auth.token = null
+      auth.user = null
+      localStorage.removeItem('auth')
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      sessionStorage.removeItem('accessToken')
+      sessionStorage.removeItem('refreshToken')
     }
-    localStorage.clear()
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await router.push('/auth/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    await router.push('/auth/login')
   } finally {
     isLoggingOut.value = false
-    router.push({ name: 'Login' })
   }
-}
-
-const clickedItem = ref<string | null>(null)
-let animationTimeout: number | null = null
-
-function handleClick(path: string) {
-  clickedItem.value = path
-  if (animationTimeout) clearTimeout(animationTimeout)
-  animationTimeout = window.setTimeout(() => {
-    clickedItem.value = null
-  }, 800)
 }
 </script>
-
-<style scoped>
-.logo-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.menu-item {
-  position: relative;
-  overflow: hidden;
-}
-
-.menu-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 3px;
-  background: linear-gradient(180deg, #10b981, #3b82f6);
-  transform: scaleY(0);
-  transform-origin: top;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  border-radius: 0 3px 3px 0;
-}
-
-.menu-item:hover::before {
-  transform: scaleY(1);
-}
-
-.mobile-link {
-  position: relative;
-  overflow: hidden;
-}
-
-.mobile-link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #10b981, #3b82f6);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.mobile-link:hover::after {
-  transform: scaleX(1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-</style>

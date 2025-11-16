@@ -30,7 +30,8 @@ from content.services.exploration_service import (
     ExplorationService, ExplorationStateService, ExplorationTransitionService
 )
 
-
+# Create service instances
+module_service = ModuleService()
 
 class ModuleListCreateView(generics.ListCreateAPIView):
     """
@@ -45,7 +46,11 @@ class ModuleListCreateView(generics.ListCreateAPIView):
         return models.Module.objects.filter(course_id=course_id)
 
     def create(self, request, course_id=None, *args, **kwargs):
-        serializer = AddModuleInputSerializer(data=request.data)
+        # Merge course_id from URL into data if not provided
+        data = request.data.copy()
+        if course_id and 'course' not in data:
+            data['course'] = course_id
+        serializer = AddModuleInputSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         cmd = serializer.to_domain(course_id=course_id)
         created_domain = module_service.create_module(cmd)

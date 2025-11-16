@@ -9,10 +9,15 @@
         <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="flex flex-col gap-4 md:flex-row md:items-start">
             <img
-              :src="course.thumbnail"
+              v-if="course.thumbnail"
+              :src="getThumbnailUrl(course.thumbnail)"
               :alt="course.title"
               class="h-48 w-full rounded-2xl object-cover md:h-64 md:w-80"
+              @error="handleImageError"
             />
+            <div v-else class="flex h-48 w-full items-center justify-center rounded-2xl bg-slate-200 md:h-64 md:w-80">
+              <span class="text-slate-400">Chưa có ảnh</span>
+            </div>
             <div class="flex-1 space-y-4">
               <div>
                 <h1 class="text-3xl font-bold text-slate-900">{{ course.title }}</h1>
@@ -23,7 +28,7 @@
                 <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
                   Khối {{ course.grade }}
                 </span>
-                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
+                <span v-if="subjectLabel(course.subject)" class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
                   {{ subjectLabel(course.subject) }}
                 </span>
                 <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
@@ -32,17 +37,14 @@
                 <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
                   {{ course.enrollments || 0 }} học viên
                 </span>
+                <span class="rounded-full border px-3 py-1 text-sm font-semibold"
+                  :class="(course.price || 0) === 0 
+                    ? 'border-green-200 bg-green-50 text-green-700' 
+                    : 'border-amber-200 bg-amber-50 text-amber-700'">
+                  {{ (course.price || 0) === 0 ? 'Miễn phí' : formatPrice(course.price) }}
+                </span>
               </div>
 
-              <div class="flex items-center gap-4">
-                <div class="flex items-center gap-1">
-                  <svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span class="font-semibold text-slate-900">{{ avgRating.toFixed(1) }}</span>
-                  <span class="text-sm text-slate-600">({{ reviews.length }} đánh giá)</span>
-                </div>
-              </div>
 
               <div class="flex gap-3">
                 <button
@@ -58,12 +60,6 @@
                   @click="enrollCourse"
                 >
                   Đăng ký khóa học
-                </button>
-                <button
-                  class="rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  @click="toggleFavorite"
-                >
-                  {{ isFavorite ? '❤️ Đã yêu thích' : '🤍 Yêu thích' }}
                 </button>
               </div>
             </div>
@@ -83,7 +79,7 @@
                     ? 'bg-cyan-50 text-cyan-700'
                     : 'text-slate-600 hover:bg-slate-50'
                 "
-                @click="activeTab = tab.id as 'overview' | 'reviews' | 'students'"
+                @click="activeTab = tab.id as 'overview' | 'students'"
               >
                 {{ tab.label }}
               </button>
@@ -93,9 +89,10 @@
           <div class="p-6">
             <!-- Overview Tab -->
             <div v-if="activeTab === 'overview'" class="space-y-6">
+              <!-- Giới thiệu chi tiết -->
               <div>
-                <h3 class="mb-3 text-lg font-semibold">Mô tả khóa học</h3>
-                <p class="text-slate-700 whitespace-pre-line">{{ course.description || 'Chưa có mô tả.' }}</p>
+                <h3 class="mb-3 text-lg font-semibold">Giới thiệu khóa học</h3>
+                <div class="text-slate-700 whitespace-pre-line">{{ course.introduction || course.description || 'Chưa có giới thiệu.' }}</div>
               </div>
 
               <div>
@@ -136,57 +133,6 @@
               </div>
             </div>
 
-            <!-- Reviews Tab -->
-            <div v-if="activeTab === 'reviews'" class="space-y-6">
-              <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold">Đánh giá ({{ reviews.length }})</h3>
-                <button
-                  v-if="isEnrolled && !hasReviewed"
-                  class="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
-                  @click="showReviewModal = true"
-                >
-                  Viết đánh giá
-                </button>
-              </div>
-
-              <div v-if="reviews.length" class="space-y-4">
-                <div
-                  v-for="review in reviews"
-                  :key="review.id"
-                  class="rounded-xl border border-slate-200 p-4"
-                >
-                  <div class="mb-2 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                      <img
-                        :src="review.avatar"
-                        :alt="review.name"
-                        class="h-10 w-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <div class="font-semibold text-slate-900">{{ review.name }}</div>
-                        <div class="flex items-center gap-1">
-                          <div class="flex">
-                            <svg
-                              v-for="i in 5"
-                              :key="i"
-                              class="h-4 w-4"
-                              :class="i <= review.rating ? 'text-amber-400' : 'text-slate-300'"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          </div>
-                          <span class="text-xs text-slate-500">{{ formatDate(review.createdAt) }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p class="text-sm text-slate-700">{{ review.comment }}</p>
-                </div>
-              </div>
-              <p v-else class="text-center text-slate-500">Chưa có đánh giá nào.</p>
-            </div>
 
             <!-- Students Tab -->
             <div v-if="activeTab === 'students'" class="space-y-4">
@@ -276,18 +222,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { computed, ref, onMounted, watch, onActivated, nextTick } from 'vue'
+import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
 import { courseService, type CourseDetail, type Subject } from '@/services/course.service'
 import { useAuthStore } from '@/store/auth.store'
+import { showToast } from '@/utils/toast'
+import api from '@/config/axios'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const routeCourseId = () => {
+  const raw = route.params.id
+  return Array.isArray(raw) ? raw[0] : raw
+}
+const currentCourseId = ref<string>(String(routeCourseId() || ''))
 
 const loading = ref(true)
 const course = ref<CourseDetail | null>(null)
-const activeTab = ref<'overview' | 'reviews' | 'students'>('overview')
+const activeTab = ref<'overview' | 'students'>('overview')
 const isEnrolled = ref(false)
 const isFavorite = ref(false)
 const hasReviewed = ref(false)
@@ -314,9 +267,42 @@ const reviewComment = ref('')
 
 const tabs = [
   { id: 'overview', label: 'Tổng quan' },
-  { id: 'reviews', label: 'Đánh giá' },
   { id: 'students', label: 'Học viên' },
 ]
+
+function enrollmentStorageKey(id?: string) {
+  const cid = id || currentCourseId.value
+  return cid ? `course-enrolled-${cid}` : ''
+}
+
+function restoreCachedEnrollment() {
+  const key = enrollmentStorageKey()
+  if (!key) return
+  const raw = localStorage.getItem(key)
+  if (raw === 'true') isEnrolled.value = true
+  else if (raw === 'false') isEnrolled.value = false
+}
+
+function persistEnrollment(state: boolean | null) {
+  const key = enrollmentStorageKey()
+  if (!key) return
+  if (state === null) localStorage.removeItem(key)
+  else localStorage.setItem(key, String(state))
+}
+
+function normalizeEnrollmentFlag(enrolled: any) {
+  if (enrolled === undefined || enrolled === null) return
+  const bool =
+    enrolled === true ||
+    enrolled === 'true' ||
+    enrolled === 1 ||
+    enrolled === '1' ||
+    enrolled === 'True'
+  isEnrolled.value = bool
+  persistEnrollment(bool)
+}
+
+restoreCachedEnrollment()
 
 const avgRating = computed(() => {
   if (reviews.value.length === 0) return 0
@@ -324,7 +310,7 @@ const avgRating = computed(() => {
   return sum / reviews.value.length
 })
 
-function subjectLabel(s?: Subject) {
+function subjectLabel(s?: Subject | string | null) {
   const labels: Record<string, string> = {
     math: 'Toán học',
     vietnamese: 'Tiếng Việt',
@@ -332,7 +318,12 @@ function subjectLabel(s?: Subject) {
     science: 'Khoa học',
     history: 'Lịch sử',
   }
-  return s ? labels[s] || s : 'Khác'
+  if (!s) return ''
+  const key = String(s).toLowerCase()
+  if (labels[key as Subject]) return labels[key as Subject]
+  // Nếu backend trả về UUID hoặc chuỗi lạ, không hiển thị
+  if (/[0-9a-f-]{8,}/i.test(key)) return ''
+  return s
 }
 
 function formatDate(iso?: string) {
@@ -353,12 +344,81 @@ function formatDuration(min?: number) {
   return `${mmStr}:${ssStr}`
 }
 
+function formatPrice(price?: number) {
+  if (!price || price === 0) return 'Miễn phí'
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)
+}
+
+function isYouTubeUrl(url?: string): boolean {
+  if (!url) return false
+  return url.includes('youtube.com') || url.includes('youtu.be')
+}
+
+function getYouTubeEmbedUrl(url: string): string {
+  if (!url) return ''
+  // Extract video ID from various YouTube URL formats
+  let videoId = ''
+  if (url.includes('youtube.com/watch?v=')) {
+    videoId = url.split('v=')[1]?.split('&')[0] || ''
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0] || ''
+  } else if (url.includes('youtube.com/embed/')) {
+    videoId = url.split('embed/')[1]?.split('?')[0] || ''
+  }
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : url
+}
+
+function getThumbnailUrl(thumbnail?: string): string {
+  if (!thumbnail) return ''
+  // If already a full URL, return as is
+  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
+    return thumbnail
+  }
+  // Otherwise, prepend media URL
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  return `${apiBase}/media/${thumbnail}`
+}
+
+function handleImageError(event: Event) {
+  const img = event.target as HTMLImageElement
+  img.src = 'https://via.placeholder.com/400x300?text=No+Image'
+}
+
+function getVideoFileUrl(videoFile?: string): string {
+  if (!videoFile) return ''
+  if (videoFile.startsWith('http://') || videoFile.startsWith('https://')) {
+    return videoFile
+  }
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  return `${apiBase}/media/${videoFile}`
+}
+
 async function loadCourse() {
   loading.value = true
   try {
-    const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
-    const d = await courseService.detail(id)
-    course.value = d
+    currentCourseId.value = String(routeCourseId() || '')
+    restoreCachedEnrollment()
+    const id = currentCourseId.value
+    // Sử dụng student API endpoint để lấy isEnrolled
+    // Thêm timestamp để tránh cache - LUÔN force reload
+    try {
+      const { data } = await api.get(`/student/courses/${id}/`, {
+        params: { _t: Date.now() }, // Cache busting
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+      course.value = data
+      console.log('Course loaded from student API:', data)
+      console.log('isEnrolled from API:', data.isEnrolled)
+      normalizeEnrollmentFlag(data.isEnrolled)
+    } catch (e: any) {
+      console.error('Error loading from student API:', e)
+      // Fallback to regular endpoint nếu student endpoint không có
+      const d = await courseService.detail(id)
+      course.value = d
+    }
 
     // Load reviews
     reviews.value = [
@@ -392,8 +452,19 @@ async function loadCourse() {
     }
     students.value = studentsList
 
-    // Check enrollment
-    isEnrolled.value = (Number(id) % 2 === 0)
+    // Check enrollment from course data
+    // Đảm bảo isEnrolled được set đúng từ API response
+    if (course.value) {
+      const enrolled = (course.value as any).isEnrolled
+      if (enrolled === undefined || enrolled === null) {
+        console.warn('isEnrolled not in API response, keeping previous value')
+      } else {
+        normalizeEnrollmentFlag(enrolled)
+      }
+      console.log('Course loaded - isEnrolled:', isEnrolled.value, 'from API:', enrolled, 'type:', typeof enrolled, 'course data:', course.value)
+    } else {
+      console.log('Course not loaded from API')
+    }
     isFavorite.value = false
     hasReviewed.value = false
   } catch (e: any) {
@@ -404,21 +475,125 @@ async function loadCourse() {
 }
 
 function startLearning() {
-  if (!course.value) return
-  const firstSection = course.value.sections?.[0]
-  const firstLesson = firstSection?.lessons?.[0]
-  if (firstLesson) {
-    router.push({
-      name: 'student-course-player',
-      params: { id: course.value.id, lessonId: firstLesson.id },
+  if (!course.value) {
+    console.error('Course not loaded')
+    return
+  }
+  
+  const courseId = course.value.id
+  console.log('Starting learning for course:', courseId)
+  
+  // Kiểm tra enrollment trước khi vào học
+  if (!isEnrolled.value) {
+    showToast('Bạn cần đăng ký khóa học trước', 'warning')
+    return
+  }
+  
+  // Nếu có video_url hoặc video_file, vào trang player để xem video
+  if (course.value.video_url || course.value.video_file) {
+    console.log('Navigating to player with course video')
+    router.push({ name: 'student-course-player', params: { id: String(courseId) } }).catch((err) => {
+      console.error('Navigation error:', err)
+      showToast('Không thể vào khóa học. Vui lòng thử lại.', 'error')
     })
+    return
+  }
+  
+  // Kiểm tra nội dung từ sections (backend trả về sections với lessons)
+  const sections = course.value.sections || []
+  
+  // Tìm lesson đầu tiên từ tất cả sections
+  let firstLesson = null
+  for (const section of sections) {
+    if (section.lessons && section.lessons.length > 0) {
+      firstLesson = section.lessons[0]
+      break
+    }
+  }
+  
+  // Kiểm tra xem có nội dung không:
+  // 1. Có lesson đầu tiên
+  // 2. Hoặc có lessonsCount > 0 (backend đã tính)
+  // 3. Hoặc có sections với lessons
+  const hasLessons = sections.some(s => s.lessons && s.lessons.length > 0)
+  const lessonsCount = course.value.lessonsCount || 0
+  
+  // Nếu có video_url hoặc video_file ở course level, coi như có nội dung
+  const hasCourseVideo = !!(course.value.video_url || course.value.video_file)
+  
+  const hasContent = firstLesson || hasLessons || lessonsCount > 0 || hasCourseVideo
+  
+  // Nếu có nội dung (lessonsCount > 0 hoặc có sections với lessons), cho phép vào học
+  // Backend sẽ tự tìm lesson đầu tiên khi vào player nếu không có lessonId
+  if (hasContent) {
+    if (firstLesson) {
+      router.push({
+        name: 'student-course-player',
+        params: { id: String(courseId), lessonId: String(firstLesson.id) },
+      }).catch((err) => {
+        console.error('Navigation error:', err)
+        showToast('Không thể vào khóa học. Vui lòng thử lại.', 'error')
+      })
+    } else {
+      // Có nội dung (lessonsCount > 0) nhưng chưa có lesson cụ thể trong sections
+      // Backend sẽ tự tìm lesson đầu tiên khi vào player
+      router.push({ name: 'student-course-player', params: { id: String(courseId) } }).catch((err) => {
+        console.error('Navigation error:', err)
+        showToast('Không thể vào khóa học. Vui lòng thử lại.', 'error')
+      })
+    }
   } else {
-    router.push({ name: 'student-course-player', params: { id: course.value.id } })
+    // Không có nội dung nào
+    showToast('Khóa học chưa có nội dung. Vui lòng thử lại sau.', 'warning')
   }
 }
 
-function enrollCourse() {
-  router.push({ name: 'student-payments-cart', query: { add: String(course.value?.id) } })
+async function enrollCourse() {
+  if (!course.value) return
+  
+  const courseId = course.value.id
+  const price = Number(course.value.price) || 0
+  
+  // Nếu khóa học miễn phí, enroll trực tiếp
+  if (price === 0) {
+    try {
+      await courseService.enroll(courseId)
+      
+      // Cập nhật trạng thái enrolled NGAY LẬP TỨC để UI phản hồi ngay
+      // Không cần chờ API response
+      normalizeEnrollmentFlag(true)
+      
+      // Force Vue reactivity update ngay lập tức
+      await nextTick()
+      
+      // Hiển thị toast thông báo thành công
+      showToast('Đăng ký khóa học thành công!', 'success')
+      
+      // Reload lại course data để đồng bộ với backend (chạy background)
+      // Không block UI, chỉ để đảm bảo data đồng bộ
+      api.get(`/student/courses/${courseId}/`, {
+        params: { _t: Date.now() } // Cache busting
+      }).then(({ data }) => {
+        if (data) {
+          course.value = data
+          // Đảm bảo isEnrolled được set đúng từ API response
+          normalizeEnrollmentFlag(data.isEnrolled)
+          console.log('After enroll reload - isEnrolled:', isEnrolled.value, 'from API:', data.isEnrolled)
+        }
+      }).catch((e: any) => {
+        console.error('Error reloading course after enroll:', e)
+        // Giữ nguyên isEnrolled = true nếu reload fail
+      })
+    } catch (e: any) {
+      console.error('Enroll error:', e)
+      // Nếu enroll fail, reset lại isEnrolled
+      normalizeEnrollmentFlag(false)
+      showToast(e?.message || 'Đăng ký khóa học thất bại', 'error')
+    }
+  } else {
+    // Nếu có phí, thêm vào giỏ hàng
+    router.push({ name: 'student-payments-cart', query: { add: String(courseId) } })
+  }
 }
 
 function toggleFavorite() {
@@ -446,7 +621,55 @@ async function submitReview() {
 }
 
 onMounted(() => {
+  restoreCachedEnrollment()
   loadCourse()
+})
+
+watch(() => route.params.id, () => {
+  currentCourseId.value = String(routeCourseId() || '')
+  restoreCachedEnrollment()
+}, { immediate: false })
+
+// Reload khi quay lại trang (nếu dùng keep-alive)
+onActivated(() => {
+  // Force reload khi quay lại từ player hoặc bất kỳ đâu
+  console.log('Component activated, reloading course data...')
+  loadCourse()
+})
+
+// Watch route params để reload khi chuyển course khác
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId !== oldId) {
+    console.log('Course ID changed, reloading...')
+    loadCourse()
+  }
+}, { immediate: false })
+
+// Watch route để reload khi quay lại từ player
+const previousRoute = ref<string | null>(null)
+watch(() => route.fullPath, (newPath) => {
+  // Nếu quay lại từ player (cùng course ID), reload data
+  if (previousRoute.value && previousRoute.value.includes('/player') && 
+      newPath.includes('/student/courses/') && !newPath.includes('/player')) {
+    const courseId = route.params.id
+    if (courseId) {
+      console.log('Returned from player, reloading course data...')
+      // Force reload với delay nhỏ để đảm bảo route đã update
+      setTimeout(() => {
+        loadCourse()
+      }, 100)
+    }
+  }
+  previousRoute.value = newPath
+}, { immediate: true })
+
+// Thêm onBeforeRouteUpdate để reload khi navigate vào
+onBeforeRouteUpdate((to, from) => {
+  // Nếu quay lại từ player, reload
+  if (from.path.includes('/player') && to.path.includes('/student/courses/') && !to.path.includes('/player')) {
+    console.log('Route update: returned from player, will reload')
+    loadCourse()
+  }
 })
 </script>
 

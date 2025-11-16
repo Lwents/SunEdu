@@ -17,7 +17,10 @@ class AdminSystemConfigView(APIView):
     def get(self, request):
         """Get system configuration"""
         # Get config from cache or default
-        config = cache.get('system_config')
+        try:
+            config = cache.get('system_config')
+        except Exception:
+            config = None
         if not config:
             config = self._get_default_config()
 
@@ -28,7 +31,11 @@ class AdminSystemConfigView(APIView):
         config = request.data
 
         # Validate and save to cache (in production, save to database)
-        cache.set('system_config', config, timeout=None)
+        try:
+            cache.set('system_config', config, timeout=None)
+        except Exception:
+            # If cache fails, continue without caching
+            pass
 
         # Update version
         config['version'] = config.get('version', 0) + 1
@@ -128,7 +135,10 @@ class AdminSystemBackupView(APIView):
     def get(self, request):
         """List backups"""
         # Placeholder - in production, query backup storage
-        backups = cache.get('system_backups', [])
+        try:
+            backups = cache.get('system_backups', [])
+        except Exception:
+            backups = []
         return Response(backups, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -144,9 +154,13 @@ class AdminSystemBackupView(APIView):
             'notes': f'Manual backup - {backup_type}'
         }
 
-        backups = cache.get('system_backups', [])
-        backups.insert(0, backup)
-        cache.set('system_backups', backups[:10], timeout=None)  # Keep last 10
+        try:
+            backups = cache.get('system_backups', [])
+            backups.insert(0, backup)
+            cache.set('system_backups', backups[:10], timeout=None)  # Keep last 10
+        except Exception:
+            # If cache fails, continue without caching
+            pass
 
         return Response(backup, status=status.HTTP_201_CREATED)
 
@@ -174,7 +188,10 @@ class AdminSystemAuditView(APIView):
     def get(self, request):
         """Get config audit log"""
         # Placeholder - in production, query audit log table
-        audits = cache.get('system_config_audits', [])
+        try:
+            audits = cache.get('system_config_audits', [])
+        except Exception:
+            audits = []
         return Response(audits, status=status.HTTP_200_OK)
 
 

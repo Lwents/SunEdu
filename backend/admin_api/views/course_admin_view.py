@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from admin_api.permissions import IsAdmin
-from content.models import Course, Subject, Module, Lesson
+from content.models import Course, Subject, Module, Lesson, Enrollment
 from custom_account.models import UserModel
 
 
@@ -56,16 +56,16 @@ class AdminCourseListView(APIView):
                 queryset = queryset.filter(published=False)
             # Add more status filters as needed
 
-        if from_date:
-            queryset = queryset.filter(id__gte=from_date)  # Placeholder - need created_at field
-
-        if to_date:
-            queryset = queryset.filter(id__lte=to_date)  # Placeholder
+        # Note: Course model doesn't have created_at field, so we skip date filtering for now
+        # if from_date:
+        #     queryset = queryset.filter(created_at__gte=from_date)
+        # if to_date:
+        #     queryset = queryset.filter(created_at__lte=to_date)
 
         # Annotate with counts
         queryset = queryset.annotate(
             lessons_count=Count('modules__lessons', distinct=True),
-            enrollments_count=Count('id')  # Placeholder - need actual enrollment count
+            enrollments_count=Count('enrollments', distinct=True)
         )
 
         # Paginate
@@ -75,6 +75,10 @@ class AdminCourseListView(APIView):
         # Serialize
         items = []
         for course in page_obj:
+            thumbnail_url = None
+            if course.thumbnail:
+                thumbnail_url = course.thumbnail.url if hasattr(course.thumbnail, 'url') else str(course.thumbnail)
+            
             items.append({
                 'id': str(course.id),
                 'title': course.title,
@@ -85,9 +89,9 @@ class AdminCourseListView(APIView):
                 'lessonsCount': getattr(course, 'lessons_count', 0),
                 'enrollments': getattr(course, 'enrollments_count', 0),
                 'status': 'published' if course.published else 'draft',
-                'createdAt': course.id.hex[:8],  # Placeholder - need created_at field
-                'updatedAt': course.id.hex[:8],  # Placeholder - need updated_at field
-                'thumbnail': None  # Placeholder
+                'createdAt': None,  # Course model doesn't have created_at field
+                'updatedAt': None,  # Course model doesn't have updated_at field
+                'thumbnail': thumbnail_url
             })
 
         return Response({
@@ -127,6 +131,14 @@ class AdminCourseDetailView(APIView):
                 'lessons': lessons
             })
 
+        # Get enrollment count
+        enrollments_count = Enrollment.objects.filter(course=course).count()
+        
+        # Get thumbnail URL
+        thumbnail_url = None
+        if course.thumbnail:
+            thumbnail_url = course.thumbnail.url if hasattr(course.thumbnail, 'url') else str(course.thumbnail)
+
         return Response({
             'id': str(course.id),
             'title': course.title,
@@ -136,11 +148,11 @@ class AdminCourseDetailView(APIView):
             'teacherId': str(course.owner.id) if course.owner else None,
             'teacherName': course.owner.email if course.owner else 'N/A',
             'lessonsCount': sum(len(s['lessons']) for s in sections),
-            'enrollments': 0,  # Placeholder
+            'enrollments': enrollments_count,
             'status': 'published' if course.published else 'draft',
-            'createdAt': course.id.hex[:8],  # Placeholder
-            'updatedAt': course.id.hex[:8],  # Placeholder
-            'thumbnail': None,  # Placeholder
+            'createdAt': None,  # Course model doesn't have created_at field
+            'updatedAt': None,  # Course model doesn't have updated_at field
+            'thumbnail': thumbnail_url,
             'level': None,  # Placeholder
             'durationMinutes': None,  # Placeholder
             'sections': sections
@@ -271,5 +283,7 @@ class AdminCourseBulkActionView(APIView):
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'success': True, 'count': courses.count()}, status=status.HTTP_200_OK)
+
+
 
 

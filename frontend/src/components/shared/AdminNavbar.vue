@@ -88,16 +88,29 @@ const showConfirm = ref(false)
 
 async function handleLogout() {
   try {
+    // Gọi logout và đợi hoàn tất
     if (typeof auth.logout === 'function') {
       await auth.logout()
     } else {
-      // localStorage.removeItem('access')
-      // localStorage.removeItem('accessToken')
-      // localStorage.removeItem('refresh')
-      localStorage.clear()
+      // Fallback nếu logout không phải function
+      auth.token = null
+      auth.user = null
+      localStorage.removeItem('auth')
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      sessionStorage.removeItem('accessToken')
+      sessionStorage.removeItem('refreshToken')
     }
-  } finally {
-    router.push({ name: 'Login', query: {} })
+    
+    // Đợi một chút để đảm bảo state đã được cập nhật hoàn toàn
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Redirect trực tiếp về login để tránh router guard xử lý phức tạp
+    await router.push('/auth/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    // Nếu có lỗi, vẫn redirect về login
+    await router.push('/auth/login')
   }
 }
 </script>

@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from admin_api.permissions import IsAdmin
 from custom_account.models import UserModel
-from content.models import Course
+from content.models import Course, Enrollment
 from payments.models import Payment
 
 
@@ -53,18 +53,18 @@ class AdminDashboardView(APIView):
             published=False
         ).count()
 
-        # Top courses by enrollments (mock - need enrollment model)
+        # Top courses by enrollments
         top_courses = Course.objects.filter(
             published=True
         ).annotate(
-            enrollments_count=Count('id')  # Placeholder - need actual enrollment count
-        ).order_by('-enrollments_count')[:5]
+            enrollments_count=Count('enrollments', distinct=True)
+        ).order_by('-enrollments_count', 'title')[:5]
 
         top_courses_data = [
             {
                 'id': str(course.id),
                 'title': course.title,
-                'enrollments': getattr(course, 'enrollments_count', 0)
+                'enrollments': course.enrollments_count
             }
             for course in top_courses
         ]
@@ -81,12 +81,13 @@ class AdminDashboardView(APIView):
                 'course': tx.plan.name if tx.plan else 'N/A',
                 'amount': float(tx.amount),
                 'gateway': tx.metadata.get('gateway', 'N/A') if tx.metadata else 'N/A',
-                'status': tx.status
+                'status': tx.status,
+                'createdAt': tx.created_at.isoformat() if tx.created_at else None
             }
             for tx in recent_transactions
         ]
 
-        # Pending approvals
+        # Pending approvals - courses that are not published
         pending_approvals = Course.objects.filter(
             published=False
         ).select_related('owner').order_by('-id')[:10]
@@ -96,7 +97,7 @@ class AdminDashboardView(APIView):
                 'id': str(course.id),
                 'title': course.title,
                 'teacher': course.owner.email if course.owner else 'N/A',
-                'submittedAt': course.id.hex[:8]  # Placeholder for submitted date
+                'submittedAt': None  # Course model doesn't have created_at, using None
             }
             for course in pending_approvals
         ]
@@ -134,5 +135,7 @@ class AdminDashboardView(APIView):
             'security': security,
             'system': system
         }, status=status.HTTP_200_OK)
+
+
 
 
