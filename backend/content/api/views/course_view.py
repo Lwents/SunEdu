@@ -124,13 +124,23 @@ class CourseListCreateView(generics.ListCreateAPIView):
             
             # Update course model with file uploads (only if files are actually provided)
             course_model = Course.objects.get(id=created_domain.id)
+            file_updated = False
             if 'thumbnail' in request.FILES and request.FILES['thumbnail']:
                 course_model.thumbnail = request.FILES['thumbnail']
+                file_updated = True
             if 'video_file' in request.FILES and request.FILES['video_file']:
                 course_model.video_file = request.FILES['video_file']
-            course_model.save()
+                file_updated = True
+            
+            if file_updated:
+                course_model.save()
+                # Refresh from database to get the saved file paths (not file objects)
+                course_model.refresh_from_db()
+            
+            # Convert to domain for response - this will convert file fields to strings
             created_domain = CourseDomain.from_model(course_model)
             
+            # Use serializer to properly format the response
             return Response(CourseDetailReadSerializer.from_domain(created_domain), status=status.HTTP_201_CREATED)
         except Exception as e:
             import traceback

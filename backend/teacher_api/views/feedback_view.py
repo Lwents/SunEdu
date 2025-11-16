@@ -1,4 +1,6 @@
 from django.db import transaction
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -83,15 +85,68 @@ class TeacherFeedbackView(APIView):
                 )
 
                 # Create notification for student
-                teacher_name = getattr(teacher, 'name', None) or getattr(teacher, 'username', 'Giáo viên')
-                Notification.objects.create(
-                    user=student,
-                    title='Phản hồi từ giáo viên',
-                    message=f'{teacher_name} đã gửi phản hồi cho bạn: {message[:100]}...',
-                    type='info',
-                    category='feedback',
-                    metadata={'feedback_id': str(feedback.id), 'teacher_id': str(teacher.id)}
-                )
+                try:
+                    teacher_name = getattr(teacher, 'name', None) or getattr(teacher, 'username', 'Giáo viên')
+                    # Try to get display_name from teacher profile
+                    if hasattr(teacher, 'profile') and teacher.profile:
+                        teacher_display_name = getattr(teacher.profile, 'display_name', None)
+                        if teacher_display_name:
+                            teacher_name = teacher_display_name
+                    
+                    notification_message = f'{teacher_name} đã gửi phản hồi cho bạn: {message[:100]}'
+                    if len(message) > 100:
+                        notification_message += '...'
+                    
+                    Notification.objects.create(
+                        user=student,
+                        title='Phản hồi từ giáo viên',
+                        message=notification_message,
+                        type='info',
+                        category='feedback',
+                        metadata={'feedback_id': str(feedback.id), 'teacher_id': str(teacher.id)}
+                    )
+                    logger.info(f"Notification created for student {student.id} from teacher {teacher.id}")
+                except Exception as notif_error:
+                    # Log error but don't fail the feedback creation
+                    logger.error(f"Error creating notification: {notif_error}", exc_info=True)
+                
+                # Send email to student
+                try:
+                    student_email = getattr(student, 'email', None)
+                    student_name = getattr(student, 'username', 'Học sinh')
+                    # Try to get display_name from student profile
+                    if hasattr(student, 'profile') and student.profile:
+                        student_display_name = getattr(student.profile, 'display_name', None)
+                        if student_display_name:
+                            student_name = student_display_name
+                    
+                    if student_email:
+                        email_subject = f'Phản hồi từ giáo viên {teacher_name}'
+                        email_message = f'''Xin chào {student_name},
+
+Giáo viên {teacher_name} đã gửi phản hồi cho bạn:
+
+{message}
+
+Đánh giá: {rating}/10
+
+Bạn có thể xem chi tiết phản hồi trong hệ thống SmartEdu.
+
+Trân trọng,
+Đội ngũ SmartEdu
+'''
+                        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@smartedu.vn')
+                        send_mail(
+                            subject=email_subject,
+                            message=email_message,
+                            from_email=from_email,
+                            recipient_list=[student_email],
+                            fail_silently=True,  # Don't fail feedback creation if email fails
+                        )
+                        logger.info(f"Email sent to student {student.id} ({student_email})")
+                except Exception as email_error:
+                    # Log error but don't fail the feedback creation
+                    logger.error(f"Error sending email: {email_error}", exc_info=True)
 
             serializer = TeacherFeedbackSerializer(feedback)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

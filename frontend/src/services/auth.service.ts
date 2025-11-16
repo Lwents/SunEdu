@@ -85,9 +85,12 @@ export interface ProfileDetails extends AuthUser {
   parent_email?: string
   parent_relation?: string
   parent_address?: string
+  title?: string
+  bio?: string
 }
 
 function normalizeProfileResponse(data: any): ProfileDetails {
+  const metadata = data.metadata || {}
   return {
     id: Number(data.id ?? 0),
     name: data.full_name ?? data.username ?? 'User',
@@ -100,16 +103,18 @@ function normalizeProfileResponse(data: any): ProfileDetails {
     fullName: data.full_name ?? undefined,
     dob: data.dob ?? undefined,
     gender: data.gender ?? undefined,
-    email_updates: data.email_updates ?? undefined,
-    address: data.address ?? undefined,
-    city: data.city ?? undefined,
-    district: data.district ?? undefined,
-    ward: data.ward ?? undefined,
-    parent_name: data.parent_name ?? undefined,
-    parent_phone: data.parent_phone ?? undefined,
-    parent_email: data.parent_email ?? undefined,
-    parent_relation: data.parent_relation ?? undefined,
-    parent_address: data.parent_address ?? undefined,
+    email_updates: data.email_updates ?? metadata.email_updates ?? undefined,
+    address: data.address ?? metadata.address ?? undefined,
+    city: data.city ?? metadata.city ?? undefined,
+    district: data.district ?? metadata.district ?? undefined,
+    ward: data.ward ?? metadata.ward ?? undefined,
+    parent_name: data.parent_name ?? metadata.parent_name ?? undefined,
+    parent_phone: data.parent_phone ?? metadata.parent_phone ?? undefined,
+    parent_email: data.parent_email ?? metadata.parent_email ?? undefined,
+    parent_relation: data.parent_relation ?? metadata.parent_relation ?? undefined,
+    parent_address: data.parent_address ?? metadata.parent_address ?? undefined,
+    title: data.title ?? metadata.title ?? undefined,
+    bio: data.bio ?? metadata.bio ?? undefined,
     createdAt: data.created_on ?? data.createdAt,
     updatedAt: data.updated_on ?? data.updatedAt,
   }
@@ -182,7 +187,22 @@ export const authService = {
   },
 
   async updateProfile(payload: ProfileUpdatePayload): Promise<ProfileDetails> {
-    const { data } = await http.patch('/account/profile/', payload)
+    // Map frontend fields to backend fields, including title and bio in metadata
+    const backendPayload: any = {}
+    if (payload.full_name) backendPayload.full_name = payload.full_name
+    if (payload.email) backendPayload.email = payload.email
+    if (payload.phone !== undefined) backendPayload.phone = payload.phone
+    if (payload.avatar_url) backendPayload.avatar_url = payload.avatar_url
+    if (payload.dob) backendPayload.dob = payload.dob
+    if (payload.gender) backendPayload.gender = payload.gender
+    // Store title and bio in metadata
+    const metadata: any = {}
+    if ((payload as any).title !== undefined) metadata.title = (payload as any).title
+    if ((payload as any).bio !== undefined) metadata.bio = (payload as any).bio
+    if (Object.keys(metadata).length > 0) {
+      backendPayload.metadata = metadata
+    }
+    const { data } = await http.patch('/account/profile/', backendPayload)
     return normalizeProfileResponse(data)
   },
 

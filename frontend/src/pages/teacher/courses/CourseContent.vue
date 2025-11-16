@@ -2,15 +2,27 @@
 <template>
   <div class="mx-auto max-w-6xl p-6">
     <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Quản lý nội dung khóa học
-        </h1>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ courseTitle }}</p>
+      <div class="flex items-center gap-4">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 transition"
+          @click="goBack"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Quay lại
+        </button>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Quản lý nội dung khóa học
+          </h1>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ courseTitle }}</p>
+        </div>
       </div>
       <button
         class="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
-        @click="showAddModule = true"
+        @click="openAddModule"
       >
         + Thêm chương mới
       </button>
@@ -349,8 +361,16 @@ async function loadModules() {
 
 function showAddLesson(moduleId: ID) {
   showAddLessonModuleId.value = String(moduleId)
+  
+  // Tự động tạo tên bài học: X.Y (X = số chương, Y = số bài tiếp theo)
+  const moduleIndex = modules.value.findIndex(m => String(m.id) === String(moduleId))
+  const moduleNumber = moduleIndex + 1
+  const lessonsInModule = lessonsByModule.value[String(moduleId)] || []
+  const lessonNumber = lessonsInModule.length + 1
+  const autoTitle = `Bài ${moduleNumber}.${lessonNumber}`
+  
   lessonForm.value = {
-    title: '',
+    title: autoTitle,
     content_type: 'lesson',
     video_url: '',
     videoType: 'url',
@@ -395,6 +415,14 @@ function formatFileSize(bytes: number): string {
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 
+function openAddModule() {
+  // Tự động tạo tên chương: "Chương X" (X = số chương tiếp theo)
+  const nextModuleNumber = modules.value.length + 1
+  moduleForm.value = { title: `Chương ${nextModuleNumber}` }
+  editingModule.value = null
+  showAddModule.value = true
+}
+
 function editModule(module: Module) {
   editingModule.value = module
   moduleForm.value = { title: module.title }
@@ -420,19 +448,17 @@ function goEditLesson(lessonId: string) {
 function closeModuleModal() {
   showAddModule.value = false
   editingModule.value = null
-  moduleForm.value = { title: '' }
+  // Không reset title để giữ lại giá trị cho lần sau
+  // moduleForm.value = { title: '' }
 }
 
 function closeLessonModal() {
   showAddLessonModuleId.value = null
   editingLesson.value = null
-  lessonForm.value = {
-    title: '',
-    content_type: 'lesson',
-    video_url: '',
-    videoType: 'url',
-    videoFile: null,
-  }
+  // Không reset form để giữ lại giá trị cho lần sau
+  // Chỉ reset video file
+  lessonForm.value.videoFile = null
+  lessonForm.value.video_url = ''
   if (videoFileInput.value) {
     videoFileInput.value.value = ''
   }
@@ -449,9 +475,25 @@ async function saveModule() {
         title: moduleForm.value.title,
         course: courseId,
       })
+      // Tự động tăng số chương cho lần sau
+      const currentNumber = parseInt(moduleForm.value.title.match(/\d+/)?.[0] || '0')
+      if (currentNumber > 0) {
+        moduleForm.value.title = `Chương ${currentNumber + 1}`
+      } else {
+        // Nếu không có số, tạo số tiếp theo dựa trên số chương hiện có
+        moduleForm.value.title = `Chương ${modules.value.length + 2}`
+      }
     }
-    closeModuleModal()
-    await loadModules()
+    if (!editingModule.value) {
+      // Nếu là thêm mới, giữ lại form để có thể thêm tiếp
+      // Không đóng modal, chỉ reload danh sách
+      await loadModules()
+      showToast('Đã thêm chương thành công', 'success')
+    } else {
+      // Nếu là sửa, đóng modal
+      closeModuleModal()
+      await loadModules()
+    }
   } catch (e: any) {
     showToast(e?.message || 'Không thể lưu chương', 'error')
   } finally {
@@ -463,6 +505,9 @@ async function saveLesson() {
   if (!lessonForm.value.title.trim() || !showAddLessonModuleId.value) return
   saving.value = true
   try {
+    const currentTitle = lessonForm.value.title
+    const moduleId = showAddLessonModuleId.value
+    
     if (editingLesson.value) {
       // Update existing lesson
       if (lessonForm.value.videoType === 'file' && lessonForm.value.videoFile) {
@@ -483,6 +528,9 @@ async function saveLesson() {
         }
         await contentService.updateLesson(editingLesson.value.id, lessonData)
       }
+      closeLessonModal()
+      await loadModules()
+      showToast('Đã cập nhật bài học thành công', 'success')
     } else {
       // Create new lesson
       if (lessonForm.value.videoType === 'file' && lessonForm.value.videoFile) {
@@ -490,16 +538,16 @@ async function saveLesson() {
         const formData = new FormData()
         formData.append('title', lessonForm.value.title)
         formData.append('content_type', lessonForm.value.content_type)
-        formData.append('module', String(showAddLessonModuleId.value))
+        formData.append('module', String(moduleId))
         formData.append('video_file', lessonForm.value.videoFile)
         // Create lesson with FormData (backend will handle it)
-        await contentService.createLesson(showAddLessonModuleId.value, formData as any)
+        await contentService.createLesson(moduleId, formData as any)
       } else {
         // Create lesson with video_url or without video
         const lessonData: any = {
           title: lessonForm.value.title,
           content_type: lessonForm.value.content_type,
-          module: showAddLessonModuleId.value,
+          module: moduleId,
         }
 
         // Add video_url if provided
@@ -511,12 +559,28 @@ async function saveLesson() {
           lessonData.video_url = lessonForm.value.video_url.trim()
         }
 
-        await contentService.createLesson(showAddLessonModuleId.value, lessonData)
+        await contentService.createLesson(moduleId, lessonData)
       }
+      
+      // Tự động tăng số bài học cho lần sau
+      await loadModules() // Reload để có số bài học mới nhất
+      const moduleIndex = modules.value.findIndex(m => String(m.id) === String(moduleId))
+      const moduleNumber = moduleIndex + 1
+      const lessonsInModule = lessonsByModule.value[String(moduleId)] || []
+      const nextLessonNumber = lessonsInModule.length + 1
+      
+      // Tự động tạo tên bài học tiếp theo
+      lessonForm.value.title = `Bài ${moduleNumber}.${nextLessonNumber}`
+      // Reset video fields để có thể thêm tiếp
+      lessonForm.value.videoFile = null
+      lessonForm.value.video_url = ''
+      if (videoFileInput.value) {
+        videoFileInput.value.value = ''
+      }
+      
+      showToast('Đã thêm bài học thành công', 'success')
+      // Không đóng modal để có thể thêm tiếp
     }
-    closeLessonModal()
-    await loadModules()
-    showToast('Đã lưu bài học thành công', 'success')
   } catch (e: any) {
     console.error('Error saving lesson:', e)
     showToast(e?.response?.data?.detail || e?.message || 'Không thể lưu bài học', 'error')
@@ -559,6 +623,14 @@ async function deleteLesson(lessonId: ID) {
   } catch (e: any) {
     showToast(e?.message || 'Không thể xóa bài học', 'error')
   }
+}
+
+function goBack() {
+  // Lưu tất cả thay đổi trước khi quay lại
+  // Các thay đổi đã được lưu tự động khi user thêm/sửa/xóa
+  router.push({ name: 'teacher-courses' }).catch(() => {
+    window.history.length > 1 ? window.history.back() : router.push('/teacher/courses')
+  })
 }
 
 onMounted(async () => {

@@ -39,6 +39,8 @@ def build_profile_payload(user, profile):
         "parent_email": metadata.get("parent_email", ""),
         "parent_relation": metadata.get("parent_relation", ""),
         "parent_address": metadata.get("parent_address", ""),
+        "title": metadata.get("title", ""),
+        "bio": metadata.get("bio", ""),
         "created_on": user.created_on,
         "updated_on": profile.metadata.get("updated_on") or profile.user.updated_on,
     }
@@ -97,7 +99,7 @@ class UserProfileView(RoleBasedOutputMixin, APIView):
             profile.gender = data.get("gender")
 
         metadata = profile.metadata or {}
-        for key in ("address", "city", "district", "ward", "parent_name", "parent_phone", "parent_email", "parent_relation", "parent_address"):
+        for key in ("address", "city", "district", "ward", "parent_name", "parent_phone", "parent_email", "parent_relation", "parent_address", "title", "bio"):
             if key in data:
                 metadata[key] = data[key]
         if "email_updates" in data:

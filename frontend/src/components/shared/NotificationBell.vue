@@ -218,7 +218,8 @@ const apiEndpoint = computed(() => {
 // ===== METHODS =====
 function toggleDropdown() {
   isOpen.value = !isOpen.value
-  if (isOpen.value && notifications.value.length === 0) {
+  // Always fetch when opening to get latest notifications
+  if (isOpen.value) {
     fetchNotifications()
   }
 }
@@ -234,9 +235,23 @@ async function fetchNotifications() {
     
     // Backend returns { notifications: [...] }
     const data = response.data || {}
-    notifications.value = data.notifications || []
-  } catch (error) {
+    const fetchedNotifications = data.notifications || []
+    
+    // Map backend data to frontend format
+    notifications.value = fetchedNotifications.map((n: any) => ({
+      id: n.id,
+      title: n.title || 'Thông báo',
+      message: n.message || '',
+      type: n.type || 'info',
+      is_read: n.is_read || false,
+      created_at: n.created_at || new Date().toISOString(),
+      category: n.category,
+    }))
+    
+    console.log(`Fetched ${notifications.value.length} notifications`)
+  } catch (error: any) {
     console.error('Failed to fetch notifications:', error)
+    console.error('Error details:', error?.response?.data || error?.message)
     // Only use mock if API completely fails
     notifications.value = []
   } finally {
