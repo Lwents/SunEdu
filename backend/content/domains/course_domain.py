@@ -188,10 +188,19 @@ class CourseDomain:
             price=float(getattr(model, 'price', 0) or 0)
         )
         # Set thumbnail and video_file separately as they're not in __init__
+        # Convert file fields to string paths, handling both file objects and string paths
         if hasattr(model, 'thumbnail') and model.thumbnail:
-            c.thumbnail = str(model.thumbnail)
+            # If it's a file object, get the name. If it's already a string, use it directly
+            if hasattr(model.thumbnail, 'name'):
+                c.thumbnail = model.thumbnail.name
+            else:
+                c.thumbnail = str(model.thumbnail) if model.thumbnail else None
         if hasattr(model, 'video_file') and model.video_file:
-            c.video_file = str(model.video_file)
+            # If it's a file object, get the name. If it's already a string, use it directly
+            if hasattr(model.video_file, 'name'):
+                c.video_file = model.video_file.name
+            else:
+                c.video_file = str(model.video_file) if model.video_file else None
         # If model has prefetched modules/lessons/versions we can build nested domain objects
         if hasattr(model, "modules_prefetched") and model.modules_prefetched:
             for mod_m in model.modules_prefetched:

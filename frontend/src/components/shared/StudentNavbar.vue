@@ -228,7 +228,7 @@ const displayEmail = computed(() => auth.user?.email || 'student@example.com')
 const menu = [
   { path: '/student/dashboard', label: 'Trang chủ' },
   { path: '/student/courses', label: 'Khóa học' },
-  { path: '/student/exams', label: 'Ôn luyện & Thi' },
+  { path: '/student/exams', label: 'Bài kiểm tra' },
   { path: '/student/games', label: 'Trò chơi' },
 ]
 

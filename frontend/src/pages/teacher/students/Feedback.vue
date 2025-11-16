@@ -58,7 +58,7 @@
                 :class="selectedId === s.id ? 'bg-slate-100' : ''"
                 @click="select(s.id)"
               >
-                <img :src="s.avatar" :alt="s.name" class="h-9 w-9 rounded-full object-cover border border-slate-200" />
+                <img :src="getStudentAvatar(s)" :alt="s.name" class="h-9 w-9 rounded-full object-cover border border-slate-200" />
                 <div class="min-w-0 flex-1">
                   <div class="truncate text-sm font-medium text-slate-900">{{ s.name }}</div>
                   <div class="truncate text-xs text-slate-500">
@@ -82,7 +82,7 @@
           <div v-else class="space-y-4">
             <div class="flex items-center gap-3">
               <img
-                :src="current.avatar"
+                :src="getStudentAvatar(current)"
                 :alt="current.name"
                 class="h-12 w-12 rounded-full object-cover border border-slate-200"
               />
@@ -185,7 +185,7 @@ import { showToast } from '@/utils/toast'
 type StudentRow = {
   id: number
   name: string
-  avatar: string
+  avatar: string | null
   classCode: string
   course: string
   progress: number
@@ -232,48 +232,37 @@ async function fetchStudents() {
     
     allStudents.value = response.items.map((s, i) => {
       const id = Number(s.id)
-      // Get first course for display
+      // Get first course for display - dùng dữ liệu thật từ API
       const firstCourse = s.courses && s.courses.length > 0 ? s.courses[0] : null
-      const cls = firstCourse ? `L${(id % 5) + 1}0${(id % 3) + 1}` : `L${(id % 5) + 1}0${(id % 3) + 1}`
-      const course = firstCourse ? firstCourse.title : `Khoá ${(id % 6) + 1}`
-      const progress = firstCourse ? firstCourse.progress : (40 + ((id + i) % 50))
+      const course = firstCourse ? firstCourse.title : 'Chưa có khóa học'
+      const progress = firstCourse ? firstCourse.progress : 0
+      // Class code - tạo từ course ID hoặc để trống nếu không có
+      const cls = firstCourse ? `Khóa ${firstCourse.id}` : 'Chưa có lớp'
       
-      // Calculate average score from courses
+      // Calculate average score from courses - dùng dữ liệu thật
       let totalScore = 0
       let scoreCount = 0
       if (s.courses && s.courses.length > 0) {
-        // Placeholder: use progress as score estimate
+        // Tính điểm trung bình từ progress của các khóa học
         s.courses.forEach(c => {
-          totalScore += c.progress / 10 // Convert progress to score
+          // Chuyển progress (0-100) thành điểm (0-10)
+          totalScore += (c.progress || 0) / 10
           scoreCount++
         })
       }
-      const avgScore = scoreCount > 0 ? totalScore / scoreCount : (6 + ((id + i) % 40) / 10)
-      
-      // Get avatar URL - handle both relative and absolute URLs
-      let avatarUrl = s.avatar || null
-      if (avatarUrl && !avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://')) {
-        // If relative URL, construct full URL
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-        const baseUrl = apiUrl.replace(/\/+$/, '')
-        avatarUrl = avatarUrl.startsWith('/') ? `${baseUrl}${avatarUrl}` : `${baseUrl}/${avatarUrl}`
-      }
-      // Fallback to dicebear if no avatar
-      if (!avatarUrl) {
-        avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(s.username || s.name || String(id))}&backgroundType=gradientLinear`
-      }
+      const avgScore = scoreCount > 0 ? totalScore / scoreCount : 0
       
       return {
         id,
         name: s.name || s.username || `Học sinh ${id}`,
-        avatar: avatarUrl,
+        avatar: s.avatar || null, // Lưu avatar URL từ backend (có thể là full URL hoặc relative)
         classCode: cls,
         course,
         progress,
         avgScore: Math.min(10, Math.max(0, avgScore)),
         lastActive: firstCourse && firstCourse.enrolledAt 
           ? new Date(firstCourse.enrolledAt).toLocaleString('vi-VN')
-          : new Date(now - (i + 1) * 36e5).toLocaleString('vi-VN'),
+          : 'Chưa có hoạt động',
       }
     })
   } catch (e: any) {
@@ -377,6 +366,29 @@ async function send() {
   } finally {
     sending.value = false
   }
+}
+
+function getStudentAvatar(student: StudentRow): string {
+  let avatarUrl = student.avatar || null
+  
+  // Handle relative URLs - backend có thể trả về full URL hoặc relative
+  if (avatarUrl && !avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://') && !avatarUrl.startsWith('data:')) {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const baseUrl = apiUrl.replace(/\/+$/, '')
+    // Nếu là relative path, thêm /media/ prefix
+    if (avatarUrl.startsWith('/')) {
+      avatarUrl = `${baseUrl}${avatarUrl}`
+    } else {
+      avatarUrl = `${baseUrl}/media/${avatarUrl}`
+    }
+  }
+  
+  // Fallback to dicebear if no avatar
+  if (!avatarUrl) {
+    avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(student.name || String(student.id))}&backgroundType=gradientLinear`
+  }
+  
+  return avatarUrl
 }
 
 function goBack() {
