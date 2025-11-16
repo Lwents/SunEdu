@@ -16,6 +16,17 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'title', 'message', 'type', 'category', 'is_read', 'created_at', 'metadata']
         read_only_fields = ['id', 'created_at']
+    
+    def to_representation(self, instance):
+        """Ensure all fields are properly serialized"""
+        data = super().to_representation(instance)
+        # Ensure is_read is boolean
+        data['is_read'] = bool(instance.is_read) if hasattr(instance, 'is_read') else False
+        # Ensure created_at is properly formatted as ISO string
+        if 'created_at' in data and data['created_at']:
+            if hasattr(instance.created_at, 'isoformat'):
+                data['created_at'] = instance.created_at.isoformat()
+        return data
 
 
 class StudentNotificationsView(APIView):
@@ -35,6 +46,7 @@ class StudentNotificationsView(APIView):
             ).order_by('-created_at')[:limit]
 
             serializer = NotificationSerializer(notifications, many=True)
+            logger.info(f"Returning {len(serializer.data)} notifications for user {user.id}")
             return Response({
                 'notifications': serializer.data
             }, status=status.HTTP_200_OK)

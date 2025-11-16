@@ -53,7 +53,7 @@
               controls
               playsinline
               @ended="onVideoEnded"
-              @play="onVideoWatched"
+              @timeupdate="onVideoTimeUpdate"
             ></video>
             <!-- Fallback: Course video -->
             <template v-else>
@@ -75,7 +75,7 @@
                 controls
                 playsinline
                 @ended="onVideoEnded"
-                @play="onVideoWatched"
+                @timeupdate="onVideoTimeUpdate"
               ></video>
             </template>
             <div class="space-y-1 px-6 py-5">
@@ -242,7 +242,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watchEffect, watch, nextTick } from 'vue'
+import { computed, onMounted, onBeforeUnmount, reactive, ref, watchEffect, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { courseService, type CourseDetail } from '@/services/course.service'
 import { contentService } from '@/services/content.service'
@@ -267,6 +267,9 @@ const currentLessonExercises = ref<any[]>([])
 const lessonProgress = ref<any>(null)
 const lessonLocked = ref(false)
 const unlockReason = ref<string>('')
+const videoWatchedPercentage = ref<number>(0)
+const hasMarkedAsWatched = ref<boolean>(false)
+const WATCHED_THRESHOLD = 75 // Phải xem 75% video mới tính là đã xem
 
 function normalizeRouteParam(param: any): string | number | undefined {
   if (Array.isArray(param)) return param[0]
@@ -538,8 +541,8 @@ async function onYouTubeIframeLoad() {
           'onStateChange': onYouTubeStateChange,
           'onReady': () => {
             console.log('YouTube player ready')
-            // Đánh dấu đã xem khi video bắt đầu phát
-            onVideoWatched()
+            // Bắt đầu track progress cho YouTube video
+            startYouTubeProgressTracking()
           },
           'onError': (event: any) => {
             console.error('YouTube player error:', event.data)
@@ -553,13 +556,48 @@ async function onYouTubeIframeLoad() {
   }
 }
 
+let youtubeProgressInterval: any = null
+
+function startYouTubeProgressTracking() {
+  // Clear interval cũ nếu có
+  if (youtubeProgressInterval) {
+    clearInterval(youtubeProgressInterval)
+  }
+  
+  // Track progress mỗi 2 giây
+  youtubeProgressInterval = setInterval(() => {
+    if (youtubePlayer.value && youtubePlayer.value.getCurrentTime && youtubePlayer.value.getDuration) {
+      try {
+        const currentTime = youtubePlayer.value.getCurrentTime()
+        const duration = youtubePlayer.value.getDuration()
+        if (duration > 0) {
+          const percentage = (currentTime / duration) * 100
+          videoWatchedPercentage.value = percentage
+          checkAndMarkVideoWatched(percentage)
+        }
+      } catch (e) {
+        console.error('Error tracking YouTube progress:', e)
+      }
+    }
+  }, 2000) // Check mỗi 2 giây
+}
+
 function onYouTubeStateChange(event: any) {
   // YouTube player states:
   // -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
   if (event.data === 0) { // Video ended
+    // Clear interval khi video kết thúc
+    if (youtubeProgressInterval) {
+      clearInterval(youtubeProgressInterval)
+      youtubeProgressInterval = null
+    }
     onVideoEnded()
   } else if (event.data === 1) { // Video playing
-    onVideoWatched()
+    // Bắt đầu track progress khi video bắt đầu phát
+    startYouTubeProgressTracking()
+  } else if (event.data === 2) { // Video paused
+    // Có thể dừng tracking khi pause để tiết kiệm tài nguyên
+    // Nhưng giữ lại để tiếp tục track khi resume
   }
 }
 
@@ -598,6 +636,17 @@ function goBack() {
 async function loadLessonDetail(lessonId: string | number | null) {
   const cid = courseId.value
   if (!cid) return
+  
+  // Reset video tracking state khi chuyển lesson
+  videoWatchedPercentage.value = 0
+  hasMarkedAsWatched.value = false
+  
+  // Clear YouTube progress interval nếu có
+  if (youtubeProgressInterval) {
+    clearInterval(youtubeProgressInterval)
+    youtubeProgressInterval = null
+  }
+  
   try {
     const endpoint = lessonId
       ? `/student/courses/${cid}/player/${lessonId}/`
@@ -605,6 +654,12 @@ async function loadLessonDetail(lessonId: string | number | null) {
     const { data } = await api.get(endpoint)
     currentLessonDetail.value = data
     lessonProgress.value = data.progress || null
+    
+    // Nếu đã được đánh dấu là watched từ backend, set flag
+    if (lessonProgress.value?.video_watched) {
+      hasMarkedAsWatched.value = true
+    }
+    
     const activeLessonId = String(data.id || lessonId || '')
     
     // Load exercises
@@ -660,16 +715,44 @@ async function goNext(){
   if (found) await goToLesson(found.si, found.li)
 }
 
-async function onVideoWatched() {
+function onVideoTimeUpdate() {
+  if (!videoRef.value || !currentLesson.value?.id) return
+  
+  const video = videoRef.value
+  if (video.duration > 0) {
+    const percentage = (video.currentTime / video.duration) * 100
+    videoWatchedPercentage.value = percentage
+    checkAndMarkVideoWatched(percentage)
+  }
+}
+
+async function checkAndMarkVideoWatched(percentage: number) {
+  // Chỉ đánh dấu một lần khi đạt 75%
+  if (hasMarkedAsWatched.value || percentage < WATCHED_THRESHOLD) {
+    return
+  }
+  
   if (!currentLesson.value?.id) return
+  
+  hasMarkedAsWatched.value = true
   try {
     await contentService.updateLessonProgress(currentLesson.value.id, { video_watched: true })
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
     }
+    console.log(`Video marked as watched at ${percentage.toFixed(1)}%`)
   } catch (e) {
     console.error('Error updating video watched:', e)
+    hasMarkedAsWatched.value = false // Reset để thử lại
   }
+}
+
+async function onVideoWatched() {
+  // Deprecated: Giữ lại để tương thích nhưng không dùng nữa
+  // Logic mới dùng checkAndMarkVideoWatched thay thế
+  if (!currentLesson.value?.id) return
+  const percentage = videoWatchedPercentage.value
+  await checkAndMarkVideoWatched(percentage)
 }
 
 async function onVideoEnded() {
@@ -678,8 +761,16 @@ async function onVideoEnded() {
   const lessonId = String(currentLesson.value.id)
   console.log('Video ended for lesson:', lessonId)
   
-  // Đánh dấu video đã xem xong
-  await onVideoWatched()
+  // Clear YouTube progress interval
+  if (youtubeProgressInterval) {
+    clearInterval(youtubeProgressInterval)
+    youtubeProgressInterval = null
+  }
+  
+  // Đảm bảo video được đánh dấu là đã xem (nếu chưa đạt 75% thì đánh dấu luôn khi kết thúc)
+  if (!hasMarkedAsWatched.value) {
+    await checkAndMarkVideoWatched(100) // 100% khi video kết thúc
+  }
   
   // Cập nhật progress: video completed
   try {
@@ -836,6 +927,15 @@ onMounted(async () => {
   const lessonParam = normalizeRouteParam(route.params.lessonId)
   if (lessonParam) {
     await loadLessonDetail(lessonParam)
+  }
+})
+
+// Cleanup khi component unmount
+onBeforeUnmount(() => {
+  // Clear YouTube progress interval
+  if (youtubeProgressInterval) {
+    clearInterval(youtubeProgressInterval)
+    youtubeProgressInterval = null
   }
 })
 </script>

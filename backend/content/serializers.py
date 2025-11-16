@@ -165,12 +165,26 @@ class CourseSerializer(serializers.ModelSerializer):
         result['status'] = 'published' if domain.published else 'draft'
         # Add thumbnail and video_file URLs if available
         from django.conf import settings
-        if hasattr(domain, 'thumbnail') and domain.thumbnail:
-            thumb_str = str(domain.thumbnail)
-            result['thumbnail'] = f"{settings.MEDIA_URL}{thumb_str}" if not thumb_str.startswith('http') else thumb_str
-        if hasattr(domain, 'video_file') and domain.video_file:
-            video_str = str(domain.video_file)
-            result['video_file'] = f"{settings.MEDIA_URL}{video_str}" if not video_str.startswith('http') else video_str
+        # Handle thumbnail - ensure it's a string, not a file object
+        thumbnail = getattr(domain, 'thumbnail', None)
+        if thumbnail:
+            # If it's a file object, get the name. If it's already a string, use it directly
+            if hasattr(thumbnail, 'name'):
+                thumb_str = thumbnail.name
+            else:
+                thumb_str = str(thumbnail)
+            if thumb_str and thumb_str != 'None':
+                result['thumbnail'] = f"{settings.MEDIA_URL}{thumb_str}" if not thumb_str.startswith('http') else thumb_str
+        # Handle video_file - ensure it's a string, not a file object
+        video_file = getattr(domain, 'video_file', None)
+        if video_file:
+            # If it's a file object, get the name. If it's already a string, use it directly
+            if hasattr(video_file, 'name'):
+                video_str = video_file.name
+            else:
+                video_str = str(video_file)
+            if video_str and video_str != 'None':
+                result['video_file'] = f"{settings.MEDIA_URL}{video_str}" if not video_str.startswith('http') else video_str
         return result
 
 

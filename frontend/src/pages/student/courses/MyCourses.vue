@@ -651,11 +651,19 @@ async function enroll(id: number | string){
 
 function getThumbnailUrl(thumbnail?: string): string {
   if (!thumbnail) return ''
+  // If already a full URL, return as is
   if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
     return thumbnail
   }
+  // If it's a data URL (base64), return as is
+  if (thumbnail.startsWith('data:')) {
+    return thumbnail
+  }
+  // Otherwise, prepend media URL
   const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  return `${apiBase}/media/${thumbnail}`
+  // Remove leading slash if present
+  const cleanThumbnail = thumbnail.startsWith('/') ? thumbnail.slice(1) : thumbnail
+  return `${apiBase}/media/${cleanThumbnail}`
 }
 
 function handleImageError(event: Event) {

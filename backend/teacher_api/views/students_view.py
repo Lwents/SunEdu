@@ -56,6 +56,26 @@ class TeacherStudentsView(APIView):
                                 profile = student.profile
                                 student_name = getattr(profile, 'display_name', None)
                                 student_avatar = getattr(profile, 'avatar_url', None)
+                                
+                                # Build full avatar URL if it's a relative path
+                                if student_avatar and not student_avatar.startswith('http://') and not student_avatar.startswith('https://') and not student_avatar.startswith('data:'):
+                                    from django.conf import settings
+                                    # Get request to build absolute URL
+                                    request = self.request
+                                    if request:
+                                        # Use request.build_absolute_uri for full URL
+                                        if student_avatar.startswith('/'):
+                                            student_avatar = request.build_absolute_uri(student_avatar)
+                                        else:
+                                            media_url = getattr(settings, 'MEDIA_URL', '/media/')
+                                            student_avatar = request.build_absolute_uri(f"{media_url.rstrip('/')}/{student_avatar}")
+                                    else:
+                                        # Fallback: use MEDIA_URL if no request available
+                                        media_url = getattr(settings, 'MEDIA_URL', '/media/')
+                                        if not student_avatar.startswith('/'):
+                                            student_avatar = f"{media_url}{student_avatar}"
+                                        else:
+                                            student_avatar = f"{media_url.rstrip('/')}{student_avatar}"
                         except Exception as e:
                             logger.debug(f"Error getting profile for student {student_id}: {e}")
                         
