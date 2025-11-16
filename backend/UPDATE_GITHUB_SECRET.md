@@ -16,7 +16,7 @@ Copy toàn bộ nội dung dưới đây và paste vào GitHub Secret `BACKEND_E
 # ==============================================
 
 # SECRET_KEY - ĐÃ CẬP NHẬT KEY MỚI MẠNH HƠN
-SECRET_KEY=b2+UZvatIff7eTI9+6hVKCq1QrrWxVkBE12r2XVgN7CCqoy7ESgKYKgP1tOo827yNAU=
+SECRET_KEY=your-secret-key-here-change-this-in-production
 
 # DEBUG - ĐỂ False KHI DEPLOY PRODUCTION
 DEBUG=False
@@ -28,7 +28,7 @@ DB_NAME=elearning
 DB_USER=elearning
 # ⚠️ CẢNH BÁO: Đổi password này khi deploy production!
 # Khuyến nghị: password ít nhất 16 ký tự, có chữ hoa, số, ký tự đặc biệt
-DB_PASSWORD=123456
+DB_PASSWORD=your-strong-db-password-here
 DB_HOST=db
 DB_PORT=5432
 
@@ -58,9 +58,9 @@ FRONTEND_URL=https://smartedu.click
 # MOMO PAYMENT GATEWAY
 # ⚠️ LƯU Ý: Đây là test credentials, thay bằng production keys khi go-live
 # ==============================================
-MOMO_PARTNER_CODE=MOMO
-MOMO_ACCESS_KEY=F8BBA842ECF85
-MOMO_SECRET_KEY=K951B6PE1waDMi640xX08PD3vg6EkVlz
+MOMO_PARTNER_CODE=YOUR_MOMO_PARTNER_CODE
+MOMO_ACCESS_KEY=YOUR_MOMO_ACCESS_KEY
+MOMO_SECRET_KEY=YOUR_MOMO_SECRET_KEY
 MOMO_REDIRECT_URL=https://smartedu.click/payment/callback
 MOMO_IPN_URL=https://api.smartedu.click/api/payments/momo/ipn/
 MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
@@ -74,12 +74,12 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 # ==============================================
 # EMAIL SETTINGS
 # ==============================================
-EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=your-email@gmail.com
-EMAIL_HOST_PASSWORD=your-app-password
+EMAIL_HOST_PASSWORD=your-gmail-app-password-here
 DEFAULT_FROM_EMAIL=noreply@smartedu.click
 
 # ==============================================
@@ -114,6 +114,7 @@ AWS_S3_REGION_NAME=ap-southeast-1
 Sau khi cập nhật secret, deploy lại:
 
 **Cách 1: Push code mới**
+
 ```bash
 git add .
 git commit -m "Update .env configuration"
@@ -121,6 +122,7 @@ git push origin develop
 ```
 
 **Cách 2: Chạy workflow thủ công**
+
 1. Vào tab **Actions** trên GitHub
 2. Click workflow **Deploy Backend**
 3. Click **Run workflow**
@@ -148,14 +150,15 @@ curl -I https://api.smartedu.click/api/content/courses/
 ## 🔍 KIỂM TRA SECRET HIỆN TẠI
 
 Để xem secret hiện tại trên EC2:
+
 ```bash
 ssh -i ~/Documents/importanr/lwent.pem ubuntu@3.26.183.143 "cat /var/www/SunEdu/backend/.env | grep -E 'ALLOWED_HOSTS|CSRF_TRUSTED|CORS_ALLOWED'"
 ```
 
 Kết quả mong đợi:
+
 ```
 ALLOWED_HOSTS=127.0.0.1,localhost,api.smartedu.click
 CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173,http://127.0.0.1:5173,https://api.smartedu.click,https://smartedu.click,https://www.smartedu.click
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,https://api.smartedu.click,https://smartedu.click,https://www.smartedu.click
 ```
-
