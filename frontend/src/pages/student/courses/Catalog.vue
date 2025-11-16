@@ -78,12 +78,24 @@
           class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           @click="open(c.id)"
         >
-          <img :src="c.thumbnail" :alt="c.title" class="h-36 w-full object-cover" />
+          <img 
+            v-if="c.thumbnail" 
+            :src="getThumbnailUrl(c.thumbnail)" 
+            :alt="c.title" 
+            class="h-36 w-full object-cover"
+            @error="handleImageError"
+          />
+          <div v-else class="flex h-36 w-full items-center justify-center bg-slate-200">
+            <span class="text-slate-400 text-sm">Chưa có ảnh</span>
+          </div>
           <div class="p-4">
             <div class="line-clamp-2 text-sm font-extrabold leading-snug text-slate-900">{{ c.title }}</div>
             <div class="mt-2 flex items-center gap-2 text-xs text-slate-600">
               <span class="inline-flex items-center rounded-full border border-slate-200 px-2 py-0.5">Khối {{ c.grade }}</span>
               <span class="inline-flex items-center rounded-full border border-slate-200 px-2 py-0.5">{{ subjectLabel(c.subject) }}</span>
+            </div>
+            <div class="mt-2 text-sm font-semibold" :class="(c.price || 0) === 0 ? 'text-green-600' : 'text-amber-600'">
+              {{ (c.price || 0) === 0 ? 'Miễn phí' : formatPrice(c.price) }}
             </div>
           </div>
           <div class="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-slate-600 ring-1 ring-slate-200">PUBLISHED</div>
@@ -219,6 +231,26 @@ async function load(){
 }
 function open(id: number | string){
   router.push({ name: 'student-course-detail', params: { id } })
+}
+
+function getThumbnailUrl(thumbnail?: string): string {
+  if (!thumbnail) return ''
+  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
+    return thumbnail
+  }
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  return `${apiBase}/media/${thumbnail}`
+}
+
+function handleImageError(event: Event) {
+  const img = event.target as HTMLImageElement
+  img.src = 'https://via.placeholder.com/400x300?text=No+Image'
+}
+
+function formatPrice(price?: number | string): string {
+  if (!price || price === 0 || price === '0') return 'Miễn phí'
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(numPrice)
 }
 
 onMounted(() => {

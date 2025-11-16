@@ -4,7 +4,7 @@
     <main class="w-full mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 md:px-10 md:py-8">
       <!-- Header -->
       <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-xl font-semibold sm:text-2xl">Chấm bài · {{ header }}</h1>
+        <h1 class="text-xl font-semibold sm:text-2xl">Xem bài làm · {{ header }}</h1>
 
         <!-- Tools -->
         <div class="grid grid-cols-1 gap-2 sm:auto-cols-fr sm:grid-flow-col">
@@ -30,8 +30,8 @@
             @change="touchFilterToken()"
           >
             <option value="all">Tất cả</option>
-            <option value="pending">Chưa chấm</option>
-            <option value="graded">Đã chấm</option>
+            <option value="pending">Chưa nộp</option>
+            <option value="submitted">Đã nộp</option>
           </select>
         </div>
       </div>
@@ -62,33 +62,34 @@
               </div>
               <span
                 class="shrink-0 rounded-full border px-2 py-0.5 text-xs"
-                :class="s.status==='graded'
+                :class="s.status==='submitted'
                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                          : 'bg-amber-50 text-amber-700 border-amber-200'"
               >
-                {{ s.status === 'graded' ? 'Đã chấm' : 'Chưa chấm' }}
+                {{ s.status === 'submitted' ? 'Đã nộp' : 'Chưa nộp' }}
               </span>
             </div>
 
             <div class="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
               <div class="space-y-1">
                 <div class="text-slate-500">Nộp lúc</div>
-                <div class="font-medium leading-5">{{ s.submittedAt }}</div>
+                <div class="font-medium leading-5">{{ s.submittedAt || '—' }}</div>
               </div>
               <div class="space-y-1">
                 <div class="text-slate-500">Điểm</div>
-                <div class="font-semibold">{{ s.score ?? '—' }}</div>
+                <div class="font-semibold">{{ s.score !== null ? s.score.toFixed(1) : '—' }}</div>
               </div>
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-2">
-              <button class="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50" @click="openGrading(s)">Xem bài</button>
+            <div class="mt-4">
               <button
-                class="rounded-xl bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700"
-                @click="openGrading(s)"
+                v-if="s.status === 'submitted'"
+                class="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+                @click="openView(s)"
               >
-                {{ s.status === 'graded' ? 'Sửa điểm' : 'Chấm điểm' }}
+                Xem bài làm
               </button>
+              <p v-else class="text-center text-sm text-slate-400">Học sinh chưa nộp bài</p>
             </div>
           </article>
 
@@ -115,34 +116,27 @@
                 <tr v-for="s in filtered" :key="s.id" class="border-t text-sm">
                   <td class="p-3 font-medium truncate" :title="s.studentName">{{ s.studentName }}</td>
                   <td class="p-3 truncate">{{ s.classCode }}</td>
-                  <td class="p-3 truncate" :title="s.submittedAt">{{ s.submittedAt }}</td>
-                  <td class="p-3">{{ s.score ?? '—' }}</td>
+                  <td class="p-3 truncate" :title="s.submittedAt || '—'">{{ s.submittedAt || '—' }}</td>
+                  <td class="p-3">{{ s.score !== null ? s.score.toFixed(1) : '—' }}</td>
                   <td class="p-3">
                     <span
                       class="rounded-full border px-2 py-0.5 text-xs whitespace-nowrap"
-                      :class="s.status==='graded'
+                      :class="s.status==='submitted'
                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                : 'bg-amber-50 text-amber-700 border-amber-200'"
                     >
-                      {{ s.status === 'graded' ? 'Đã chấm' : 'Chưa chấm' }}
+                      {{ s.status === 'submitted' ? 'Đã nộp' : 'Chưa nộp' }}
                     </span>
                   </td>
                   <td class="p-3">
-                    <!-- NGĂN QUẤN DÒNG + Cố định bề rộng nút -->
-                    <div class="flex flex-nowrap items-center gap-2">
                       <button
-                        class="rounded-xl border px-3 py-1.5 text-sm hover:bg-slate-50 whitespace-nowrap min-w-[96px]"
-                        @click="openGrading(s)"
+                      v-if="s.status === 'submitted'"
+                      class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 whitespace-nowrap"
+                      @click="openView(s)"
                       >
-                        Xem bài
+                      Xem bài làm
                       </button>
-                      <button
-                        class="rounded-xl bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700 whitespace-nowrap min-w-[96px]"
-                        @click="openGrading(s)"
-                      >
-                        {{ s.status === 'graded' ? 'Sửa điểm' : 'Chấm điểm' }}
-                      </button>
-                    </div>
+                    <span v-else class="text-sm text-slate-400">Chưa nộp</span>
                   </td>
                 </tr>
               </tbody>
@@ -155,18 +149,18 @@
         </div>
       </template>
 
-      <!-- Modal chấm điểm -->
+      <!-- Modal xem bài làm -->
       <div
-        v-if="gradingRow"
+        v-if="viewingRow"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="closeGrading"
+        @click.self="closeView"
       >
         <div class="w-full max-w-4xl rounded-2xl bg-white p-6 max-h-[90vh] overflow-y-auto">
           <div class="mb-4 flex items-center justify-between">
-            <h3 class="text-lg font-semibold">Chấm điểm: {{ gradingRow.studentName }}</h3>
+            <h3 class="text-lg font-semibold">Bài làm của: {{ viewingRow.studentName }}</h3>
             <button
               class="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-50"
-              @click="closeGrading"
+              @click="closeView"
             >
               ✕
             </button>
@@ -176,11 +170,21 @@
             <div class="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm">
               <div>
                 <span class="text-slate-500">Lớp:</span>
-                <span class="ml-2 font-medium">{{ gradingRow.classCode }}</span>
+                <span class="ml-2 font-medium">{{ viewingRow.classCode }}</span>
               </div>
               <div>
                 <span class="text-slate-500">Nộp lúc:</span>
-                <span class="ml-2 font-medium">{{ gradingRow.submittedAt }}</span>
+                <span class="ml-2 font-medium">{{ viewingRow.submittedAt }}</span>
+              </div>
+              <div>
+                <span class="text-slate-500">Điểm:</span>
+                <span class="ml-2 font-bold text-cyan-600">
+                  {{ viewingRow.score !== null ? viewingRow.score.toFixed(1) : 'Chưa có điểm' }}
+                </span>
+              </div>
+              <div>
+                <span class="text-slate-500">Trạng thái:</span>
+                <span class="ml-2 font-medium text-emerald-600">Đã chấm tự động</span>
               </div>
             </div>
 
@@ -192,45 +196,47 @@
               >
                 <div class="mb-2 flex items-center justify-between">
                   <span class="font-semibold">Câu {{ idx + 1 }}</span>
+                  <div class="flex items-center gap-2">
                   <span class="text-sm text-slate-500">{{ q.score }} điểm</span>
+                    <span
+                      class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                      :class="mockScores[idx] === q.score
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-rose-100 text-rose-700'"
+                    >
+                      {{ mockScores[idx] === q.score ? 'Đúng' : 'Sai' }}
+                    </span>
+                  </div>
                 </div>
-                <p class="mb-3 text-sm">{{ q.text }}</p>
-                <div class="rounded-lg bg-slate-50 p-3">
+                <p class="mb-3 text-sm font-medium">{{ q.text }}</p>
+                <div class="rounded-lg bg-slate-50 p-3 mb-2">
                   <div class="mb-2 text-xs font-medium text-slate-600">Câu trả lời của học sinh:</div>
-                  <div class="text-sm">{{ mockAnswers[idx] || 'Chưa trả lời' }}</div>
+                  <div class="text-sm font-semibold">{{ mockAnswers[idx] || 'Chưa trả lời' }}</div>
                 </div>
-                <div class="mt-3">
-                  <label class="mb-1 block text-sm font-medium">Điểm chấm (0 - {{ q.score }})</label>
-                  <input
-                    v-model.number="gradingScores[idx]"
-                    type="number"
-                    :min="0"
-                    :max="q.score"
-                    step="0.5"
-                    class="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none"
-                  />
+                <div class="rounded-lg bg-emerald-50 p-3">
+                  <div class="mb-1 text-xs font-medium text-emerald-700">Đáp án đúng:</div>
+                  <div class="text-sm font-semibold text-emerald-900">{{ q.correctAnswer }}</div>
+                </div>
+                <div class="mt-2 text-xs text-slate-500">
+                  Điểm đạt: {{ mockScores[idx] }} / {{ q.score }}
                 </div>
               </div>
             </div>
 
-            <div class="flex items-center justify-between rounded-xl bg-sky-50 p-4">
-              <span class="font-semibold">Tổng điểm:</span>
-              <span class="text-xl font-bold text-sky-600">{{ totalScore.toFixed(1) }} / {{ maxScore }}</span>
+            <div class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <span class="font-semibold text-slate-900">Tổng điểm:</span>
+              <span class="text-xl font-bold text-slate-900">
+                {{ totalScore.toFixed(1) }} / {{ maxScore }}
+              </span>
             </div>
           </div>
 
           <div class="mt-6 flex justify-end gap-3">
             <button
               class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50"
-              @click="closeGrading"
+              @click="closeView"
             >
-              Hủy
-            </button>
-            <button
-              class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
-              @click="saveGrade"
-            >
-              Lưu điểm
+              Đóng
             </button>
           </div>
         </div>
@@ -243,12 +249,12 @@
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-type RowStatus = 'pending' | 'graded'
+type RowStatus = 'pending' | 'submitted'
 type Row = {
   id: number
   studentName: string
   classCode: string
-  submittedAt: string
+  submittedAt: string | null
   score: number | null
   status: RowStatus
 }
@@ -263,10 +269,10 @@ const rows = ref<Row[]>([])
 const q = ref('')
 const only = ref<'all' | RowStatus>('all')
 
-const gradingRow = ref<Row | null>(null)
-const gradingScores = ref<number[]>([])
-const mockQuestions = ref<Array<{ text: string; score: number }>>([])
+const viewingRow = ref<Row | null>(null)
+const mockQuestions = ref<Array<{ text: string; score: number; correctAnswer: string }>>([])
 const mockAnswers = ref<string[]>([])
+const mockScores = ref<number[]>([])
 
 type DetailFn = (id: string | number) => Promise<any>
 let detailFn: DetailFn | undefined
@@ -282,12 +288,12 @@ function makeMockRows(examId: number): Row[] {
   const total = (examId % 7) + 9
   return Array.from({ length: total }).map((_, i) => {
     const sid = examId * 1000 + i + 1
-    const graded = (i + examId) % 3 !== 0
-    const score = graded ? Math.round(((6 + ((i + examId) % 5)) + 0.1) * 10) / 10 : null
+    const submitted = (i + examId) % 3 !== 0
+    const score = submitted ? Math.round(((6 + ((i + examId) % 5)) + 0.1) * 10) / 10 : null
     const cls = `L${(examId % 4) + 1}${String((i % 3) + 1).padStart(2, '0')}`
     const name = `HS ${(examId % 9) + 1}${String(i + 1).padStart(2, '0')}`
-    const submittedAt = new Date(Date.now() - (i + 1) * 36e5).toLocaleString()
-    return { id: sid, studentName: name, classCode: cls, submittedAt, score, status: graded ? 'graded' : 'pending' }
+    const submittedAt = submitted ? new Date(Date.now() - (i + 1) * 36e5).toLocaleString() : null
+    return { id: sid, studentName: name, classCode: cls, submittedAt, score, status: submitted ? 'submitted' : 'pending' }
   })
 }
 
@@ -345,58 +351,38 @@ watch(() => route.params.id, (nv) => {
 })
 onBeforeUnmount(() => { if (ft) window.clearTimeout(ft) })
 
-function openGrading(row: Row) {
-  gradingRow.value = row
+function openView(row: Row) {
+  viewingRow.value = row
   // Mock: tạo câu hỏi và câu trả lời mẫu
   mockQuestions.value = Array.from({ length: 5 }).map((_, i) => ({
     text: `Câu hỏi mẫu số ${i + 1}?`,
-    score: 2
+    score: 2,
+    correctAnswer: `Đáp án đúng ${i + 1}`
   }))
   mockAnswers.value = Array.from({ length: 5 }).map((_, i) => 
-    `Đáp án mẫu ${i + 1} của học sinh`
+    `Đáp án ${i + 1} của học sinh}`
   )
-  // Khởi tạo điểm từ điểm hiện tại hoặc 0
-  gradingScores.value = Array(mockQuestions.value.length).fill(0)
-  if (row.score !== null) {
-    // Giả sử điểm được chia đều (thực tế cần lấy từ backend)
-    const avgScore = row.score / mockQuestions.value.length
-    gradingScores.value = Array(mockQuestions.value.length).fill(avgScore)
-  }
+  // Mock điểm - giả sử một số câu đúng, một số câu sai
+  mockScores.value = Array.from({ length: 5 }).map((_, i) => {
+    const isCorrect = (row.id + i) % 3 !== 0
+    return isCorrect ? mockQuestions.value[i].score : 0
+  })
 }
 
-function closeGrading() {
-  gradingRow.value = null
-  gradingScores.value = []
+function closeView() {
+  viewingRow.value = null
   mockQuestions.value = []
   mockAnswers.value = []
+  mockScores.value = []
 }
 
 const totalScore = computed(() => {
-  return gradingScores.value.reduce((sum, s) => sum + (s || 0), 0)
+  return mockScores.value.reduce((sum, s) => sum + (s || 0), 0)
 })
 
 const maxScore = computed(() => {
   return mockQuestions.value.reduce((sum, q) => sum + q.score, 0)
 })
-
-function saveGrade() {
-  if (!gradingRow.value) return
-  
-  const row = rows.value.find(r => r.id === gradingRow.value!.id)
-  if (row) {
-    row.score = totalScore.value
-    row.status = 'graded'
-  }
-  
-  console.log('SAVE_GRADE', {
-    submissionId: gradingRow.value.id,
-    scores: gradingScores.value,
-    totalScore: totalScore.value
-  })
-  
-  alert('Đã lưu điểm thành công!')
-  closeGrading()
-}
 </script>
 
 <style scoped>
@@ -404,6 +390,5 @@ function saveGrade() {
 table th, table td, h3 { word-break: break-word; }
 @media (hover: none) {
   .hover\:bg-slate-50:hover { background: inherit; }
-  .hover\:bg-sky-700:hover { background: rgb(3 105 161); }
 }
 </style>

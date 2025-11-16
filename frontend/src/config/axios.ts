@@ -74,6 +74,16 @@ http.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`
       }
     }
+    
+    // Nếu data là FormData, để axios tự động set Content-Type là multipart/form-data
+    // Không set Content-Type thủ công để browser tự thêm boundary
+    if (config.data instanceof FormData) {
+      // Xóa Content-Type để browser tự động set với boundary
+      if (config.headers) {
+        delete config.headers['Content-Type']
+      }
+    }
+    
     return config
   },
   (error) => Promise.reject(error)

@@ -22,9 +22,21 @@ class Course(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, blank=True, related_name='courses')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
+    introduction = models.TextField(blank=True, null=True, help_text="Giới thiệu chi tiết về khóa học (hiển thị ở trang chi tiết)")
     grade = models.CharField(max_length=16, blank=True, null=True)
     published = models.BooleanField(default=False)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='courses_owned')
+    video_url = models.URLField(blank=True, null=True, help_text="URL video khóa học (ví dụ: YouTube link hoặc link video trực tiếp)")
+    video_file = models.FileField(upload_to='course_videos/', blank=True, null=True, help_text="File video khóa học (nếu không dùng URL)")
+    price = models.DecimalField(max_digits=10, decimal_places=0, default=0, help_text="Giá khóa học (0 = miễn phí)")
+    thumbnail = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True, help_text="Ảnh bìa khóa học")
+
+    students = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        through='Enrollment',
+        related_name='enrolled_courses',
+        blank=True
+    )
 
     class Meta:
         verbose_name = ('Course')
@@ -33,6 +45,22 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+class Enrollment(models.Model):
+    """Model to track student enrollments in courses."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='course_enrollments')
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('course', 'student')
+        verbose_name = ('Enrollment')
+        verbose_name_plural = ('Enrollments')
+        ordering = ['-enrolled_at']
+    
+    def __str__(self):
+        return f"{self.student} enrolled in {self.course}"
 
 class Module(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -59,6 +87,11 @@ class Lesson(models.Model):
         choices=[('lesson', ('Lesson')), ('exploration', ('Exploration')), ('exercise', ('Exercise'))]
     )
     published = models.BooleanField(default=False)
+    # Thêm các trường mới
+    video_url = models.URLField(blank=True, null=True, help_text="URL video cho bài học")
+    video_file = models.FileField(upload_to='lesson_videos/', blank=True, null=True, help_text="File video cho bài học")
+    introduction = models.TextField(blank=True, null=True, help_text="Giới thiệu bài học (hiển thị trước video)")
+    requires_exercise_completion = models.BooleanField(default=False, help_text="Yêu cầu hoàn thành bài tập trước khi tiếp tục")
 
     class Meta:
         verbose_name = ('Lesson')
@@ -97,11 +130,12 @@ class ContentBlock(models.Model):
         max_length=32,
         choices=[
             ('text', ('Text')), ('image', ('Image')), ('video', ('Video')),
-            ('quiz', ('Quiz')), ('exploration_ref', ('Exploration Reference'))
+            ('quiz', ('Quiz')), ('exploration_ref', ('Exploration Reference')),
+            ('introduction', ('Introduction')), ('exercise_ref', ('Exercise Reference'))
         ]
     )
     position = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    payload = models.JSONField(default=dict)  # e.g., {'text': '...', 'audio_url': '...', 'tts_text': '...', 'captions_url': '...'}
+    payload = models.JSONField(default=dict)  # e.g., {'text': '...', 'audio_url': '...', 'tts_text': '...', 'captions_url': '...', 'exercise_id': '...'}
 
     class Meta:
         verbose_name = ('Content Block')
@@ -110,6 +144,28 @@ class ContentBlock(models.Model):
 
     def __str__(self):
         return f"{self.type} in {self.lesson_version}"
+
+class LessonProgress(models.Model):
+    """Track student progress through lessons - required for unlocking next lessons"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='progress_records')
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lesson_progress')
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    video_watched = models.BooleanField(default=False)
+    exercise_completed = models.BooleanField(default=False)
+    exercise_score = models.FloatField(null=True, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    last_accessed_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('lesson', 'student')
+        verbose_name = ('Lesson Progress')
+        verbose_name_plural = ('Lesson Progress')
+        ordering = ['-last_accessed_at']
+    
+    def __str__(self):
+        return f"{self.student} - {self.lesson} ({'Completed' if self.completed else 'In Progress'})"
 
 class Exploration(models.Model):
     # Oppia-style: Interactive state-based lessons.
@@ -153,3 +209,49 @@ class ExplorationTransition(models.Model):
 
     def __str__(self):
         return f"From {self.from_state} to {self.to_state}"
+
+class ContentLibrary(models.Model):
+    """Reusable content items that can be added to courses"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    subject = models.CharField(
+        max_length=32,
+        choices=[
+            ('math', 'Toán'),
+            ('vietnamese', 'Tiếng Việt'),
+            ('english', 'Tiếng Anh'),
+            ('science', 'Khoa học'),
+            ('history', 'Lịch sử')
+        ],
+        default='math'
+    )
+    type = models.CharField(
+        max_length=32,
+        choices=[
+            ('video', 'Video'),
+            ('pdf', 'PDF'),
+            ('doc', 'Tài liệu'),
+            ('quiz', 'Quiz')
+        ],
+        default='video'
+    )
+    grade_band = models.CharField(
+        max_length=32,
+        choices=[
+            ('Khối 1–2', 'Khối 1–2'),
+            ('Khối 3–5', 'Khối 3–5')
+        ],
+        default='Khối 1–2'
+    )
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_library_items')
+    meta = models.JSONField(default=dict, blank=True)  # duration, size, questions, etc.
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = ('Content Library Item')
+        verbose_name_plural = ('Content Library Items')
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return self.title

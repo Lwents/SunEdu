@@ -4,23 +4,13 @@
     <!-- Bell Button -->
     <button
       @click="toggleDropdown"
-      class="group relative rounded-full p-2.5 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
-      :class="
-        hasUnread
-          ? 'text-emerald-600 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-blue-50'
-          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-      "
+      class="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-slate-200"
       aria-label="Thông báo"
     >
       <!-- Bell Icon -->
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="h-6 w-6 transition-transform duration-300"
-        :class="
-          hasUnread
-            ? 'group-hover:rotate-12 group-hover:scale-110'
-            : 'group-hover:rotate-6 group-hover:scale-105'
-        "
+        class="h-5 w-5"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -35,57 +25,50 @@
 
       <!-- Badge -->
       <span v-if="unreadCount > 0" class="absolute top-1 right-1 flex items-center justify-center">
-        <span
-          class="absolute h-2.5 w-2.5 rounded-full bg-gradient-to-br from-red-500 to-orange-500 animate-ping-custom"
-        ></span>
-        <span
-          class="relative h-2 w-2 rounded-full bg-gradient-to-br from-red-500 to-orange-500 border-2 border-white shadow-[0_2px_4px_rgba(0,0,0,0.2)]"
-        ></span>
+        <span class="h-2 w-2 rounded-full bg-red-500 border border-white"></span>
       </span>
     </button>
 
     <!-- Dropdown Notification Panel -->
     <Transition
       enter-active-class="transition ease-out duration-200"
-      enter-from-class="transform opacity-0 scale-95 -translate-y-2"
-      enter-to-class="transform opacity-100 scale-100 translate-y-0"
+      enter-from-class="transform opacity-0 scale-95"
+      enter-to-class="transform opacity-100 scale-100"
       leave-active-class="transition ease-in duration-150"
-      leave-from-class="transform opacity-100 scale-100 translate-y-0"
-      leave-to-class="opacity-0 scale-95 -translate-y-2"
+      leave-from-class="transform opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-95"
     >
       <div
         v-if="isOpen"
-        class="absolute left-1/2 z-50 mt-3 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 origin-top rounded-2xl border border-gray-200/50 bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden sm:left-auto sm:right-0 sm:w-96 sm:translate-x-0 sm:origin-top-right"
+        class="absolute left-1/2 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden sm:left-auto sm:right-0 sm:w-96 sm:translate-x-0"
       >
-        <!-- ===== HEADER ===== -->
-        <div
-          class="px-4 py-3 bg-gradient-to-r from-emerald-50 to-blue-50 border-b border-gray-200/50"
-        >
+        <!-- Header -->
+        <div class="px-4 py-3 bg-slate-50 border-b border-slate-200">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-semibold text-gray-800">Thông báo {{ roleLabel }}</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Thông báo {{ roleLabel }}</h3>
             <span
               v-if="unreadCount > 0"
-              class="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full"
+              class="px-2 py-1 text-xs font-medium text-slate-700 bg-slate-200 rounded-full"
             >
               {{ unreadCount }} mới
             </span>
           </div>
         </div>
 
-        <!-- ===== NOTIFICATION LIST ===== -->
+        <!-- Notification List -->
         <div class="max-h-80 overflow-y-auto">
           <!-- Loading State -->
           <div v-if="loading" class="flex items-center justify-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+            <div class="h-6 w-6 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin"></div>
           </div>
 
           <!-- Empty State -->
           <div
             v-else-if="displayedNotifications.length === 0"
-            class="px-4 py-8 text-center text-gray-500"
+            class="px-4 py-8 text-center text-slate-500"
           >
             <svg
-              class="mx-auto h-12 w-12 text-gray-400 mb-2"
+              class="mx-auto h-12 w-12 text-slate-400 mb-2"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -101,18 +84,18 @@
           </div>
 
           <!-- Notification Items -->
-          <div v-else class="divide-y divide-gray-100">
+          <div v-else class="divide-y divide-slate-100">
             <div
               v-for="notification in displayedNotifications"
               :key="notification.id"
               @click="handleNotificationClick(notification)"
-              class="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer group"
+              class="px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer"
               :class="{ 'bg-blue-50/50': !notification.is_read }"
             >
               <div class="flex gap-3">
                 <!-- Icon -->
                 <div
-                  class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110"
+                  class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                   :class="getNotificationIconClass(notification.type)"
                 >
                   <svg
@@ -132,42 +115,38 @@
 
                 <!-- Content -->
                 <div class="flex-1 min-w-0">
-                  <p
-                    class="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-emerald-700 transition-colors"
-                  >
+                  <p class="text-sm font-medium text-slate-900 line-clamp-2">
                     {{ notification.title }}
                   </p>
-                  <p class="text-xs text-gray-600 mt-0.5 line-clamp-2">
+                  <p class="text-xs text-slate-600 mt-0.5 line-clamp-2">
                     {{ notification.message }}
                   </p>
-                  <p class="text-xs text-gray-500 mt-1">
+                  <p class="text-xs text-slate-500 mt-1">
                     {{ formatTime(notification.created_at) }}
                   </p>
                 </div>
 
                 <!-- Unread Indicator -->
                 <div v-if="!notification.is_read" class="flex-shrink-0">
-                  <span class="block w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                  <span class="block w-2 h-2 rounded-full bg-blue-600"></span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ===== FOOTER ===== -->
+        <!-- Footer -->
         <div
           v-if="displayedNotifications.length > 0"
-          class="px-4 py-3 bg-gray-50 border-t border-gray-200/50"
+          class="px-4 py-3 bg-slate-50 border-t border-slate-200"
         >
-          <div class="flex items-center justify-between gap-3">
-            <button
-              v-if="hasUnread"
-              @click="markAllAsRead"
-              class="flex-1 px-3 py-2 text-xs font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-all duration-300 active:scale-95"
-            >
-              ✓ Đánh dấu tất cả đã đọc
-            </button>
-          </div>
+          <button
+            v-if="hasUnread"
+            @click="markAllAsRead"
+            class="w-full px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+          >
+            Đánh dấu tất cả đã đọc
+          </button>
         </div>
       </div>
     </Transition>
@@ -180,7 +159,7 @@ import { onClickOutside } from '@vueuse/core'
 
 // ===== TYPES =====
 interface Notification {
-  id: number
+  id: string | number
   title: string
   message: string
   type: 'info' | 'success' | 'warning' | 'error'
@@ -247,33 +226,19 @@ function toggleDropdown() {
 async function fetchNotifications() {
   loading.value = true
   try {
-    const userId = props.userId
-    const token = localStorage.getItem('token')
-
-    if (!userId || !token) {
-      notifications.value = getMockNotificationsByRole()
-      return
-    }
-
-    const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
-    const url = `${apiBase}${apiEndpoint.value}?user_id=${encodeURIComponent(String(userId))}&limit=${maxNotifications * 2}`
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+    // Use axios instead of fetch for consistency
+    const api = (await import('@/config/axios')).default
+    const response = await api.get(apiEndpoint.value, {
+      params: { limit: maxNotifications * 2 }
     })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
+    
+    // Backend returns { notifications: [...] }
+    const data = response.data || {}
     notifications.value = data.notifications || []
   } catch (error) {
     console.error('Failed to fetch notifications:', error)
-    notifications.value = getMockNotificationsByRole()
+    // Only use mock if API completely fails
+    notifications.value = []
   } finally {
     loading.value = false
   }
@@ -392,46 +357,28 @@ async function handleNotificationClick(notification: Notification) {
   }
 }
 
-async function markAsRead(notificationId: number) {
+async function markAsRead(notificationId: number | string) {
   try {
-    const token = localStorage.getItem('token')
-    if (token) {
-      const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
-      await fetch(`${apiBase}${apiEndpoint.value}/${notificationId}/read`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-    }
-  } catch (error) {
-    console.error('Failed to mark as read:', error)
-  } finally {
-    const notification = notifications.value.find((n) => n.id === notificationId)
+    const api = (await import('@/config/axios')).default
+    await api.patch(`${apiEndpoint.value}/${notificationId}/read/`)
+    
+    const notification = notifications.value.find((n) => String(n.id) === String(notificationId))
     if (notification) {
       notification.is_read = true
     }
+  } catch (error) {
+    console.error('Failed to mark as read:', error)
   }
 }
 
 async function markAllAsRead() {
   try {
-    const token = localStorage.getItem('token')
-    if (token) {
-      const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
-      await fetch(`${apiBase}${apiEndpoint.value}/read-all`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-    }
+    const api = (await import('@/config/axios')).default
+    await api.patch(`${apiEndpoint.value}/read-all/`)
+    
+    displayedNotifications.value.forEach((n) => (n.is_read = true))
   } catch (error) {
     console.error('Failed to mark all as read:', error)
-  } finally {
-    displayedNotifications.value.forEach((n) => (n.is_read = true))
   }
 }
 
@@ -466,7 +413,7 @@ function formatTime(dateString: string): string {
 function getNotificationIconClass(type: string): string {
   const classes = {
     info: 'bg-blue-100 text-blue-600',
-    success: 'bg-emerald-100 text-emerald-600',
+    success: 'bg-green-100 text-green-600',
     warning: 'bg-amber-100 text-amber-600',
     error: 'bg-red-100 text-red-600',
   }

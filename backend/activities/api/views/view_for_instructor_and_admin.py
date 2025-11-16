@@ -20,8 +20,19 @@ from activities.serializers import (
     attempt_domain_to_response,
 )
 from activities.services import attempt_service, exercise_service, analytic_service
+from activities.services.attempt_service import manual_grade_answer
 from activities.services import ServiceError, NotFoundError, ValidationError, PermissionDenied
 from activities.api.permissions import IsAdminOrReadOnly
+
+class IsTeacherOrAdmin(permissions.BasePermission):
+    """Allow instructors, teachers and admins."""
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return bool(
+            request.user.is_staff or 
+            (hasattr(request.user, 'role') and request.user.role in ['instructor', 'teacher', 'admin'])
+        )
 
 
 
@@ -30,7 +41,7 @@ class RegradeAttemptView(APIView):
     POST /api/activities/attempts/{attempt_id}/regrade/
     Admin/instructor only.
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def post(self, request: Request, attempt_id: str):
         try:
@@ -46,7 +57,7 @@ class ManualGradeView(APIView):
     Body: {"question_id": "...", "score": 2.0, "comment": "notes"}
     Admin/instructor only.
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def post(self, request: Request, attempt_id: str):
         data = request.data
@@ -57,7 +68,7 @@ class ManualGradeView(APIView):
             return Response({"detail": "question_id and score are required"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             # call service function (we expect it to exist in services.activities)
-            answer_domain = attempt_service.manual_grade_answer(attempt_id, qid, request.user, float(score), comment)
+            answer_domain = manual_grade_answer(attempt_id, qid, request.user, float(score), comment)
         except NotFoundError:
             return Response({"detail": "Attempt or answer not found"}, status=status.HTTP_404_NOT_FOUND)
         except PermissionDenied:
@@ -73,11 +84,12 @@ class ExerciseStatsView(APIView):
     GET /api/activities/exercises/{exercise_id}/stats/
     Admin/instructor only (you can loosen permission if teachers should view).
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def get(self, request: Request, exercise_id: str):
         try:
-            stats = exercise_service.exercise_stats(exercise_id)
+            from activities.services.analytic_service import exercise_stats
+            stats = exercise_stats(exercise_id)
         except NotFoundError:
             return Response({"detail": "Exercise not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response(stats)
@@ -88,7 +100,7 @@ class ExportResultsView(APIView):
     GET /api/activities/exercises/{exercise_id}/export/
     Returns CSV file attachment. Admin/instructor only.
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def get(self, request: Request, exercise_id: str):
         try:

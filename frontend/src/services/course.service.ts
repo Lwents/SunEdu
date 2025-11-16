@@ -19,6 +19,7 @@ export interface CourseSummary {
   createdAt: string
   updatedAt: string
   thumbnail?: string
+  price?: number
 }
 
 export interface Lesson {
@@ -38,9 +39,14 @@ export interface Section {
 
 export interface CourseDetail extends CourseSummary {
   description?: string
+  introduction?: string
   level?: Level
   durationMinutes?: number
   sections: Section[]
+  video_url?: string
+  video_file?: string
+  price?: number
+  thumbnail?: string
   // nếu cần: prerequisites?: ID[]
 }
 
@@ -59,6 +65,30 @@ export interface PageParams {
 }
 export interface PageResult<T> { items: T[]; total: number }
 
+export interface StudentMyCourse extends Partial<Omit<CourseSummary, 'grade' | 'subject'>> {
+  grade: Grade | string | number
+  subject?: string
+  subjectSlug?: string
+  gradeLabel?: string
+  gradeNumber?: number | null
+  price?: number
+  progress?: number
+  done?: boolean
+  isEnrolled?: boolean
+}
+
+export interface StudentMyCoursesResponse {
+  base: StudentMyCourse[]
+  supp: StudentMyCourse[]
+  all: StudentMyCourse[]
+}
+
+export interface StudentMyCoursesFilters {
+  q?: string
+  grade?: string
+  level?: 'main' | 'supp'
+}
+
 const USE_MOCK = false
 
 const SUBJECTS: Subject[] = ['math', 'vietnamese', 'english', 'science', 'history']
@@ -75,7 +105,7 @@ export const courseService = {
   // LIST - Support both admin and student endpoints
   async list(params: PageParams, useAdminEndpoint = false): Promise<PageResult<CourseSummary>> {
     if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? '/api/admin/courses/' : '/api/content/courses/'
+      const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
       const { data } = await api.get(endpoint, { params })
       // Backend returns array or paginated object
       if (Array.isArray(data)) {
@@ -143,7 +173,7 @@ export const courseService = {
   // DETAIL - Support both admin and student endpoints
   async detail(id: ID, useAdminEndpoint = false): Promise<CourseDetail> {
     if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? `/api/admin/courses/${id}/` : `/api/content/courses/${id}/`
+      const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
       const { data } = await api.get(endpoint)
       return data
     }
@@ -191,57 +221,120 @@ export const courseService = {
     }
   },
 
-  // CREATE / UPDATE
-  create(payload: Partial<CourseDetail>, useAdminEndpoint = false) {
-    if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? '/api/admin/courses/' : '/api/content/courses/'
-      return api.post(endpoint, payload)
+  async myCourses(params: StudentMyCoursesFilters = {}): Promise<StudentMyCoursesResponse> {
+    if (USE_MOCK) {
+      return { base: [], supp: [], all: [] }
     }
-    return Promise.resolve({ ok: true })
+    const { data } = await api.get('/student/courses/', { params })
+    return {
+      base: data.base || [],
+      supp: data.supp || [],
+      all: data.all || []
+    }
   },
-  update(id: ID, payload: Partial<CourseDetail>, useAdminEndpoint = false) {
+
+  // CREATE / UPDATE
+  create(payload: Partial<CourseDetail> | FormData, useAdminEndpoint = false) {
     if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? `/api/admin/courses/${id}/` : `/api/content/courses/${id}/`
+      const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
+      // If payload is FormData, set proper headers
+      const config = payload instanceof FormData 
+        ? { headers: { 'Content-Type': 'multipart/form-data' } }
+        : {}
+      return api.post(endpoint, payload, config).then(res => res.data)
+    }
+    return Promise.resolve({ ok: true, id: Date.now() })
+  },
+  update(id: ID, payload: Partial<CourseDetail> | FormData, useAdminEndpoint = false) {
+    if (!USE_MOCK) {
+      const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
+      
+      // Nếu payload là FormData, axios interceptor sẽ tự động xử lý Content-Type
+      // Không cần set Content-Type thủ công vì browser cần tự thêm boundary
       return api.patch(endpoint, payload)
     }
     return Promise.resolve({ ok: true })
   },
   
+  // DELETE
+  async delete(id: ID, useAdminEndpoint = false): Promise<void> {
+    if (!USE_MOCK) {
+      const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
+      await api.delete(endpoint)
+    }
+  },
+  
   // ENROLL (student only)
   async enroll(courseId: ID): Promise<{ success: boolean }> {
     if (!USE_MOCK) {
-      const { data } = await api.post(`/api/content/courses/${courseId}/enroll/`)
+      const { data } = await api.post(`/content/courses/${courseId}/enroll/`)
       return data
     }
     return Promise.resolve({ success: true })
   },
   async unenroll(courseId: ID): Promise<{ success: boolean }> {
     if (!USE_MOCK) {
-      const { data } = await api.delete(`/api/content/courses/${courseId}/enroll/`)
+      const { data } = await api.delete(`/content/courses/${courseId}/enroll/`)
       return data
     }
     return Promise.resolve({ success: true })
   },
 
-  // STATUS / ACTIONS
-  approve(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/approve/`) },
-  reject(id: ID, reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/reject/`, { reason }) },
-  publish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/publish/`) },
-  unpublish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/unpublish/`) },
-  archive(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/archive/`) },
-  restore(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/api/admin/courses/${id}/restore/`) },
+  // STATUS / ACTIONS (Admin)
+  approve(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/approve/`) },
+  reject(id: ID, reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/reject/`, { reason }) },
+  publish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/publish/`) },
+  unpublish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/unpublish/`) },
+  archive(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/archive/`) },
+  restore(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/restore/`) },
+  
+  // STATUS / ACTIONS (Teacher - use content endpoint)
+  async publishCourse(id: ID): Promise<any> {
+    if (!USE_MOCK) {
+      const { data } = await api.post(`/content/courses/${id}/publish/`, { published: true })
+      return data
+    }
+    return Promise.resolve({ ok: true })
+  },
+  async unpublishCourse(id: ID): Promise<any> {
+    if (!USE_MOCK) {
+      // Unpublish bằng cách set published = false
+      const { data } = await api.patch(`/content/courses/${id}/`, { published: false })
+      return data
+    }
+    return Promise.resolve({ ok: true })
+  },
+  async archiveCourse(id: ID): Promise<any> {
+    if (!USE_MOCK) {
+      // Archive: set published = false (tương đương với unpublish)
+      // Note: Backend chỉ có published field, không có status riêng
+      const { data } = await api.patch(`/content/courses/${id}/`, { published: false })
+      return data
+    }
+    return Promise.resolve({ ok: true })
+  },
+  async restoreCourse(id: ID): Promise<any> {
+    if (!USE_MOCK) {
+      // Restore: publish lại course
+      const { data } = await api.post(`/content/courses/${id}/publish/`, { published: true })
+      return data
+    }
+    return Promise.resolve({ ok: true })
+  },
 
   // BULK (tuỳ chọn dùng ở trang duyệt)
-  bulkApprove(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/api/admin/courses/bulk/', { action: 'approve', ids }) },
-  bulkReject(ids: ID[], reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/api/admin/courses/bulk/', { action: 'reject', ids, reason }) },
-  bulkPublish(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/api/admin/courses/bulk/', { action: 'publish', ids }) },
-  bulkArchive(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/api/admin/courses/bulk/', { action: 'archive', ids }) },
+  bulkApprove(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'approve', ids }) },
+  bulkReject(ids: ID[], reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'reject', ids, reason }) },
+  bulkPublish(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'publish', ids }) },
+  bulkArchive(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'archive', ids }) },
 
   // FILTER OPTIONS
   async listTeachers(): Promise<{ id: ID; name: string }[]> {
     if (!USE_MOCK) { 
-      const { data } = await api.get('/api/account/admin/users/', { params: { role: 'instructor' } })
-      return data.map((u: any) => ({ id: u.id, name: u.email || u.username }))
+      const { data } = await api.get('/account/admin/users/', { params: { role: 'instructor', pageSize: 50 } })
+      // Handle both paginated and array responses
+      const users = data.results || data || []
+      return users.map((u: any) => ({ id: u.id, name: u.email || u.username }))
     }
     return Array.from({ length: 15 }).map((_, i) => ({ id: i + 1, name: `GV ${i + 1}` }))
   },

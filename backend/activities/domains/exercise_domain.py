@@ -1,10 +1,13 @@
 import re
 import uuid
-from typing import TypedDict, Optional, List, Dict, Any
+from typing import TypedDict, Optional, List, Dict, Any, TYPE_CHECKING
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 
-from backend.activities.domains.exercise_attempt_domain import ExerciseAttemptDomain
+from activities.domains.question_domain import QuestionDomain
+
+if TYPE_CHECKING:
+    from activities.domains.exercise_attempt_domain import ExerciseAttemptDomain
 
 
 # ---------- Helpers ----------
@@ -34,8 +37,8 @@ class ExerciseDict(TypedDict):
 
 
 class ExerciseDomain:
-    ALLOWED_TYPES = {"quiz", "assignment"}  # you can expand
-    def __init__(self, id: str, lesson_id: str, title: str, type: str,
+    ALLOWED_TYPES = {"mcq", "short_answer", "matching", "quiz", "assignment"}  # Support both model choices and domain types
+    def __init__(self, id: str, lesson_id: Optional[str], title: str, type: str,
                  settings: Optional[Dict[str,Any]] = None,
                  questions: Optional[List[QuestionDomain]] = None,
                  published: bool = False,
@@ -57,9 +60,15 @@ class ExerciseDomain:
         settings = {}
         if hasattr(model, 'settings') and model.settings:
             settings = model.settings.__dict__ if isinstance(model.settings, object) else model.settings
+        # Handle lesson_id - can be None
+        lesson_id = None
+        if hasattr(model, 'lesson_id') and model.lesson_id:
+            lesson_id = str(model.lesson_id)
+        elif hasattr(model, 'lesson') and model.lesson:
+            lesson_id = str(model.lesson.id)
         return cls(
             id=str(model.id),
-            lesson_id=str(getattr(model, 'lesson_id', getattr(model, 'lesson').id)),
+            lesson_id=lesson_id,
             title=model.title,
             type=model.type,
             settings=settings,
@@ -75,8 +84,9 @@ class ExerciseDomain:
         if self.type not in self.ALLOWED_TYPES:
             # allow unknown types but warn — here enforce
             raise ValueError(f"Invalid exercise type: {self.type}")
-        if not self.questions:
-            raise ValueError("Exercise should contain at least one question.")
+        # Questions can be empty on creation, will be added later
+        # if not self.questions:
+        #     raise ValueError("Exercise should contain at least one question.")
         for q in self.questions:
             q.validate()
 
@@ -89,7 +99,8 @@ class ExerciseDomain:
             return True
         return student_attempt_count < int(max_attempts)
 
-    def create_attempt(self, student_id: Optional[int] = None) -> "ExerciseAttemptDomain":
+    def create_attempt(self, student_id: Optional[int] = None):
+        from activities.domains.exercise_attempt_domain import ExerciseAttemptDomain
         started = now_utc()
         metadata = {}
         # store per-exercise time_limit for attempt

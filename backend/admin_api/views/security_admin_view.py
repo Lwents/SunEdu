@@ -14,7 +14,10 @@ class AdminSecurityPolicyView(APIView):
 
     def get(self, request):
         """Get security policy"""
-        policy = cache.get('security_policy')
+        try:
+            policy = cache.get('security_policy')
+        except Exception:
+            policy = None
         if not policy:
             policy = {
                 'twoFA': {
@@ -37,7 +40,11 @@ class AdminSecurityPolicyView(APIView):
     def post(self, request):
         """Update security policy"""
         policy = request.data
-        cache.set('security_policy', policy, timeout=None)
+        try:
+            cache.set('security_policy', policy, timeout=None)
+        except Exception:
+            # If cache fails, continue without caching
+            pass
         return Response(policy, status=status.HTTP_200_OK)
 
 
@@ -46,7 +53,10 @@ class AdminIpAllowListView(APIView):
 
     def get(self, request):
         """List IP allowlist"""
-        ip_list = cache.get('security_ip_allowlist', [])
+        try:
+            ip_list = cache.get('security_ip_allowlist', [])
+        except Exception:
+            ip_list = []
         return Response(ip_list, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -57,7 +67,10 @@ class AdminIpAllowListView(APIView):
         if not cidr:
             return Response({'error': 'cidr required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        ip_list = cache.get('security_ip_allowlist', [])
+        try:
+            ip_list = cache.get('security_ip_allowlist', [])
+        except Exception:
+            ip_list = []
         ip_item = {
             'id': f"ip_{len(ip_list) + 1}",
             'cidr': cidr,
@@ -66,7 +79,11 @@ class AdminIpAllowListView(APIView):
             'createdBy': request.user.email
         }
         ip_list.append(ip_item)
-        cache.set('security_ip_allowlist', ip_list, timeout=None)
+        try:
+            cache.set('security_ip_allowlist', ip_list, timeout=None)
+        except Exception:
+            # If cache fails, continue without caching
+            pass
 
         return Response(ip_item, status=status.HTTP_201_CREATED)
 
@@ -76,9 +93,13 @@ class AdminIpAllowDetailView(APIView):
 
     def delete(self, request, pk):
         """Remove IP from allowlist"""
-        ip_list = cache.get('security_ip_allowlist', [])
-        ip_list = [ip for ip in ip_list if ip.get('id') != pk]
-        cache.set('security_ip_allowlist', ip_list, timeout=None)
+        try:
+            ip_list = cache.get('security_ip_allowlist', [])
+            ip_list = [ip for ip in ip_list if ip.get('id') != pk]
+            cache.set('security_ip_allowlist', ip_list, timeout=None)
+        except Exception:
+            # If cache fails, continue without caching
+            pass
         return Response({'success': True}, status=status.HTTP_200_OK)
 
 
@@ -87,7 +108,10 @@ class AdminCertStatusView(APIView):
 
     def get(self, request):
         """Get TLS certificate status"""
-        cert = cache.get('security_cert_status')
+        try:
+            cert = cache.get('security_cert_status')
+        except Exception:
+            cert = None
         if not cert:
             cert = {
                 'issuer': 'Let\'s Encrypt',
@@ -108,7 +132,11 @@ class AdminCertStatusView(APIView):
             'daysRemaining': 90,
             'autoRenew': True
         }
-        cache.set('security_cert_status', cert, timeout=None)
+        try:
+            cache.set('security_cert_status', cert, timeout=None)
+        except Exception:
+            # If cache fails, continue without caching
+            pass
         return Response({
             'success': True,
             'message': 'Certificate renewal job queued',
@@ -174,7 +202,10 @@ class AdminAlertPolicyView(APIView):
 
     def get(self, request):
         """Get alert policy"""
-        alert_policy = cache.get('security_alert_policy')
+        try:
+            alert_policy = cache.get('security_alert_policy')
+        except Exception:
+            alert_policy = None
         if not alert_policy:
             alert_policy = {
                 'cpuThreshold': 90,
@@ -190,7 +221,11 @@ class AdminAlertPolicyView(APIView):
     def post(self, request):
         """Update alert policy"""
         alert_policy = request.data
-        cache.set('security_alert_policy', alert_policy, timeout=None)
+        try:
+            cache.set('security_alert_policy', alert_policy, timeout=None)
+        except Exception:
+            # If cache fails, continue without caching
+            pass
         return Response(alert_policy, status=status.HTTP_200_OK)
 
     def put(self, request):
