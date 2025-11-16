@@ -121,13 +121,16 @@ class ExerciseModelSerializer(serializers.ModelSerializer):
         model = ExerciseModel
         fields = ("id", "lesson", "title", "type", "settings", "questions")
         read_only_fields = ("id",)
+        extra_kwargs = {
+            'lesson': {'required': False, 'allow_null': True}
+        }
 
     def to_domain(self) -> ExerciseDomain:
         """Convert validated_data -> ExerciseDomain (including nested questions)."""
         data = self.validated_data
         eid = str(data.get("id") or uuid.uuid4())
         lesson_val = data.get("lesson")
-        lesson_id = str(lesson_val) if lesson_val is not None else (str(self.instance.lesson.id) if self.instance else None)
+        lesson_id = str(lesson_val) if lesson_val is not None else (str(self.instance.lesson.id) if self.instance and hasattr(self.instance, 'lesson') and self.instance.lesson else None)
         title = data["title"]
         typ = data["type"]
         settings = data.get("settings", {}) or {}

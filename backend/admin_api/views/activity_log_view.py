@@ -27,7 +27,8 @@ class AdminActivityLogView(APIView):
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('pageSize', 20))
 
-        # Use user model as placeholder for activity logs
+        # Use user model to create activity logs from login history and signups
+        # In production, this should use a dedicated ActivityLog model
         queryset = UserModel.objects.all()
 
         if q:
@@ -39,28 +40,70 @@ class AdminActivityLogView(APIView):
         if user_id:
             queryset = queryset.filter(id=user_id)
 
-        # Paginate
-        paginator = Paginator(queryset, page_size)
-        page_obj = paginator.get_page(page)
-
-        # Serialize as activity logs
+        # Build activity log items from user data
         items = []
-        for user in page_obj:
-            items.append({
-                'id': str(user.id),
-                'userId': str(user.id),
-                'userEmail': user.email,
-                'action': 'login',  # Placeholder
-                'ip': '127.0.0.1',  # Placeholder
-                'userAgent': 'Mozilla/5.0',  # Placeholder
-                'timestamp': user.last_login.isoformat() if user.last_login else user.created_on.isoformat(),
-                'status': 'success',  # Placeholder
-                'details': {}  # Placeholder
-            })
+        for user in queryset:
+            # Add signup activity
+            if user.created_on:
+                items.append({
+                    'id': f"{user.id}_signup",
+                    'userId': str(user.id),
+                    'userEmail': user.email,
+                    'action': 'user.signup',
+                    'ip': None,  # Not tracked in UserModel
+                    'userAgent': None,  # Not tracked in UserModel
+                    'timestamp': user.created_on.isoformat(),
+                    'status': 'success',
+                    'details': {'role': user.role}
+                })
+            
+            # Add login activity if available
+            if user.last_login:
+                items.append({
+                    'id': f"{user.id}_login",
+                    'userId': str(user.id),
+                    'userEmail': user.email,
+                    'action': 'user.login',
+                    'ip': None,  # Not tracked in UserModel
+                    'userAgent': None,  # Not tracked in UserModel
+                    'timestamp': user.last_login.isoformat(),
+                    'status': 'success',
+                    'details': {}
+                })
+
+        # Apply date filters
+        if from_date:
+            try:
+                from_date_obj = datetime.fromisoformat(from_date.replace('Z', '+00:00'))
+                items = [item for item in items if datetime.fromisoformat(item['timestamp'].replace('Z', '+00:00')) >= from_date_obj]
+            except:
+                pass
+        
+        if to_date:
+            try:
+                to_date_obj = datetime.fromisoformat(to_date.replace('Z', '+00:00'))
+                items = [item for item in items if datetime.fromisoformat(item['timestamp'].replace('Z', '+00:00')) <= to_date_obj]
+            except:
+                pass
+
+        # Apply action filter
+        if action:
+            items = [item for item in items if action in item['action']]
+
+        # Sort by timestamp descending
+        items.sort(key=lambda x: x['timestamp'], reverse=True)
+
+        # Paginate
+        total = len(items)
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_items = items[start:end]
 
         return Response({
-            'items': items,
-            'total': paginator.count
+            'items': paginated_items,
+            'total': total
         }, status=status.HTTP_200_OK)
+
+
 
 

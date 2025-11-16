@@ -1,7 +1,7 @@
 # content/api/urls.py
 from django.urls import path
 
-from content.api.views import subject_view, course_view, module_view, lesson_view, lesson_version_view, content_block_view, exploration_view
+from content.api.views import subject_view, course_view, module_view, lesson_view, lesson_version_view, content_block_view, exploration_view, lesson_progress_view, content_library_view
 
 urlpatterns = [
     # ---------------------------
@@ -31,6 +31,8 @@ urlpatterns = [
     path("modules/<uuid:module_id>/lessons/", lesson_view.LessonListCreateView.as_view(), name="lesson-list"),
     path("lessons/<uuid:pk>/", lesson_view.LessonDetailView.as_view(), name="lesson-detail"),
     path("lessons/<uuid:lesson_id>/publish/", lesson_view.LessonPublishView.as_view(), name="lesson-publish"),
+    path("lessons/<uuid:lesson_id>/progress/", lesson_progress_view.LessonProgressView.as_view(), name="lesson-progress"),
+    path("lessons/<uuid:lesson_id>/unlock-check/", lesson_progress_view.LessonUnlockCheckView.as_view(), name="lesson-unlock-check"),
 
     # ---------------------------
     # Lesson Versions (nested under lesson)
@@ -63,4 +65,10 @@ urlpatterns = [
     # ---------------------------
     path("explorations/<uuid:exploration_id>/transitions/", exploration_view.ExplorationTransitionListCreateView.as_view(), name="explorationtransition-list"),
     path("exploration-transitions/<uuid:pk>/", exploration_view.ExplorationTransitionDetailView.as_view(), name="explorationtransition-detail"),
+
+    # ---------------------------
+    # Content Library
+    # ---------------------------
+    path("content-library/", content_library_view.ContentLibraryListCreateView.as_view(), name="content-library-list"),
+    path("content-library/<uuid:id>/", content_library_view.ContentLibraryDetailView.as_view(), name="content-library-detail"),
 ]

@@ -44,8 +44,8 @@
         <div class="flex justify-end">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-cyan-50 dark:bg-cyan-900/200 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-ocean-glow transition hover:bg-cyan-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500"
-            :disabled="!items.length"
+            class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:translate-y-0"
+            :disabled="!items.length || total === 0"
             @click="goCheckout"
           >
             Nạp tiền
@@ -64,29 +64,116 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { courseService } from '@/services/course.service'
 
 const router = useRouter()
+const route = useRoute()
 
-// Demo data - thay bằng dữ liệu thật của bạn
-const items = reactive([
-  { id: 1, name: 'Khoá học Standard', price: 199000 },
-  // { id: 2, name: 'Khoá học Pro', price: 299000 },
-])
+// Cart items - lấy từ localStorage hoặc tạo mới
+const items = reactive<Array<{ id: string | number; name: string; price: number }>>([])
 
-const total = computed(() => items.reduce((s, i) => s + i.price, 0))
+const total = computed(() => items.reduce((s, i) => s + (Number(i.price) || 0), 0))
 function vnd(n: number) { return n.toLocaleString('vi-VN') + 'đ' }
 
-function remove(id: number) {
-  const idx = items.findIndex(i => i.id === id)
-  if (idx >= 0) items.splice(idx, 1)
+// Load cart from localStorage
+function loadCart() {
+  const saved = localStorage.getItem('student_cart')
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      items.splice(0, items.length, ...parsed)
+    } catch (e) {
+      console.error('Error loading cart:', e)
+    }
+  }
+}
+
+// Save cart to localStorage
+function saveCart() {
+  localStorage.setItem('student_cart', JSON.stringify(items))
+}
+
+// Add course to cart
+async function addCourse(courseId: string | number) {
+  try {
+    const course = await courseService.detail(courseId)
+    const price = Number(course.price) || 0
+    
+    // Nếu khóa học miễn phí, enroll trực tiếp
+    if (price === 0) {
+      try {
+        await courseService.enroll(courseId)
+        // Sau khi enroll thành công, tự động mở khóa học để xem
+        // Kiểm tra xem có video không
+        if (course.video_url || course.video_file) {
+          router.push({ name: 'student-course-player', params: { id: courseId } })
+        } else {
+          // Nếu không có video, vào lesson đầu tiên
+          const firstSection = course.sections?.[0]
+          const firstLesson = firstSection?.lessons?.[0]
+          if (firstLesson) {
+            router.push({ 
+              name: 'student-course-player', 
+              params: { id: courseId, lessonId: firstLesson.id } 
+            })
+          } else {
+            router.push({ name: 'student-course-player', params: { id: courseId } })
+          }
+        }
+        return
+      } catch (e: any) {
+        alert(e?.message || 'Đăng ký khóa học thất bại')
+        return
+      }
+    }
+    
+    // Nếu đã có trong cart, không thêm lại
+    if (items.find(i => String(i.id) === String(courseId))) {
+      alert('Khóa học đã có trong giỏ hàng')
+      return
+    }
+    
+    // Thêm vào cart
+    items.push({
+      id: courseId,
+      name: course.title,
+      price: price
+    })
+    saveCart()
+  } catch (e: any) {
+    alert(e?.message || 'Không thể thêm khóa học vào giỏ hàng')
+  }
+}
+
+function remove(id: number | string) {
+  const idx = items.findIndex(i => String(i.id) === String(id))
+  if (idx >= 0) {
+    items.splice(idx, 1)
+    saveCart()
+  }
 }
 
 function goCheckout() {
+  if (total.value === 0) {
+    alert('Giỏ hàng trống hoặc tất cả khóa học đều miễn phí')
+    return
+  }
   router.push({
     name: 'student-payments-checkout',
     query: { amount: String(total.value), plan: items[0]?.name || 'Nạp tiền' }
   })
 }
+
+onMounted(() => {
+  loadCart()
+  // Nếu có query param 'add', thêm course vào cart
+  const addId = route.query.add
+  if (addId) {
+    addCourse(addId as string)
+    // Xóa query param sau khi xử lý
+    router.replace({ query: {} })
+  }
+})
 </script>

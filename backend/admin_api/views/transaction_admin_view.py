@@ -155,10 +155,11 @@ class AdminTransactionMetricsView(APIView):
 
         total_amount = queryset.aggregate(total=Sum('amount'))['total'] or 0
         count = queryset.count()
-        refunds = queryset.filter(status='refunded').aggregate(total=Sum('amount'))['total'] or 0
-        fees = total_amount * 0.03  # Placeholder
-        net = total_amount - fees - refunds
-        disputed = queryset.filter(status='refunded').count()  # Placeholder
+        refunds_queryset = queryset.filter(status='refunded')
+        refunds = refunds_queryset.aggregate(total=Sum('amount'))['total'] or 0
+        fees = float(total_amount) * 0.03  # Placeholder
+        net = float(total_amount) - fees - float(refunds)
+        disputed = refunds_queryset.count()  # Placeholder
 
         return Response({
             'count': count,
@@ -269,5 +270,7 @@ class AdminTransactionExportView(APIView):
             ])
 
         return response
+
+
 
 

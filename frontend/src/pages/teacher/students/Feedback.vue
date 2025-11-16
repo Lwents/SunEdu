@@ -4,14 +4,12 @@
     <main class="w-full mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 md:px-10">
       <!-- Header -->
       <div class="mb-4 sm:mb-5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-        <h1 class="text-xl font-semibold sm:text-2xl">Phản hồi học sinh</h1>
+        <h1 class="text-xl font-semibold sm:text-2xl text-slate-900">Phản hồi học sinh</h1>
 
-        <!-- Nút quay lại: nhỏ trên mobile, bình thường trên >=sm -->
         <button
-          class="shrink-0 rounded-lg border px-2.5 py-1.5 text-xs sm:rounded-xl sm:px-4 sm:py-2 sm:text-sm hover:bg-slate-50"
+          class="shrink-0 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs sm:rounded-lg sm:px-4 sm:py-2 sm:text-sm text-slate-700 hover:bg-slate-50 transition"
           @click="goBack"
           aria-label="Quay lại danh sách học sinh"
-          title="Quay lại danh sách học sinh"
         >
           ← <span class="ml-1">Quay lại danh sách</span>
         </button>
@@ -19,10 +17,8 @@
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <!-- Left: student list -->
-        <section class="lg:col-span-1 rounded-2xl border border-slate-200 bg-white p-4">
-          <div
-            class="mb-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
-          >
+        <section class="lg:col-span-1 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="mb-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
             <svg
               viewBox="0 0 24 24"
               class="h-5 w-5 text-slate-400"
@@ -36,7 +32,7 @@
             <input
               v-model.trim="q"
               placeholder="Tìm học sinh…"
-              class="w-full bg-transparent outline-none"
+              class="w-full bg-transparent outline-none text-sm"
               @input="debouncedFilter"
             />
           </div>
@@ -45,7 +41,7 @@
             <div
               v-for="i in 6"
               :key="'sk-' + i"
-              class="flex items-center gap-3 rounded-xl px-2 py-2"
+              class="flex items-center gap-3 rounded-lg px-2 py-2"
             >
               <div class="h-9 w-9 rounded-full bg-slate-200 animate-pulse"></div>
               <div class="flex-1">
@@ -58,13 +54,13 @@
           <ul v-else-if="students.length" class="max-h-[560px] space-y-2 overflow-auto pr-1">
             <li v-for="s in students" :key="s.id">
               <button
-                class="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50"
+                class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50 transition"
                 :class="selectedId === s.id ? 'bg-slate-100' : ''"
                 @click="select(s.id)"
               >
-                <img :src="s.avatar" :alt="s.name" class="h-9 w-9 rounded-full object-cover" />
+                <img :src="s.avatar" :alt="s.name" class="h-9 w-9 rounded-full object-cover border border-slate-200" />
                 <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-medium">{{ s.name }}</div>
+                  <div class="truncate text-sm font-medium text-slate-900">{{ s.name }}</div>
                   <div class="truncate text-xs text-slate-500">
                     {{ s.classCode }} · {{ s.course }}
                   </div>
@@ -78,7 +74,7 @@
         </section>
 
         <!-- Right: composer -->
-        <section class="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-4">
+        <section class="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div v-if="!current" class="p-6 text-center text-slate-500">
             Chọn một học sinh ở danh sách bên trái để viết phản hồi.
           </div>
@@ -88,10 +84,10 @@
               <img
                 :src="current.avatar"
                 :alt="current.name"
-                class="h-12 w-12 rounded-full object-cover"
+                class="h-12 w-12 rounded-full object-cover border border-slate-200"
               />
               <div>
-                <div class="font-semibold">{{ current.name }}</div>
+                <div class="font-semibold text-slate-900">{{ current.name }}</div>
                 <div class="text-xs text-slate-500">
                   {{ current.classCode }} · {{ current.course }}
                 </div>
@@ -99,24 +95,24 @@
             </div>
 
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div class="rounded-xl bg-slate-50 p-3 text-sm">
-                Tiến độ: <span class="font-medium">{{ current.progress }}%</span>
+              <div class="rounded-lg bg-slate-50 p-3 text-sm">
+                Tiến độ: <span class="font-medium text-slate-900">{{ current.progress }}%</span>
               </div>
-              <div class="rounded-xl bg-slate-50 p-3 text-sm">
-                Điểm TB: <span class="font-medium">{{ current.avgScore.toFixed(1) }}/10</span>
+              <div class="rounded-lg bg-slate-50 p-3 text-sm">
+                Điểm TB: <span class="font-medium text-slate-900">{{ current.avgScore.toFixed(1) }}/10</span>
               </div>
-              <div class="rounded-xl bg-slate-50 p-3 text-sm">
-                Hoạt động: <span class="font-medium">{{ current.lastActive }}</span>
+              <div class="rounded-lg bg-slate-50 p-3 text-sm">
+                Hoạt động: <span class="font-medium text-slate-900">{{ current.lastActive }}</span>
               </div>
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div class="space-y-2 md:col-span-2">
-                <label class="text-sm font-medium">Nội dung phản hồi</label>
+                <label class="text-sm font-medium text-slate-700">Nội dung phản hồi</label>
                 <textarea
                   v-model="message"
                   rows="7"
-                  class="w-full rounded-2xl border border-slate-200 p-3 outline-none ring-sky-200 focus:ring"
+                  class="w-full rounded-lg border border-slate-300 p-3 text-sm outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
                   placeholder="Viết nhận xét, gợi ý ôn tập, điểm cần cải thiện…"
                 ></textarea>
 
@@ -125,7 +121,7 @@
                     v-for="(t, i) in chipTexts"
                     :key="'chip-' + i"
                     type="button"
-                    class="rounded-full border px-2 py-1 text-xs hover:bg-slate-50"
+                    class="rounded-full border border-slate-300 px-2 py-1 text-xs hover:bg-slate-50 transition"
                     @click="append(t)"
                   >
                     {{ t }}
@@ -135,7 +131,7 @@
 
               <div class="space-y-3">
                 <div>
-                  <label class="mb-1 block text-sm font-medium">Mức độ hoàn thành</label>
+                  <label class="mb-1 block text-sm font-medium text-slate-700">Mức độ hoàn thành</label>
                   <input
                     type="range"
                     min="0"
@@ -144,16 +140,16 @@
                     v-model.number="rating"
                     class="w-full"
                   />
-                  <div class="mt-1 text-sm">
+                  <div class="mt-1 text-sm text-slate-600">
                     <span class="font-medium">{{ rating.toFixed(1) }}</span> / 10
                   </div>
                 </div>
 
                 <div>
-                  <label class="mb-1 block text-sm font-medium">Mẫu phản hồi</label>
+                  <label class="mb-1 block text-sm font-medium text-slate-700">Mẫu phản hồi</label>
                   <select
                     v-model="template"
-                    class="w-full rounded-xl border border-slate-200 p-2 text-sm"
+                    class="w-full rounded-lg border border-slate-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
                     <option value="">— Chọn mẫu —</option>
                     <option value="praise">Khen ngợi</option>
@@ -163,14 +159,14 @@
                 </div>
 
                 <button
-                  class="w-full rounded-xl px-3 py-2 font-semibold text-white hover:brightness-105"
-                  :class="canSend ? 'bg-sky-600' : 'bg-sky-400 cursor-not-allowed'"
-                  :disabled="!canSend"
+                  class="w-full rounded-lg bg-slate-900 px-3 py-2 font-semibold text-white hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="!canSend || sending"
                   @click="send"
                 >
-                  Gửi phản hồi
+                  {{ sending ? 'Đang gửi...' : 'Gửi phản hồi' }}
                 </button>
-                <p v-if="sent" class="text-center text-sm text-emerald-600">Đã gửi phản hồi 🎉</p>
+                <p v-if="sent" class="text-center text-sm text-green-600">Đã gửi phản hồi 🎉</p>
+                <p v-if="error" class="text-center text-sm text-red-600">{{ error }}</p>
               </div>
             </div>
           </div>
@@ -183,6 +179,8 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { teacherService } from '@/services/teacher.service'
+import { showToast } from '@/utils/toast'
 
 type StudentRow = {
   id: number
@@ -205,6 +203,8 @@ const rating = ref(7.5)
 type Tpl = '' | 'praise' | 'improve' | 'suggest'
 const template = ref<Tpl>('')
 const sent = ref(false)
+const sending = ref(false)
+const error = ref('')
 
 const loading = ref(true)
 const allStudents = ref<StudentRow[]>([])
@@ -225,47 +225,61 @@ const chipTexts = ref<string[]>([
 
 async function fetchStudents() {
   loading.value = true
+  error.value = ''
   try {
-    // @ts-ignore
-    const mod = await import('@/services/user.service')
-    const userService = mod.userService as {
-      list: (
-        p: any,
-      ) => Promise<{ items: Array<{ id: number | string; name: string; username: string }> }>
-    }
-    const res = await userService.list({ role: 'student', pageSize: 50, page: 1 })
+    const response = await teacherService.getStudents({ pageSize: 100 })
     const now = Date.now()
-    allStudents.value = res.items.map((u, i) => {
-      const id = Number(u.id)
-      const cls = `L${(id % 5) + 1}0${(id % 3) + 1}`
-      const course = `Khoá ${(id % 6) + 1}`
+    
+    allStudents.value = response.items.map((s, i) => {
+      const id = Number(s.id)
+      // Get first course for display
+      const firstCourse = s.courses && s.courses.length > 0 ? s.courses[0] : null
+      const cls = firstCourse ? `L${(id % 5) + 1}0${(id % 3) + 1}` : `L${(id % 5) + 1}0${(id % 3) + 1}`
+      const course = firstCourse ? firstCourse.title : `Khoá ${(id % 6) + 1}`
+      const progress = firstCourse ? firstCourse.progress : (40 + ((id + i) % 50))
+      
+      // Calculate average score from courses
+      let totalScore = 0
+      let scoreCount = 0
+      if (s.courses && s.courses.length > 0) {
+        // Placeholder: use progress as score estimate
+        s.courses.forEach(c => {
+          totalScore += c.progress / 10 // Convert progress to score
+          scoreCount++
+        })
+      }
+      const avgScore = scoreCount > 0 ? totalScore / scoreCount : (6 + ((id + i) % 40) / 10)
+      
+      // Get avatar URL - handle both relative and absolute URLs
+      let avatarUrl = s.avatar || null
+      if (avatarUrl && !avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://')) {
+        // If relative URL, construct full URL
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+        const baseUrl = apiUrl.replace(/\/+$/, '')
+        avatarUrl = avatarUrl.startsWith('/') ? `${baseUrl}${avatarUrl}` : `${baseUrl}/${avatarUrl}`
+      }
+      // Fallback to dicebear if no avatar
+      if (!avatarUrl) {
+        avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(s.username || s.name || String(id))}&backgroundType=gradientLinear`
+      }
+      
       return {
         id,
-        name: u.name,
-        avatar: `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(u.username)}&backgroundType=gradientLinear`,
+        name: s.name || s.username || `Học sinh ${id}`,
+        avatar: avatarUrl,
         classCode: cls,
         course,
-        progress: 40 + ((id + i) % 50),
-        avgScore: 6 + ((id + i) % 40) / 10,
-        lastActive: new Date(now - (i + 1) * 36e5).toLocaleString(),
+        progress,
+        avgScore: Math.min(10, Math.max(0, avgScore)),
+        lastActive: firstCourse && firstCourse.enrolledAt 
+          ? new Date(firstCourse.enrolledAt).toLocaleString('vi-VN')
+          : new Date(now - (i + 1) * 36e5).toLocaleString('vi-VN'),
       }
     })
-  } catch {
-    const N = 24
-    const now = Date.now()
-    allStudents.value = Array.from({ length: N }).map((_, i) => {
-      const id = i + 1
-      return {
-        id,
-        name: `Học sinh ${id}`,
-        avatar: `https://api.dicebear.com/7.x/thumbs/svg?seed=hs-${id}&backgroundType=gradientLinear`,
-        classCode: `L${(id % 5) + 1}0${(id % 3) + 1}`,
-        course: `Khoá ${(id % 6) + 1}`,
-        progress: 45 + (id % 40),
-        avgScore: 6 + (id % 35) / 10,
-        lastActive: new Date(now - id * 36e5).toLocaleString(),
-      }
-    })
+  } catch (e: any) {
+    console.error('Error fetching students:', e)
+    error.value = e?.message || 'Không thể tải danh sách học sinh'
+    showToast('Không thể tải danh sách học sinh', 'error')
   } finally {
     loading.value = false
   }
@@ -292,6 +306,7 @@ function select(id: number) {
   if (selectedId.value === id) return
   selectedId.value = id
   sent.value = false
+  error.value = ''
   message.value = ''
   rating.value = 7.5
   template.value = ''
@@ -318,14 +333,50 @@ function append(t: string) {
   message.value = message.value ? `${message.value} ${t}` : t
 }
 
-function send() {
-  if (!canSend.value || !current.value) return
-  console.log('SEND_FEEDBACK', {
-    studentId: current.value.id,
-    rating: rating.value,
-    message: message.value.trim(),
-  })
-  sent.value = true
+async function send() {
+  if (!canSend.value || !current.value || sending.value) return
+  
+  sending.value = true
+  error.value = ''
+  sent.value = false
+  
+  try {
+    // Get first course ID if available
+    const studentData = allStudents.value.find(s => s.id === current.value!.id)
+    const studentFromService = allStudents.value.find(s => s.id === current.value!.id)
+    
+    // Find course ID from service response
+    const response = await teacherService.getStudents({ pageSize: 100 })
+    const fullStudent = response.items.find(s => Number(s.id) === current.value!.id)
+    const courseId = fullStudent?.courses && fullStudent.courses.length > 0 
+      ? fullStudent.courses[0].id 
+      : undefined
+    
+    await teacherService.sendFeedback({
+      studentId: current.value.id,
+      courseId: courseId,
+      message: message.value.trim(),
+      rating: rating.value
+    })
+    
+    sent.value = true
+    showToast('Đã gửi phản hồi thành công! Học sinh sẽ nhận được thông báo.', 'success')
+    
+    // Reset form after a delay
+    setTimeout(() => {
+      message.value = ''
+      rating.value = 7.5
+      template.value = ''
+      sent.value = false
+    }, 2000)
+    
+  } catch (e: any) {
+    console.error('Error sending feedback:', e)
+    error.value = e?.response?.data?.error || e?.message || 'Không thể gửi phản hồi'
+    showToast(error.value, 'error')
+  } finally {
+    sending.value = false
+  }
 }
 
 function goBack() {

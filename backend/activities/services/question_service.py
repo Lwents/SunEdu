@@ -5,13 +5,11 @@ from django.apps import apps
 import csv, io
 
 # Domain imports
-from activities.domains import (
-    ExerciseDomain,
-    QuestionDomain,
-    ChoiceDomain,
-    ExerciseAttemptDomain,
-    ExerciseAnswerDomain,
-)
+from activities.domains.exercise_domain import ExerciseDomain
+from activities.domains.question_domain import QuestionDomain
+from activities.domains.choice_domain import ChoiceDomain
+from activities.domains.exercise_attempt_domain import ExerciseAttemptDomain
+from activities.domains.exercise_answer_domain import ExerciseAnswerDomain
 
 # Models
 ExerciseModel = apps.get_model("activities", "Exercise")

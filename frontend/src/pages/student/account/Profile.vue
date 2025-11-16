@@ -1,46 +1,63 @@
 <!-- src/pages/student/account/Profile.vue -->
 <template>
-  <div class="student-shell">
-    <div class="student-container">
-      <div class="student-tabs flex items-center gap-1 sm:gap-2">
-        <button type="button" class="student-tab student-tab--active">CÁ NHÂN</button>
-        <button type="button" class="student-tab" @click="goChangePwd">ĐỔI MẬT KHẨU</button>
-        <button type="button" class="student-tab" @click="goParent">PHỤ HUYNH</button>
+  <div class="min-h-screen bg-slate-50">
+    <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+      <!-- Tabs -->
+      <div class="mb-6 flex items-center gap-2 border-b border-slate-200">
+        <button
+          type="button"
+          class="border-b-2 border-slate-900 px-4 py-3 text-sm font-semibold text-slate-900"
+        >
+          Cá nhân
+        </button>
+        <button
+          type="button"
+          class="px-4 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          @click="goChangePwd"
+        >
+          Đổi mật khẩu
+        </button>
+        <button
+          type="button"
+          class="px-4 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          @click="goParent"
+        >
+          Phụ huynh
+        </button>
       </div>
 
-      <div class="student-card mt-4">
+      <!-- Main Card -->
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 px-6 py-4">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 class="text-base font-extrabold uppercase tracking-wide text-slate-900 sm:text-lg">
-            THÔNG TIN CÁ NHÂN
-          </h2>
-          <p class="text-xs font-semibold text-slate-500 sm:text-sm">
-            Lần cập nhật gần nhất: <span class="text-slate-900">{{ lastUpdated }}</span>
+            <h2 class="text-lg font-semibold text-slate-900">Thông tin cá nhân</h2>
+            <p class="text-xs text-slate-500">
+              Cập nhật lần cuối: <span class="text-slate-700">{{ lastUpdated }}</span>
           </p>
+          </div>
         </div>
 
-        <form v-if="ready" class="mt-6 space-y-6" @submit.prevent="saveProfile">
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
-              >Ảnh đại diện</label
-            >
+        <form v-if="ready" class="p-6 space-y-6" @submit.prevent="saveProfile">
+          <!-- Avatar -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Ảnh đại diện</label>
             <div class="space-y-2">
-              <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <button
                   type="button"
-                  class="group relative inline-flex h-28 w-28 items-center justify-center rounded-3xl border-2 border-dashed border-cyan-200 dark:border-cyan-700 bg-white/70 p-1 shadow-sm shadow-slate-100 transition hover:border-cyan-500 dark:border-cyan-600 hover:bg-cyan-50 dark:bg-cyan-900/20"
+                class="group relative inline-flex h-24 w-24 items-center justify-center rounded-lg border border-slate-300 bg-white overflow-hidden transition hover:border-slate-400"
                   @click="openFile"
                 >
                   <img
                     :src="avatarPreview || currentAvatar"
                     alt="Ảnh đại diện"
-                    class="h-full w-full rounded-2xl object-cover object-center"
+                  class="h-full w-full object-cover"
                   />
                   <div
-                    class="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-3xl bg-slate-900/10 text-[11px] font-semibold text-slate-700 opacity-0 transition group-hover:opacity-100"
+                  class="absolute inset-0 flex items-center justify-center bg-slate-900/60 opacity-0 transition group-hover:opacity-100"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      class="h-5 w-5"
+                    class="h-5 w-5 text-white"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -49,19 +66,12 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="2"
-                        d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
-                      />
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    <span>Đổi ảnh</span>
                   </div>
                 </button>
-              </div>
+              <p class="text-xs text-slate-500">Nhấn để đổi ảnh (tối đa 2MB)</p>
               <input
                 ref="fileInput"
                 type="file"
@@ -72,127 +82,125 @@
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
-              >Tên đăng nhập</label
-            >
-            <div class="space-y-2">
+          <!-- Username -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Tên đăng nhập</label>
+            <div class="space-y-1">
               <input
                 v-model.trim="form.username"
                 type="text"
                 readonly
-                class="w-full rounded-2xl border border-slate-200 bg-slate-100/80 px-4 py-2.5 text-sm font-semibold text-slate-500 shadow-sm shadow-slate-100"
+                class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
               />
-              <p class="text-xs text-slate-500">
-                Tên đăng nhập do hệ thống quản lý, không thể đổi.
-              </p>
+              <p class="text-xs text-slate-500">Không thể thay đổi</p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
-              Họ và tên <span class="text-rose-500">*</span>
+          <!-- Full Name -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">
+              Họ và tên <span class="text-red-500">*</span>
             </label>
-            <div class="space-y-2">
+            <div class="space-y-1">
               <input
                 v-model.trim="form.fullname"
                 type="text"
-                placeholder="Họ và tên"
+                placeholder="Nhập họ và tên"
                 :class="[
-                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  'w-full rounded-lg border px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                   errors.fullname
-                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                    ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                    : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                 ]"
               />
-              <p v-if="errors.fullname" class="text-xs font-medium text-rose-600">
+              <p v-if="errors.fullname" class="text-xs text-red-600">
                 {{ errors.fullname }}
               </p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
-              Số điện thoại <span class="text-rose-500">*</span>
+          <!-- Phone -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">
+              Số điện thoại <span class="text-red-500">*</span>
             </label>
-            <div class="space-y-2">
+            <div class="space-y-1">
               <input
                 v-model.trim="form.phone"
                 type="tel"
+                placeholder="Nhập số điện thoại"
                 :class="[
-                  'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  'w-full rounded-lg border px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                   errors.phone
-                    ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                    : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                    ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                    : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                 ]"
               />
-              <p v-if="errors.phone" class="text-xs font-medium text-rose-600">
+              <p v-if="errors.phone" class="text-xs text-red-600">
                 {{ errors.phone }}
               </p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
-              >Ngày sinh</label
-            >
-            <div class="space-y-2">
-              <div class="flex flex-col gap-3 sm:flex-row">
+          <!-- Date of Birth -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Ngày sinh</label>
+            <div class="space-y-1">
+              <div class="flex gap-2">
                 <select
                   v-model.number="dob.day"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[180px]"
+                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
                 >
                   <option v-for="d in days" :key="d" :value="d">Ngày {{ d }}</option>
                 </select>
                 <select
                   v-model.number="dob.month"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[180px]"
+                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
                 >
                   <option v-for="m in months" :key="m" :value="m">Tháng {{ m }}</option>
                 </select>
                 <select
                   v-model.number="dob.year"
-                  class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 sm:max-w-[200px]"
+                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
                 >
                   <option v-for="y in years" :key="y" :value="y">Năm {{ y }}</option>
                 </select>
               </div>
-              <p class="text-xs text-slate-500">Có thể để trống.</p>
+              <p class="text-xs text-slate-500">Có thể để trống</p>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
-              >Giới tính</label
-            >
-            <div class="flex flex-wrap gap-3">
+          <!-- Gender -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Giới tính</label>
+            <div class="flex gap-3">
               <label
-                class="flex flex-1 min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-2 text-sm font-semibold shadow-sm shadow-slate-100 transition"
+                class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition cursor-pointer"
                 :class="
                   form.gender === 'male'
-                    ? 'border-cyan-400 dark:border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
-                    : 'border-slate-200 text-slate-600'
+                    ? 'border-slate-400 bg-slate-50 text-slate-900'
+                    : 'border-slate-300 text-slate-600 hover:border-slate-400'
                 "
               >
                 <input
                   type="radio"
-                  class="h-4 w-4 border-slate-300 text-cyan-600 dark:text-cyan-400 focus:ring-cyan-500/50"
+                  class="h-4 w-4 text-slate-600 focus:ring-slate-200"
                   value="male"
                   v-model="form.gender"
                 />
                 Nam
               </label>
               <label
-                class="flex flex-1 min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-2 text-sm font-semibold shadow-sm shadow-slate-100 transition"
+                class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition cursor-pointer"
                 :class="
                   form.gender === 'female'
-                    ? 'border-cyan-400 dark:border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
-                    : 'border-slate-200 text-slate-600'
+                    ? 'border-slate-400 bg-slate-50 text-slate-900'
+                    : 'border-slate-300 text-slate-600 hover:border-slate-400'
                 "
               >
                 <input
                   type="radio"
-                  class="h-4 w-4 border-slate-300 text-cyan-600 dark:text-cyan-400 focus:ring-cyan-500/50"
+                  class="h-4 w-4 text-slate-600 focus:ring-slate-200"
                   value="female"
                   v-model="form.gender"
                 />
@@ -201,49 +209,48 @@
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Email</label>
-            <div class="space-y-3">
-              <div class="space-y-2">
+          <!-- Email -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Email</label>
+            <div class="space-y-1">
                 <input
                   v-model.trim="form.email"
                   type="email"
                   placeholder="you@example.com"
                   :class="[
-                    'w-full rounded-2xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus-visible:outline-none focus:ring-4',
+                  'w-full rounded-lg border px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
                     errors.email
-                      ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
-                      : 'border-slate-200 focus:border-cyan-500 dark:border-cyan-600 focus:ring-cyan-500/30',
+                    ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                    : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                   ]"
                 />
-                <p v-if="errors.email" class="text-xs font-medium text-rose-600">
+              <p v-if="errors.email" class="text-xs text-red-600">
                   {{ errors.email }}
                 </p>
-              </div>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">Địa chỉ</label>
+          <!-- Address -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Địa chỉ</label>
             <div>
               <textarea
                 v-model.trim="form.address"
                 rows="3"
-                placeholder="Có thể để trống"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30"
+                placeholder="Nhập địa chỉ"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
               ></textarea>
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2">
-              Tỉnh/Thành phố
-            </label>
+          <!-- Province -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Tỉnh/Thành phố</label>
             <div>
               <select
                 v-model.number="selectedProvinceCode"
                 :disabled="provincesLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{ provincesLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố' }}
@@ -255,15 +262,14 @@
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
-              >Quận/Huyện</label
-            >
+          <!-- District -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Quận/Huyện</label>
             <div>
               <select
                 v-model.number="selectedDistrictCode"
                 :disabled="!selectedProvinceCode || districtsLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{
@@ -271,7 +277,7 @@
                       ? 'Chọn tỉnh/thành phố trước'
                       : districtsLoading
                         ? 'Đang tải...'
-                        : 'Chọn quận/huyện (có thể để trống)'
+                        : 'Chọn quận/huyện'
                   }}
                 </option>
                 <option v-for="district in districts" :key="district.code" :value="district.code">
@@ -281,15 +287,14 @@
             </div>
           </div>
 
-          <div class="grid gap-2 sm:gap-3 lg:grid-cols-[220px_1fr]">
-            <label class="text-sm font-semibold text-slate-900 sm:text-base lg:pt-2"
-              >Phường/Xã</label
-            >
+          <!-- Ward -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Phường/Xã</label>
             <div>
               <select
                 v-model.number="selectedWardCode"
                 :disabled="!selectedDistrictCode || wardsLoading"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm shadow-slate-100 transition focus:border-cyan-500 dark:border-cyan-600 focus-visible:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {{
@@ -297,7 +302,7 @@
                       ? 'Chọn quận/huyện trước'
                       : wardsLoading
                         ? 'Đang tải...'
-                        : 'Chọn phường/xã (có thể để trống)'
+                        : 'Chọn phường/xã'
                   }}
                 </option>
                 <option v-for="ward in wards" :key="ward.code" :value="ward.code">
@@ -307,33 +312,34 @@
             </div>
           </div>
 
-          <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="submit"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 sm:w-auto sm:text-sm"
-              :disabled="saving || !isValidInfo || !isDirty"
-              :class="{ 'opacity-80': saving }"
-            >
-              <span
-                v-if="saving"
-                class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"
-              ></span>
-              {{ saving ? 'ĐANG CẬP NHẬT...' : 'CẬP NHẬT' }}
-            </button>
+          <!-- Submit Button -->
+          <div class="flex flex-col gap-3 pt-4 border-t border-slate-200 sm:flex-row sm:items-center sm:justify-end">
             <p
               v-if="!isValidInfo"
-              class="text-center text-xs font-medium text-slate-500 sm:text-right"
+              class="text-xs text-slate-500 sm:mr-auto"
             >
               Vui lòng điền đầy đủ thông tin bắt buộc
             </p>
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="saving || !isValidInfo || !isDirty"
+            >
+              <span
+                v-if="saving"
+                class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+              ></span>
+              {{ saving ? 'Đang cập nhật...' : 'Cập nhật' }}
+            </button>
           </div>
         </form>
 
-        <div v-else class="mt-6 text-sm font-medium text-slate-500">Đang tải thông tin…</div>
+        <div v-else class="p-6 text-sm text-slate-500">Đang tải thông tin…</div>
       </div>
     </div>
   </div>
 
+  <!-- Error Modal -->
   <Transition
     enter-active-class="transition-opacity duration-200"
     leave-active-class="transition-opacity duration-200"
@@ -342,24 +348,22 @@
   >
     <div
       v-if="limitModal.open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-10 backdrop-blur-sm"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="limit-title"
       @click.self="closeLimitModal"
     >
       <div
-        class="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-2xl shadow-slate-200 outline-none"
+        class="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-lg outline-none"
         ref="limitCard"
         tabindex="-1"
       >
         <div class="mb-4 flex flex-col items-center gap-3">
-          <div
-            class="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500"
-          >
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-7 w-7"
+              class="h-6 w-6"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -367,22 +371,22 @@
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="1.8"
+                stroke-width="2"
                 d="M12 9v3m0 4h.01M10.29 3.86 1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
               />
             </svg>
           </div>
-          <h3 id="limit-title" class="text-lg font-bold text-slate-900">Không thể tải ảnh</h3>
+          <h3 id="limit-title" class="text-lg font-semibold text-slate-900">Không thể tải ảnh</h3>
         </div>
         <p class="text-sm text-slate-600">{{ limitModal.message }}</p>
         <p class="mt-2 text-xs text-slate-500">Vui lòng chọn tệp PNG/JPG ≤ 2MB.</p>
         <div class="mt-6">
           <button
             type="button"
-            class="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600"
+            class="w-full rounded-lg border border-slate-300 bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200"
             @click="closeLimitModal"
           >
-            ĐÃ HIỂU
+            Đã hiểu
           </button>
         </div>
       </div>
