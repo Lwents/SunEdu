@@ -3,6 +3,7 @@
 ## 🔴 VẤN ĐỀ: Mỗi lần deploy lại bị lỗi Bad Request (400)
 
 ### Nguyên nhân:
+
 GitHub Actions workflow ghi đè file `.env` trên EC2 từ secret `BACKEND_ENV_FILE`.
 
 Secret này đang **THIẾU** `api.smartedu.click` → Mỗi lần deploy lại bị lỗi!
@@ -11,12 +12,16 @@ Secret này đang **THIẾU** `api.smartedu.click` → Mỗi lần deploy lại 
 
 ## ✅ GIẢI PHÁP: Cập nhật GitHub Secret
 
-### Bước 1: Copy nội dung .env
+### Bước 1: Lấy nội dung .env
+
 ```bash
-./backend/copy_env_for_github.sh
+# Mở file backend/.env trong editor và copy toàn bộ nội dung
+# HOẶC chạy lệnh (cẩn thận, đừng share output):
+cat backend/.env
 ```
 
 ### Bước 2: Cập nhật GitHub Secret
+
 1. Vào: https://github.com/Lwents/SunEdu/settings/secrets/actions
 2. Tìm secret `BACKEND_ENV_FILE`
 3. Click **Update**
@@ -24,6 +29,7 @@ Secret này đang **THIẾU** `api.smartedu.click` → Mỗi lần deploy lại 
 5. Click **Update secret**
 
 ### Bước 3: Deploy lại
+
 ```bash
 git push origin develop
 ```
@@ -58,7 +64,7 @@ curl -I https://api.smartedu.click/admin/
 ---
 
 **TÓM LẠI:** Cập nhật GitHub Secret `BACKEND_ENV_FILE` để thêm `api.smartedu.click` vào các biến:
+
 - `ALLOWED_HOSTS`
 - `CSRF_TRUSTED_ORIGINS`
 - `CORS_ALLOWED_ORIGINS`
-
