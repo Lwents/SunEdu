@@ -3,10 +3,10 @@ name: Deploy Backend
 on:
   push:
     branches: [main, develop]
-  workflow_dispatch: {} # chạy tay khi cần
+  workflow_dispatch: {}
 
 concurrency:
-  group: deploy-backend
+  group: deploy-backend-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -18,113 +18,46 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
+          BRANCH_NAME: ${{ github.ref_name }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 30m
-          envs: BACKEND_ENV_FILE
+          envs: BACKEND_ENV_FILE,BRANCH_NAME
           script: |
             set -euo pipefail
 
-            # Cleanup before deployment to free up disk space
-            echo "🧹 Starting cleanup to free up disk space..."
-            
-            # Check disk space before cleanup
-            echo "📊 Disk space before cleanup:"
-            df -h / | tail -1
-            
-            # Cleanup Docker resources
-            if command -v docker >/dev/null 2>&1; then
-              echo "🐳 Cleaning up Docker resources..."
-              
-              # Remove stopped containers
-              docker container prune -f || true
-              
-              # Remove unused images (keep last 2)
-              docker image prune -a -f || true
-              
-              # Remove unused volumes
-              docker volume prune -f || true
-              
-              # Remove unused networks
-              docker network prune -f || true
-              
-              # Remove build cache
-              docker builder prune -a -f || true
-              
-              echo "✅ Docker cleanup complete"
-            fi
-            
-            # Cleanup old log files (keep last 7 days)
-            echo "📝 Cleaning up old log files..."
-            find /var/www/SunEdu/backend/logs -type f -name "*.log" -mtime +7 -delete 2>/dev/null || true
-            find /var/www/SunEdu/backend/runtime_logs -type f -name "*.log" -mtime +7 -delete 2>/dev/null || true
-            
-            # Cleanup Python cache files
-            echo "🐍 Cleaning up Python cache..."
-            find /var/www/SunEdu/backend -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-            find /var/www/SunEdu/backend -type f -name "*.pyc" -delete 2>/dev/null || true
-            
-            # Cleanup old .venv if exists (will be recreated)
-            if [ -d "/var/www/SunEdu/backend/.venv" ]; then
-              echo "🗑️  Removing old virtual environment..."
-              rm -rf /var/www/SunEdu/backend/.venv
-            fi
-            
-            # Cleanup git objects and refs
-            cd /var/www/SunEdu
-            if [ -d ".git" ]; then
-              echo "📦 Cleaning up git objects..."
-              git gc --prune=now --aggressive 2>/dev/null || true
-            fi
-            
-            # Check disk space after cleanup
-            echo "📊 Disk space after cleanup:"
-            df -h / | tail -1
-            
-            echo "✅ Cleanup complete, proceeding with deployment..."
-            
-            # Now proceed with git operations
-            cd /var/www/SunEdu
-            git fetch origin main
-            git reset --hard origin/main
+            echo "🚀 Deploying branch: $BRANCH_NAME"
+            echo "📊 Disk usage: $(df -h / | tail -1 | awk '{print $5 " used"}')"
 
+            echo "📥 Updating code..."
+            cd /var/www/SunEdu
+            git fetch origin "$BRANCH_NAME"
+            git reset --hard "origin/$BRANCH_NAME"
+
+            echo "🐍 Setting up virtual environment..."
             VENV="/var/www/SunEdu/backend/.venv"
             rm -rf "$VENV"
             python3 -m venv "$VENV"
-            "$VENV/bin/pip" install --upgrade pip
-            "$VENV/bin/pip" install -r backend/requirements.txt
+            "$VENV/bin/pip" install --upgrade pip --no-cache-dir
+            "$VENV/bin/pip" install -r backend/requirements.txt --no-cache-dir
 
             cd backend
 
-            # Sync environment configuration
+            # Setup .env file
             if [ -n "${BACKEND_ENV_FILE:-}" ]; then
-              # Priority 1: Use GitHub secret
               printf '%s\n' "$BACKEND_ENV_FILE" > .env
               chmod 600 .env
               echo "✅ Updated .env from GitHub secrets"
             elif [ -f ".env.production" ]; then
-              # Priority 2: Use .env.production from repo (auto-sync from git)
-              echo "📋 Using .env.production from repository"
               cp .env.production .env
               chmod 600 .env
-              
-              # Override DB_HOST for Docker deployment
               if command -v docker >/dev/null 2>&1; then
-                echo "🐳 Setting DB_HOST=db for Docker network"
                 sed -i 's/DB_HOST=.*/DB_HOST=db/' .env
               fi
-              
-              # Merge with local overrides if exists
-              if [ -f ".env.local.override" ]; then
-                echo "🔀 Merging with .env.local.override"
-                cat .env.local.override >> .env
-              fi
-              
               echo "✅ Created .env from .env.production"
             elif [ -f ".env" ]; then
-              # Priority 3: Keep existing .env
               echo "⚠️  Using existing .env file"
             else
               echo "❌ No .env configuration found!"
@@ -138,57 +71,52 @@ jobs:
             COMPOSE_FILE="docker-compose.prod.yml"
             if [ ! -f "$COMPOSE_FILE" ]; then
               COMPOSE_FILE="docker-compose.yml"
-              echo "⚠️  docker-compose.prod.yml not found, using docker-compose.yml"
             fi
 
-            if command -v docker >/dev/null 2>&1; then
-              echo "🐳 Deploying with Docker Compose: $COMPOSE_FILE"
-              
-              # Stop old systemd services to free up ports
-              if systemctl list-unit-files | grep -q '^sunedu-backend.service'; then
-                echo "⏹️  Stopping sunedu-backend.service..."
-                sudo systemctl stop sunedu-backend || true
-                sudo systemctl disable sunedu-backend || true
+            echo "🐳 Deploying with Docker Compose..."
+
+            # Stop old systemd services
+            sudo systemctl stop sunedu-backend 2>/dev/null || true
+            sudo systemctl disable sunedu-backend 2>/dev/null || true
+            sudo systemctl stop sunedu-celery 2>/dev/null || true
+            sudo systemctl disable sunedu-celery 2>/dev/null || true
+
+            # Free up ports
+            sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
+            sudo lsof -ti:5432 | xargs -r sudo kill -9 || true
+            sleep 2
+
+            # Stop old containers
+            docker compose -f "$COMPOSE_FILE" down --remove-orphans || true
+
+            # Clean old images
+            docker images | grep sunedu | awk '{print $3}' | xargs -r docker rmi -f || true
+
+            # Build and start
+            echo "🔨 Building..."
+            docker compose -f "$COMPOSE_FILE" build --no-cache --pull
+
+            echo "🚀 Starting services..."
+            docker compose -f "$COMPOSE_FILE" up -d
+
+            # Wait for health check
+            echo "⏳ Waiting for services..."
+            for i in {1..30}; do
+              if docker compose -f "$COMPOSE_FILE" ps | grep -q "healthy\|Up"; then
+                echo "✅ Services are running"
+                break
               fi
-              
-              if systemctl list-unit-files | grep -q '^sunedu-celery.service'; then
-                echo "⏹️  Stopping sunedu-celery.service..."
-                sudo systemctl stop sunedu-celery || true
-                sudo systemctl disable sunedu-celery || true
-              fi
-              
-              # Kill any process using port 8000
-              echo "🔍 Checking for processes on port 8000..."
-              sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
-              
-              # Kill any process using port 5432 (PostgreSQL)
-              sudo lsof -ti:5432 | xargs -r sudo kill -9 || true
-              
-              # Wait a bit for ports to be freed
-              sleep 2
-              
-              # Stop old containers
-              docker compose -f "$COMPOSE_FILE" down
-              
-              # Build and start all services (db + web)
-              docker compose -f "$COMPOSE_FILE" up -d --build
-              
-              # Wait for services to be healthy
-              echo "⏳ Waiting for services to be healthy..."
-              for i in {1..30}; do
-                if docker compose -f "$COMPOSE_FILE" ps | grep -q "healthy"; then
-                  echo "✅ Services are healthy"
-                  break
-                fi
-                echo "⏳ Waiting... ($i/30)"
-                sleep 3
-              done
-              
-              # Show container status
-              docker compose -f "$COMPOSE_FILE" ps
-              
-              echo "✅ Docker deployment complete!"
-            else
-              echo "❌ Docker not installed!"
-              exit 1
-            fi
+              echo "⏳ Waiting... ($i/30)"
+              sleep 3
+            done
+
+            # Show status
+            echo "📊 Container status:"
+            docker compose -f "$COMPOSE_FILE" ps
+
+            echo "📊 Final disk usage: $(df -h / | tail -1 | awk '{print $5 " used, " $4 " free"}')"
+
+            # Cleanup
+            docker system prune -f || true
+
+            echo "✅ Deployment complete!"
