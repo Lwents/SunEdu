@@ -2,7 +2,7 @@ name: Deploy Backend
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
@@ -35,38 +35,45 @@ jobs:
             echo "📊 Disk usage: $(df -h / | tail -1 | awk '{print $5 " used"}')"
 
             echo "📥 Updating code..."
-            cd /var/www/SunEdu
+            cd /home/ubuntu/SunEdu
             
             # Fix permissions and clean up cache files before git operations
             echo "🧹 Cleaning up cache files and fixing permissions..."
-            sudo chown -R ubuntu:ubuntu /var/www/SunEdu/backend
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/SunEdu/backend || true
             find backend -path '*/\.venv' -prune -o -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
             find backend -path '*/\.venv' -prune -o -type f -name '*.pyc' -delete 2>/dev/null || true
             
             git fetch origin "$BRANCH_NAME"
             git reset --hard "origin/$BRANCH_NAME"
 
-            echo "🐍 Setting up virtual environment..."
-            VENV="/var/www/SunEdu/backend/.venv"
-            rm -rf "$VENV"
-            python3 -m venv "$VENV"
-            "$VENV/bin/pip" install --upgrade pip --no-cache-dir
-            "$VENV/bin/pip" install -r backend/requirements.txt --no-cache-dir
-
             cd backend
 
             # Setup .env file
             if [ -n "${BACKEND_ENV_FILE:-}" ]; then
+              echo "📝 Creating .env from GitHub secrets..."
               printf '%s\n' "$BACKEND_ENV_FILE" > .env
+              
+              # Ensure Redis config is present
+              if ! grep -q "REDIS_HOST" .env; then
+                echo "" >> .env
+                echo "REDIS_HOST=redis" >> .env
+                echo "REDIS_PORT=6379" >> .env
+              fi
+              
+              # Ensure api.smartedu.click is in CORS/CSRF
+              if grep -q "CORS_ALLOWED_ORIGINS=" .env; then
+                if ! grep "CORS_ALLOWED_ORIGINS=" .env | grep -q "api.smartedu.click"; then
+                  sed -i 's|CORS_ALLOWED_ORIGINS=\(.*\)|CORS_ALLOWED_ORIGINS=\1,https://api.smartedu.click|' .env
+                fi
+              fi
+              if grep -q "CSRF_TRUSTED_ORIGINS=" .env; then
+                if ! grep "CSRF_TRUSTED_ORIGINS=" .env | grep -q "api.smartedu.click"; then
+                  sed -i 's|CSRF_TRUSTED_ORIGINS=\(.*\)|CSRF_TRUSTED_ORIGINS=\1,https://api.smartedu.click|' .env
+                fi
+              fi
+              
               chmod 600 .env
               echo "✅ Updated .env from GitHub secrets"
-            elif [ -f ".env.production" ]; then
-              cp .env.production .env
-              chmod 600 .env
-              if command -v docker >/dev/null 2>&1; then
-                sed -i 's/DB_HOST=.*/DB_HOST=db/' .env
-              fi
-              echo "✅ Created .env from .env.production"
             elif [ -f ".env" ]; then
               echo "⚠️  Using existing .env file"
             else
@@ -74,8 +81,9 @@ jobs:
               exit 1
             fi
 
-            mkdir -p logs
-            touch logs/ai_personalization.log
+            # Create required directories
+            mkdir -p logs runtime_logs media staticfiles
+            chmod 777 logs runtime_logs media || true
 
             # Use production docker-compose if available
             COMPOSE_FILE="docker-compose.prod.yml"
