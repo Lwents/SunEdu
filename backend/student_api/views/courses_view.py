@@ -9,6 +9,21 @@ from student_api.permissions import IsStudent
 from content.models import Course, Enrollment, Lesson, LessonProgress, Module
 
 
+def build_media_url(request, file_field):
+    """Return absolute URL for a FileField/ImageField if present."""
+    if not file_field:
+        return None
+
+    url = getattr(file_field, 'url', None)
+    if not url:
+        return None
+
+    if url.startswith('http://') or url.startswith('https://'):
+        return url
+
+    return request.build_absolute_uri(url)
+
+
 class StudentMyCoursesView(APIView):
     """
     GET /api/student/courses/
@@ -93,7 +108,7 @@ class StudentMyCoursesView(APIView):
                 'status': 'published' if course.published else 'draft',
                 'createdAt': course.id.generation_time.isoformat() if hasattr(course.id, 'generation_time') else None,
                 'updatedAt': None,
-                'thumbnail': course.thumbnail.url if course.thumbnail else None,
+                'thumbnail': build_media_url(request, course.thumbnail),
                 'price': float(course.price) if course.price else 0,
                 'isEnrolled': True,
                 'progress': progress,
@@ -278,12 +293,12 @@ class StudentCourseDetailView(APIView):
             'status': 'published' if course.published else 'draft',
             'createdAt': course.id.generation_time.isoformat() if hasattr(course.id, 'generation_time') else None,
             'updatedAt': None,
-            'thumbnail': course.thumbnail.url if course.thumbnail else None,
+            'thumbnail': build_media_url(request, course.thumbnail),
             'price': float(course.price) if course.price else 0,
             'description': course.description or '',
             'introduction': course.introduction or '',
             'video_url': course.video_url or '',
-            'video_file': course.video_file.url if course.video_file else None,
+            'video_file': build_media_url(request, course.video_file),
             'sections': sections,
             'isEnrolled': is_enrolled,
             'progress': progress,
@@ -350,7 +365,7 @@ class StudentCoursePlayerView(APIView):
             'title': lesson.title,
             'content_type': lesson.content_type,
             'video_url': lesson.video_url or '',
-            'video_file': lesson.video_file.url if lesson.video_file else None,
+            'video_file': build_media_url(request, lesson.video_file) if lesson.video_file else None,
             'introduction': lesson.introduction or '',
             'requires_exercise_completion': lesson.requires_exercise_completion,
             'progress': {

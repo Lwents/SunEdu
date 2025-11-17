@@ -1,8 +1,8 @@
 // src/config/axios.ts
 import axios from 'axios'
 
-// Default to the SmartEdu public API when no env override is provided.
-const DEFAULT_API_URL = 'https://api.smartedu.click'
+// Default API base depends on environment: use local backend during dev, public API in prod.
+const DEFAULT_API_URL = import.meta.env.DEV ? 'http://localhost:8000' : 'https://api.smartedu.click'
 const rawApiUrl = (import.meta.env.VITE_API_URL ?? '').toString().trim()
 const apiUrl = (rawApiUrl || DEFAULT_API_URL).replace(/\/+$/, '')
 

@@ -245,8 +245,8 @@ const auth = useAuthStore()
 const user = computed<AuthUser | null>(() => auth.user)
 
 /** constants */
-const MAX_AVATAR_SIZE = 2 * 1024 * 1024 // 2MB
-const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (2MB)'
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024 // 5MB
+const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (5MB)'
 
 /** fallback - đồng bộ với navbar */
 const defaultAvatar = 'https://i.pravatar.cc/120?img=5'

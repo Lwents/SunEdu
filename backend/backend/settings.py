@@ -37,6 +37,20 @@ DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*" if DEBUG else "")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins in dev mode
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'cache-control',
+    'pragma',
+]
 
 # -------------------------------
 # Installed apps
@@ -165,10 +179,10 @@ AUTH_USER_MODEL = 'custom_account.UserModel'
 # -------------------------------
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = Path('/var/www/elearning/staticfiles')
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = Path('/var/www/elearning/media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 LOG_DIR = BASE_DIR / 'runtime_logs'
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -249,16 +263,10 @@ LOGGING = {
         'verbose': {'format': '{levelname} {asctime} {module} {message}', 'style': '{'},
     },
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': LOG_DIR / 'ai_personalization.log',
-            'formatter': 'verbose',
-        },
         'console': {'level': 'DEBUG', 'class': 'logging.StreamHandler', 'formatter': 'verbose'},
     },
     'loggers': {
-        'ai_personalization': {'handlers': ['file', 'console'], 'level': 'INFO', 'propagate': False},
+        'ai_personalization': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
         'django.db.backends': {'handlers': ['console'], 'level': 'DEBUG'},
     },
 }

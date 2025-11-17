@@ -115,7 +115,7 @@
 
                 <!-- Content -->
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-slate-900 line-clamp-2">
+                  <p class="text-sm font-medium text-slate-900">
                     {{ notification.title }}
                   </p>
                   <p class="text-xs text-slate-600 mt-0.5 line-clamp-2">
@@ -151,6 +151,74 @@
       </div>
     </Transition>
   </div>
+
+  <!-- Expanded notification modal -->
+  <Transition
+    enter-active-class="transition ease-out duration-200"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition ease-in duration-150"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <div
+      v-if="focusedNotification"
+      class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 px-4"
+      @click.self="closeExpanded"
+    >
+      <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <button
+          type="button"
+          class="absolute right-3 top-3 rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          @click="closeExpanded"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div class="flex items-center gap-3 mb-4">
+          <div
+            class="w-12 h-12 rounded-xl flex items-center justify-center"
+            :class="getNotificationIconClass(focusedNotification.type)"
+          >
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" :d="getNotificationIconPath(focusedNotification.type)" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-500">Thông báo</p>
+            <p class="text-sm text-slate-600">{{ formatTime(focusedNotification.created_at) }}</p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold text-slate-900">
+          {{ focusedNotification.title }}
+        </h3>
+        <p class="mt-4 text-sm leading-relaxed text-slate-700 whitespace-pre-line">
+          {{ focusedNotification.message }}
+        </p>
+
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            v-if="!focusedNotification.is_read"
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            @click="markAsRead(focusedNotification.id)"
+          >
+            Đánh dấu đã đọc
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            @click="closeExpanded"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -184,6 +252,7 @@ const loading = ref(false)
 const notifications = ref<Notification[]>([])
 const notificationRef = ref<HTMLElement | null>(null)
 const maxNotifications = 20
+const focusedNotification = ref<Notification | null>(null)
 
 // ===== COMPUTED =====
 const displayedNotifications = computed(() => {
@@ -208,11 +277,11 @@ const roleLabel = computed(() => {
 
 const apiEndpoint = computed(() => {
   const endpoints = {
-    student: '/api/student/notifications',
-    teacher: '/api/teacher/notifications',
-    admin: '/api/admin/notifications',
+    student: '/student/notifications/',
+    teacher: '/teacher/notifications/',
+    admin: '/admin/notifications/',
   }
-  return endpoints[props.role] || '/api/notifications'
+  return endpoints[props.role] || '/notifications/'
 })
 
 // ===== METHODS =====
@@ -367,9 +436,14 @@ function getMockNotificationsByRole(): Notification[] {
 }
 
 async function handleNotificationClick(notification: Notification) {
+  focusedNotification.value = notification
   if (!notification.is_read) {
     await markAsRead(notification.id)
   }
+}
+
+function closeExpanded() {
+  focusedNotification.value = null
 }
 
 async function markAsRead(notificationId: number | string) {

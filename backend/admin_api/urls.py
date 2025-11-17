@@ -23,12 +23,16 @@ from admin_api.views import (
     AdminSessionRevokeView,
     AdminAlertPolicyView
 )
+from admin_api.views.bulk_create_view import BulkCreateUsersView
 
 app_name = 'admin_api'
 
 urlpatterns = [
     # Dashboard
     path('dashboard/', AdminDashboardView.as_view(), name='dashboard'),
+
+    # Users
+    path('users/bulk-create/', BulkCreateUsersView.as_view(), name='users-bulk-create'),
 
     # Courses
     path('courses/', AdminCourseListView.as_view(), name='course-list'),
