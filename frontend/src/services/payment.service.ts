@@ -120,6 +120,7 @@ export interface PaymentHistoryListResult<T = any> {
 }
 
 const USE_MOCK = false // ← kết nối với API thật
+const ADMIN_PREFIX = '/admin'
 
 function seededRand(n: number) {
     // deterministic a bit
@@ -141,7 +142,7 @@ export const paymentService = {
     // ===== LIST =====
     async list(params: PageParams): Promise<PageResult<TxSummary>> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/transactions/', { params })
+            const { data } = await api.get(`${ADMIN_PREFIX}/transactions/`, { params })
             return data
         }
 
@@ -198,7 +199,7 @@ export const paymentService = {
     // ===== METRICS (kpis) =====
     async metrics(params: PageParams): Promise<TxMetrics> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/transactions/metrics/', { params })
+            const { data } = await api.get(`${ADMIN_PREFIX}/transactions/metrics/`, { params })
             return data
         }
         const { items } = await this.list({ ...params, page: 1, pageSize: 200 })
@@ -212,7 +213,7 @@ export const paymentService = {
     // ===== DETAIL =====
     async detail(id: ID): Promise<TxDetail> {
         if (!USE_MOCK) {
-            const { data } = await api.get(`/api/admin/transactions/${id}/`)
+            const { data } = await api.get(`${ADMIN_PREFIX}/transactions/${id}/`)
             return data
         }
 
@@ -286,22 +287,22 @@ export const paymentService = {
 
     // ===== ACTIONS =====
     async refund(id: ID, amount?: number, reason?: string) {
-        if (!USE_MOCK) return api.post(`/api/admin/transactions/${id}/refund/`, { amount, reason })
+        if (!USE_MOCK) return api.post(`${ADMIN_PREFIX}/transactions/${id}/refund/`, { amount, reason })
         return Promise.resolve({ ok: true })
     },
     async markDispute(id: ID, note?: string) {
-        if (!USE_MOCK) return api.post(`/api/admin/transactions/${id}/dispute/`, { note })
+        if (!USE_MOCK) return api.post(`${ADMIN_PREFIX}/transactions/${id}/dispute/`, { note })
         return Promise.resolve({ ok: true })
     },
     async resolveDispute(id: ID, result: 'won' | 'lost') {
-        if (!USE_MOCK) return api.post(`/api/admin/transactions/${id}/dispute/resolve/`, { result })
+        if (!USE_MOCK) return api.post(`${ADMIN_PREFIX}/transactions/${id}/dispute/resolve/`, { result })
         return Promise.resolve({ ok: true })
     },
 
     // ===== EXPORT =====
     async exportCsv(params: PageParams): Promise<Blob> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/transactions/export/', {
+            const { data } = await api.get(`${ADMIN_PREFIX}/transactions/export/`, {
                 params,
                 responseType: 'blob',
             })
