@@ -663,7 +663,8 @@ function switchToRegister() {
   .auth-container {
     min-height: 500px;
     border-radius: 24px;
-    display: block;
+    display: flex;
+    flex-direction: column;
   }
 
   .form-panel {
@@ -672,6 +673,7 @@ function switchToRegister() {
     width: 100%;
     transform: none;
     opacity: 1;
+    min-height: unset;
   }
 
   .brand-header {
@@ -717,10 +719,16 @@ function switchToRegister() {
   .auth-container {
     min-height: 450px;
     border-radius: 20px;
+    padding-top: 3rem;
   }
 
   .form-panel {
     padding: 1.75rem 1.25rem;
+  }
+
+  .home-button {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.75rem;
   }
 
   .form-title {
@@ -743,6 +751,56 @@ function switchToRegister() {
 
   .form-panel {
     padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-height: 720px) {
+  .sliding-auth-layout {
+    align-items: center;
+    justify-content: center;
+    padding: 3.5rem 1rem 2rem;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .auth-container {
+    margin: 0 auto 2rem;
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-panel {
+    position: relative;
+    width: 100%;
+    transform: none;
+    opacity: 1;
+    padding: 1.75rem 1.5rem;
+    min-height: unset;
+  }
+
+  .overlay-container,
+  .overlay {
+    display: none;
+  }
+
+  .home-button {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    margin-bottom: 0;
+  }
+
+  .right-panel {
+    display: none;
+  }
+
+  .auth-container.register-mode .left-panel {
+    display: none;
+  }
+
+  .auth-container.register-mode .right-panel {
+    display: flex;
   }
 }
 </style>

@@ -59,15 +59,29 @@
       </div>
 
       <div class="rounded-lg bg-white p-4 ring-1 ring-black/5">
-        <div class="mb-3 font-medium">Duyệt khóa học</div>
-        <el-table :data="pendingApprovals" size="small" height="20rem">
-          <el-table-column prop="title" label="Khóa học" />
-          <el-table-column prop="teacher" label="GV" width="150" />
-          <el-table-column prop="submittedAt" label="Gửi lúc" width="120" />
-          <el-table-column label="" width="150" align="right">
+        <div class="mb-2 flex items-center justify-between">
+          <div>
+            <div class="font-medium">Người dùng đang hoạt động</div>
+            <p class="text-xs text-gray-500">
+              Theo dõi hoạt động trong {{ activeUsers.windowMinutes }} phút gần nhất
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-2xl font-semibold text-indigo-600">{{ fmt(activeUsers.count) }}</p>
+            <p class="text-xs text-gray-500">đang online</p>
+          </div>
+        </div>
+
+        <el-table :data="activeUsers.recent" size="small" height="18rem" :show-header="false">
+          <el-table-column>
             <template #default="{ row }">
-              <el-button size="small" type="success">Duyệt</el-button>
-              <el-button size="small" type="danger" plain>Từ chối</el-button>
+              <div class="flex items-center justify-between text-sm text-gray-700">
+                <div>
+                  <p class="font-medium">{{ row.name }}</p>
+                  <p class="text-xs text-gray-500">{{ row.email }} • {{ row.role }}</p>
+                </div>
+                <span class="text-xs text-gray-400">{{ formatTime(row.lastActive) }}</span>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -125,7 +139,7 @@ const kpis = reactive({
 })
 const topCourses = ref<any[]>([])
 const recentTransactions = ref<any[]>([])
-const pendingApprovals = ref<any[]>([])
+const activeUsers = reactive({ count: 0, windowMinutes: 10, recent: [] as any[] })
 const security = reactive({ failedLogins24h: 0, lockedAccounts: 0, sslDaysToExpire: 30 })
 const system = reactive({ cpuP95: 0, ramP95: 0, disk: 0, backup: { lastRun: '-', status: '-' } })
 
@@ -139,13 +153,20 @@ function percent(v: number) {
   return `${v.toFixed(1)}%`
 }
 
+function formatTime(value: string | null) {
+  if (!value) return 'Không rõ'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+}
+
 async function fetchAll() {
   try {
     const data = await dashboardService.getDashboard()
     Object.assign(kpis, data.kpis)
     topCourses.value = data.topCourses
     recentTransactions.value = data.recentTransactions
-    pendingApprovals.value = data.pendingApprovals
+    Object.assign(activeUsers, data.activeUsers)
     Object.assign(security, data.security)
     Object.assign(system, data.system)
   } catch (e) {

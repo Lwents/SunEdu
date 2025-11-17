@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
-from django.db.models import Count, Sum, Q, F
+from django.core.cache import cache
+from django.db.models import Count, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.views import APIView
@@ -7,9 +8,14 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from admin_api.permissions import IsAdmin
-from custom_account.models import UserModel
-from content.models import Course, Enrollment
+from custom_account.models import UserModel, AuthAttempt
+from content.models import Course
 from payments.models import Payment
+
+try:
+    import psutil  # type: ignore
+except ImportError:  # pragma: no cover - psutil might be absent in some envs
+    psutil = None
 
 
 class AdminDashboardView(APIView):
@@ -48,11 +54,6 @@ class AdminDashboardView(APIView):
         refunds_7d = payments_7d.filter(status='refunded').aggregate(total=Sum('amount'))['total'] or 0
         refund_rate_7d = (refunds_7d / total_7d * 100) if total_7d > 0 else 0
 
-        # Pending approvals (courses pending review)
-        approvals_pending = Course.objects.filter(
-            published=False
-        ).count()
-
         # Top courses by enrollments
         top_courses = Course.objects.filter(
             published=True
@@ -87,38 +88,11 @@ class AdminDashboardView(APIView):
             for tx in recent_transactions
         ]
 
-        # Pending approvals - courses that are not published
-        pending_approvals = Course.objects.filter(
-            published=False
-        ).select_related('owner').order_by('-id')[:10]
+        approvals_pending = Course.objects.filter(published=False).count()
 
-        pending_approvals_data = [
-            {
-                'id': str(course.id),
-                'title': course.title,
-                'teacher': course.owner.email if course.owner else 'N/A',
-                'submittedAt': None  # Course model doesn't have created_at, using None
-            }
-            for course in pending_approvals
-        ]
-
-        # Security stats (mock - need actual security model)
-        security = {
-            'failedLogins24h': 0,  # Placeholder
-            'lockedAccounts': 0,  # Placeholder
-            'sslDaysToExpire': 30  # Placeholder
-        }
-
-        # System health (mock - need actual monitoring)
-        system = {
-            'cpuP95': 45,  # Placeholder
-            'ramP95': 62,  # Placeholder
-            'disk': 78,  # Placeholder
-            'backup': {
-                'lastRun': '2024-01-01 00:00:00',  # Placeholder
-                'status': 'success'  # Placeholder
-            }
-        }
+        security = self._get_security_stats(now)
+        system = self._get_system_health()
+        active_users = self._get_active_users(now)
 
         return Response({
             'kpis': {
@@ -131,10 +105,82 @@ class AdminDashboardView(APIView):
             },
             'topCourses': top_courses_data,
             'recentTransactions': recent_tx_data,
-            'pendingApprovals': pending_approvals_data,
+            'activeUsers': active_users,
             'security': security,
             'system': system
         }, status=status.HTTP_200_OK)
+
+    def _get_security_stats(self, now: datetime) -> dict:
+        window_start = now - timedelta(hours=24)
+        failed_logins = AuthAttempt.objects.filter(
+            success=False,
+            created_at__gte=window_start,
+        ).count()
+        locked_accounts = UserModel.objects.filter(is_active=False).count()
+
+        cert = cache.get('security_cert_status')
+        days_to_expire = None
+        if cert and cert.get('validTo'):
+            try:
+                valid_to = datetime.fromisoformat(cert['validTo'])
+                days_to_expire = max((valid_to - now).days, 0)
+            except Exception:
+                days_to_expire = None
+
+        return {
+            'failedLogins24h': failed_logins,
+            'lockedAccounts': locked_accounts,
+            'sslDaysToExpire': days_to_expire if days_to_expire is not None else 0,
+        }
+
+    def _get_system_health(self) -> dict:
+        cpu = ram = disk = None
+        if psutil:
+            try:
+                cpu = psutil.cpu_percent(interval=0.1)
+                ram = psutil.virtual_memory().percent
+                disk = psutil.disk_usage('/').percent
+            except Exception:
+                cpu = ram = disk = None
+
+        backup_entries = cache.get('system_backups', []) or []
+        latest_backup = backup_entries[0] if backup_entries else None
+
+        return {
+            'cpuP95': round(cpu, 2) if cpu is not None else None,
+            'ramP95': round(ram, 2) if ram is not None else None,
+            'disk': round(disk, 2) if disk is not None else None,
+            'backup': {
+                'lastRun': latest_backup.get('createdAt') if latest_backup else None,
+                'status': latest_backup.get('notes') if latest_backup else 'no_backup',
+            },
+        }
+
+    def _get_active_users(self, now: datetime) -> dict:
+        """Return users active within last 10 minutes."""
+        threshold = now - timedelta(minutes=10)
+        qs = UserModel.objects.filter(
+            is_active=True,
+            last_login__gte=threshold,
+        ).select_related('profile').order_by('-last_login')
+
+        recent = []
+        for user in qs[:15]:
+            display_name = getattr(user.profile, 'display_name', None)
+            name = display_name or user.email or user.username
+            recent.append({
+                'id': str(user.id),
+                'name': name,
+                'email': user.email,
+                'role': user.role,
+                'lastActive': user.last_login.isoformat() if user.last_login else None,
+            })
+
+        return {
+            'count': qs.count(),
+            'recent': recent,
+            'windowMinutes': 10,
+        }
 
 
 

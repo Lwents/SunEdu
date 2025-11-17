@@ -57,12 +57,12 @@
     </div>
 
     <!-- Step Content -->
-    <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg mx-auto">
+    <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg mx-auto max-w-5xl w-full">
       <!-- Step 1: Thông tin cơ bản -->
-      <div v-if="currentStep === 0" class="space-y-6">
-        <h2 class="text-2xl font-bold text-gray-900">Thông tin cơ bản</h2>
+      <div v-if="currentStep === 0" class="space-y-6 max-w-3xl mx-auto w-full">
+        <h2 class="text-2xl font-bold text-gray-900 text-center">Thông tin cơ bản</h2>
         
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2 max-w-2xl mx-auto w-full">
           <div class="md:col-span-2">
             <label class="mb-2 block text-sm font-semibold text-gray-700">
               Tên khoá học <span class="text-rose-600">*</span>
@@ -312,9 +312,8 @@
       <div class="mt-8 flex justify-between border-t border-gray-200 pt-6">
         <button
           type="button"
-          class="rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-700 hover:bg-gray-50"
-          :disabled="currentStep === 0"
-          @click="currentStep--"
+          class="rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          @click="handleBack"
         >
           Quay lại
         </button>
@@ -564,6 +563,14 @@ const canSubmit = computed(() => {
   return form.value.title.trim() && form.value.introduction.trim()
 })
 
+function handleBack() {
+  if (currentStep.value === 0) {
+    router.back()
+    return
+  }
+  currentStep.value = Math.max(0, currentStep.value - 1)
+}
+
 function getSubjectLabel(subject: string): string {
   const labels: Record<string, string> = {
     math: 'Toán',
@@ -666,11 +673,11 @@ function onPickLessonVideo(e: Event) {
     input.value = ''
     return
   }
-  const maxSize = 5 * 1024 * 1024 // 5MB
+  const maxSize = 300 * 1024 * 1024 // 300MB
   if (file.size > maxSize) {
     const fileSize = formatFileSize(file.size)
     const maxSizeStr = formatFileSize(maxSize)
-    showToast(`File video quá lớn! Kích thước: ${fileSize}, tối đa: ${maxSizeStr}`, 'error')
+    showToast(`File video quá lớn (đã ${fileSize}). Giới hạn hiện tại: ${maxSizeStr}`, 'error')
     input.value = ''
     return
   }

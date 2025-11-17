@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import Count, Q, Prefetch
 from rest_framework import status
 from rest_framework.views import APIView
@@ -22,6 +23,19 @@ def build_media_url(request, file_field):
         return url
 
     return request.build_absolute_uri(url)
+
+
+def build_avatar_url(request, avatar_path: str | None):
+    """Return absolute avatar URL for user profile strings/paths."""
+    if not avatar_path:
+        return None
+    if avatar_path.startswith(("http://", "https://")):
+        return avatar_path
+    if avatar_path.startswith('/'):
+        return request.build_absolute_uri(avatar_path)
+    media_url = getattr(settings, 'MEDIA_URL', '/media/')
+    base = request.build_absolute_uri(media_url.rstrip('/') + '/')
+    return f"{base}{avatar_path}"
 
 
 class StudentMyCoursesView(APIView):
@@ -280,7 +294,47 @@ class StudentCourseDetailView(APIView):
         ).count()
         
         progress = int((completed_lessons / total_lessons * 100)) if total_lessons > 0 else 0
-        
+
+        # Build classmates list with progress
+        classmates = Enrollment.objects.filter(course=course).select_related('student', 'student__profile')
+        student_ids = [enrollment.student_id for enrollment in classmates]
+        progress_map = {
+            row['student_id']: row['completed']
+            for row in LessonProgress.objects.filter(
+                lesson__module__course=course,
+                student_id__in=student_ids,
+                completed=True
+            ).values('student_id').annotate(completed=Count('id'))
+        }
+
+        students_data = []
+        for enrollment in classmates:
+            classmate = enrollment.student
+            profile = getattr(classmate, 'profile', None)
+            display_name = None
+            avatar_path = None
+
+            if profile:
+                display_name = getattr(profile, 'display_name', None)
+                avatar_path = getattr(profile, 'avatar_url', None)
+
+            if not display_name:
+                display_name = classmate.get_full_name() or classmate.username or 'Học viên'
+
+            if not avatar_path and hasattr(classmate, 'avatar'):
+                avatar_path = getattr(classmate, 'avatar', None)
+
+            avatar_url = build_avatar_url(request, avatar_path)
+            completed_for_student = progress_map.get(classmate.id, 0)
+            student_progress = int((completed_for_student / total_lessons * 100)) if total_lessons > 0 else 0
+
+            students_data.append({
+                'id': str(classmate.id),
+                'name': display_name,
+                'avatar': avatar_url,
+                'progress': student_progress,
+            })
+
         course_data = {
             'id': str(course.id),
             'title': course.title,
@@ -302,6 +356,7 @@ class StudentCourseDetailView(APIView):
             'sections': sections,
             'isEnrolled': is_enrolled,
             'progress': progress,
+            'students': students_data,
         }
         
         return Response(course_data, status=status.HTTP_200_OK)

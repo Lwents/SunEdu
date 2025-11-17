@@ -284,6 +284,8 @@ const apiEndpoint = computed(() => {
   return endpoints[props.role] || '/notifications/'
 })
 
+const apiEndpointBase = computed(() => apiEndpoint.value.replace(/\/+$/, ''))
+
 // ===== METHODS =====
 function toggleDropdown() {
   isOpen.value = !isOpen.value
@@ -449,7 +451,7 @@ function closeExpanded() {
 async function markAsRead(notificationId: number | string) {
   try {
     const api = (await import('@/config/axios')).default
-    await api.patch(`${apiEndpoint.value}/${notificationId}/read/`)
+    await api.patch(`${apiEndpointBase.value}/${notificationId}/read/`)
     
     const notification = notifications.value.find((n) => String(n.id) === String(notificationId))
     if (notification) {
@@ -463,7 +465,7 @@ async function markAsRead(notificationId: number | string) {
 async function markAllAsRead() {
   try {
     const api = (await import('@/config/axios')).default
-    await api.patch(`${apiEndpoint.value}/read-all/`)
+    await api.patch(`${apiEndpointBase.value}/read-all/`)
     
     displayedNotifications.value.forEach((n) => (n.is_read = true))
   } catch (error) {

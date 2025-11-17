@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 import logging
+import secrets
+import string
 
 from admin_api.permissions import IsAdmin
 from custom_account.models import UserModel
@@ -31,7 +33,6 @@ class BulkCreateUsersView(APIView):
         try:
             cohort_code = request.data.get('cohort_code', '').strip().upper()
             count = int(request.data.get('count', 0))
-            default_password = request.data.get('default_password', '').strip()
             role = request.data.get('role', 'student').strip().lower()
 
             # Validation
@@ -43,11 +44,6 @@ class BulkCreateUsersView(APIView):
             if count < 1 or count > 100:
                 return Response({
                     'detail': 'Số lượng phải từ 1 đến 100'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            if len(default_password) < 6:
-                return Response({
-                    'detail': 'Mật khẩu phải có ít nhất 6 ký tự'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             if role not in ['student', 'teacher']:
@@ -75,19 +71,22 @@ class BulkCreateUsersView(APIView):
                         errors.append(f"Username {username} đã tồn tại")
                         continue
 
+                    password = self._generate_password()
+
                     try:
                         # Create user
                         user = UserModel.objects.create_user(
                             username=username,
                             email=email,
-                            password=default_password,
+                            password=password,
                             role=role
                         )
 
                         created_accounts.append({
                             'username': username,
                             'email': email,
-                            'role': role
+                            'role': role,
+                            'password': password
                         })
 
                     except Exception as e:
@@ -136,3 +135,34 @@ class BulkCreateUsersView(APIView):
         else:
             # If starts with number, use as is
             return cohort_code.zfill(4)
+
+    def _generate_password(self, length: int = 8) -> str:
+        alphabet = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+class BulkCreateRollbackView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        usernames = request.data.get('usernames', [])
+
+        if not isinstance(usernames, list) or not usernames:
+            return Response({
+                'detail': 'Danh sách usernames không hợp lệ'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        normalized = [str(u).strip() for u in usernames if str(u).strip()]
+        if not normalized:
+            return Response({
+                'detail': 'Danh sách usernames không hợp lệ'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = UserModel.objects.filter(username__in=normalized, role__in=['student', 'teacher'])
+        deleted, _ = qs.delete()
+
+        logger.info("Bulk rollback deleted %s accounts", deleted)
+
+        return Response({
+            'deleted': deleted
+        }, status=status.HTTP_200_OK)

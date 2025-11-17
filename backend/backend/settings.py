@@ -286,8 +286,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://smartedu.click/')
 PASSWORD_RESET_TIMEOUT = 600  # 10 minutes
 
-# Upload limits
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024       # 10MB
+# Upload limits (allow larger lesson/course video files)
+# 300MB per file keeps teacher uploads practical without exhausting memory.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 300 * 1024 * 1024      # 300MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1 * 1024 * 1024 * 1024 # 1GB
 
 # HTTPS
