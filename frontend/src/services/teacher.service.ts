@@ -14,6 +14,7 @@ export interface TeacherStudent {
     completedLessons: number
     totalLessons: number
     status: 'completed' | 'in_progress'
+    grade?: string | number
   }[]
 }
 

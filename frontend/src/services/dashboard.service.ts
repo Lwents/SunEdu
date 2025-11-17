@@ -57,7 +57,7 @@ export interface DashboardData {
 export const dashboardService = {
   async getDashboard(): Promise<DashboardData> {
     if (!USE_MOCK) {
-      const { data } = await api.get('/api/admin/dashboard/')
+      const { data } = await api.get('/admin/dashboard/')
       return data
     }
     // Mock data
