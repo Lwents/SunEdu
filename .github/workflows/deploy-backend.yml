@@ -43,8 +43,20 @@ jobs:
             find backend -path '*/\.venv' -prune -o -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
             find backend -path '*/\.venv' -prune -o -type f -name '*.pyc' -delete 2>/dev/null || true
             
-            git fetch origin "$BRANCH_NAME"
-            git reset --hard "origin/$BRANCH_NAME"
+            echo "🌿 Checking out branch: $BRANCH_NAME"
+            git fetch origin --prune
+
+            if git rev-parse --verify "origin/$BRANCH_NAME" >/dev/null 2>&1; then
+              if git rev-parse --verify "$BRANCH_NAME" >/dev/null 2>&1; then
+                git checkout "$BRANCH_NAME"
+              else
+                git checkout -b "$BRANCH_NAME" "origin/$BRANCH_NAME"
+              fi
+              git reset --hard "origin/$BRANCH_NAME"
+            else
+              echo "❌ Branch $BRANCH_NAME not found on origin"
+              exit 1
+            fi
 
             cd backend
 
