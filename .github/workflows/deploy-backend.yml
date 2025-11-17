@@ -33,6 +33,13 @@ jobs:
 
             echo "📥 Updating code..."
             cd /var/www/SunEdu
+            
+            # Fix permissions and clean up cache files before git operations
+            echo "🧹 Cleaning up cache files and fixing permissions..."
+            sudo chown -R ubuntu:ubuntu /var/www/SunEdu/backend
+            find backend -path '*/\.venv' -prune -o -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+            find backend -path '*/\.venv' -prune -o -type f -name '*.pyc' -delete 2>/dev/null || true
+            
             git fetch origin "$BRANCH_NAME"
             git reset --hard "origin/$BRANCH_NAME"
 
