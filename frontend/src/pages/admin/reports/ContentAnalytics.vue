@@ -123,6 +123,8 @@ const barOption = computed(() => ({
   grid: { left: 40, right: 16, top: 24, bottom: 40 },
   xAxis: { type: 'category', data: subjectViews.value.map((x) => x.subject) },
   yAxis: { type: 'value' },
-  series: [{ name: 'Views', type: 'bar', data: subjectViews.value.map((x) => x.views) }],
+  series: [
+    { name: 'Views', type: 'bar', data: subjectViews.value.map((x) => x.views), xAxisIndex: 0 },
+  ],
 }))
 </script>

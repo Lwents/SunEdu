@@ -195,9 +195,27 @@ const lineOption = computed(() => ({
   xAxis: { type: 'category', data: series.value.map((x) => x.date) },
   yAxis: { type: 'value' },
   series: [
-    { name: 'Gross', type: 'line', smooth: true, data: series.value.map((x) => x.gross) },
-    { name: 'Net', type: 'line', smooth: true, data: series.value.map((x) => x.net) },
-    { name: 'Refunds', type: 'line', smooth: true, data: series.value.map((x) => x.refunds) },
+    {
+      name: 'Gross',
+      type: 'line',
+      smooth: true,
+      data: series.value.map((x) => x.gross),
+      xAxisIndex: 0,
+    },
+    {
+      name: 'Net',
+      type: 'line',
+      smooth: true,
+      data: series.value.map((x) => x.net),
+      xAxisIndex: 0,
+    },
+    {
+      name: 'Refunds',
+      type: 'line',
+      smooth: true,
+      data: series.value.map((x) => x.refunds),
+      xAxisIndex: 0,
+    },
   ],
 }))
 const pieOption = computed(() => ({
