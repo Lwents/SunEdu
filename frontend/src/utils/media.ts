@@ -8,12 +8,14 @@ export function resolveMediaUrl(input?: string | null): string {
     return trimmed
   }
 
-  const apiBaseRaw = (import.meta.env.VITE_API_URL ?? window.location.origin).toString().trim()
-  const apiBase = apiBaseRaw.replace(/\/+$/, '') || window.location.origin
+  const mediaBaseRaw = (import.meta.env.VITE_MEDIA_BASE_URL
+    ?? import.meta.env.VITE_API_URL
+    ?? window.location.origin).toString().trim()
+  const mediaBase = mediaBaseRaw.replace(/\/+$/, '') || window.location.origin
 
   if (trimmed.startsWith('/')) {
-    return `${apiBase}${trimmed}`
+    return `${mediaBase}${trimmed}`
   }
 
-  return `${apiBase}/media/${trimmed}`
+  return `${mediaBase}/media/${trimmed}`
 }
