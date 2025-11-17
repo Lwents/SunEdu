@@ -415,8 +415,8 @@ const router = useRouter()
 const auth = useAuthStore()
 const ready = ref(false)
 
-const MAX_AVATAR_SIZE = 2 * 1024 * 1024 // 2MB
-const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (2MB)'
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024 // 5MB
+const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (5MB)'
 
 function goChangePwd() {
   router.push({ name: 'student-change-password' })

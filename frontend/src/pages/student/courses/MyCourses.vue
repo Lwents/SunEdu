@@ -105,188 +105,128 @@
 
       <!-- Main Courses Tab -->
       <template v-if="activeTab === 'main'">
-        <!-- Khối 1–2 -->
-        <section v-if="baseList.length" class="mb-8">
-          <div class="mb-6 flex items-center justify-between">
-            <div>
-              <h2 class="text-xl font-semibold text-slate-900">Khối 1–2 (Cơ bản)</h2>
-              <p class="mt-1 text-sm text-slate-600">{{ baseList.length }} khóa học</p>
-            </div>
-            <div class="flex items-center gap-4">
-              <div class="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 border border-amber-200">
-                <span class="text-lg">🏆</span>
-                <span class="text-sm font-semibold text-amber-900">{{ animatedBaseTrophies }}/{{ baseTrophies.total }}</span>
-              </div>
-              <router-link
-                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-                :to="{ name: 'student-catalog', query: { grade: 1 } }"
-              >
-                Xem tất cả
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </router-link>
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <article
-              v-for="c in baseList"
-              :key="c.id"
-              class="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-pointer"
-              @click="openDetail(c.id)"
+        <template v-if="hasMainCourses">
+          <template v-for="section in gradeSections" :key="section.grade">
+            <section
+              v-if="section.courses.length"
+              class="mb-8"
             >
-              <div class="relative h-40 overflow-hidden bg-slate-200">
-                <img 
-                  v-if="c.thumbnail" 
-                  class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  :src="getThumbnailUrl(c.thumbnail)" 
-                  :alt="c.title" 
-                  @error="handleImageError"
-                />
-                <div v-else class="flex h-full w-full items-center justify-center">
-                  <svg class="h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <button
-                  type="button"
-                  class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/95 p-2.5 text-slate-700 shadow-md transition hover:bg-white"
-                  title="Vào học"
-                  @click.stop="playFirst(c.id)"
-                >
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
-                <div class="absolute bottom-0 left-0 right-0 bg-black/40 p-3">
-                  <div class="mb-1.5 h-1 overflow-hidden rounded-full bg-white/30">
-                    <div
-                      class="h-full rounded-full bg-white transition-all duration-1000 ease-out"
-                      :style="{ width: `${animatedProgress[String(c.id)] || 0}%` }"
-                    ></div>
-                  </div>
-                  <p class="text-xs font-semibold text-white">{{ Math.round(animatedProgress[String(c.id)] || 0) }}% hoàn thành</p>
-                </div>
+            <div class="mb-6 flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-slate-900">
+                  Lớp {{ section.grade }} <span class="text-sm font-normal text-slate-500">({{ section.subtitle }})</span>
+                </h2>
+                <p class="mt-1 text-sm text-slate-600">{{ section.courses.length }} khóa học</p>
               </div>
-              <div class="p-4">
-                <h3 class="mb-3 line-clamp-2 font-semibold text-slate-900">
-                  {{ c.title }}
-                </h3>
-                <div class="flex items-center justify-between">
-                  <span
-                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-                    :class="c.done
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-amber-100 text-amber-700'"
-                  >
-                    <span
-                      class="h-1.5 w-1.5 rounded-full"
-                      :class="c.done ? 'bg-green-500' : 'bg-amber-500'"
-                    ></span>
-                    {{ c.done ? 'Hoàn thành' : 'Đang học' }}
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 border border-amber-200">
+                  <span class="text-lg">🏆</span>
+                  <span class="text-sm font-semibold text-amber-900">
+                    {{ section.trophies.earned }}/{{ section.trophies.total || 5 * section.courses.length }}
                   </span>
-                  <div class="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 border border-amber-200">
-                    <span class="text-sm">🏆</span>
-                    <span class="text-xs font-semibold text-amber-900">{{ c.score }}</span>
-                  </div>
                 </div>
+                <router-link
+                  class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                  :to="{ name: 'student-catalog', query: { grade: section.grade } }"
+                >
+                  Xem tất cả
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </router-link>
               </div>
-            </article>
-          </div>
-        </section>
-
-        <!-- Khối 3–5 -->
-        <section v-if="midList.length" class="mb-8">
-          <div class="mb-6 flex items-center justify-between">
-            <div>
-              <h2 class="text-xl font-semibold text-slate-900">Khối 3–5 (Nâng cao)</h2>
-              <p class="mt-1 text-sm text-slate-600">{{ midList.length }} khóa học</p>
             </div>
-            <div class="flex items-center gap-4">
-              <div class="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 border border-amber-200">
-                <span class="text-lg">🏆</span>
-                <span class="text-sm font-semibold text-amber-900">{{ animatedMidTrophies }}/{{ midTrophies.total }}</span>
-              </div>
-              <router-link
-                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-                :to="{ name: 'student-catalog', query: { grade: 3 } }"
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <article
+                v-for="c in section.courses"
+                :key="c.id"
+                class="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+                @click="openDetail(c.id)"
               >
-                Xem tất cả
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </router-link>
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <article
-              v-for="c in midList"
-              :key="c.id"
-              class="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-pointer"
-              @click="openDetail(c.id)"
-            >
-              <div class="relative h-40 overflow-hidden bg-slate-200">
-                <img 
-                  v-if="c.thumbnail" 
-                  class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  :src="getThumbnailUrl(c.thumbnail)" 
-                  :alt="c.title" 
-                  @error="handleImageError"
-                />
-                <div v-else class="flex h-full w-full items-center justify-center">
-                  <svg class="h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <button
-                  type="button"
-                  class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/95 p-2.5 text-slate-700 shadow-md transition hover:bg-white"
-                  title="Vào học"
-                  @click.stop="playFirst(c.id)"
-                >
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
-                <div class="absolute bottom-0 left-0 right-0 bg-black/40 p-3">
-                  <div class="mb-1.5 h-1 overflow-hidden rounded-full bg-white/30">
-                    <div
-                      class="h-full rounded-full bg-white transition-all duration-1000 ease-out"
-                      :style="{ width: `${animatedProgress[String(c.id)] || 0}%` }"
-                    ></div>
+                <div class="relative h-40 overflow-hidden bg-slate-200">
+                  <img
+                    v-if="c.thumbnail"
+                    class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    :src="getThumbnailUrl(c.thumbnail)"
+                    :alt="c.title"
+                    @error="handleImageError"
+                  />
+                  <div v-else class="flex h-full w-full items-center justify-center">
+                    <svg class="h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                   </div>
-                  <p class="text-xs font-semibold text-white">{{ Math.round(animatedProgress[String(c.id)] || 0) }}% hoàn thành</p>
-                </div>
-              </div>
-              <div class="p-4">
-                <h3 class="mb-3 line-clamp-2 font-semibold text-slate-900">
-                  {{ c.title }}
-                </h3>
-                <div class="flex items-center justify-between">
-                  <span
-                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-                    :class="c.done
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-amber-100 text-amber-700'"
+                  <button
+                    type="button"
+                    class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/95 p-2.5 text-slate-700 shadow-md transition hover:bg-white"
+                    title="Vào học"
+                    @click.stop="playFirst(c.id)"
                   >
-                    <span
-                      class="h-1.5 w-1.5 rounded-full"
-                      :class="c.done ? 'bg-green-500' : 'bg-amber-500'"
-                    ></span>
-                    {{ c.done ? 'Hoàn thành' : 'Đang học' }}
-                  </span>
-                  <div class="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 border border-amber-200">
-                    <span class="text-sm">🏆</span>
-                    <span class="text-xs font-semibold text-amber-900">{{ c.score }}</span>
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </button>
+                  <div class="absolute bottom-0 left-0 right-0 bg-black/40 p-3">
+                    <div class="mb-1.5 h-1 overflow-hidden rounded-full bg-white/30">
+                      <div
+                        class="h-full rounded-full bg-white transition-all duration-1000 ease-out"
+                        :style="{ width: `${animatedProgress[String(c.id)] || 0}%` }"
+                      ></div>
+                    </div>
+                    <p class="text-xs font-semibold text-white">{{ Math.round(animatedProgress[String(c.id)] || 0) }}% hoàn thành</p>
                   </div>
                 </div>
-              </div>
-            </article>
-          </div>
-        </section>
+                <div class="p-4">
+                  <h3 class="mb-3 line-clamp-2 font-semibold text-slate-900">
+                    {{ c.title }}
+                  </h3>
+                  <div class="flex items-center justify-between">
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                      :class="c.done
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-amber-100 text-amber-700'"
+                    >
+                      <span
+                        class="h-1.5 w-1.5 rounded-full"
+                        :class="c.done ? 'bg-green-500' : 'bg-amber-500'"
+                      ></span>
+                      {{ c.done ? 'Hoàn thành' : 'Đang học' }}
+                    </span>
+                    <div class="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 border border-amber-200">
+                      <span class="text-sm">🏆</span>
+                      <span class="text-xs font-semibold text-amber-900">{{ c.score }}</span>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+          </template>
+        </template>
 
+        <div v-else class="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-16 text-center">
+          <div class="mx-auto max-w-md">
+            <div class="mx-auto mb-4 h-20 w-20 rounded-full bg-slate-200 flex items-center justify-center">
+              <svg class="h-10 w-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">Chưa có khóa học nào</h3>
+            <p class="mt-2 text-sm text-slate-600">Bắt đầu khám phá các khóa học mới ngay hôm nay!</p>
+            <button
+              type="button"
+              class="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              @click="router.push({ name: 'student-catalog' })"
+            >
+              Khám phá khóa học
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </template>
 
       <!-- Supplementary Courses Tab -->
@@ -312,8 +252,7 @@
             <article
               v-for="s in suppList"
               :key="s.id"
-              class="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-pointer"
-              @click="enroll(s.id)"
+              class="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
             >
               <div class="relative h-40 overflow-hidden bg-slate-200">
                 <img 
@@ -331,7 +270,7 @@
                 <span
                   class="absolute left-3 top-3 rounded bg-white/95 px-2.5 py-1 text-xs font-semibold text-slate-900 shadow"
                 >
-                  {{ s.tag }}
+                  {{ s.tag || (s.grade ? `Lớp ${s.grade}` : 'Bổ trợ') }}
                 </span>
                 <div
                   class="absolute right-3 top-3 rounded px-2.5 py-1 text-xs font-semibold shadow"
@@ -342,19 +281,23 @@
                   {{ (Number(s.price) || 0) === 0 ? 'Miễn phí' : formatPrice(s.price) }}
                 </div>
               </div>
-              <div class="p-4">
-                <h3 class="mb-3 line-clamp-2 font-semibold text-slate-900">
+              <div class="p-4 space-y-3">
+                <h3 class="line-clamp-2 font-semibold text-slate-900">
                   {{ s.title }}
                 </h3>
-                <div class="flex items-center justify-between">
-                  <span class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                    <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-                    Phù hợp {{ toLevelLabel(s.grade) }}
-                  </span>
+                <p class="text-sm text-slate-600">Phù hợp {{ toLevelLabel(s.grade) }}</p>
+                <div class="flex flex-col gap-2 sm:flex-row">
                   <button
                     type="button"
-                    class="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-                    @click.stop="enroll(s.id)"
+                    class="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="openDetail(s.id)"
+                  >
+                    Xem chi tiết
+                  </button>
+                  <button
+                    type="button"
+                    class="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                    @click="enroll(s.id)"
                   >
                     Tham gia
                   </button>
@@ -367,7 +310,7 @@
 
       <!-- Empty State -->
       <div
-        v-if="(activeTab === 'main' && baseList.length + midList.length === 0) || (activeTab === 'supp' && !suppList.length)"
+        v-if="(activeTab === 'main' && mainCoursesCount === 0) || (activeTab === 'supp' && !suppList.length)"
         class="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-16 text-center"
       >
         <div class="mx-auto max-w-md">
@@ -398,6 +341,7 @@
 import { computed, ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { courseService, type CourseSummary, type CourseDetail, type StudentMyCourse, type ID } from '@/services/course.service'
+import { resolveMediaUrl } from '@/utils/media'
 
 const router = useRouter()
 
@@ -414,8 +358,7 @@ const err = ref('')
 
 /* Animation */
 const animatedProgress = ref<Record<string, number>>({})
-const animatedBaseTrophies = ref(0)
-const animatedMidTrophies = ref(0)
+const mainCoursesCount = computed(() => gradeSections.value.reduce((sum, section) => sum + section.courses.length, 0))
 
 function animateProgress(courseId: string, target: number, duration = 1000) {
   const start = 0
@@ -432,27 +375,6 @@ function animateProgress(courseId: string, target: number, duration = 1000) {
       requestAnimationFrame(update)
     } else {
       animatedProgress.value[courseId] = target
-    }
-  }
-  
-  requestAnimationFrame(update)
-}
-
-function animateCounter(ref: { value: number }, target: number, duration = 1000) {
-  const start = 0
-  const startTime = Date.now()
-  
-  function update() {
-    const elapsed = Date.now() - startTime
-    const progress = Math.min(elapsed / duration, 1)
-    const current = start + (target - start) * easeOutCubic(progress)
-    
-    ref.value = Math.round(current)
-    
-    if (progress < 1) {
-      requestAnimationFrame(update)
-    } else {
-      ref.value = target
     }
   }
   
@@ -559,9 +481,6 @@ async function load() {
       animateProgress(String(c.id), c.progress)
     })
     
-    // Animate trophy counters
-    animateCounter(animatedBaseTrophies, baseTrophies.value.earned)
-    animateCounter(animatedMidTrophies, midTrophies.value.earned)
   } catch (e: any) {
     err.value = e?.message || String(e)
   }
@@ -579,12 +498,22 @@ const filteredMain = computed(() => {
   }
   return arr
 })
-const baseList = computed(()=> filteredMain.value.filter(x=> x.grade <= 2))
-const midList  = computed(()=> filteredMain.value.filter(x=> x.grade >= 3))
+const gradeOrder = [1, 2, 3, 4, 5] as const
 function parseScore(s: string){ const [a,b] = s.split('/').map(n=>parseInt(n)); return { earned: a||0, total: b||0 } }
 function sumTrophies(list: EnrolledItem[]){ return list.reduce((acc,c)=>{ const s=parseScore(c.score); acc.earned+=s.earned; acc.total+=s.total; return acc }, {earned:0,total:0}) }
-const baseTrophies = computed(()=> sumTrophies(baseList.value))
-const midTrophies  = computed(()=> sumTrophies(midList.value))
+const gradeSections = computed(() => {
+  return gradeOrder.map((grade) => {
+    const courses = filteredMain.value.filter((c) => c.grade === grade)
+    return {
+      grade,
+      title: `Lớp ${grade}`,
+      subtitle: grade <= 2 ? 'Cơ bản' : 'Nâng cao',
+      courses,
+      trophies: sumTrophies(courses),
+    }
+  })
+})
+const hasMainCourses = computed(() => gradeSections.value.some((section) => section.courses.length > 0))
 
 /** Supp tab */
 const enrolledIdSet = computed(() => new Set(enrolled.value.map(c => String(c.id))))
@@ -649,22 +578,7 @@ async function enroll(id: number | string){
   }
 }
 
-function getThumbnailUrl(thumbnail?: string): string {
-  if (!thumbnail) return ''
-  // If already a full URL, return as is
-  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
-    return thumbnail
-  }
-  // If it's a data URL (base64), return as is
-  if (thumbnail.startsWith('data:')) {
-    return thumbnail
-  }
-  // Otherwise, prepend media URL
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  // Remove leading slash if present
-  const cleanThumbnail = thumbnail.startsWith('/') ? thumbnail.slice(1) : thumbnail
-  return `${apiBase}/media/${cleanThumbnail}`
-}
+const getThumbnailUrl = (thumbnail?: string) => resolveMediaUrl(thumbnail)
 
 function handleImageError(event: Event) {
   const img = event.target as HTMLImageElement

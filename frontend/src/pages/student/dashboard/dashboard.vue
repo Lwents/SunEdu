@@ -319,6 +319,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { courseService, type CourseSummary } from '@/services/course.service'
 import { useExamStore } from '@/store/exam.store'
+import { resolveMediaUrl } from '@/utils/media'
 
 type CourseCard = CourseSummary & { progress: number; done: boolean }
 
@@ -427,22 +428,7 @@ function openExamDetail(id: number | string) {
   else router.push(`/student/exams/${id}`)
 }
 
-function getThumbnailUrl(thumbnail?: string): string {
-  if (!thumbnail) return ''
-  // If already a full URL, return as is
-  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
-    return thumbnail
-  }
-  // If it's a data URL (base64), return as is
-  if (thumbnail.startsWith('data:')) {
-    return thumbnail
-  }
-  // Otherwise, prepend media URL
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  // Remove leading slash if present
-  const cleanThumbnail = thumbnail.startsWith('/') ? thumbnail.slice(1) : thumbnail
-  return `${apiBase}/media/${cleanThumbnail}`
-}
+const getThumbnailUrl = (thumbnail?: string) => resolveMediaUrl(thumbnail)
 
 function handleImageError(event: Event) {
   const img = event.target as HTMLImageElement

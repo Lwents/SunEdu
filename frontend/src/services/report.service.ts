@@ -4,7 +4,7 @@ import api from '@/config/axios'
 export type ID = string | number
 type Granularity = 'day' | 'week' | 'month'
 
-const USE_MOCK = false
+const USE_MOCK = true // Temporarily enable mock until backend reports endpoints are ready
 
 // ===== Types =====
 export interface DateRange { from?: string; to?: string; granularity?: Granularity }

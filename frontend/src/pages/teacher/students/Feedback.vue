@@ -181,6 +181,7 @@ import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { teacherService } from '@/services/teacher.service'
 import { showToast } from '@/utils/toast'
+import { resolveMediaUrl } from '@/utils/media'
 
 type StudentRow = {
   id: number
@@ -236,8 +237,8 @@ async function fetchStudents() {
       const firstCourse = s.courses && s.courses.length > 0 ? s.courses[0] : null
       const course = firstCourse ? firstCourse.title : 'Chưa có khóa học'
       const progress = firstCourse ? firstCourse.progress : 0
-      // Class code - tạo từ course ID hoặc để trống nếu không có
-      const cls = firstCourse ? `Khóa ${firstCourse.id}` : 'Chưa có lớp'
+      // Class code - hiển thị grade thay vì ID dài
+      const cls = firstCourse && firstCourse.grade ? `Lớp ${firstCourse.grade}` : 'Chưa có lớp'
       
       // Calculate average score from courses - dùng dữ liệu thật
       let totalScore = 0
@@ -369,23 +370,11 @@ async function send() {
 }
 
 function getStudentAvatar(student: StudentRow): string {
-  let avatarUrl = student.avatar || null
-  
-  // Handle relative URLs - backend có thể trả về full URL hoặc relative
-  if (avatarUrl && !avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://') && !avatarUrl.startsWith('data:')) {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-    const baseUrl = apiUrl.replace(/\/+$/, '')
-    // Nếu là relative path, thêm /media/ prefix
-    if (avatarUrl.startsWith('/')) {
-      avatarUrl = `${baseUrl}${avatarUrl}`
-    } else {
-      avatarUrl = `${baseUrl}/media/${avatarUrl}`
-    }
-  }
+  const avatarUrl = resolveMediaUrl(student.avatar)
   
   // Fallback to dicebear if no avatar
   if (!avatarUrl) {
-    avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(student.name || String(student.id))}&backgroundType=gradientLinear`
+    return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(student.name || String(student.id))}&backgroundType=gradientLinear`
   }
   
   return avatarUrl

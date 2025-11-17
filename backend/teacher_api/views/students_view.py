@@ -86,12 +86,36 @@ class TeacherStudentsView(APIView):
                         student_username = getattr(student, 'username', 'N/A')
                         student_email = getattr(student, 'email', '')
                         
+                        # Calculate average score from exams/assignments
+                        avg_score = 0.0
+                        try:
+                            from assignments.models import Assignment
+                            submissions = Assignment.objects.filter(student=student, score__isnull=False)
+                            if submissions.exists():
+                                avg_score = submissions.aggregate(models.Avg('score'))['score__avg'] or 0.0
+                        except Exception:
+                            pass
+                        
+                        # Get last activity time
+                        last_active = 'Chưa có'
+                        if student.last_login:
+                            from django.utils import timezone
+                            delta = timezone.now() - student.last_login
+                            if delta.days > 0:
+                                last_active = f'{delta.days} ngày trước'
+                            elif delta.seconds // 3600 > 0:
+                                last_active = f'{delta.seconds // 3600} giờ trước'
+                            else:
+                                last_active = f'{delta.seconds // 60} phút trước'
+                        
                         students_dict[student_id] = {
                             'id': student_id,
                             'name': student_name,
                             'username': student_username,
                             'email': student_email,
                             'avatar': student_avatar,
+                            'avgScore': round(avg_score, 1),
+                            'lastActive': last_active,
                             'courses': []
                         }
                     
@@ -122,6 +146,7 @@ class TeacherStudentsView(APIView):
                     students_dict[student_id]['courses'].append({
                         'id': course_id,
                         'title': getattr(course, 'title', 'Khóa học'),
+                        'grade': getattr(course, 'grade', ''),
                         'enrolledAt': enrollment.enrolled_at.isoformat() if enrollment.enrolled_at else '',
                         'progress': progress_pct,
                         'completedLessons': completed_lessons,

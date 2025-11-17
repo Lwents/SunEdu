@@ -103,6 +103,7 @@ const groups: NavGroup[] = [
     label: 'Quản trị',
     items: [
       { to: '/admin/users', label: 'Người dùng', icon: Users },
+      { to: '/admin/users/bulk-create', label: 'Tạo TK hàng loạt', icon: Users },
       { to: '/admin/courses', label: 'Khóa học', icon: BookOpen },
       { to: '/admin/transactions', label: 'Giao dịch', icon: CreditCard },
     ],

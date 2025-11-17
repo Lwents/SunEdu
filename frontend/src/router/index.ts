@@ -74,6 +74,11 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Quản lý người dùng' },
       },
       {
+        path: 'users/bulk-create',
+        component: () => import('@/pages/admin/users/BulkCreate.vue'),
+        meta: { title: 'Tạo tài khoản hàng loạt' },
+      },
+      {
         path: 'users/:id',
         component: () => import('@/pages/admin/users/UserDetail.vue'),
         // meta: { title: (to: any) => `Người dùng #${to.params.id}` },
