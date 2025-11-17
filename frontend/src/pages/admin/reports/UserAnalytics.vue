@@ -133,8 +133,20 @@ const lineOption = computed(() => ({
   xAxis: { type: 'category', data: series.value.map((x) => x.date) },
   yAxis: { type: 'value' },
   series: [
-    { name: 'DAU', type: 'line', smooth: true, data: series.value.map((x) => x.dau) },
-    { name: 'New Users', type: 'line', smooth: true, data: series.value.map((x) => x.newUsers) },
+    {
+      name: 'DAU',
+      type: 'line',
+      smooth: true,
+      data: series.value.map((x) => x.dau),
+      xAxisIndex: 0,
+    },
+    {
+      name: 'New Users',
+      type: 'line',
+      smooth: true,
+      data: series.value.map((x) => x.newUsers),
+      xAxisIndex: 0,
+    },
   ],
 }))
 const roleOption = computed(() => ({

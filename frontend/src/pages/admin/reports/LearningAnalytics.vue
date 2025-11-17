@@ -157,6 +157,7 @@ const lineOption = computed(() => ({
       type: 'line',
       smooth: true,
       data: completion.value.map((x) => x.completion),
+      xAxisIndex: 0,
     },
   ],
 }))
@@ -165,6 +166,8 @@ const barOption = computed(() => ({
   grid: { left: 40, right: 16, top: 24, bottom: 40 },
   xAxis: { type: 'category', data: scores.value.map((x) => x.subject) },
   yAxis: { type: 'value', max: 100 },
-  series: [{ name: 'Avg Score', type: 'bar', data: scores.value.map((x) => x.avgScore) }],
+  series: [
+    { name: 'Avg Score', type: 'bar', data: scores.value.map((x) => x.avgScore), xAxisIndex: 0 },
+  ],
 }))
 </script>

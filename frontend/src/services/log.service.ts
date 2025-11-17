@@ -2,7 +2,7 @@
 import api from '@/config/axios'
 
 export type ID = string | number
-const USE_MOCK = true
+const USE_MOCK = false
 
 export type LogResult = 'success' | 'failed'
 export type TargetType = 'user' | 'course' | 'exam' | 'payment' | 'config' | 'system' | 'security'
