@@ -1,0 +1,3 @@
+# Trigger deployment after rotating secrets
+# This file is used to trigger GitHub Actions workflow
+# Last updated: 2025-11-17 23:56 UTC+7
