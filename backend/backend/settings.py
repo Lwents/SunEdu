@@ -44,6 +44,7 @@ DEFAULT_ALLOWED_HOSTS = [
 DEFAULT_FRONTEND_ORIGINS = [
     "https://smartedu.click",
     "https://www.smartedu.click",
+    "https://api.smartedu.click",
 ]
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*" if DEBUG else "") or (
@@ -216,7 +217,9 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@smartedu")
 # -------------------------------
 # Celery / Redis
 # -------------------------------
-REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379")
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+REDIS_URL = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}")
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", f"{REDIS_URL}/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", f"{REDIS_URL}/0")
 
