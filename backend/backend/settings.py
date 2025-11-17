@@ -34,9 +34,23 @@ def env_list(name, default=""):
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-prod")
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*" if DEBUG else "")
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+DEFAULT_ALLOWED_HOSTS = [
+    "api.smartedu.click",
+    "smartedu.click",
+    "www.smartedu.click",
+    "localhost",
+    "127.0.0.1",
+]
+DEFAULT_FRONTEND_ORIGINS = [
+    "https://smartedu.click",
+    "https://www.smartedu.click",
+]
+
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*" if DEBUG else "") or (
+    ["*"] if DEBUG else DEFAULT_ALLOWED_HOSTS
+)
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS") or DEFAULT_FRONTEND_ORIGINS
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS") or DEFAULT_FRONTEND_ORIGINS
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins in dev mode
 CORS_ALLOW_HEADERS = [
     'accept',
