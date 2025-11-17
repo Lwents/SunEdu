@@ -34,3 +34,10 @@ __pycache__/
 node_modules/
 
 backend/.env
+
+# Security - Never commit sensitive files
+*SECRET*.txt
+*PASSWORD*.txt
+*KEY*.txt
+GITHUB_SECRET_*
+*_CREDENTIALS*
