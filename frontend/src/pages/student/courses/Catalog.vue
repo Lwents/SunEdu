@@ -90,9 +90,8 @@
           </div>
           <div class="p-4">
             <div class="line-clamp-2 text-sm font-extrabold leading-snug text-slate-900">{{ c.title }}</div>
-            <div class="mt-2 flex items-center gap-2 text-xs text-slate-600">
+            <div class="mt-2 text-xs text-slate-600">
               <span class="inline-flex items-center rounded-full border border-slate-200 px-2 py-0.5">Khối {{ c.grade }}</span>
-              <span class="inline-flex items-center rounded-full border border-slate-200 px-2 py-0.5">{{ subjectLabel(c.subject) }}</span>
             </div>
             <div class="mt-2 text-sm font-semibold" :class="(c.price || 0) === 0 ? 'text-green-600' : 'text-amber-600'">
               {{ (c.price || 0) === 0 ? 'Miễn phí' : formatPrice(c.price) }}

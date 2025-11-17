@@ -44,18 +44,11 @@
 
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">
-                Mật khẩu mặc định <span class="text-red-500">*</span>
+                Mật khẩu
               </label>
-              <input
-                v-model.trim="form.defaultPassword"
-                type="text"
-                placeholder="Mật khẩu chung cho tất cả tài khoản"
-                class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                required
-              />
-              <p class="mt-1 text-xs text-slate-500">
-                Học sinh có thể đổi mật khẩu sau khi đăng nhập
-              </p>
+              <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
+                Mỗi tài khoản sẽ được gán <b>ngẫu nhiên 8 ký tự</b> gồm chữ và số. Admin có thể tải file CSV sau khi tạo để gửi cho học sinh.
+              </div>
             </div>
 
             <div>
@@ -85,9 +78,9 @@
               type="button"
               class="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
               @click="resetForm"
-              :disabled="loading"
+              :disabled="loading || rollbacking"
             >
-              Đặt lại
+              {{ rollbacking ? 'Đang hủy...' : 'Đặt lại' }}
             </button>
           </div>
 
@@ -99,7 +92,25 @@
             <p class="text-sm font-medium text-green-800">
               ✓ Đã tạo {{ result.created }} tài khoản thành công!
             </p>
-            <div v-if="result.accounts.length" class="mt-3">
+            <div v-if="result.accounts.length" class="mt-3 space-y-3">
+              <div class="flex items-center gap-3">
+                <p class="text-xs text-green-700">Danh sách kèm mật khẩu. Hãy lưu lại ngay hoặc xuất CSV.</p>
+                <button
+                  type="button"
+                  class="rounded border border-green-500 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-100"
+                  @click="exportCsv"
+                >
+                  Xuất CSV
+                </button>
+                <button
+                  type="button"
+                  class="rounded border border-rose-500 px-3 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                  @click="rollbackAccounts"
+                  :disabled="rollbacking"
+                >
+                  {{ rollbacking ? 'Đang hủy…' : 'Hủy tạo' }}
+                </button>
+              </div>
               <p class="text-xs font-medium text-green-700 mb-2">Danh sách tài khoản:</p>
               <div class="max-h-60 overflow-y-auto bg-white rounded border border-green-200 p-3">
                 <table class="w-full text-xs">
@@ -107,6 +118,7 @@
                     <tr class="border-b border-green-100">
                       <th class="text-left py-1 px-2">Username</th>
                       <th class="text-left py-1 px-2">Email</th>
+                      <th class="text-left py-1 px-2">Mật khẩu</th>
                       <th class="text-left py-1 px-2">Vai trò</th>
                     </tr>
                   </thead>
@@ -114,6 +126,7 @@
                     <tr v-for="acc in result.accounts" :key="acc.username" class="border-b border-green-50">
                       <td class="py-1 px-2 font-mono">{{ acc.username }}</td>
                       <td class="py-1 px-2">{{ acc.email }}</td>
+                      <td class="py-1 px-2 font-mono">{{ acc.password }}</td>
                       <td class="py-1 px-2">{{ acc.role }}</td>
                     </tr>
                   </tbody>
@@ -134,31 +147,34 @@ import api from '@/config/axios'
 const form = reactive({
   cohortCode: '',
   count: 10,
-  defaultPassword: 'Student@123',
   role: 'student' as 'student' | 'teacher'
 })
 
 const loading = ref(false)
+const rollbacking = ref(false)
 const error = ref('')
 const success = ref(false)
+const rollbackMessage = ref('')
 const result = reactive({
   created: 0,
-  accounts: [] as Array<{ username: string; email: string; role: string }>
+  accounts: [] as Array<{ username: string; email: string; role: string; password: string }>
 })
 
 const isValid = computed(() => {
-  return form.cohortCode.length > 0 && form.count > 0 && form.count <= 100 && form.defaultPassword.length >= 6
+  return form.cohortCode.length > 0 && form.count > 0 && form.count <= 100
 })
 
-function resetForm() {
+async function resetForm() {
+  if (loading.value || rollbacking.value) return
+
+  const ok = await rollbackNewAccounts()
+  if (!ok) return
+
   form.cohortCode = ''
   form.count = 10
-  form.defaultPassword = 'Student@123'
   form.role = 'student'
   error.value = ''
   success.value = false
-  result.created = 0
-  result.accounts = []
 }
 
 async function onGenerate() {
@@ -174,7 +190,6 @@ async function onGenerate() {
     const { data } = await api.post('/admin/users/bulk-create/', {
       cohort_code: form.cohortCode,
       count: form.count,
-      default_password: form.defaultPassword,
       role: form.role
     })
 
@@ -187,5 +202,51 @@ async function onGenerate() {
   } finally {
     loading.value = false
   }
+}
+
+async function rollbackNewAccounts() {
+  if (!result.accounts.length) return true
+  rollbacking.value = true
+  try {
+    const usernames = result.accounts.map((acc) => acc.username)
+    const { data } = await api.post('/admin/users/bulk-create/rollback/', { usernames })
+    rollbackMessage.value = `Đã hủy ${data.deleted || usernames.length} tài khoản vừa tạo`
+    result.created = 0
+    result.accounts = []
+    success.value = false
+    return true
+  } catch (e: any) {
+    console.error('Rollback bulk create error:', e)
+    error.value = e?.response?.data?.detail || e?.message || 'Không thể hủy các tài khoản vừa tạo'
+    return false
+  } finally {
+    rollbacking.value = false
+  }
+}
+
+async function rollbackAccounts() {
+  await rollbackNewAccounts()
+}
+
+function exportCsv() {
+  if (!result.accounts.length) return
+
+  const headers = ['Username', 'Email', 'Password', 'Role']
+  const rows = result.accounts.map((acc) => [acc.username, acc.email, acc.password, acc.role])
+
+  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => escape(String(cell))).join(','))
+    .join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `accounts-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 </script>

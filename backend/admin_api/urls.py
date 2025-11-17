@@ -23,7 +23,7 @@ from admin_api.views import (
     AdminSessionRevokeView,
     AdminAlertPolicyView
 )
-from admin_api.views.bulk_create_view import BulkCreateUsersView
+from admin_api.views.bulk_create_view import BulkCreateUsersView, BulkCreateRollbackView
 
 app_name = 'admin_api'
 
@@ -33,6 +33,7 @@ urlpatterns = [
 
     # Users
     path('users/bulk-create/', BulkCreateUsersView.as_view(), name='users-bulk-create'),
+    path('users/bulk-create/rollback/', BulkCreateRollbackView.as_view(), name='users-bulk-rollback'),
 
     # Courses
     path('courses/', AdminCourseListView.as_view(), name='course-list'),

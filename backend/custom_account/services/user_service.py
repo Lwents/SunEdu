@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Any, Dict, List
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
@@ -8,7 +9,13 @@ from custom_account.models import UserModel
 from custom_account.models import Profile
 from custom_account.services.exceptions import DomainError, UserNotFoundError, IncorrectPasswordError
 
+try:
+    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+except (ImportError, RuntimeError):  # blacklist app might be disabled
+    OutstandingToken = None  # type: ignore
+    BlacklistedToken = None  # type: ignore
 
+logger = logging.getLogger(__name__)
 
 def register_user(data: dict) -> UserDomain:
     """Register a new user and its profile (aggregate root = User)."""
@@ -141,11 +148,24 @@ def delete_user(user_id):
     Contains business logic for *if* a user can be deleted.
     """
     # Fetch the domain object from the repository
-    user_to_delete = UserModel.objects.get(id=user_id)
-    
-    if not user_to_delete:
+    try:
+        user_to_delete = UserModel.objects.get(id=user_id)
+    except UserModel.DoesNotExist:
         raise ValidationError("User not found.")
-    UserModel.delete(user_to_delete)
+
+    with transaction.atomic():
+        if OutstandingToken:
+            try:
+                token_qs = OutstandingToken.objects.filter(user=user_to_delete)
+                if token_qs.exists():
+                    token_ids = list(token_qs.values_list('id', flat=True))
+                    if BlacklistedToken and token_ids:
+                        BlacklistedToken.objects.filter(token_id__in=token_ids).delete()
+                    token_qs.delete()
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning("Failed to cleanup JWT tokens for user %s: %s", user_id, exc)
+
+        user_to_delete.delete()
     
 
 def list_all_users_for_admin(role: Optional[str] = None, page: int = 1, page_size: int = 50) -> Dict[str, Any]:

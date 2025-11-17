@@ -4,6 +4,7 @@ from django.db.models.signals import post_save
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.dispatch import receiver
 from django.utils import timezone
+from django.conf import settings
 
 
 
@@ -53,6 +54,33 @@ class UserModel(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
     
+
+class AuthAttempt(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='auth_attempts'
+    )
+    username_or_email = models.CharField(max_length=255, blank=True)
+    success = models.BooleanField(default=False)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    error = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['created_at', 'success'])]
+        ordering = ['-created_at']
+        verbose_name = ('Auth Attempt')
+        verbose_name_plural = ('Auth Attempts')
+
+    def __str__(self):
+        status = 'success' if self.success else 'failed'
+        return f"{self.username_or_email or self.user_id} - {status}"
+
 
 class Profile(models.Model):
     user = models.OneToOneField(UserModel, on_delete=models.CASCADE, primary_key=True, related_name='profile')

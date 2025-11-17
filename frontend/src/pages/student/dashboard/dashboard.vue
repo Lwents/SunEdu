@@ -432,7 +432,7 @@ const getThumbnailUrl = (thumbnail?: string) => resolveMediaUrl(thumbnail)
 
 function handleImageError(event: Event) {
   const img = event.target as HTMLImageElement
-  img.src = 'https://via.placeholder.com/400x300?text=No+Image'
+  img.src = '/images/placeholder-course.png'
 }
 
 onMounted(async () => {

@@ -26,18 +26,23 @@ export interface RecentTransaction {
   status: string
 }
 
-export interface PendingApproval {
-  id: string
-  title: string
-  teacher: string
-  submittedAt: string
+export interface ActiveUsersSummary {
+  count: number
+  windowMinutes: number
+  recent: Array<{
+    id: string
+    name: string
+    email: string
+    role: string
+    lastActive: string | null
+  }>
 }
 
 export interface DashboardData {
   kpis: DashboardKPIs
   topCourses: TopCourse[]
   recentTransactions: RecentTransaction[]
-  pendingApprovals: PendingApproval[]
+  activeUsers: ActiveUsersSummary
   security: {
     failedLogins24h: number
     lockedAccounts: number
@@ -72,7 +77,11 @@ export const dashboardService = {
       },
       topCourses: [],
       recentTransactions: [],
-      pendingApprovals: [],
+      activeUsers: {
+        count: 0,
+        windowMinutes: 10,
+        recent: []
+      },
       security: {
         failedLogins24h: 0,
         lockedAccounts: 0,
