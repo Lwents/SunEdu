@@ -113,6 +113,20 @@
                 placeholder="Giảng viên / Mentor"
               />
             </div>
+
+            <div class="space-y-1.5">
+              <label for="gender" class="text-sm font-medium text-slate-700">Giới tính</label>
+              <select
+                id="gender"
+                v-model="form.gender"
+                class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-slate-800 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">Chọn giới tính</option>
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
           </div>
 
           <div class="space-y-1.5">
@@ -240,6 +254,8 @@
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
 import type { AuthUser } from '@/services/auth.service'
+import { getAvatarSrc } from '@/utils/avatar'
+import { showToast } from '@/utils/toast'
 
 const auth = useAuthStore()
 const user = computed<AuthUser | null>(() => auth.user)
@@ -248,23 +264,13 @@ const user = computed<AuthUser | null>(() => auth.user)
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024 // 5MB
 const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (5MB)'
 
-/** fallback - đồng bộ với navbar */
-const defaultAvatar = 'https://i.pravatar.cc/120?img=5'
+/** fallback - dựa vào gender và role */
 const fallback120 = computed(() => {
-  const userAvatar = user.value?.avatar
-  if (userAvatar) {
-    // Nếu avatar là base64 (data URL), dùng trực tiếp
-    if (userAvatar.startsWith('data:')) {
-      return userAvatar
-    }
-    // Nếu avatar là URL, kiểm tra xem có phải là full URL không
-    if (userAvatar.startsWith('http://') || userAvatar.startsWith('https://')) {
-      return userAvatar
-    }
-    // Nếu là relative path, thêm base URL
-    return userAvatar
-  }
-  return defaultAvatar
+  return getAvatarSrc(
+    user.value?.avatar,
+    user.value?.gender as 'male' | 'female' | 'other' | null | undefined,
+    'instructor'
+  )
 })
 
 /** form state */
@@ -274,6 +280,7 @@ const original = reactive({
   phone: user.value?.phone ?? '',
   title: (user.value as any)?.title ?? '',
   bio: (user.value as any)?.bio ?? '',
+  gender: user.value?.gender ?? '',
   avatar: user.value?.avatar ?? '',
 })
 const form = reactive({ ...original })
@@ -282,7 +289,13 @@ const loading = ref(false)
 const saved = ref(false)
 
 /** dirty */
-const isDirty = computed(() => JSON.stringify(form) !== JSON.stringify(original))
+const isDirty = computed(() => {
+  // Kiểm tra thay đổi trong form
+  const formChanged = JSON.stringify(form) !== JSON.stringify(original)
+  // Kiểm tra có avatar mới được chọn chưa
+  const hasNewAvatar = preview.value !== null
+  return formChanged || hasNewAvatar
+})
 
 /** file input ref + preview */
 const avatarInputRef = ref<HTMLInputElement | null>(null)
@@ -360,20 +373,38 @@ const onSave = async () => {
       phone: form.phone,
       title: form.title,
       bio: form.bio,
+      gender: form.gender || undefined,
     }
     if (preview.value) {
       payload.avatar_url = preview.value
     }
     // updateProfile sẽ tự động cập nhật auth.user.avatar và persist
-    await auth.updateProfile(payload)
+    const updated = await auth.updateProfile(payload)
     // Đảm bảo avatar được cập nhật trong original và form từ store
-    const updatedAvatar = auth.user?.avatar ?? preview.value ?? form.avatar
+    const updatedAvatar = updated?.avatar || updated?.avatar_url || auth.user?.avatar || preview.value || form.avatar
     Object.assign(original, { ...form, avatar: updatedAvatar })
     form.avatar = updatedAvatar
     // Clear preview sau khi lưu thành công
     preview.value = null
     saved.value = true
+    showToast('Cập nhật hồ sơ thành công!', 'success')
     setTimeout(() => (saved.value = false), 2000)
+  } catch (e: any) {
+    console.error('Profile update error:', e)
+    // Kiểm tra xem có phải lỗi network/timeout không, nhưng backend đã lưu thành công
+    // Nếu có response và status code là 200, coi như thành công
+    if (e?.response?.status === 200 || e?.response?.status === 201) {
+      const updatedAvatar = auth.user?.avatar || preview.value || form.avatar
+      Object.assign(original, { ...form, avatar: updatedAvatar })
+      form.avatar = updatedAvatar
+      preview.value = null
+      saved.value = true
+      setTimeout(() => (saved.value = false), 2000)
+    } else {
+      // Hiển thị lỗi thực sự
+      const errorMsg = e?.response?.data?.detail || e?.message || 'Cập nhật thất bại. Thử lại sau.'
+      showToast(errorMsg, 'error')
+    }
   } finally {
     loading.value = false
   }
@@ -395,6 +426,7 @@ watch(user, (u) => {
     phone: u.phone ?? '',
     title: (u as any)?.title ?? '',
     bio: (u as any)?.bio ?? '',
+    gender: (u as any)?.gender ?? '',
     avatar: u.avatar ?? '',
   })
   resetForm()

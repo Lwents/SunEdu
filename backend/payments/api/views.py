@@ -62,7 +62,16 @@ class MoMoPaymentInitView(APIView):
         )
         ipn_url = getattr(settings, "MOMO_IPN_URL", None) or request.build_absolute_uri(reverse("payments:momo-ipn"))
 
-        client = MoMoAIOClient()
+        try:
+            client = MoMoAIOClient()
+        except ValueError as config_error:
+            return Response(
+                {
+                    "detail": "MoMo payment gateway is not properly configured. Please contact administrator.",
+                    "error": str(config_error),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         try:
             if flow == "pay_with_method":
@@ -127,7 +136,13 @@ class MoMoIPNView(APIView):
 
     def post(self, request):
         data = request.data
-        client = MoMoAIOClient()
+        try:
+            client = MoMoAIOClient()
+        except ValueError as config_error:
+            return Response(
+                {"message": "MoMo gateway not configured", "error": str(config_error)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         if not client.verify_ipn(data):
             return Response({"message": "invalid signature"}, status=status.HTTP_400_BAD_REQUEST)
@@ -237,7 +252,13 @@ class MoMoSyncPaymentView(APIView):
         order_id = (payment.metadata or {}).get("orderId") or payment.id.hex
         request_id = (payment.metadata or {}).get("requestId")
 
-        client = MoMoAIOClient()
+        try:
+            client = MoMoAIOClient()
+        except ValueError as config_error:
+            return Response(
+                {"detail": "MoMo gateway not configured", "error": str(config_error)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         try:
             momo_res = client.query_status(order_id=order_id, request_id=request_id)
         except ValueError as exc:

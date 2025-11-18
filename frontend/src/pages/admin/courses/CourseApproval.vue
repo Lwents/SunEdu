@@ -87,13 +87,14 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   courseService,
   type CourseSummary,
   type PageParams,
   type Subject,
 } from '@/services/course.service'
+import { showToast } from '@/utils/toast'
+import { showConfirm } from '@/utils/confirm'
 
 const router = useRouter()
 const subjects = courseService.subjects()
@@ -123,6 +124,8 @@ async function fetch() {
     })
     items.value = rows
     total.value = t
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được danh sách khoá chờ duyệt', 'error')
   } finally {
     loading.value = false
   }
@@ -143,41 +146,41 @@ function apply() {
 }
 
 async function approve(row: CourseSummary) {
-  await ElMessageBox.confirm(`Duyệt khoá “${row.title}”?`, 'Xác nhận', { type: 'success' })
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: `Duyệt khoá “${row.title}”?`,
+  })
+  if (!confirmed) return
   await courseService.approve(row.id)
-  ElMessage.success('Đã duyệt (mock)')
+  showToast('Đã duyệt khoá học', 'success')
   fetch()
 }
 async function reject(row: CourseSummary) {
-  const { value, action } = await ElMessageBox.prompt(
-    'Lý do từ chối (tuỳ chọn)',
-    'Từ chối khoá học',
-    { inputPlaceholder: 'Ví dụ: thiếu tài liệu, video mờ…' },
-  )
-  if (action === 'confirm') {
-    await courseService.reject(row.id, value)
-    ElMessage.success('Đã từ chối (mock)')
+  const reason = window.prompt('Lý do từ chối (tuỳ chọn)', '')
+  if (reason === null) return
+  await courseService.reject(row.id, reason)
+  showToast('Đã từ chối khoá học', 'warning')
     fetch()
-  }
 }
 async function bulkApprove() {
-  await ElMessageBox.confirm(`Duyệt ${selIds.value.length} khoá đã chọn?`, 'Xác nhận', {
-    type: 'success',
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: `Duyệt ${selIds.value.length} khoá đã chọn?`,
   })
+  if (!confirmed) return
   await courseService.bulkApprove(selIds.value)
-  ElMessage.success('Đã duyệt (mock)')
+  showToast('Đã duyệt các khoá đã chọn', 'success')
   fetch()
 }
 async function bulkReject() {
-  const { value, action } = await ElMessageBox.prompt(
+  const reason = window.prompt(
     `Nhập lý do từ chối (áp dụng cho ${selIds.value.length} khoá)`,
-    'Từ chối hàng loạt',
+    '',
   )
-  if (action === 'confirm') {
-    await courseService.bulkReject(selIds.value, value)
-    ElMessage.success('Đã từ chối (mock)')
+  if (reason === null) return
+  await courseService.bulkReject(selIds.value, reason)
+  showToast('Đã từ chối các khoá đã chọn', 'warning')
     fetch()
-  }
 }
 function view(row: CourseSummary) {
   router.push(`/admin/courses/${row.id}`)

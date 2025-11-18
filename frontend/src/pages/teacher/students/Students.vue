@@ -259,6 +259,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { teacherService, type TeacherStudent } from '@/services/teacher.service'
 import { courseService } from '@/services/course.service'
+import { getAvatarSrc } from '@/utils/avatar'
 
 const router = useRouter()
 
@@ -347,26 +348,11 @@ function openFeedback(id: string | number) {
 }
 
 function getStudentAvatar(student: TeacherStudent): string {
-  let avatarUrl = student.avatar || null
-  
-  // Handle relative URLs - backend có thể trả về full URL hoặc relative
-  if (avatarUrl && !avatarUrl.startsWith('http://') && !avatarUrl.startsWith('https://') && !avatarUrl.startsWith('data:')) {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-    const baseUrl = apiUrl.replace(/\/+$/, '')
-    // Nếu là relative path, thêm /media/ prefix
-    if (avatarUrl.startsWith('/')) {
-      avatarUrl = `${baseUrl}${avatarUrl}`
-    } else {
-      avatarUrl = `${baseUrl}/media/${avatarUrl}`
-    }
-  }
-  
-  // Fallback
-  if (!avatarUrl) {
-    return `https://i.pravatar.cc/100?u=${encodeURIComponent(String(student.id))}`
-  }
-  
-  return avatarUrl
+  return getAvatarSrc(
+    student.avatar,
+    student.gender as 'male' | 'female' | 'other' | null | undefined,
+    'student'
+  )
 }
 
 // Debounce fetch

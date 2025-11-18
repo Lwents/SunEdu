@@ -137,8 +137,8 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { paymentService, type TxDetail, type TxStatus } from '@/services/payment.service'
+import { showToast } from '@/utils/toast'
 
 const route = useRoute()
 const id = computed(() => route.params.id as string)
@@ -202,8 +202,12 @@ const eventLabel = (t: TxDetail['events'][number]['type']) =>
                   : 'Tranh chấp: Thua'
 
 async function load() {
+  try {
   const d = await paymentService.detail(id.value)
   Object.assign(tx, d)
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được giao dịch', 'error')
+  }
 }
 
 function promptRefund() {
@@ -215,9 +219,11 @@ async function doRefund() {
   doing.refund = true
   try {
     await paymentService.refund(tx.id, Number(refundAmount.value), refundReason.value)
-    ElMessage.success('Đã tạo yêu cầu hoàn tiền (mock)')
+    showToast('Đã tạo yêu cầu hoàn tiền', 'success')
     refundDialog.value = false
     load()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể hoàn tiền', 'error')
   } finally {
     doing.refund = false
   }
@@ -231,9 +237,11 @@ async function doDispute() {
   doing.dispute = true
   try {
     await paymentService.markDispute(tx.id, disputeNote.value)
-    ElMessage.success('Đã đánh dấu tranh chấp (mock)')
+    showToast('Đã đánh dấu tranh chấp', 'warning')
     disputeDialog.value = false
     load()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể đánh dấu tranh chấp', 'error')
   } finally {
     doing.dispute = false
   }
@@ -242,8 +250,10 @@ async function resolve(result: 'won' | 'lost') {
   doing.resolve = true
   try {
     await paymentService.resolveDispute(tx.id, result)
-    ElMessage.success(result === 'won' ? 'Đã thắng tranh chấp (mock)' : 'Đã thua tranh chấp (mock)')
+    showToast(result === 'won' ? 'Đã thắng tranh chấp' : 'Đã thua tranh chấp', 'info')
     load()
+  } catch (error: any) {
+    showToast(error?.message || 'Không xử lý được tranh chấp', 'error')
   } finally {
     doing.resolve = false
   }

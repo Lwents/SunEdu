@@ -38,6 +38,7 @@ export interface AuthUser {
   phone?: string
   title?: string
   bio?: string
+  gender?: string
   avatar?: string
   createdAt?: string
 }
@@ -202,8 +203,21 @@ export const authService = {
     if (Object.keys(metadata).length > 0) {
       backendPayload.metadata = metadata
     }
+    try {
     const { data } = await http.patch('/account/profile/', backendPayload)
     return normalizeProfileResponse(data)
+    } catch (error: any) {
+      // Nếu có response và status code là 200/201, coi như thành công
+      // Có thể do timeout hoặc network issue nhưng backend đã lưu thành công
+      if (error?.response?.status === 200 || error?.response?.status === 201) {
+        // Trả về response data nếu có, hoặc throw lại để caller xử lý
+        if (error?.response?.data) {
+          return normalizeProfileResponse(error.response.data)
+        }
+      }
+      // Throw lại lỗi để caller xử lý
+      throw error
+    }
   },
 
   async getCurrentUser(): Promise<AuthUser> {

@@ -4,7 +4,7 @@
     <div class="rounded-lg bg-white p-4 ring-1 ring-black/5">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div class="flex min-w-0 items-center gap-4">
-          <img :src="detail.avatar || fallbackAvatar" class="h-16 w-16 rounded-full object-cover" />
+          <img :src="fallbackAvatar" class="h-16 w-16 rounded-full object-cover" />
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h2 class="truncate text-xl font-semibold text-gray-800">
@@ -105,8 +105,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRoute, useRouter } from 'vue-router'
 import type { FormInstance } from 'element-plus'
 import {
   userService,
@@ -115,10 +114,18 @@ import {
   type UserStatus,
   type UserDetail,
 } from '@/services/user.service'
+import { showToast } from '@/utils/toast'
+import { showConfirm } from '@/utils/confirm'
+import { getAvatarSrc } from '@/utils/avatar'
 
 const route = useRoute()
+const router = useRouter()
 const id = computed<ID>(() => route.params.id as any)
-const fallbackAvatar = 'https://i.pravatar.cc/160?img=5'
+const fallbackAvatar = computed(() => getAvatarSrc(
+  detail.avatar,
+  detail.gender,
+  detail.role
+))
 
 // State
 const detail = reactive<UserDetail>({
@@ -177,8 +184,9 @@ async function load() {
     Object.assign(detail, d)
     Object.assign(form, JSON.parse(JSON.stringify(d)))
     if (!form.name && form.username) form.name = form.username
-  } catch {
-    ElMessage.error('Không tải được người dùng')
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được người dùng', 'error')
+    router.replace('/admin/users')
   }
 }
 
@@ -194,10 +202,10 @@ async function saveProfile() {
       phone: form.phone,
       name: form.name || undefined,
     })
-    ElMessage.success('Đã lưu hồ sơ')
+    showToast('Đã lưu hồ sơ', 'success')
     Object.assign(detail, form)
-  } catch {
-    ElMessage.error('Lưu thất bại')
+  } catch (error: any) {
+    showToast(error?.message || 'Lưu thất bại', 'error')
   } finally {
     savingProfile.value = false
   }
@@ -218,10 +226,10 @@ async function changePassword() {
   changingPassword.value = true
   try {
     await userService.setPassword(detail.id, { new_password: changePasswordForm.newPassword })
-    ElMessage.success('Đã đổi mật khẩu')
+    showToast('Đã đổi mật khẩu', 'success')
     changePasswordDialogVisible.value = false
-  } catch {
-    ElMessage.error('Đổi mật khẩu thất bại')
+  } catch (error: any) {
+    showToast(error?.message || 'Đổi mật khẩu thất bại', 'error')
   } finally {
     changingPassword.value = false
   }
@@ -229,17 +237,19 @@ async function changePassword() {
 
 // Delete account
 async function deleteAccount() {
-  try {
-    await ElMessageBox.confirm(
-      'Bạn có chắc chắn muốn xóa tài khoản này? Hành động này không thể hoàn tác.',
-      'Xác nhận',
-      { type: 'warning' },
-    )
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: 'Bạn có chắc chắn muốn xóa tài khoản này? Hành động này không thể hoàn tác.',
+    type: 'danger',
+  })
+  if (!confirmed) return
     deletingAccount.value = true
+  try {
     await userService.delete(detail.id)
-    ElMessage.success('Đã xóa tài khoản')
-  } catch {
-    ElMessage.error('Xóa tài khoản thất bại')
+    showToast('Đã xóa tài khoản', 'success')
+    router.push('/admin/users')
+  } catch (error: any) {
+    showToast(error?.message || 'Xóa tài khoản thất bại', 'error')
   } finally {
     deletingAccount.value = false
   }

@@ -36,6 +36,14 @@ class MoMoAIOClient:
         self.store_id = getattr(settings, "MOMO_STORE_ID", "SunEduStore")
         self.query_endpoint = getattr(settings, "MOMO_QUERY_ENDPOINT", self.QUERY_ENDPOINT)
 
+        # Validate required credentials
+        if not self.partner_code or not self.partner_code.strip():
+            raise ValueError("MOMO_PARTNER_CODE is required but not set. Please configure it in environment variables.")
+        if not self.access_key or not self.access_key.strip():
+            raise ValueError("MOMO_ACCESS_KEY is required but not set. Please configure it in environment variables.")
+        if not self.secret_key or not self.secret_key.strip():
+            raise ValueError("MOMO_SECRET_KEY is required but not set. Please configure it in environment variables.")
+
     def _sign(self, raw_data: str) -> str:
         signature = hmac.new(
             self.secret_key.encode("utf-8"),

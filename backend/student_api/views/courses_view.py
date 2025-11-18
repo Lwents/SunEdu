@@ -29,10 +29,16 @@ def build_avatar_url(request, avatar_path: str | None):
     """Return absolute avatar URL for user profile strings/paths."""
     if not avatar_path:
         return None
+    # Handle base64 data URLs - return as is (don't add /media/ prefix)
+    if avatar_path.startswith('data:'):
+        return avatar_path
+    # Handle full URLs
     if avatar_path.startswith(("http://", "https://")):
         return avatar_path
+    # Handle absolute paths
     if avatar_path.startswith('/'):
         return request.build_absolute_uri(avatar_path)
+    # Handle relative paths
     media_url = getattr(settings, 'MEDIA_URL', '/media/')
     base = request.build_absolute_uri(media_url.rstrip('/') + '/')
     return f"{base}{avatar_path}"
@@ -313,10 +319,12 @@ class StudentCourseDetailView(APIView):
             profile = getattr(classmate, 'profile', None)
             display_name = None
             avatar_path = None
+            gender = None
 
             if profile:
                 display_name = getattr(profile, 'display_name', None)
                 avatar_path = getattr(profile, 'avatar_url', None)
+                gender = getattr(profile, 'gender', None)
 
             if not display_name:
                 # Custom user model (UserModel) does not implement get_full_name like Django's default User.
@@ -338,6 +346,10 @@ class StudentCourseDetailView(APIView):
             if not avatar_path and hasattr(classmate, 'avatar'):
                 avatar_path = getattr(classmate, 'avatar', None)
 
+            # Get gender from profile or user model if not in profile
+            if not gender:
+                gender = getattr(classmate, 'gender', None)
+
             avatar_url = build_avatar_url(request, avatar_path)
             completed_for_student = progress_map.get(classmate.id, 0)
             student_progress = int((completed_for_student / total_lessons * 100)) if total_lessons > 0 else 0
@@ -346,6 +358,7 @@ class StudentCourseDetailView(APIView):
                 'id': str(classmate.id),
                 'name': display_name,
                 'avatar': avatar_url,
+                'gender': gender,
                 'progress': student_progress,
             })
 

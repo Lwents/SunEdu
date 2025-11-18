@@ -94,10 +94,12 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="Lớp/Môn" width="140">
+        <el-table-column label="Lớp/Môn" width="160">
           <template #default="{ row }">
             <div class="text-sm">Lớp {{ row.grade }}</div>
-            <div class="text-xs text-gray-500">{{ subjectName(row.subject) }}</div>
+            <div class="text-xs text-gray-500 truncate">
+              {{ subjectDisplay(row) || '—' }}
+            </div>
           </template>
         </el-table-column>
 
@@ -169,7 +171,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { showToast } from '@/utils/toast'
+import { showConfirm } from '@/utils/confirm'
 import {
   courseService,
   type CourseSummary,
@@ -181,6 +184,7 @@ import {
 const router = useRouter()
 
 const subjects = courseService.subjects()
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const teachers = ref<{ id: number | string; name: string }[]>([])
 const items = ref<CourseSummary[]>([])
 const total = ref(0)
@@ -201,6 +205,26 @@ const dateRange = ref<[string, string] | null>(null)
 
 function subjectName(s: Subject) {
   return subjects.find((x) => x.value === s)?.label || s
+}
+function subjectDisplay(row: Partial<CourseSummary> & Record<string, any>) {
+  const fromBackend =
+    row.subjectLabel ||
+    row.subject_label ||
+    row.subjectName ||
+    row.subject_name ||
+    row.subjectTitle ||
+    row.subject_title
+  if (typeof fromBackend === 'string' && !uuidRegex.test(fromBackend)) {
+    return fromBackend
+  }
+  const fallback = row.subject ? subjectName(row.subject as Subject) : ''
+  if (typeof fallback === 'string' && fallback && !uuidRegex.test(fallback)) {
+    return fallback
+  }
+  if (row.title && typeof row.title === 'string') {
+    return row.title
+  }
+  return ''
 }
 function statusLabel(s: CourseStatus) {
   return s === 'draft'
@@ -224,7 +248,12 @@ function statusTagType(s: CourseStatus) {
           ? 'danger'
           : 'info'
 }
-const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleString('vi-VN') : '')
+const fmtDate = (iso?: string) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString('vi-VN')
+}
 
 function applyDateRange() {
   query.from = dateRange.value?.[0]
@@ -275,27 +304,56 @@ function goApproval() {
 
 // Actions
 async function publish(row: CourseSummary) {
-  await ElMessageBox.confirm(`Xuất bản khoá “${row.title}”?`, 'Xác nhận')
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: `Xuất bản khoá “${row.title}”?`,
+  })
+  if (!confirmed) return
+  try {
   await courseService.publish(row.id)
-  ElMessage.success('Đã xuất bản (mock)')
+    showToast('Đã xuất bản khoá học', 'success')
   fetch()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể xuất bản khoá học', 'error')
+  }
 }
 async function unpublish(row: CourseSummary) {
-  await ElMessageBox.confirm(`Gỡ xuất bản khoá “${row.title}”?`, 'Xác nhận')
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: `Gỡ xuất bản khoá “${row.title}”?`,
+  })
+  if (!confirmed) return
+  try {
   await courseService.unpublish(row.id)
-  ElMessage.success('Đã gỡ (mock)')
+    showToast('Đã gỡ khoá học', 'info')
   fetch()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể gỡ khoá học', 'error')
+  }
 }
 async function archive(row: CourseSummary) {
-  await ElMessageBox.confirm(`Lưu trữ khoá “${row.title}”?`, 'Xác nhận', { type: 'warning' })
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: `Lưu trữ khoá “${row.title}”?`,
+    type: 'warning',
+  })
+  if (!confirmed) return
+  try {
   await courseService.archive(row.id)
-  ElMessage.success('Đã lưu trữ (mock)')
+    showToast('Đã lưu trữ khoá học', 'info')
   fetch()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể lưu trữ khoá học', 'error')
+  }
 }
 async function restore(row: CourseSummary) {
+  try {
   await courseService.restore(row.id)
-  ElMessage.success('Đã khôi phục (mock)')
+    showToast('Đã khôi phục khoá học', 'success')
   fetch()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể khôi phục khoá học', 'error')
+  }
 }
 
 onMounted(async () => {

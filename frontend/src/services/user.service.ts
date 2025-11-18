@@ -12,6 +12,7 @@ export interface User {
     email: string
     phone?: string | null
     avatar?: string
+    gender?: 'male' | 'female' | 'other' | null
     role: Role
     // backend có "is_active" -> map sang status
     status: UserStatus // 'active' | 'locked' | 'banned' | 'inactive'

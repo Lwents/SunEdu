@@ -337,13 +337,13 @@
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
 import {
   systemService,
   type SystemConfig,
   type BackupItem,
   type ConfigAuditItem,
 } from '@/services/system.service'
+import { showToast } from '@/utils/toast'
 
 const tab = ref<'brand' | 'email' | 'auth' | 'integrations' | 'logging'>('brand')
 const saving = ref(false)
@@ -411,6 +411,7 @@ function badge(s?: string) {
 }
 
 async function load() {
+  try {
   const [cfg, bks, ads] = await Promise.all([
     systemService.getConfig(),
     systemService.listBackups(),
@@ -419,28 +420,35 @@ async function load() {
   Object.assign(form, cfg)
   backups.value = bks
   audits.value = ads
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được cấu hình hệ thống', 'error')
+  }
 }
 
 async function save() {
   saving.value = true
   try {
     await systemService.updateConfig(form)
-    ElMessage.success('Đã lưu nháp (mock)')
+    showToast('Đã lưu nháp', 'success')
     await load()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể lưu cấu hình', 'error')
   } finally {
     saving.value = false
   }
 }
 async function apply() {
   await save()
-  ElMessage.success('Đã áp dụng cấu hình (mock)')
+  showToast('Đã áp dụng cấu hình', 'success')
 }
 async function createBackup() {
   creatingBk.value = true
   try {
     await systemService.createBackup('manual')
-    ElMessage.success('Đã tạo backup (mock)')
+    showToast('Đã tạo backup', 'success')
     backups.value = await systemService.listBackups()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể tạo backup', 'error')
   } finally {
     creatingBk.value = false
   }
@@ -454,8 +462,10 @@ async function doRestore() {
   restoring.value = true
   try {
     await systemService.restoreBackup(selectedBackup.value)
-    ElMessage.success('Đã gửi yêu cầu phục hồi (mock)')
+    showToast('Đã gửi yêu cầu phục hồi', 'info')
     restoreDialog.value = false
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể phục hồi', 'error')
   } finally {
     restoring.value = false
   }
@@ -465,11 +475,16 @@ async function restore(id: string) {
   restoreDialog.value = true
 }
 async function sendTestMail() {
-  if (!testMail.value) return ElMessage.warning('Nhập email test')
+  if (!testMail.value) {
+    showToast('Nhập email test', 'warning')
+    return
+  }
   testingMail.value = true
   try {
     await systemService.sendTestEmail(testMail.value)
-    ElMessage.success('Đã gửi email test (mock)')
+    showToast('Đã gửi email test', 'success')
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể gửi email test', 'error')
   } finally {
     testingMail.value = false
   }

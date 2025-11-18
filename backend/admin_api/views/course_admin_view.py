@@ -82,10 +82,11 @@ class AdminCourseListView(APIView):
             items.append({
                 'id': str(course.id),
                 'title': course.title,
-                'grade': int(course.grade) if course.grade and course.grade.isdigit() else None,
+                'grade': int(course.grade) if course.grade and str(course.grade).isdigit() else course.grade,
                 'subject': course.subject.slug if course.subject else None,
+                'subjectLabel': course.subject.title if course.subject else None,
                 'teacherId': str(course.owner.id) if course.owner else None,
-                'teacherName': course.owner.email if course.owner else 'N/A',
+                'teacherName': course.owner.email if hasattr(course.owner, 'email') and course.owner.email else course.owner.username if course.owner else 'N/A',
                 'lessonsCount': getattr(course, 'lessons_count', 0),
                 'enrollments': getattr(course, 'enrollments_count', 0),
                 'status': 'published' if course.published else 'draft',

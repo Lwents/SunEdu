@@ -113,7 +113,7 @@
           <template #default="{ row }">
             <div class="flex items-center gap-3">
               <img
-                :src="row.avatar || 'https://i.pravatar.cc/80?img=8'"
+                :src="getUserAvatar(row)"
                 class="h-9 w-9 rounded-full object-cover"
                 alt="avatar"
               />
@@ -269,8 +269,10 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { userService } from '@/services/user.service'
+import { showToast } from '@/utils/toast'
+import { showConfirm } from '@/utils/confirm'
+import { getAvatarSrc } from '@/utils/avatar'
 
 type ID = string | number
 type Role = 'admin' | 'instructor' | 'student'
@@ -282,6 +284,7 @@ interface User {
   email: string
   phone?: string | null
   avatar?: string
+  gender?: 'male' | 'female' | 'other' | null
   role: Role
   status: UserStatus
   lastLoginAt?: string
@@ -326,6 +329,14 @@ function statusType(s: UserStatus) {
   if (s === 'banned') return 'danger'
   return 'info'
 }
+function getUserAvatar(user: User): string {
+  return getAvatarSrc(
+    user.avatar,
+    user.gender,
+    user.role
+  )
+}
+
 const roleLabel = (r: Role) =>
   r === 'admin' ? 'Admin' : r === 'instructor' ? 'Giáo viên' : 'Học sinh'
 const statusLabel = (s: UserStatus) =>
@@ -374,9 +385,9 @@ async function fetchList() {
     const res: PageResult<User> = await userService.list(params)
     rows.value = res.items
     total.value = res.total
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching user list:', error)
-    ElMessage.error('Không tải được danh sách người dùng')
+    showToast(error?.message || 'Không tải được danh sách người dùng', 'error')
   } finally {
     loading.value = false
   }
@@ -431,42 +442,44 @@ function onSelectionChange(val: User[]) {
 
 // row actions
 // async function resetPassword(row: User) {
-//   await ElMessageBox.confirm(`Reset mật khẩu cho “${row.name}”?`, 'Xác nhận', { type: 'warning' })
+//   const ok = await showConfirm({ title: 'Xác nhận', message: `Reset mật khẩu cho “${row.name}”?`, type: 'warning' })
+//   if (!ok) return
 //   await userService.resetPassword(row.id)
-//   ElMessage.success('Đã gửi hướng dẫn reset mật khẩu')
+//   showToast('Đã gửi hướng dẫn reset mật khẩu', 'info')
 // }
 
 async function deleteUser(row: User) {
-  try {
-    await ElMessageBox.confirm(`Bạn có chắc chắn muốn xóa người dùng “${row.name}”?`, 'Cảnh báo', {
-      type: 'warning',
+  const confirmed = await showConfirm({
+    title: 'Cảnh báo',
+    message: `Bạn có chắc chắn muốn xóa người dùng “${row.name || row.username}”?`,
+    type: 'danger',
     })
+  if (!confirmed) return
+  try {
     await userService.delete(row.id)
-    ElMessage.success('Người dùng đã được xóa thành công')
-    fetchList() // Refresh the user list after deletion
-  } catch (error) {
+    showToast('Người dùng đã được xóa thành công', 'success')
+    fetchList()
+  } catch (error: any) {
     console.error('Error deleting user:', error)
-    ElMessage.error('Không thể xóa người dùng')
+    showToast(error?.message || 'Không thể xóa người dùng', 'error')
   }
 }
 // async function lock(row: User) {
-//   await ElMessageBox.confirm(`Khoá tài khoản “${row.name}”?`, 'Xác nhận', { type: 'warning' })
+//   const ok = await showConfirm({ title: 'Xác nhận', message: `Khoá tài khoản “${row.name}”?`, type: 'warning' })
 //   await userService.lock(row.id)
-//   ElMessage.success('Đã khoá tài khoản')
+//   showToast('Đã khoá tài khoản', 'info')
 //   fetchList()
 // }
 // async function unlock(row: User) {
-//   await ElMessageBox.confirm(`Mở khoá tài khoản “${row.name}”?`, 'Xác nhận')
+//   const ok = await showConfirm({ title: 'Xác nhận', message: `Mở khoá tài khoản “${row.name}”?` })
 //   await userService.unlock(row.id)
-//   ElMessage.success('Đã mở khoá')
+//   showToast('Đã mở khoá', 'success')
 //   fetchList()
 // }
 // async function ban(row: User) {
-//   await ElMessageBox.confirm(`Cấm vĩnh viễn “${row.name}”? Không thể hoàn tác.`, 'Cảnh báo', {
-//     type: 'error',
-//   })
+//   const ok = await showConfirm({ title: 'Cảnh báo', message: `Cấm vĩnh viễn “${row.name}”?`, type: 'danger' })
 //   await userService.ban(row.id)
-//   ElMessage.success('Đã cấm tài khoản')
+//   showToast('Đã cấm tài khoản', 'warning')
 //   fetchList()
 // }
 function gotoDetail(row: User) {
@@ -540,7 +553,7 @@ async function submitForm() {
         password: form.password || '', // Đảm bảo password được gửi
         role: form.role,
       })
-      ElMessage.success('Tạo người dùng thành công')
+      showToast('Tạo người dùng thành công', 'success')
     } else {
       // Gửi payload cập nhật tài khoản
       await userService.update(form.id, {
@@ -548,13 +561,13 @@ async function submitForm() {
         email: form.email,
         phone: form.phone,
       })
-      ElMessage.success('Cập nhật thành công')
+      showToast('Cập nhật thành công', 'success')
     }
     formDialog.open = false
     fetchList() // Refresh danh sách sau khi tạo/cập nhật
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving user:', error)
-    ElMessage.error('Không thể lưu dữ liệu')
+    showToast(error?.message || 'Không thể lưu dữ liệu', 'error')
   } finally {
     saving.value = false
   }
@@ -571,34 +584,48 @@ function bulkChangeRole() {
 }
 async function confirmBulkChangeRole() {
   const ids = selection.value.map((x) => x.id)
+  try {
   await userService.bulkChangeRole(ids, bulkRoleValue.value as Role)
   bulkRoleDialog.value = false
-  ElMessage.success('Đã đổi vai trò')
+    showToast('Đã đổi vai trò', 'success')
   fetchList()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể đổi vai trò', 'error')
+  }
 }
 async function bulkLock() {
   if (!selection.value.length) return
-  await ElMessageBox.confirm(`Khoá ${selection.value.length} tài khoản đã chọn?`, 'Xác nhận', {
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: `Khoá ${selection.value.length} tài khoản đã chọn?`,
     type: 'warning',
   })
+  if (!confirmed) return
   await userService.bulkLock(selection.value.map((x) => x.id))
-  ElMessage.success('Đã khoá tài khoản đã chọn')
+  showToast('Đã khoá tài khoản đã chọn', 'info')
   fetchList()
 }
 async function bulkUnlock() {
   if (!selection.value.length) return
-  await ElMessageBox.confirm(`Mở khoá ${selection.value.length} tài khoản đã chọn?`, 'Xác nhận')
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: `Mở khoá ${selection.value.length} tài khoản đã chọn?`,
+  })
+  if (!confirmed) return
   await userService.bulkUnlock(selection.value.map((x) => x.id))
-  ElMessage.success('Đã mở khoá')
+  showToast('Đã mở khoá tài khoản đã chọn', 'success')
   fetchList()
 }
 async function bulkBan() {
   if (!selection.value.length) return
-  await ElMessageBox.confirm(`Cấm vĩnh viễn ${selection.value.length} tài khoản?`, 'Cảnh báo', {
-    type: 'error',
+  const confirmed = await showConfirm({
+    title: 'Cảnh báo',
+    message: `Cấm vĩnh viễn ${selection.value.length} tài khoản?`,
+    type: 'danger',
   })
+  if (!confirmed) return
   await userService.bulkBan(selection.value.map((x) => x.id))
-  ElMessage.success('Đã cấm tài khoản đã chọn')
+  showToast('Đã cấm tài khoản đã chọn', 'warning')
   fetchList()
 }
 
@@ -621,8 +648,8 @@ async function exportCsv() {
     a.download = `users_${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  } catch {
-    ElMessage.error('Export thất bại')
+  } catch (error: any) {
+    showToast(error?.message || 'Export thất bại', 'error')
   } finally {
     loadingExport.value = false
   }

@@ -182,11 +182,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { teacherService } from '@/services/teacher.service'
 import { showToast } from '@/utils/toast'
 import { resolveMediaUrl } from '@/utils/media'
+import { getAvatarSrc } from '@/utils/avatar'
 
 type StudentRow = {
   id: number
   name: string
   avatar: string | null
+  gender?: 'male' | 'female' | 'other' | null
   classCode: string
   course: string
   progress: number
@@ -257,6 +259,7 @@ async function fetchStudents() {
         id,
         name: s.name || s.username || `Học sinh ${id}`,
         avatar: s.avatar || null, // Lưu avatar URL từ backend (có thể là full URL hoặc relative)
+        gender: (s as any).gender || null, // Lưu gender từ backend
         classCode: cls,
         course,
         progress,
@@ -370,14 +373,11 @@ async function send() {
 }
 
 function getStudentAvatar(student: StudentRow): string {
-  const avatarUrl = resolveMediaUrl(student.avatar)
-  
-  // Fallback to dicebear if no avatar
-  if (!avatarUrl) {
-    return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(student.name || String(student.id))}&backgroundType=gradientLinear`
-  }
-  
-  return avatarUrl
+  return getAvatarSrc(
+    student.avatar,
+    student.gender,
+    'student'
+  )
 }
 
 function goBack() {
