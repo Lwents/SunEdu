@@ -33,32 +33,6 @@
           <p v-if="errors.currentPassword" class="mt-1 text-xs text-red-600">{{ errors.currentPassword }}</p>
         </div>
 
-        <!-- OTP row -->
-        <div>
-          <label class="text-sm text-gray-600">Mã OTP xác nhận</label>
-          <div class="mt-1 flex gap-3">
-            <input
-              v-model.trim="otp.code"
-              maxlength="6"
-              inputmode="numeric"
-              class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              placeholder="Nhập 6 số"
-            />
-            <button
-              type="button"
-              class="rounded-lg border px-4 py-2 text-sm font-semibold"
-              :disabled="otp.countdown > 0 || otp.sending"
-              @click="sendOtp"
-            >
-              <span v-if="otp.sending">Đang gửi…</span>
-              <span v-else-if="otp.countdown > 0">Gửi lại ({{ otp.countdown }}s)</span>
-              <span v-else>Gửi OTP</span>
-            </button>
-          </div>
-          <p v-if="errors.otp" class="mt-1 text-xs text-red-600">{{ errors.otp }}</p>
-          <p class="mt-1 text-xs text-gray-500">OTP sẽ gửi tới {{ otp.sentTo || maskedEmail }}</p>
-        </div>
-
         <!-- New password -->
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
@@ -128,10 +102,64 @@
       </form>
     </section>
   </div>
+
+  <!-- OTP Modal -->
+  <Transition name="fade">
+    <div
+      v-if="otp.open"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      @click.self="closeOtpModal"
+    >
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">Nhập mã OTP</h3>
+          <p class="text-sm text-gray-600">OTP đã gửi tới {{ otp.sentTo || maskedEmail }}</p>
+        </div>
+
+        <div class="space-y-3">
+          <input
+            v-model.trim="otp.code"
+            maxlength="6"
+            inputmode="numeric"
+            class="w-full rounded-xl border px-4 py-3 text-center text-xl tracking-[0.4em] focus:ring-2 focus:ring-blue-500"
+            placeholder="••••••"
+          />
+          <p v-if="otp.error" class="text-sm text-red-600">{{ otp.error }}</p>
+          <button
+            type="button"
+            class="text-sm text-blue-600 hover:underline"
+            :disabled="otp.sending"
+            @click="resendOtp"
+          >
+            {{ otp.sending ? 'Đang gửi lại...' : 'Chưa nhận được mã? Gửi lại OTP' }}
+          </button>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            class="rounded-lg border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            @click="closeOtpModal"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            :disabled="otp.verifying || otp.code.length !== 6"
+            @click="verifyOtp"
+          >
+            <span v-if="otp.verifying">Đang xác nhận…</span>
+            <span v-else>Xác nhận</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onUnmounted } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
 
 const auth = useAuthStore()
@@ -143,16 +171,20 @@ const form = reactive({
 })
 const errors = reactive<{ [k: string]: string }>({
   currentPassword: '',
-  otp: '',
   newPassword: '',
   confirmPassword: '',
 })
 const loading = ref(false)
 const done = ref(false)
 const show = reactive({ current: false, new: false, confirm: false })
-const otp = reactive({ code: '', countdown: 0, sending: false, sentTo: '' })
-const OTP_COUNTDOWN = 60
-let timer: number | undefined
+const otp = reactive({
+  open: false,
+  code: '',
+  sentTo: '',
+  sending: false,
+  verifying: false,
+  error: '',
+})
 
 const maskedEmail = computed(() => {
   const email = auth.user?.email || ''
@@ -162,14 +194,14 @@ const maskedEmail = computed(() => {
   return `${local[0]}***${local[local.length - 1]}@${domain}`
 })
 
-const validate = () => {
+const validateForm = () => {
+  errors.currentPassword = ''
   errors.newPassword = ''
   errors.confirmPassword = ''
-  errors.otp = ''
   let ok = true
 
-  if (otp.code.length !== 6) {
-    errors.otp = 'OTP gồm 6 chữ số.'
+  if (!form.currentPassword) {
+    errors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại.'
     ok = false
   }
   if (form.newPassword.length < 8) {
@@ -182,57 +214,74 @@ const validate = () => {
   }
   return ok
 }
+
 const onSubmit = async () => {
   done.value = false
-  if (!validate()) return
+  otp.error = ''
+  otp.code = ''
+  if (!validateForm()) return
   loading.value = true
   try {
-    await auth.changePasswordWithOtp(otp.code, form.newPassword)
-
-    done.value = true
-    form.newPassword = ''
-    form.confirmPassword = ''
-    otp.code = ''
-    setTimeout(() => (done.value = false), 1800)
+    const ok = await requestOtp()
+    if (ok) {
+      otp.open = true
+    }
   } finally {
     loading.value = false
   }
 }
 
-const sendOtp = async () => {
-  if (otp.sending || otp.countdown > 0) return
-  if (!form.currentPassword) {
-    errors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại.'
-    return
-  }
+const requestOtp = async () => {
+  otp.error = ''
   otp.sending = true
   try {
     const res = await auth.requestPasswordOtp(form.currentPassword)
     otp.sentTo = res?.email || maskedEmail.value || ''
     errors.currentPassword = ''
-    otp.countdown = OTP_COUNTDOWN
-    clearTimer()
-    timer = window.setInterval(() => {
-      if (otp.countdown > 0) otp.countdown -= 1
-      else clearTimer()
-    }, 1000)
+    return true
   } catch (error: any) {
     const message = error?.message || 'Không thể gửi OTP. Vui lòng thử lại.'
-    errors.otp = message
+    otp.error = message
     if (message.toLowerCase().includes('mật khẩu') && message.toLowerCase().includes('không chính xác')) {
       errors.currentPassword = message
     }
+    return false
   } finally {
     otp.sending = false
   }
 }
 
-function clearTimer() {
-  if (timer) {
-    window.clearInterval(timer)
-    timer = undefined
+const verifyOtp = async () => {
+  otp.error = ''
+  if (otp.code.length !== 6) {
+    otp.error = 'OTP gồm 6 chữ số.'
+    return
+  }
+  otp.verifying = true
+  try {
+    await auth.changePasswordWithOtp(otp.code, form.newPassword)
+    done.value = true
+    otp.open = false
+    form.currentPassword = ''
+    form.newPassword = ''
+    form.confirmPassword = ''
+    otp.code = ''
+    setTimeout(() => (done.value = false), 2000)
+  } catch (error: any) {
+    otp.error = error?.message || 'OTP không hợp lệ hoặc đã hết hạn.'
+  } finally {
+    otp.verifying = false
   }
 }
 
-onUnmounted(() => clearTimer())
+const closeOtpModal = () => {
+  otp.open = false
+  otp.code = ''
+  otp.error = ''
+}
+
+const resendOtp = async () => {
+  if (otp.sending) return
+  await requestOtp()
+}
 </script>

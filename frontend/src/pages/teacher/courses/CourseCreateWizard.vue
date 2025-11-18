@@ -3,11 +3,11 @@
   <div class="mx-auto max-w-5xl p-6">
     <!-- Progress Steps -->
     <div class="mb-8">
-      <div class="flex items-center justify-between px-8">
+      <div class="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 sm:px-6">
         <div
           v-for="(step, index) in steps"
           :key="index"
-          class="flex items-center flex-1"
+          class="flex flex-1 items-center"
         >
           <div class="flex items-center">
             <div
@@ -118,13 +118,12 @@
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-2 block text-sm font-semibold text-gray-700">Giới thiệu chi tiết <span class="text-rose-600">*</span></label>
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Giới thiệu chi tiết</label>
             <textarea
               v-model.trim="form.introduction"
               rows="6"
               class="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               placeholder="Giới thiệu chi tiết về khóa học..."
-              required
             ></textarea>
           </div>
 
@@ -309,7 +308,7 @@
       </div>
 
       <!-- Navigation Buttons -->
-      <div class="mt-8 flex justify-between border-t border-gray-200 pt-6">
+      <div class="mt-8 flex items-center justify-between gap-4 border-t border-gray-200 pt-6">
         <button
           type="button"
           class="rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
@@ -317,26 +316,27 @@
         >
           Quay lại
         </button>
-        <div v-if="currentStep === 2" class="flex-1 flex justify-center">
+
+        <div class="flex flex-1 justify-end gap-3">
           <button
+            v-if="currentStep < steps.length - 1"
             type="button"
             class="rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+            :disabled="!canProceed"
+            @click="currentStep++"
+          >
+            Tiếp theo
+          </button>
+          <button
+            v-else
+            type="button"
+            class="flex min-w-[160px] items-center justify-center rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
             :disabled="submitting || !canSubmit"
             @click="submit"
           >
             {{ submitting ? 'Đang tạo...' : 'Tạo khóa học' }}
           </button>
         </div>
-        <button
-          v-else-if="currentStep < steps.length - 1"
-          type="button"
-          class="rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-          :disabled="!canProceed"
-          @click="currentStep++"
-        >
-          Tiếp theo
-        </button>
-        <div v-else class="flex-1"></div>
       </div>
     </div>
 
@@ -554,13 +554,13 @@ const submitting = ref(false)
 
 const canProceed = computed(() => {
   if (currentStep.value === 0) {
-    return form.value.title.trim() && form.value.introduction.trim()
+    return !!form.value.title.trim()
   }
   return true
 })
 
 const canSubmit = computed(() => {
-  return form.value.title.trim() && form.value.introduction.trim()
+  return !!form.value.title.trim()
 })
 
 function handleBack() {
