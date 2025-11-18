@@ -319,7 +319,21 @@ class StudentCourseDetailView(APIView):
                 avatar_path = getattr(profile, 'avatar_url', None)
 
             if not display_name:
-                display_name = classmate.get_full_name() or classmate.username or 'Học viên'
+                # Custom user model (UserModel) does not implement get_full_name like Django's default User.
+                # Guard against missing method to avoid AttributeError that was causing 500s for students.
+                full_name = None
+                get_full_name = getattr(classmate, 'get_full_name', None)
+                if callable(get_full_name):
+                    full_name = get_full_name()
+                # Fall back to common attributes before defaulting to username/email
+                if not full_name:
+                    full_name = getattr(classmate, 'full_name', None)
+                display_name = (
+                    full_name
+                    or getattr(classmate, 'username', None)
+                    or getattr(classmate, 'email', None)
+                    or 'Học viên'
+                )
 
             if not avatar_path and hasattr(classmate, 'avatar'):
                 avatar_path = getattr(classmate, 'avatar', None)
