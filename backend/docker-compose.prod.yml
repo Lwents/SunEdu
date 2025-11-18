@@ -26,9 +26,9 @@ services:
              python manage.py collectstatic --noinput &&
              gunicorn backend.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"
     volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-      - logs_volume:/app/logs
+      - /var/www/elearning/staticfiles:/app/staticfiles
+      - /var/www/elearning/mediafiles:/app/media
+      - /var/www/elearning/logs:/app/logs
     ports:
       - "8000:8000"
     depends_on:
@@ -56,9 +56,6 @@ services:
 
 volumes:
   postgres_data:
-  static_volume:
-  media_volume:
-  logs_volume:
 
 networks:
   backend-network:
