@@ -8,10 +8,22 @@ export function resolveMediaUrl(input?: string | null): string {
     return trimmed
   }
 
-  const mediaBaseRaw = (import.meta.env.VITE_MEDIA_BASE_URL
-    ?? import.meta.env.VITE_API_URL
-    ?? window.location.origin).toString().trim()
-  const mediaBase = mediaBaseRaw.replace(/\/+$/, '') || window.location.origin
+  const configuredMediaBase = import.meta.env.VITE_MEDIA_BASE_URL?.toString().trim()
+  let mediaBase = configuredMediaBase?.replace(/\/+$/, '')
+
+  if (!mediaBase) {
+    const apiBaseRaw = import.meta.env.VITE_API_URL?.toString().trim()
+    try {
+      // Lấy origin để tránh dính /api ở cuối URL
+      mediaBase = apiBaseRaw ? new URL(apiBaseRaw, window.location.origin).origin : window.location.origin
+    } catch {
+      mediaBase = window.location.origin
+    }
+  }
+
+  if (!mediaBase) {
+    mediaBase = window.location.origin
+  }
 
   if (trimmed.startsWith('/')) {
     return `${mediaBase}${trimmed}`
