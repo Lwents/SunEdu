@@ -189,6 +189,7 @@ const routes: RouteRecordRaw[] = [
       // courses
       {
         path: 'courses',
+        name: 'teacher-courses',
         component: () => import('@/pages/teacher/courses/Courses.vue'),
         meta: { title: 'Khoá học của tôi' },
       },
