@@ -144,7 +144,7 @@
                   class="flex flex-col items-center gap-2 rounded-xl border border-slate-200 p-3"
                 >
                   <img
-                    :src="student.avatar"
+                    :src="getStudentAvatar(student)"
                     :alt="student.name"
                     class="h-12 w-12 rounded-full object-cover"
                   />
@@ -228,6 +228,7 @@ import { courseService, type CourseDetail, type Subject } from '@/services/cours
 import { useAuthStore } from '@/store/auth.store'
 import { showToast } from '@/utils/toast'
 import api from '@/config/axios'
+import { getAvatarSrc } from '@/utils/avatar'
 
 const router = useRouter()
 const route = useRoute()
@@ -258,6 +259,7 @@ const students = ref<Array<{
   id: number
   name: string
   avatar: string
+  gender?: 'male' | 'female' | 'other' | null
   progress: number
 }>>([])
 
@@ -390,6 +392,14 @@ function handleImageError(event: Event) {
   img.src = 'https://via.placeholder.com/400x300?text=No+Image'
 }
 
+function getStudentAvatar(student: typeof students.value[0]): string {
+  return getAvatarSrc(
+    student.avatar,
+    student.gender,
+    'student'
+  )
+}
+
 function getVideoFileUrl(videoFile?: string): string {
   if (!videoFile) return ''
   if (videoFile.startsWith('http://') || videoFile.startsWith('https://')) {
@@ -446,17 +456,20 @@ async function loadCourse() {
       },
     ]
 
-    // Load students
-    const studentsList = []
-    for (let i = 0; i < 12; i++) {
-      studentsList.push({
-        id: i + 1,
-        name: `Học viên ${i + 1}`,
-        avatar: `https://i.pravatar.cc/100?img=${i + 3}`,
-        progress: 20 + (i * 7) % 80,
-      })
+    // Load students from API response
+    if (course.value && (course.value as any).students && Array.isArray((course.value as any).students)) {
+      const studentsFromApi = (course.value as any).students
+      students.value = studentsFromApi.map((s: any) => ({
+        id: s.id || s.student_id,
+        name: s.name || s.display_name || 'Học viên',
+        avatar: s.avatar || s.avatar_url || null,
+        gender: s.gender || null, // Backend có thể trả về gender hoặc không
+        progress: s.progress || 0,
+      }))
+    } else {
+      // Fallback: nếu không có dữ liệu từ API, để mảng rỗng hoặc hiển thị thông báo
+      students.value = []
     }
-    students.value = studentsList
 
     // Check enrollment from course data
     // Đảm bảo isEnrolled được set đúng từ API response

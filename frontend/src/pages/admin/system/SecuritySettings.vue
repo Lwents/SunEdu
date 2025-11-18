@@ -195,7 +195,6 @@
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
 import {
   securityService,
   type SecurityPolicy,
@@ -204,6 +203,7 @@ import {
   type CertStatus,
   type AlertPolicy,
 } from '@/services/security.service'
+import { showToast } from '@/utils/toast'
 
 const tab = ref<'policy' | 'ip' | 'tls' | 'sessions'>('policy')
 const saving = ref(false)
@@ -242,6 +242,7 @@ function fmt(iso?: string) {
 }
 
 async function load() {
+  try {
   const [p, ips, c, ap] = await Promise.all([
     securityService.getPolicy(),
     securityService.listIpAllow(),
@@ -252,39 +253,63 @@ async function load() {
   ipList.value = ips
   Object.assign(cert, c)
   Object.assign(alertPolicy, ap)
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được dữ liệu bảo mật', 'error')
+  }
 }
 async function savePolicy() {
   saving.value = true
   try {
     await securityService.updatePolicy(policy)
-    ElMessage.success('Đã lưu chính sách (mock)')
+    showToast('Đã lưu chính sách', 'success')
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể lưu chính sách', 'error')
   } finally {
     saving.value = false
   }
 }
 
 async function addIp() {
-  if (!cidr.value) return ElMessage.warning('Nhập CIDR')
+  if (!cidr.value) {
+    showToast('Nhập CIDR', 'warning')
+    return
+  }
+  try {
   await securityService.addIpAllow(cidr.value, ipNote.value)
   cidr.value = ''
   ipNote.value = ''
   ipList.value = await securityService.listIpAllow()
-  ElMessage.success('Đã thêm (mock)')
+    showToast('Đã thêm IP', 'success')
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể thêm IP', 'error')
+  }
 }
 async function removeIp(id: string) {
+  try {
   await securityService.removeIpAllow(id)
   ipList.value = await securityService.listIpAllow()
-  ElMessage.success('Đã xoá (mock)')
+    showToast('Đã xoá IP', 'info')
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể xoá IP', 'error')
+  }
 }
 
 async function loadSessions() {
   const uid = filterUser.value ? Number(filterUser.value) : undefined
+  try {
   sessions.value = await securityService.listSessions(uid)
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được danh sách phiên', 'error')
+  }
 }
 async function revoke(jti: string) {
+  try {
   await securityService.revokeSession(jti)
   await loadSessions()
-  ElMessage.success('Đã revoke (mock)')
+    showToast('Đã thu hồi phiên', 'success')
+  } catch (error: any) {
+    showToast(error?.message || 'Không thu hồi được phiên', 'error')
+  }
 }
 
 async function renewCert() {
@@ -292,7 +317,9 @@ async function renewCert() {
   try {
     await securityService.renewCert()
     Object.assign(cert, await securityService.getCertStatus())
-    ElMessage.success('Đã gửi yêu cầu gia hạn (mock)')
+    showToast('Đã gửi yêu cầu gia hạn chứng chỉ', 'info')
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể gia hạn chứng chỉ', 'error')
   } finally {
     renewing.value = false
   }
@@ -302,7 +329,9 @@ async function saveAlerts() {
   savingAlerts.value = true
   try {
     await securityService.updateAlertPolicy(alertPolicy)
-    ElMessage.success('Đã lưu alert (mock)')
+    showToast('Đã lưu cấu hình alert', 'success')
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể lưu alert', 'error')
   } finally {
     savingAlerts.value = false
   }
@@ -311,7 +340,9 @@ async function testAlert() {
   testingAlert.value = true
   try {
     await securityService.alertTest()
-    ElMessage.success('Đã gửi test alert (mock)')
+    showToast('Đã gửi test alert', 'info')
+  } catch (error: any) {
+    showToast(error?.message || 'Không gửi được test alert', 'error')
   } finally {
     testingAlert.value = false
   }

@@ -127,7 +127,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   courseService,
   type CourseDetail,
@@ -135,6 +134,8 @@ import {
   type Subject,
   type Level,
 } from '@/services/course.service'
+import { showToast } from '@/utils/toast'
+import { showConfirm } from '@/utils/confirm'
 
 const route = useRoute()
 const id = computed(() => route.params.id as string)
@@ -188,47 +189,57 @@ const levelLabel = (l?: Level) => (l === 'advanced' ? 'Nâng cao' : 'Cơ bản')
 const minutes = (m?: number) => (m ? `${m} phút` : '—')
 
 async function load() {
+  try {
   const d = await courseService.detail(id.value)
   Object.assign(detail, d)
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được khoá học', 'error')
+  }
 }
 
 // Actions
 async function approve() {
-  await ElMessageBox.confirm('Duyệt khoá học này?', 'Xác nhận', { type: 'success' })
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: 'Duyệt khoá học này?',
+  })
+  if (!confirmed) return
   await courseService.approve(detail.id)
-  detail.status = 'published' // tuỳ quy trình: duyệt có thể vẫn ở trạng thái “đã duyệt, chưa xuất bản”
-  ElMessage.success('Đã duyệt (mock)')
+  detail.status = 'published'
+  showToast('Đã duyệt khoá học', 'success')
 }
 async function reject() {
-  const { value, action } = await ElMessageBox.prompt('Lý do từ chối', 'Từ chối', {
-    inputPlaceholder: 'Thiếu tài liệu, video mờ…',
-  })
-  if (action === 'confirm') {
-    await courseService.reject(detail.id, value)
+  const reason = window.prompt('Nhập lý do từ chối', '')
+  if (reason === null) return
+  await courseService.reject(detail.id, reason)
     detail.status = 'rejected'
-    ElMessage.success('Đã từ chối (mock)')
-  }
+  showToast('Đã từ chối khoá học', 'warning')
 }
 async function publish() {
   await courseService.publish(detail.id)
   detail.status = 'published'
-  ElMessage.success('Đã xuất bản (mock)')
+  showToast('Đã xuất bản khoá học', 'success')
 }
 async function unpublish() {
   await courseService.unpublish(detail.id)
   detail.status = 'draft'
-  ElMessage.success('Đã gỡ (mock)')
+  showToast('Đã gỡ khoá học', 'info')
 }
 async function archive() {
-  await ElMessageBox.confirm('Lưu trữ khoá học này?', 'Xác nhận', { type: 'warning' })
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: 'Lưu trữ khoá học này?',
+    type: 'warning',
+  })
+  if (!confirmed) return
   await courseService.archive(detail.id)
   detail.status = 'archived'
-  ElMessage.success('Đã lưu trữ (mock)')
+  showToast('Đã lưu trữ khoá học', 'info')
 }
 async function restore() {
   await courseService.restore(detail.id)
   detail.status = 'draft'
-  ElMessage.success('Đã khôi phục (mock)')
+  showToast('Đã khôi phục khoá học', 'success')
 }
 
 onMounted(load)

@@ -8,6 +8,7 @@ import {
   type ProfileUpdatePayload,
 } from '@/services/auth.service'
 import { ElMessage } from 'element-plus'
+import { getAvatarSrc } from '@/utils/avatar'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -20,8 +21,15 @@ export const useAuthStore = defineStore('auth', {
     // [ADD]
     isAuthenticated: (state) => !!state.token, // [ADD]
     role: (state): Role | undefined => state.user?.role, // [ADD]
-    // ADDluôn có ảnh fallback để Navbar không bị null
-    avatar: (state): string => state.user?.avatar || 'https://i.pravatar.cc/80?img=10',
+    // Avatar với fallback dựa vào gender và role
+    avatar: (state): string => {
+      if (!state.user) return '/boy.webp'
+      return getAvatarSrc(
+        state.user.avatar,
+        state.user.gender as 'male' | 'female' | 'other' | null | undefined,
+        state.user.role
+      )
+    },
   }, // [ADD]
 
   actions: {
@@ -31,7 +39,22 @@ export const useAuthStore = defineStore('auth', {
         this.token = token
         this.user = user
         if (remember) {
-          localStorage.setItem('auth', JSON.stringify({ token, user }))
+          // Không lưu avatar base64 vào localStorage
+          const userToStore = { ...user }
+          if (userToStore.avatar && (
+            userToStore.avatar.startsWith('data:') || 
+            userToStore.avatar.length > 1000
+          )) {
+            userToStore.avatar = userToStore.avatar.startsWith('http') ? userToStore.avatar : undefined
+          }
+          try {
+            localStorage.setItem('auth', JSON.stringify({ token, user: userToStore }))
+          } catch (e: any) {
+            if (e.name === 'QuotaExceededError') {
+              console.warn('LocalStorage quota exceeded during login')
+              localStorage.removeItem('auth')
+            }
+          }
           localStorage.setItem('accessToken', token)
           if (refresh) {
             localStorage.setItem('refreshToken', refresh)
@@ -57,6 +80,9 @@ export const useAuthStore = defineStore('auth', {
             email: profile.email || this.user?.email || '',
             phone: profile.phone || this.user?.phone,
             avatar: profile.avatar || profile.avatar_url || this.user?.avatar,
+            gender: profile.gender ?? this.user?.gender,
+            title: profile.title ?? this.user?.title,
+            bio: profile.bio ?? this.user?.bio,
           }
           this.persist()
         } catch (error) {
@@ -118,7 +144,33 @@ export const useAuthStore = defineStore('auth', {
     // Helper lưu/clear localStorage khi cập nhật user/token ngoài luồng login
     persist() {
       if (this.token && this.user) {
-        localStorage.setItem('auth', JSON.stringify({ token: this.token, user: this.user }))
+        // Không lưu avatar base64 vào localStorage để tránh QuotaExceededError
+        // Chỉ lưu URL nếu avatar là URL, không lưu base64 string
+        const userToStore = { ...this.user }
+        if (userToStore.avatar && (
+          userToStore.avatar.startsWith('data:') || 
+          userToStore.avatar.length > 1000
+        )) {
+          // Nếu avatar là base64 hoặc quá dài, không lưu vào localStorage
+          // Chỉ lưu URL hoặc để undefined
+          userToStore.avatar = userToStore.avatar.startsWith('http') ? userToStore.avatar : undefined
+        }
+        try {
+          localStorage.setItem('auth', JSON.stringify({ token: this.token, user: userToStore }))
+        } catch (e: any) {
+          // Nếu vẫn lỗi quota, thử xóa một số keys cũ hoặc chỉ lưu token
+          if (e.name === 'QuotaExceededError') {
+            console.warn('LocalStorage quota exceeded, clearing old data')
+            try {
+              // Xóa auth cũ và chỉ lưu token
+              localStorage.removeItem('auth')
+              localStorage.setItem('accessToken', this.token)
+              // Không lưu user vào localStorage nếu quá lớn
+            } catch (e2) {
+              console.error('Failed to save to localStorage:', e2)
+            }
+          }
+        }
       } else {
         localStorage.removeItem('auth')
       }
@@ -136,6 +188,9 @@ export const useAuthStore = defineStore('auth', {
         phone: updated.phone || prev?.phone,
         role: (updated.role as Role) || prev?.role || 'student',
         avatar: updated.avatar || updated.avatar_url || prev?.avatar,
+        gender: updated.gender ?? prev?.gender,
+        title: updated.title ?? prev?.title,
+        bio: updated.bio ?? prev?.bio,
       }
       this.persist()
       return updated

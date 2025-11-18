@@ -78,7 +78,7 @@
               <div class="flex items-center justify-between text-sm text-gray-700">
                 <div>
                   <p class="font-medium">{{ row.name }}</p>
-                  <p class="text-xs text-gray-500">{{ row.email }} • {{ row.role }}</p>
+                  <p class="text-xs text-gray-500">{{ row.email }} • {{ roleLabel(row.role, row.roleLabel) }}</p>
                 </div>
                 <span class="text-xs text-gray-400">{{ formatTime(row.lastActive) }}</span>
               </div>
@@ -123,8 +123,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
 import { dashboardService } from '@/services/dashboard.service'
+import { showToast } from '@/utils/toast'
 
 const range = ref<[Date, Date] | null>(null)
 const granularity = ref<'day' | 'week' | 'month'>('day')
@@ -159,6 +159,18 @@ function formatTime(value: string | null) {
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 }
+function roleLabel(role?: string, provided?: string) {
+  if (provided) return provided
+  if (!role) return 'N/A'
+  const mapping: Record<string, string> = {
+    admin: 'Quản trị viên',
+    instructor: 'Giáo viên',
+    teacher: 'Giáo viên',
+    student: 'Học sinh',
+  }
+  const key = role.toLowerCase()
+  return mapping[key] || role
+}
 
 async function fetchAll() {
   try {
@@ -169,8 +181,8 @@ async function fetchAll() {
     Object.assign(activeUsers, data.activeUsers)
     Object.assign(security, data.security)
     Object.assign(system, data.system)
-  } catch (e) {
-    ElMessage.error('Không tải được dữ liệu dashboard')
+  } catch (e: any) {
+    showToast(e?.message || 'Không tải được dữ liệu dashboard', 'error')
   }
 }
 

@@ -157,7 +157,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   paymentService,
   type TxSummary,
@@ -166,6 +165,8 @@ import {
   type PageParams,
   type TxMetrics,
 } from '@/services/payment.service'
+import { showToast } from '@/utils/toast'
+import { showConfirm } from '@/utils/confirm'
 
 const router = useRouter()
 
@@ -237,6 +238,8 @@ async function fetch() {
     total.value = t
     const m = await paymentService.metrics({ ...query })
     Object.assign(metrics, m)
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được danh sách giao dịch', 'error')
   } finally {
     loading.value = false
   }
@@ -258,32 +261,45 @@ async function doExport() {
     a.download = `transactions_${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
+    showToast('Đang tải file CSV…', 'info')
+  } catch (error: any) {
+    showToast(error?.message || 'Xuất CSV thất bại', 'error')
   } finally {
     exporting.value = false
   }
 }
 
 async function promptRefund(row: TxSummary) {
-  const { value, action } = await ElMessageBox.prompt(
-    `Nhập số tiền muốn hoàn (<= ${money(row.amount)})`,
-    `Hoàn tiền ${row.id}`,
-    { inputValue: String(row.amount), inputPattern: /^\d+$/, inputErrorMessage: 'Không hợp lệ' },
-  )
-  if (action === 'confirm') {
-    await paymentService.refund(row.id, Number(value))
-    ElMessage.success('Đã tạo yêu cầu hoàn tiền (mock)')
+  const wantsRefund = await showConfirm({
+    title: 'Hoàn tiền',
+    message: `Hoàn tiền tối đa ${money(row.amount)} cho giao dịch ${row.id}?`,
+  })
+  if (!wantsRefund) return
+  const input = window.prompt('Nhập số tiền cần hoàn', String(row.amount))
+  if (!input) return
+  const amount = Number(input)
+  if (!Number.isFinite(amount) || amount <= 0 || amount > row.amount) {
+    showToast('Số tiền không hợp lệ', 'error')
+    return
+  }
+  try {
+    await paymentService.refund(row.id, amount)
+    showToast('Đã tạo yêu cầu hoàn tiền', 'success')
     fetch()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể hoàn tiền', 'error')
   }
 }
 async function markDispute(row: TxSummary) {
-  const { value, action } = await ElMessageBox.prompt(
-    'Ghi chú cho tranh chấp (tuỳ chọn)',
-    `Đánh dấu tranh chấp ${row.id}`,
-  )
-  if (action === 'confirm') {
-    await paymentService.markDispute(row.id, value)
-    ElMessage.success('Đã đánh dấu tranh chấp (mock)')
+  const note = window.prompt('Ghi chú cho tranh chấp (tuỳ chọn)', '')
+  const confirmed = note !== null ? true : false
+  if (!confirmed) return
+  try {
+    await paymentService.markDispute(row.id, note || '')
+    showToast('Đã đánh dấu tranh chấp', 'warning')
     fetch()
+  } catch (error: any) {
+    showToast(error?.message || 'Không thể đánh dấu tranh chấp', 'error')
   }
 }
 

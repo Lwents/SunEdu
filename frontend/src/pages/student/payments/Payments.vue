@@ -89,15 +89,12 @@
             class="w-full flex items-center justify-between rounded-lg border border-slate-300 bg-white px-4 py-3 hover:border-slate-400 hover:bg-slate-50 transition focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-cyan-50 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3"
+              <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center p-1.5">
+                <img 
+                  src="/[MOMO]_Logo_Primary_Colored.svg" 
+                  alt="MoMo" 
+                  class="w-full h-full object-contain"
                   />
-                </svg>
               </div>
               <span class="text-sm font-semibold text-slate-900">Ví MoMo</span>
             </div>

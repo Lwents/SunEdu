@@ -6,6 +6,7 @@ export interface TeacherStudent {
   username: string
   email: string
   avatar?: string
+  gender?: 'male' | 'female' | 'other' | null
   courses: {
     id: string
     title: string

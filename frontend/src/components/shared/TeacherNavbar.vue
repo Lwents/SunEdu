@@ -189,6 +189,7 @@ import { onClickOutside } from '@vueuse/core'
 import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
 import ConfirmLogout from '@/components/ui/ConfirmLogout.vue'
 import NotificationBell from '@/components/shared/NotificationBell.vue'
+import { getAvatarSrc } from '@/utils/avatar'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -200,22 +201,12 @@ const showConfirm = ref(false)
 const isLoggingOut = ref(false)
 
 // Sử dụng cùng fallback avatar với Profile
-const defaultAvatar = 'https://i.pravatar.cc/120?img=5'
 const avatarSrc = computed(() => {
-  const userAvatar = auth.user?.avatar
-  if (userAvatar) {
-    // Nếu avatar là base64 (data URL), dùng trực tiếp
-    if (userAvatar.startsWith('data:')) {
-      return userAvatar
-    }
-    // Nếu avatar là URL, kiểm tra xem có phải là full URL không
-    if (userAvatar.startsWith('http://') || userAvatar.startsWith('https://')) {
-      return userAvatar
-    }
-    // Nếu là relative path, thêm base URL
-    return userAvatar
-  }
-  return defaultAvatar
+  return getAvatarSrc(
+    auth.user?.avatar,
+    auth.user?.gender as 'male' | 'female' | 'other' | null | undefined,
+    'instructor'
+  )
 })
 const displayName = computed(() => auth.user?.name || 'Giáo viên')
 const displayEmail = computed(() => auth.user?.email || 'teacher@example.com')

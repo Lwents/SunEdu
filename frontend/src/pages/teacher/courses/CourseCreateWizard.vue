@@ -327,15 +327,15 @@
           >
             Tiếp theo
           </button>
-          <button
+        <button
             v-else
-            type="button"
+          type="button"
             class="flex min-w-[160px] items-center justify-center rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
             :disabled="submitting || !canSubmit"
             @click="submit"
-          >
+        >
             {{ submitting ? 'Đang tạo...' : 'Tạo khóa học' }}
-          </button>
+        </button>
         </div>
       </div>
     </div>

@@ -210,6 +210,7 @@ import { onClickOutside } from '@vueuse/core'
 import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
 import ConfirmLogout from '@/components/ui/ConfirmLogout.vue'
 import NotificationBell from '@/components/shared/NotificationBell.vue'
+import { getAvatarSrc } from '@/utils/avatar'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -220,8 +221,13 @@ const avatarOpen = ref(false)
 const showConfirm = ref(false)
 const isLoggingOut = ref(false)
 
-const defaultAvatar = 'https://i.pravatar.cc/80?img=10'
-const avatarSrc = computed(() => auth.user?.avatar || defaultAvatar)
+const avatarSrc = computed(() => {
+  return getAvatarSrc(
+    auth.user?.avatar,
+    auth.user?.gender as 'male' | 'female' | 'other' | null | undefined,
+    'student'
+  )
+})
 const displayName = computed(() => auth.user?.name || 'Học sinh')
 const displayEmail = computed(() => auth.user?.email || 'student@example.com')
 

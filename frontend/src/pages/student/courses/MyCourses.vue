@@ -295,9 +295,10 @@
                   </svg>
                 </div>
                 <span
+                  v-if="getDisplayTag(s)"
                   class="absolute left-3 top-3 rounded bg-white/95 px-2.5 py-1 text-xs font-semibold text-slate-900 shadow"
                 >
-                  {{ s.tag || (s.grade ? `Lớp ${s.grade}` : 'Bổ trợ') }}
+                  {{ getDisplayTag(s) }}
                 </span>
                 <div
                   class="absolute right-3 top-3 rounded px-2.5 py-1 text-xs font-semibold shadow"
@@ -638,6 +639,28 @@ function formatPrice(price?: number | string): string {
   if (!price || price === 0 || price === '0') return 'Miễn phí'
   const numPrice = typeof price === 'string' ? parseFloat(price) : price
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(numPrice)
+}
+
+// Kiểm tra xem string có phải là UUID không
+function isUUID(str: string | null | undefined): boolean {
+  if (!str || typeof str !== 'string') return false
+  // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  return uuidRegex.test(str)
+}
+
+// Lấy tag để hiển thị, không hiển thị UUID
+function getDisplayTag(course: any): string | null {
+  // Nếu tag là UUID, không hiển thị
+  if (course.tag && !isUUID(course.tag)) {
+    return course.tag
+  }
+  // Nếu có grade, hiển thị "Lớp X"
+  if (course.grade) {
+    return `Lớp ${course.grade}`
+  }
+  // Mặc định là "Bổ trợ"
+  return 'Bổ trợ'
 }
 
 onMounted(load)

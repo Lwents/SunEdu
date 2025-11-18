@@ -173,6 +173,7 @@ class AdminDashboardView(APIView):
                 'name': name,
                 'email': user.email,
                 'role': user.role,
+                'roleLabel': self._role_label(user.role),
                 'lastActive': user.last_login.isoformat() if user.last_login else None,
             })
 
@@ -181,6 +182,17 @@ class AdminDashboardView(APIView):
             'recent': recent,
             'windowMinutes': 10,
         }
+
+    def _role_label(self, role: str | None) -> str:
+        mapping = {
+            'admin': 'Quản trị viên',
+            'instructor': 'Giáo viên',
+            'teacher': 'Giáo viên',
+            'student': 'Học sinh',
+        }
+        if not role:
+            return 'N/A'
+        return mapping.get(role.lower(), role)
 
 
 

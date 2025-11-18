@@ -44,7 +44,7 @@
 
       <img
         class="h-8 w-8 rounded-full object-cover"
-        src="https://i.pravatar.cc/80?img=3"
+        :src="avatarSrc"
         alt="avatar"
       />
 
@@ -69,6 +69,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
 import ConfirmLogout from '@/components/ui/ConfirmLogout.vue'
 import { Bell, LogOut } from 'lucide-vue-next'
+import { getAvatarSrc } from '@/utils/avatar'
 
 const emit = defineEmits(['toggle-sidebar'])
 
@@ -77,6 +78,14 @@ const user = computed(() => auth.user)
 
 const route = useRoute()
 const router = useRouter()
+
+const avatarSrc = computed(() => {
+  return getAvatarSrc(
+    auth.user?.avatar,
+    auth.user?.gender as 'male' | 'female' | 'other' | null | undefined,
+    'admin'
+  )
+})
 
 const pageTitle = computed(() => {
   const matched = [...route.matched].reverse().find((r) => r.meta?.title) as any

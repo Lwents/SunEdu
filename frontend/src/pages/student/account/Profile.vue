@@ -410,6 +410,7 @@ import {
   type WardOption,
 } from '@/services/location.service'
 import { showToast } from '@/utils/toast'
+import { getAvatarSrc } from '@/utils/avatar'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -425,15 +426,12 @@ function goParent() {
   router.push({ name: 'student-parent' })
 }
 
-const defaultAvatar = 'https://i.pravatar.cc/80?img=10'
 const profileDetails = ref<ProfileDetails | null>(null)
-const currentAvatar = computed(
-  () =>
-    auth.user?.avatar ||
-    profileDetails.value?.avatar ||
-    profileDetails.value?.avatar_url ||
-    defaultAvatar,
-)
+const currentAvatar = computed(() => {
+  const userAvatar = auth.user?.avatar || profileDetails.value?.avatar || profileDetails.value?.avatar_url
+  const gender = auth.user?.gender || profileDetails.value?.gender
+  return getAvatarSrc(userAvatar, gender as 'male' | 'female' | 'other' | null | undefined, 'student')
+})
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const avatarFile = ref<File | null>(null)
@@ -780,8 +778,31 @@ async function saveProfile() {
     avatarPreview.value = ''
     if (fileInput.value) fileInput.value.value = ''
     showToast('Cập nhật hồ sơ thành công!', 'success')
-  } catch (e) {
-    showToast('Cập nhật thất bại. Thử lại sau.', 'error')
+  } catch (e: any) {
+    console.error('Profile update error:', e)
+    // Kiểm tra xem có phải lỗi network/timeout không, nhưng backend đã lưu thành công
+    // Nếu có response và status code là 200, coi như thành công
+    if (e?.response?.status === 200 || e?.response?.status === 201) {
+      // Backend đã lưu thành công, chỉ cần refresh profile
+      try {
+        const profile = await authService.getProfile()
+        profileDetails.value = profile
+        applyProfileToForm(profile)
+        lastUpdated.value = formatDateTime(profile.updatedAt || profile.createdAt || new Date())
+        snapshot()
+        avatarFile.value = null
+        avatarPreview.value = ''
+        if (fileInput.value) fileInput.value.value = ''
+        showToast('Cập nhật hồ sơ thành công!', 'success')
+      } catch (refreshError) {
+        console.error('Failed to refresh profile:', refreshError)
+        showToast('Cập nhật thành công nhưng không thể tải lại thông tin. Vui lòng tải lại trang.', 'warning')
+      }
+    } else {
+      // Hiển thị lỗi thực sự
+      const errorMsg = e?.response?.data?.detail || e?.message || 'Cập nhật thất bại. Thử lại sau.'
+      showToast(errorMsg, 'error')
+    }
   } finally {
     saving.value = false
   }
