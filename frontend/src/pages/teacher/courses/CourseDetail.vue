@@ -71,9 +71,9 @@
 
             <!-- Ảnh chính -->
             <img
-              v-if="c?.thumbnail"
+              v-if="thumbnailUrl"
               :key="imgKey"
-              :src="c.thumbnail"
+              :src="thumbnailUrl"
               :alt="c.title || 'cover'"
               class="absolute inset-0 h-full w-full object-cover"
               width="1280" height="720"
@@ -150,9 +150,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { courseService, type CourseDetail, type CourseStatus } from '@/services/course.service'
+import { resolveMediaUrl } from '@/utils/media'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,6 +168,7 @@ const err = ref('')
 const imgLoaded = ref(false)
 const imgError = ref(false)
 const imgKey = ref(0)
+const thumbnailUrl = computed(() => resolveMediaUrl(c.value?.thumbnail))
 
 onMounted(async () => {
   try {
@@ -174,11 +176,12 @@ onMounted(async () => {
     c.value = detail
 
     // Preload ảnh cover để ưu tiên tải sớm (giảm trễ hiển thị)
-    if (detail?.thumbnail) {
+    const preloadUrl = resolveMediaUrl(detail?.thumbnail)
+    if (preloadUrl) {
       const link = document.createElement('link')
       link.rel = 'preload'
       link.as = 'image'
-      link.href = detail.thumbnail
+      link.href = preloadUrl
       document.head.appendChild(link)
     }
   } catch (e: any) {
