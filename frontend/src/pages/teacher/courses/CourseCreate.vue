@@ -170,10 +170,17 @@ async function submit() {
     }
 
     // Gọi API với FormData
-    await courseService.create(fd as any)
+    const response = await courseService.create(fd as any)
+    const courseId = (response as any)?.id
 
     showToast('Đã tạo khoá học thành công!', 'success')
-    router.push({ path: '/teacher/courses' })
+    
+    // Redirect sang trang edit với ID mới
+    if (courseId) {
+      router.push({ name: 'teacher-course-edit', params: { id: courseId } })
+    } else {
+      router.push({ path: '/teacher/courses' })
+    }
   } catch (e: any) {
     showToast(e?.message || 'Tạo khoá học thất bại.', 'error')
   } finally {
