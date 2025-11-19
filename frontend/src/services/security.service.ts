@@ -52,7 +52,7 @@ export interface AlertPolicy {
 export const securityService = {
     async getPolicy(): Promise<SecurityPolicy> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/security/policy/')
+            const { data } = await api.get('/admin/security/policy/')
             return data
         }
         return {
@@ -63,13 +63,13 @@ export const securityService = {
         }
     },
     async updatePolicy(payload: Partial<SecurityPolicy>) {
-        if (!USE_MOCK) return api.post('/api/admin/security/policy/', payload)
+        if (!USE_MOCK) return api.post('/admin/security/policy/', payload)
         return Promise.resolve({ ok: true })
     },
 
     async listIpAllow(): Promise<IpAllowItem[]> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/security/ip-allowlist/')
+            const { data } = await api.get('/admin/security/ip-allowlist/')
             // Map backend response to frontend format
             return data.map((item: any) => ({
                 id: item.id,
@@ -86,17 +86,17 @@ export const securityService = {
         ]
     },
     async addIpAllow(cidr: string, note?: string) {
-        if (!USE_MOCK) return api.post('/api/admin/security/ip-allowlist/', { cidr, note })
+        if (!USE_MOCK) return api.post('/admin/security/ip-allowlist/', { cidr, note })
         return Promise.resolve({ ok: true, id: `ip-${Math.random()}` })
     },
     async removeIpAllow(id: string) {
-        if (!USE_MOCK) return api.delete(`/api/admin/security/ip-allowlist/${id}/`)
+        if (!USE_MOCK) return api.delete(`/admin/security/ip-allowlist/${id}/`)
         return Promise.resolve({ ok: true })
     },
 
     async listSessions(userId?: ID): Promise<SessionItem[]> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/security/sessions/', { params: { userId } })
+            const { data } = await api.get('/admin/security/sessions/', { params: { userId } })
             // Map backend response to frontend format
             return data.map((item: any) => ({
                 jti: item.jti,
@@ -125,13 +125,13 @@ export const securityService = {
         }))
     },
     async revokeSession(jti: string) {
-        if (!USE_MOCK) return api.delete(`/api/admin/security/sessions/${jti}/`)
+        if (!USE_MOCK) return api.delete(`/admin/security/sessions/${jti}/`)
         return Promise.resolve({ ok: true })
     },
 
     async getCertStatus(): Promise<CertStatus> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/security/cert/')
+            const { data } = await api.get('/admin/security/cert/')
             return {
                 ...data,
                 grade: 'A' as const // Placeholder - backend doesn't return grade
@@ -147,23 +147,23 @@ export const securityService = {
         }
     },
     async renewCert() {
-        if (!USE_MOCK) return api.post('/api/admin/security/cert/')
+        if (!USE_MOCK) return api.post('/admin/security/cert/')
         return Promise.resolve({ ok: true })
     },
 
     async getAlertPolicy(): Promise<AlertPolicy> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/security/alerts/')
+            const { data } = await api.get('/admin/security/alerts/')
             return data
         }
         return { cpuThreshold: 90, errorRateThreshold: 2, channels: { email: true, sms: true }, onCall: 'SecOps' }
     },
     async updateAlertPolicy(payload: Partial<AlertPolicy>) {
-        if (!USE_MOCK) return api.post('/api/admin/security/alerts/', payload)
+        if (!USE_MOCK) return api.post('/admin/security/alerts/', payload)
         return Promise.resolve({ ok: true })
     },
     async alertTest() {
-        if (!USE_MOCK) return api.put('/api/admin/security/alerts/')
+        if (!USE_MOCK) return api.put('/admin/security/alerts/')
         return Promise.resolve({ ok: true })
     },
 }
