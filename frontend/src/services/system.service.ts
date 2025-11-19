@@ -113,7 +113,7 @@ export interface ConfigAuditItem {
 export const systemService = {
     async getConfig(): Promise<SystemConfig> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/system/config/')
+            const { data } = await api.get('/admin/system/config/')
             return data
         }
         return {
@@ -179,18 +179,18 @@ export const systemService = {
     },
 
     async updateConfig(payload: Partial<SystemConfig>) {
-        if (!USE_MOCK) return api.post('/api/admin/system/config/', payload)
+        if (!USE_MOCK) return api.post('/admin/system/config/', payload)
         return Promise.resolve({ ok: true, version: (payload as any)?.version ?? 13 })
     },
 
     async sendTestEmail(to: string) {
-        if (!USE_MOCK) return api.post('/api/admin/system/test-email/', { email: to })
+        if (!USE_MOCK) return api.post('/admin/system/test-email/', { email: to })
         return Promise.resolve({ ok: true, message: `Đã gửi test tới ${to} (mock)` })
     },
 
     async listBackups(): Promise<BackupItem[]> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/system/backups/')
+            const { data } = await api.get('/admin/system/backups/')
             return data
         }
         return Array.from({ length: 8 }).map((_, i) => ({
@@ -202,18 +202,18 @@ export const systemService = {
     },
 
     async createBackup(notes?: string) {
-        if (!USE_MOCK) return api.post('/api/admin/system/backups/', { type: 'manual', notes })
+        if (!USE_MOCK) return api.post('/admin/system/backups/', { type: 'manual', notes })
         return Promise.resolve({ ok: true, id: `bk-${Math.floor(Math.random() * 99999)}` })
     },
 
     async restoreBackup(id: string) {
-        if (!USE_MOCK) return api.post(`/api/admin/system/restore/`, { backupId: id })
+        if (!USE_MOCK) return api.post(`/admin/system/restore/`, { backupId: id })
         return Promise.resolve({ ok: true })
     },
 
     async listConfigAudit(): Promise<ConfigAuditItem[]> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/system/audit/')
+            const { data } = await api.get('/admin/system/audit/')
             return data
         }
         return Array.from({ length: 10 }).map((_, i) => ({

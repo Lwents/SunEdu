@@ -46,7 +46,7 @@ export interface PageResult<T> {
 export const logService = {
     async list(params: LogQuery): Promise<PageResult<LogItem>> {
         if (!USE_MOCK) {
-            const { data } = await api.get('/api/admin/activity-logs/', { params })
+            const { data } = await api.get('/admin/activity-logs/', { params })
             // Map backend response to frontend format
             return {
                 items: data.items.map((item: any) => ({
