@@ -1,4 +1,4 @@
-from .dashboard_view import AdminDashboardView
+from .dashboard_view import AdminDashboardView, AdminActiveUsersRealtimeView
 from .course_admin_view import (
     AdminCourseListView, AdminCourseDetailView,
     AdminCourseApproveView, AdminCourseRejectView,
@@ -18,7 +18,7 @@ from .report_admin_view import (
 from .system_admin_view import (
     AdminSystemConfigView, AdminSystemBackupView,
     AdminSystemRestoreView, AdminSystemAuditView,
-    AdminSystemTestEmailView
+    AdminSystemTestEmailView, AdminSystemHealthView
 )
 from .activity_log_view import AdminActivityLogView
 from .security_admin_view import (
@@ -32,7 +32,7 @@ from .security_admin_view import (
 )
 
 __all__ = [
-    'AdminDashboardView',
+    'AdminDashboardView', 'AdminActiveUsersRealtimeView',
     'AdminCourseListView', 'AdminCourseDetailView',
     'AdminCourseApproveView', 'AdminCourseRejectView',
     'AdminCoursePublishView', 'AdminCourseUnpublishView',
@@ -45,7 +45,7 @@ __all__ = [
     'AdminLearningReportView', 'AdminContentReportView',
     'AdminSystemConfigView', 'AdminSystemBackupView',
     'AdminSystemRestoreView', 'AdminSystemAuditView',
-    'AdminSystemTestEmailView',
+    'AdminSystemTestEmailView', 'AdminSystemHealthView',
     'AdminActivityLogView',
     'AdminSecurityPolicyView',
     'AdminIpAllowListView',

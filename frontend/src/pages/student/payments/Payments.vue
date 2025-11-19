@@ -150,20 +150,23 @@
 
       <!-- Transaction History -->
       <div class="mt-12">
-        <HistoryList :limit="5" :showHeader="true" :showViewAll="true" />
+        <HistoryList ref="historyRef" :limit="5" :showHeader="true" :showViewAll="true" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from '@/utils/toast'
 import { paymentService } from '@/services/payment.service'
 import HistoryList from '@/pages/student/payments/HistoryList.vue'
 
 const router = useRouter()
+const route = useRoute()
+const historyRef = ref<InstanceType<typeof HistoryList> | null>(null)
+const handlingMomoReturn = ref(false)
 
 // Quick amount options
 const quickAmounts = [50000, 100000, 200000, 500000, 1000000, 2000000]
@@ -227,6 +230,102 @@ async function goCheckout(method: 'momo' | 'bank') {
   } finally {
     loadingMethod.value = ''
   }
+}
+
+onMounted(() => {
+  handleMomoReturn()
+})
+
+watch(
+  () => route.fullPath,
+  () => {
+    handleMomoReturn()
+  },
+)
+
+async function handleMomoReturn() {
+  const resultCode = toQueryString(route.query.resultCode)
+  const extraData = toQueryString(route.query.extraData)
+  const orderId = toQueryString(route.query.orderId)
+  if (!resultCode && !extraData && !orderId) return
+  if (handlingMomoReturn.value) return
+  handlingMomoReturn.value = true
+  try {
+    let paymentId: string | null = null
+    if (extraData) {
+      const decoded = decodeExtraData(extraData)
+      if (decoded?.payment_id) {
+        paymentId = decoded.payment_id
+      }
+    }
+    if (!paymentId && orderId) {
+      paymentId = convertOrderIdToUuid(orderId)
+    }
+
+    const message = toQueryString(route.query.message)
+
+    if (paymentId) {
+      try {
+        const syncRes = await paymentService.syncMomoPayment(paymentId)
+        if (resultCode === '0' || syncRes.status === 'paid') {
+          showToast('Thanh toán MoMo thành công! Lịch sử đã được cập nhật.', 'success')
+        } else {
+          showToast(message || 'MoMo đang xử lý giao dịch. Vui lòng kiểm tra lại sau.', 'warning')
+        }
+        await historyRef.value?.reload?.()
+      } catch (err: any) {
+        console.error('Failed to sync MoMo payment', err)
+        showToast(err?.message || 'Không thể đồng bộ trạng thái giao dịch MoMo', 'error')
+      }
+    } else if (resultCode) {
+      showToast('Không xác định được giao dịch MoMo vừa thanh toán. Vui lòng kiểm tra lịch sử.', 'warning')
+    }
+  } finally {
+    clearMomoQuery()
+    handlingMomoReturn.value = false
+  }
+}
+
+function clearMomoQuery() {
+  const query = { ...route.query }
+  const keys = ['resultCode', 'message', 'orderId', 'requestId', 'extraData', 'signature', 'partnerCode', 'lang', 'resultcode']
+  let hasChange = false
+  for (const key of keys) {
+    if (key in query) {
+      delete query[key]
+      hasChange = true
+    }
+  }
+  if (hasChange) {
+    router.replace({ path: route.path, query }).catch(() => undefined)
+  }
+}
+
+function decodeExtraData(value: string): any | null {
+  try {
+    const normalized = value.replace(/ /g, '+')
+    if (typeof atob === 'function') {
+      const decoded = atob(normalized)
+      return JSON.parse(decoded)
+    }
+  } catch (error) {
+    console.error('Failed to decode MoMo extraData', error)
+  }
+  return null
+}
+
+function convertOrderIdToUuid(value: string): string | null {
+  const hex = value.replace(/-/g, '')
+  if (hex.length !== 32) return null
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+function toQueryString(input: unknown): string | null {
+  if (typeof input === 'string' && input.length) return input
+  if (Array.isArray(input) && input.length) {
+    return typeof input[0] === 'string' ? input[0] : null
+  }
+  return null
 }
 
 function vnd(n: number) {

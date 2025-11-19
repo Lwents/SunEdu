@@ -208,14 +208,20 @@ const successCount = computed(() => summary.value.successCount)
 const failedCount = computed(() => summary.value.failedCount)
 
 async function load(options?: { skipAutoSync?: boolean }) {
-  const { items, summary: fetchedSummary } = await paymentService.listMyPayments(
-    status.value ? { status: status.value as any } : undefined,
-  )
-  const max = typeof props.limit === 'number' ? Math.max(0, props.limit) : undefined
-  rows.value = max ? (items as Row[]).slice(0, max) : (items as Row[])
-  summary.value = fetchedSummary
-  if (!options?.skipAutoSync) {
-    await autoSyncPending()
+  try {
+    const { items, summary: fetchedSummary } = await paymentService.listMyPayments(
+      status.value ? { status: status.value as any } : undefined,
+    )
+    const max = typeof props.limit === 'number' ? Math.max(0, props.limit) : undefined
+    rows.value = max ? (items as Row[]).slice(0, max) : (items as Row[])
+    summary.value = fetchedSummary
+    if (!options?.skipAutoSync) {
+      await autoSyncPending()
+    }
+  } catch (error) {
+    console.error('Failed to load payment history', error)
+    rows.value = []
+    summary.value = { totalAmount: 0, pendingCount: 0, successCount: 0, failedCount: 0 }
   }
 }
 
@@ -290,5 +296,9 @@ async function autoSyncPending() {
     isSyncing.value = false
   }
 }
+
+defineExpose({
+  reload: () => load({ skipAutoSync: true }),
+})
 </script>
 

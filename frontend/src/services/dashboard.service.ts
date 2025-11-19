@@ -97,6 +97,18 @@ export const dashboardService = {
         }
       }
     }
+  },
+
+  async getActiveUsers(): Promise<ActiveUsersSummary> {
+    if (!USE_MOCK) {
+      const { data } = await api.get('/admin/dashboard/active-users/')
+      return data
+    }
+    return {
+      count: 0,
+      windowMinutes: 10,
+      recent: []
+    }
   }
 }
 

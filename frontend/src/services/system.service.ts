@@ -225,4 +225,22 @@ export const systemService = {
             note: i === 0 ? 'Change idle timeout 30→60' : undefined,
         }))
     },
+
+    async getHealth(): Promise<{
+        cpu: { current: number; p95: number }
+        ram: { current: number; p95: number }
+        disk: { current: number }
+        backup: { status: string; lastBackup: string }
+    }> {
+        if (!USE_MOCK) {
+            const { data } = await api.get('/admin/system/health/')
+            return data
+        }
+        return {
+            cpu: { current: 45.2, p95: 78.5 },
+            ram: { current: 62.3, p95: 75.1 },
+            disk: { current: 34.8 },
+            backup: { status: 'success', lastBackup: new Date().toISOString() }
+        }
+    },
 }

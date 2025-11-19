@@ -71,7 +71,7 @@
                     </svg>
                   </div>
                 </button>
-              <p class="text-xs text-slate-500">Nhấn để đổi ảnh (tối đa 2MB)</p>
+              <p class="text-xs text-slate-500">Nhấn để đổi ảnh (tối đa 10MB)</p>
               <input
                 ref="fileInput"
                 type="file"
@@ -379,7 +379,7 @@
           <h3 id="limit-title" class="text-lg font-semibold text-slate-900">Không thể tải ảnh</h3>
         </div>
         <p class="text-sm text-slate-600">{{ limitModal.message }}</p>
-        <p class="mt-2 text-xs text-slate-500">Vui lòng chọn tệp PNG/JPG ≤ 2MB.</p>
+        <p class="mt-2 text-xs text-slate-500">Vui lòng chọn tệp PNG/JPG ≤ 10MB.</p>
         <div class="mt-6">
           <button
             type="button"
@@ -416,8 +416,8 @@ const router = useRouter()
 const auth = useAuthStore()
 const ready = ref(false)
 
-const MAX_AVATAR_SIZE = 5 * 1024 * 1024 // 5MB
-const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (5MB)'
+const MAX_AVATAR_SIZE = 10 * 1024 * 1024 // 10MB
+const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (10MB)'
 
 function goChangePwd() {
   router.push({ name: 'student-change-password' })

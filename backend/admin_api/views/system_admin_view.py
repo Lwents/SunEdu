@@ -1,4 +1,6 @@
 import json
+import os
+import shutil
 from django.core.cache import cache
 from django.conf import settings
 from django.core.mail import send_mail
@@ -9,6 +11,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from admin_api.permissions import IsAdmin
+
+# Try to import psutil for system metrics, fallback to basic implementation
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
 
 
 class AdminSystemConfigView(APIView):
@@ -216,4 +225,117 @@ class AdminSystemTestEmailView(APIView):
             return Response({'success': True, 'message': 'Test email sent'}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AdminSystemHealthView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        """Get system health metrics (CPU, RAM, Disk, Backup status)"""
+        try:
+            # Get CPU usage
+            if HAS_PSUTIL:
+                cpu_percent = psutil.cpu_percent(interval=1)
+                cpu_percent_p95 = self._get_cpu_p95()
+            else:
+                # Fallback: try to read from /proc/loadavg on Linux
+                try:
+                    with open('/proc/loadavg', 'r') as f:
+                        loadavg = f.read().split()
+                        # Convert load average to approximate CPU percentage
+                        cpu_percent = min(float(loadavg[0]) * 25, 100)  # Rough estimate
+                        cpu_percent_p95 = cpu_percent
+                except:
+                    cpu_percent = 0
+                    cpu_percent_p95 = 0
+
+            # Get RAM usage
+            if HAS_PSUTIL:
+                memory = psutil.virtual_memory()
+                ram_percent = memory.percent
+                ram_percent_p95 = ram_percent  # Could implement p95 tracking
+            else:
+                # Fallback: try to read from /proc/meminfo on Linux
+                try:
+                    with open('/proc/meminfo', 'r') as f:
+                        meminfo = {}
+                        for line in f:
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                meminfo[parts[0].rstrip(':')] = int(parts[1])
+                    
+                    total = meminfo.get('MemTotal', 0)
+                    available = meminfo.get('MemAvailable', meminfo.get('MemFree', 0))
+                    if total > 0:
+                        ram_percent = ((total - available) / total) * 100
+                    else:
+                        ram_percent = 0
+                    ram_percent_p95 = ram_percent
+                except:
+                    ram_percent = 0
+                    ram_percent_p95 = 0
+
+            # Get Disk usage
+            if HAS_PSUTIL:
+                disk = psutil.disk_usage('/')
+                disk_percent = disk.percent
+            else:
+                # Fallback: use shutil
+                try:
+                    disk = shutil.disk_usage('/')
+                    if disk.total > 0:
+                        disk_percent = (disk.used / disk.total) * 100
+                    else:
+                        disk_percent = 0
+                except:
+                    disk_percent = 0
+
+            # Get backup status
+            try:
+                backups = cache.get('system_backups', [])
+                if backups:
+                    last_backup = backups[0]  # Most recent backup
+                    backup_status = 'success'
+                    backup_time = last_backup.get('createdAt', '')
+                else:
+                    backup_status = 'no_backup'
+                    backup_time = ''
+            except:
+                backup_status = 'no_backup'
+                backup_time = ''
+
+            return Response({
+                'cpu': {
+                    'current': round(cpu_percent, 1),
+                    'p95': round(cpu_percent_p95, 1)
+                },
+                'ram': {
+                    'current': round(ram_percent, 1),
+                    'p95': round(ram_percent_p95, 1)
+                },
+                'disk': {
+                    'current': round(disk_percent, 1)
+                },
+                'backup': {
+                    'status': backup_status,
+                    'lastBackup': backup_time
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'error': str(e),
+                'cpu': {'current': 0, 'p95': 0},
+                'ram': {'current': 0, 'p95': 0},
+                'disk': {'current': 0},
+                'backup': {'status': 'error', 'lastBackup': ''}
+            }, status=status.HTTP_200_OK)
+
+    def _get_cpu_p95(self):
+        """Get CPU p95 value (simplified - could implement proper tracking)"""
+        # In production, you'd track CPU usage over time and calculate p95
+        # For now, return current value as approximation
+        if HAS_PSUTIL:
+            return psutil.cpu_percent(interval=0.1)
+        return 0
 
