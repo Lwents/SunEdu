@@ -189,7 +189,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { paymentService } from '@/services/payment.service'
 import { showToast } from '@/utils/toast'
 
@@ -203,7 +202,6 @@ type Item = {
   status: 'success' | 'pending' | 'failed'
 }
 
-const router = useRouter()
 const items = ref<Item[]>([])
 const loading = ref(false)
 const status = ref<string>('')

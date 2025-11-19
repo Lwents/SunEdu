@@ -196,7 +196,8 @@ type Row = {
   status: 'success' | 'pending' | 'failed'
 }
 const rows = ref<Row[]>([])
-const summary = ref({ totalAmount: 0, pendingCount: 0, successCount: 0, failedCount: 0 })
+const emptySummary = () => ({ totalAmount: 0, pendingCount: 0, successCount: 0, failedCount: 0 })
+const summary = ref(emptySummary())
 const status = ref<string>('')
 const isSyncing = ref(false)
 const syncedIds = new Set<string>()
@@ -213,15 +214,16 @@ async function load(options?: { skipAutoSync?: boolean }) {
       status.value ? { status: status.value as any } : undefined,
     )
     const max = typeof props.limit === 'number' ? Math.max(0, props.limit) : undefined
-    rows.value = max ? (items as Row[]).slice(0, max) : (items as Row[])
-    summary.value = fetchedSummary
+    const normalized = (items as Row[]) || []
+    rows.value = max ? normalized.slice(0, max) : normalized
+    summary.value = fetchedSummary ?? emptySummary()
     if (!options?.skipAutoSync) {
       await autoSyncPending()
     }
   } catch (error) {
     console.error('Failed to load payment history', error)
     rows.value = []
-    summary.value = { totalAmount: 0, pendingCount: 0, successCount: 0, failedCount: 0 }
+    summary.value = emptySummary()
   }
 }
 
@@ -301,4 +303,3 @@ defineExpose({
   reload: () => load({ skipAutoSync: true }),
 })
 </script>
-
