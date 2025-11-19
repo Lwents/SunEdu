@@ -157,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from '@/utils/toast'
 import { paymentService } from '@/services/payment.service'
@@ -265,6 +265,7 @@ async function handleMomoReturn() {
     const message = toQueryString(route.query.message)
 
     if (paymentId) {
+      await nextTick()
       try {
         const syncRes = await paymentService.syncMomoPayment(paymentId)
         if (resultCode === '0' || syncRes.status === 'paid') {

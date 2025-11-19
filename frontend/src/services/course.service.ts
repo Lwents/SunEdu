@@ -1,5 +1,8 @@
 import api from '@/config/axios'
 
+// Flag dùng cho code mock cũ – hiện tại luôn dùng API thật nhưng cần khai báo để TS không lỗi
+const USE_MOCK = false
+
 export type ID = string | number
 export type Grade = 1 | 2 | 3 | 4 | 5
 export type Subject = 'math' | 'vietnamese' | 'english' | 'science' | 'history'
@@ -47,7 +50,6 @@ export interface CourseDetail extends CourseSummary {
   video_file?: string
   price?: number
   thumbnail?: string
-  // nếu cần: prerequisites?: ID[]
 }
 
 export interface PageParams {
@@ -89,256 +91,116 @@ export interface StudentMyCoursesFilters {
   level?: 'main' | 'supp'
 }
 
-const USE_MOCK = false
-
 const SUBJECTS: Subject[] = ['math', 'vietnamese', 'english', 'science', 'history']
 function subjectLabel(s: Subject) {
-  return s === 'math' ? 'Toán'
-    : s === 'vietnamese' ? 'Tiếng Việt'
-    : s === 'english' ? 'Tiếng Anh'
-    : s === 'science' ? 'Khoa học'
-    : 'Lịch sử'
+  return s === 'math'
+    ? 'Toán'
+    : s === 'vietnamese'
+      ? 'Tiếng Việt'
+      : s === 'english'
+        ? 'Tiếng Anh'
+        : s === 'science'
+          ? 'Khoa học'
+          : 'Lịch sử'
 }
 
 // ====== SERVICE ======
 export const courseService = {
   // LIST - Support both admin and student endpoints
   async list(params: PageParams, useAdminEndpoint = false): Promise<PageResult<CourseSummary>> {
-    if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
-      const { data } = await api.get(endpoint, { params })
-      // Backend returns array or paginated object
-      if (Array.isArray(data)) {
-        return { items: data, total: data.length }
-      }
-      // Handle paginated response
-      return {
-        items: data.results || data.items || [],
-        total: data.count || data.total || 0
-      }
+    const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
+    const { data } = await api.get(endpoint, { params })
+    if (Array.isArray(data)) {
+      return { items: data, total: data.length }
     }
-    const size = params.pageSize ?? 20
-    const page = params.page ?? 1
-    const total = 173
-
-    const items: CourseSummary[] = Array.from({ length: size }).map((_, i) => {
-      const id = (page - 1) * size + i + 1
-      const grade = ((id % 5) + 1) as Grade
-      const subject = SUBJECTS[id % SUBJECTS.length]
-      const teacherId = (id % 15) + 1
-
-      // const statuses: CourseStatus[] = ['draft', 'pending_review', 'published', 'rejected', 'archived']
-      // const status = statuses[id % statuses.length]
-      // [SỬA] Không dùng status ngẫu nhiên theo id nữa để tránh thiếu published ở khối 1–2
-
-      const isPublished = (id % 2 === 0) || grade <= 2
-      // [THÊM] Bảo đảm: khối 1–2 (grade <= 2) luôn có published,
-      // và thêm id chẵn cũng published để dữ liệu phong phú hơn
-      const status: CourseStatus = isPublished ? 'published' : 'draft' // [SỬA]
-
-      return {
-        id,
-        title: `Khoá học #${id} - ${subjectLabel(subject)} lớp ${grade}`,
-        grade,
-        subject,
-        teacherId,
-        teacherName: `GV ${teacherId}`,
-        lessonsCount: (id % 10) + 12,
-        enrollments: (id * 7) % 320,
-        status, // [SỬA] dùng status mới ở trên
-        createdAt: new Date(Date.now() - id * 864e5).toISOString(),
-        updatedAt: new Date(Date.now() - id * 36e5).toISOString(),
-        thumbnail: `https://picsum.photos/seed/course-${id}/320/180`,
-      }
-    })
-
-    // lọc đơn giản phía client (mock)
-    let list = items
-    if (params.q) {
-      const q = params.q.toLowerCase()
-      list = list.filter(c =>
-        c.title.toLowerCase().includes(q) ||
-        String(c.id).includes(q) ||
-        c.teacherName.toLowerCase().includes(q)
-      )
+    return {
+      items: data.results || data.items || [],
+      total: data.count || data.total || 0,
     }
-    if (params.grade) list = list.filter(c => c.grade === params.grade)
-    if (params.subject) list = list.filter(c => c.subject === params.subject)
-    if (params.teacherId) list = list.filter(c => c.teacherId == params.teacherId)
-    if (params.status) list = list.filter(c => c.status === params.status)
-
-    return { items: list, total }
   },
 
   // DETAIL - Support both admin and student endpoints
   async detail(id: ID, useAdminEndpoint = false): Promise<CourseDetail> {
-    if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
-      const { data } = await api.get(endpoint)
-      return data
-    }
-    const grade = (((Number(id) || 1) % 5) + 1) as Grade
-    const subject = SUBJECTS[(Number(id) || 1) % SUBJECTS.length]
-    const sections: Section[] = Array.from({ length: 4 }).map((_, sIdx) => ({
-      id: `S${id}-${sIdx + 1}`,
-      title: `Chương ${sIdx + 1}`,
-      order: sIdx + 1,
-      lessons: Array.from({ length: 4 + (sIdx % 2) }).map((__, lIdx) => ({
-        id: `L${id}-${sIdx + 1}-${lIdx + 1}`,
-        title: `Bài ${sIdx + 1}.${lIdx + 1} – ${subjectLabel(subject)}`,
-        type: (['video', 'pdf', 'quiz'] as Lesson['type'][])[(lIdx + sIdx) % 3],
-        durationMinutes: 8 + ((lIdx + sIdx) % 5) * 5,
-        isPreview: lIdx === 0
-      }))
-    }))
-
-    // const status = (['draft', 'pending_review', 'published', 'rejected', 'archived'] as CourseStatus[])[Number(id) % 5]
-    // [SỬA] Không dùng random status nữa để đồng bộ với list()
-
-    const isPublished = (Number(id) % 2 === 0) || grade <= 2 // [THÊM] đồng bộ logic với list()
-    const status: CourseStatus = isPublished ? 'published' : 'draft' // [SỬA]
-
-    return {
-      id,
-      title: `Khoá học #${id} - ${subjectLabel(subject)} lớp ${grade}`,
-      grade,
-      subject,
-      teacherId: 3,
-      teacherName: 'GV 3',
-      lessonsCount: sections.reduce((a, s) => a + s.lessons.length, 0),
-      enrollments: (Number(id) * 7) % 320,
-      status, // [SỬA]
-      createdAt: new Date(Date.now() - Number(id) * 864e5).toISOString(),
-      updatedAt: new Date().toISOString(),
-      thumbnail: `https://picsum.photos/seed/course-${id}/800/360`,
-      description: 'Mô tả ngắn gọn về khoá học. Nội dung thiết kế theo từng chương/bài, có video, tài liệu và quiz.',
-      level: (Number(id) % 2 ? 'basic' : 'advanced'),
-      durationMinutes: sections.reduce(
-        (a, s) => a + s.lessons.reduce((b, l) => b + (l.durationMinutes || 0), 0),
-        0
-      ),
-      sections
-    }
+    const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
+    const { data } = await api.get(endpoint)
+    return data
   },
 
   async myCourses(params: StudentMyCoursesFilters = {}): Promise<StudentMyCoursesResponse> {
-    if (USE_MOCK) {
-      return { base: [], supp: [], all: [] }
-    }
     const { data } = await api.get('/student/courses/', { params })
     return {
       base: data.base || [],
       supp: data.supp || [],
-      all: data.all || []
+      all: data.all || [],
     }
   },
 
   // CREATE / UPDATE
   create(payload: Partial<CourseDetail> | FormData, useAdminEndpoint = false) {
-    if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
-      // If payload is FormData, set proper headers
-      const config = payload instanceof FormData 
-        ? { headers: { 'Content-Type': 'multipart/form-data' } }
-        : {}
-      return api.post(endpoint, payload, config).then(res => res.data)
-    }
-    return Promise.resolve({ ok: true, id: Date.now() })
+    const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
+    const config = payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}
+    return api.post(endpoint, payload, config).then((res) => res.data)
   },
   update(id: ID, payload: Partial<CourseDetail> | FormData, useAdminEndpoint = false) {
-    if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
-      
-      // Nếu payload là FormData, axios interceptor sẽ tự động xử lý Content-Type
-      // Không cần set Content-Type thủ công vì browser cần tự thêm boundary
-      return api.patch(endpoint, payload)
-    }
-    return Promise.resolve({ ok: true })
+    const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
+    return api.patch(endpoint, payload)
   },
   
   // DELETE
   async delete(id: ID, useAdminEndpoint = false): Promise<void> {
-    if (!USE_MOCK) {
-      const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
-      await api.delete(endpoint)
-    }
+    const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
+    await api.delete(endpoint)
   },
   
   // ENROLL (student only)
   async enroll(courseId: ID): Promise<{ success: boolean }> {
-    if (!USE_MOCK) {
-      const { data } = await api.post(`/content/courses/${courseId}/enroll/`)
-      return data
-    }
-    return Promise.resolve({ success: true })
+    const { data } = await api.post(`/content/courses/${courseId}/enroll/`)
+    return data
   },
   async unenroll(courseId: ID): Promise<{ success: boolean }> {
-    if (!USE_MOCK) {
-      const { data } = await api.delete(`/content/courses/${courseId}/enroll/`)
-      return data
-    }
-    return Promise.resolve({ success: true })
+    const { data } = await api.delete(`/content/courses/${courseId}/enroll/`)
+    return data
   },
 
   // STATUS / ACTIONS (Admin)
-  approve(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/approve/`) },
-  reject(id: ID, reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/reject/`, { reason }) },
-  publish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/publish/`) },
-  unpublish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/unpublish/`) },
-  archive(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/archive/`) },
-  restore(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/restore/`) },
+  approve(id: ID) { return api.post(`/admin/courses/${id}/approve/`) },
+  reject(id: ID, reason?: string) { return api.post(`/admin/courses/${id}/reject/`, { reason }) },
+  publish(id: ID) { return api.post(`/admin/courses/${id}/publish/`) },
+  unpublish(id: ID) { return api.post(`/admin/courses/${id}/unpublish/`) },
+  archive(id: ID) { return api.post(`/admin/courses/${id}/archive/`) },
+  restore(id: ID) { return api.post(`/admin/courses/${id}/restore/`) },
   
   // STATUS / ACTIONS (Teacher - use content endpoint)
   async publishCourse(id: ID): Promise<any> {
-    if (!USE_MOCK) {
-      const { data } = await api.post(`/content/courses/${id}/publish/`, { published: true })
-      return data
-    }
-    return Promise.resolve({ ok: true })
+    const { data } = await api.post(`/content/courses/${id}/publish/`, { published: true })
+    return data
   },
   async unpublishCourse(id: ID): Promise<any> {
-    if (!USE_MOCK) {
-      // Unpublish bằng cách set published = false
-      const { data } = await api.patch(`/content/courses/${id}/`, { published: false })
-      return data
-    }
-    return Promise.resolve({ ok: true })
+    const { data } = await api.patch(`/content/courses/${id}/`, { published: false })
+    return data
   },
   async archiveCourse(id: ID): Promise<any> {
-    if (!USE_MOCK) {
-      // Archive: set published = false (tương đương với unpublish)
-      // Note: Backend chỉ có published field, không có status riêng
-      const { data } = await api.patch(`/content/courses/${id}/`, { published: false })
-      return data
-    }
-    return Promise.resolve({ ok: true })
+    const { data } = await api.patch(`/content/courses/${id}/`, { published: false })
+    return data
   },
   async restoreCourse(id: ID): Promise<any> {
-    if (!USE_MOCK) {
-      // Restore: publish lại course
-      const { data } = await api.post(`/content/courses/${id}/publish/`, { published: true })
-      return data
-    }
-    return Promise.resolve({ ok: true })
+    const { data } = await api.post(`/content/courses/${id}/publish/`, { published: true })
+    return data
   },
 
   // BULK (tuỳ chọn dùng ở trang duyệt)
-  bulkApprove(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'approve', ids }) },
-  bulkReject(ids: ID[], reason?: string) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'reject', ids, reason }) },
-  bulkPublish(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'publish', ids }) },
-  bulkArchive(ids: ID[]) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'archive', ids }) },
+  bulkApprove(ids: ID[]) { return api.post('/admin/courses/bulk/', { action: 'approve', ids }) },
+  bulkReject(ids: ID[], reason?: string) { return api.post('/admin/courses/bulk/', { action: 'reject', ids, reason }) },
+  bulkPublish(ids: ID[]) { return api.post('/admin/courses/bulk/', { action: 'publish', ids }) },
+  bulkArchive(ids: ID[]) { return api.post('/admin/courses/bulk/', { action: 'archive', ids }) },
 
   // FILTER OPTIONS
   async listTeachers(): Promise<{ id: ID; name: string }[]> {
-    if (!USE_MOCK) { 
-      const { data } = await api.get('/account/admin/users/', { params: { role: 'instructor', pageSize: 50 } })
-      // Handle both paginated and array responses
-      const users = data.results || data || []
-      return users.map((u: any) => ({ id: u.id, name: u.email || u.username }))
-    }
-    return Array.from({ length: 15 }).map((_, i) => ({ id: i + 1, name: `GV ${i + 1}` }))
+    const { data } = await api.get('/account/admin/users/', { params: { role: 'instructor', pageSize: 50 } })
+    const users = data.results || data || []
+    return users.map((u: any) => ({ id: u.id, name: u.email || u.username }))
   },
   subjects(): { label: string; value: Subject }[] {
-    return SUBJECTS.map(s => ({ value: s, label: subjectLabel(s) }))
-  }
+    return SUBJECTS.map((s) => ({ value: s, label: subjectLabel(s) }))
+  },
 }
