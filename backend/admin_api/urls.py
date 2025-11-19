@@ -1,6 +1,6 @@
 from django.urls import path
 from admin_api.views import (
-    AdminDashboardView,
+    AdminDashboardView, AdminActiveUsersRealtimeView,
     AdminCourseListView, AdminCourseDetailView,
     AdminCourseApproveView, AdminCourseRejectView,
     AdminCoursePublishView, AdminCourseUnpublishView,
@@ -13,7 +13,7 @@ from admin_api.views import (
     AdminLearningReportView, AdminContentReportView,
     AdminSystemConfigView, AdminSystemBackupView,
     AdminSystemRestoreView, AdminSystemAuditView,
-    AdminSystemTestEmailView,
+    AdminSystemTestEmailView, AdminSystemHealthView,
     AdminActivityLogView,
     AdminSecurityPolicyView,
     AdminIpAllowListView,
@@ -30,6 +30,7 @@ app_name = 'admin_api'
 urlpatterns = [
     # Dashboard
     path('dashboard/', AdminDashboardView.as_view(), name='dashboard'),
+    path('dashboard/active-users/', AdminActiveUsersRealtimeView.as_view(), name='dashboard-active-users'),
 
     # Users
     path('users/bulk-create/', BulkCreateUsersView.as_view(), name='users-bulk-create'),
@@ -66,6 +67,7 @@ urlpatterns = [
     path('system/restore/', AdminSystemRestoreView.as_view(), name='system-restore'),
     path('system/audit/', AdminSystemAuditView.as_view(), name='system-audit'),
     path('system/test-email/', AdminSystemTestEmailView.as_view(), name='system-test-email'),
+    path('system/health/', AdminSystemHealthView.as_view(), name='system-health'),
 
     # Activity Logs
     path('activity-logs/', AdminActivityLogView.as_view(), name='activity-logs'),

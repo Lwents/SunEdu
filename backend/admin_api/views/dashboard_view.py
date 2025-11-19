@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from django.core.cache import cache
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.views import APIView
@@ -162,6 +162,8 @@ class AdminDashboardView(APIView):
         qs = UserModel.objects.filter(
             is_active=True,
             last_login__gte=threshold,
+        ).exclude(
+            Q(is_staff=True) | Q(role__iexact='admin')
         ).select_related('profile').order_by('-last_login')
 
         recent = []
@@ -193,6 +195,15 @@ class AdminDashboardView(APIView):
         if not role:
             return 'N/A'
         return mapping.get(role.lower(), role)
+
+
+class AdminActiveUsersRealtimeView(AdminDashboardView):
+    """Lightweight endpoint to fetch only active users for realtime updates."""
+
+    def get(self, request):
+        now = timezone.now()
+        active_users = self._get_active_users(now)
+        return Response(active_users, status=status.HTTP_200_OK)
 
 
 

@@ -57,7 +57,7 @@
             </div>
 
             <div class="space-y-2">
-              <p class="text-xs text-slate-500">Chấp nhận PNG, JPG, WebP. Kích thước tối đa 2MB.</p>
+              <p class="text-xs text-slate-500">Chấp nhận PNG, JPG, WebP. Kích thước tối đa 10MB.</p>
               <p v-if="errors.avatar" class="text-xs text-red-600" aria-live="polite">
                 {{ errors.avatar }}
               </p>
@@ -232,7 +232,7 @@
           </div>
           <div class="mb-3 text-sm text-slate-800">
             <p>{{ limitModal.message }}</p>
-            <small class="mt-1 block text-slate-500">Vui lòng chọn tệp PNG/JPG ≤ 2MB.</small>
+            <small class="mt-1 block text-slate-500">Vui lòng chọn tệp PNG/JPG ≤ 10MB.</small>
           </div>
           <div class="flex justify-end">
             <button
@@ -261,8 +261,8 @@ const auth = useAuthStore()
 const user = computed<AuthUser | null>(() => auth.user)
 
 /** constants */
-const MAX_AVATAR_SIZE = 5 * 1024 * 1024 // 5MB
-const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (5MB)'
+const MAX_AVATAR_SIZE = 10 * 1024 * 1024 // 10MB
+const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (10MB)'
 
 /** fallback - dựa vào gender và role */
 const fallback120 = computed(() => {

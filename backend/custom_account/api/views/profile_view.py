@@ -81,10 +81,16 @@ class UserProfileView(RoleBasedOutputMixin, APIView):
             user.username = data["username"]
             user_updated = True
         if "email" in data and data["email"]:
-            user.email = data["email"]
+            incoming_email = data["email"].strip().lower()
+            if UserModel.objects.filter(email__iexact=incoming_email).exclude(pk=user.pk).exists():
+                raise ValidationError({'email': 'Email này đã được sử dụng bởi tài khoản khác.'})
+            user.email = incoming_email
             user_updated = True
         if "phone" in data:
-            user.phone = data["phone"]
+            incoming_phone = (data.get("phone") or "").strip()
+            if incoming_phone and UserModel.objects.filter(phone__iexact=incoming_phone).exclude(pk=user.pk).exists():
+                raise ValidationError({'phone': 'Số điện thoại này đã được sử dụng bởi tài khoản khác.'})
+            user.phone = incoming_phone or ''
             user_updated = True
         if user_updated:
             user.save()

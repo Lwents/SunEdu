@@ -108,8 +108,8 @@
         <div class="mb-3 font-medium">Sức khỏe hệ thống</div>
         <ul class="text-sm text-gray-700 space-y-2">
           <li>
-            CPU p95: <b>{{ system.cpuP95 }}%</b> • RAM p95: <b>{{ system.ramP95 }}%</b> • Disk:
-            <b>{{ system.disk }}%</b>
+            CPU p95: <b>{{ system.cpuP95.toFixed(1) }}%</b> • RAM p95: <b>{{ system.ramP95.toFixed(1) }}%</b> • Disk:
+            <b>{{ system.disk.toFixed(1) }}%</b>
           </li>
           <li>
             Backup lần gần nhất: <b>{{ system.backup.lastRun }}</b> • Trạng thái:
@@ -122,8 +122,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { dashboardService } from '@/services/dashboard.service'
+import { systemService } from '@/services/system.service'
 import { showToast } from '@/utils/toast'
 
 const range = ref<[Date, Date] | null>(null)
@@ -172,6 +173,49 @@ function roleLabel(role?: string, provided?: string) {
   return mapping[key] || role
 }
 
+// Fetch system health separately (for realtime updates)
+async function fetchSystemHealth() {
+  try {
+    const health = await systemService.getHealth()
+    system.cpuP95 = health.cpu.p95
+    system.ramP95 = health.ram.p95
+    system.disk = health.disk.current
+    
+    // Format backup status
+    if (health.backup.status === 'success' && health.backup.lastBackup) {
+      const backupDate = new Date(health.backup.lastBackup)
+      system.backup.lastRun = backupDate.toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+      system.backup.status = 'Thành công'
+    } else if (health.backup.status === 'no_backup') {
+      system.backup.lastRun = 'Chưa có'
+      system.backup.status = 'Chưa backup'
+    } else {
+      system.backup.lastRun = 'Lỗi'
+      system.backup.status = 'Lỗi'
+    }
+  } catch (healthError: any) {
+    console.error('Failed to fetch system health:', healthError)
+    // Keep current values if health fetch fails
+  }
+}
+
+async function fetchActiveUsers() {
+  try {
+    const data = await dashboardService.getActiveUsers()
+    activeUsers.count = data.count
+    activeUsers.windowMinutes = data.windowMinutes
+    activeUsers.recent = data.recent
+  } catch (error) {
+    console.error('Failed to fetch active users:', error)
+  }
+}
+
 async function fetchAll() {
   try {
     const data = await dashboardService.getDashboard()
@@ -181,12 +225,40 @@ async function fetchAll() {
     Object.assign(activeUsers, data.activeUsers)
     Object.assign(security, data.security)
     Object.assign(system, data.system)
+    
+    // Fetch realtime panels on initial load
+    await Promise.all([fetchSystemHealth(), fetchActiveUsers()])
   } catch (e: any) {
     showToast(e?.message || 'Không tải được dữ liệu dashboard', 'error')
   }
 }
 
-onMounted(() => fetchAll())
+// Auto-refresh panels every 5 seconds
+let healthInterval: ReturnType<typeof setInterval> | null = null
+let activeUsersInterval: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  fetchAll()
+  // Start auto-refresh for realtime panels
+  healthInterval = setInterval(() => {
+    fetchSystemHealth()
+  }, 5000) // Update every 5 seconds
+  activeUsersInterval = setInterval(() => {
+    fetchActiveUsers()
+  }, 5000)
+})
+
+onBeforeUnmount(() => {
+  // Clear interval when component is unmounted
+  if (healthInterval) {
+    clearInterval(healthInterval)
+    healthInterval = null
+  }
+  if (activeUsersInterval) {
+    clearInterval(activeUsersInterval)
+    activeUsersInterval = null
+  }
+})
 </script>
 
 <!-- KpiCard nhỏ gọn -->
