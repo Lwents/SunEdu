@@ -347,11 +347,13 @@ async function loadCourse() {
 
 async function loadModules() {
   try {
+    lessonsByModule.value = {}
     modules.value = await contentService.listModules(courseId)
-    // Load lessons for each module
-    for (const module of modules.value) {
-      lessonsByModule.value[String(module.id)] = await contentService.listLessons(module.id)
-    }
+    await Promise.all(
+      modules.value.map(async (module) => {
+        lessonsByModule.value[String(module.id)] = await contentService.listLessons(module.id)
+      }),
+    )
   } catch (e: any) {
     error.value = e?.message || 'Không thể tải danh sách chương'
   } finally {
@@ -417,8 +419,7 @@ function formatFileSize(bytes: number): string {
 
 function openAddModule() {
   // Tự động tạo tên chương: "Chương X" (X = số chương tiếp theo)
-  const nextModuleNumber = modules.value.length + 1
-  moduleForm.value = { title: `Chương ${nextModuleNumber}` }
+  moduleForm.value = { title: getNextModuleLabel() }
   editingModule.value = null
   showAddModule.value = true
 }
@@ -474,20 +475,14 @@ async function saveModule() {
       await contentService.createModule(courseId, {
         title: moduleForm.value.title,
         course: courseId,
+        position: getNextModulePosition(),
       })
-      // Tự động tăng số chương cho lần sau
-      const currentNumber = parseInt(moduleForm.value.title.match(/\d+/)?.[0] || '0')
-      if (currentNumber > 0) {
-        moduleForm.value.title = `Chương ${currentNumber + 1}`
-      } else {
-        // Nếu không có số, tạo số tiếp theo dựa trên số chương hiện có
-        moduleForm.value.title = `Chương ${modules.value.length + 2}`
-      }
     }
     if (!editingModule.value) {
       // Nếu là thêm mới, giữ lại form để có thể thêm tiếp
       // Không đóng modal, chỉ reload danh sách
       await loadModules()
+      moduleForm.value.title = getNextModuleLabel()
       showToast('Đã thêm chương thành công', 'success')
     } else {
       // Nếu là sửa, đóng modal
@@ -507,7 +502,8 @@ async function saveLesson() {
   try {
     const currentTitle = lessonForm.value.title
     const moduleId = showAddLessonModuleId.value
-    
+    const nextLessonPosition = getNextLessonPosition(moduleId)
+
     if (editingLesson.value) {
       // Update existing lesson
       if (lessonForm.value.videoType === 'file' && lessonForm.value.videoFile) {
@@ -539,6 +535,7 @@ async function saveLesson() {
         formData.append('title', lessonForm.value.title)
         formData.append('content_type', lessonForm.value.content_type)
         formData.append('module', String(moduleId))
+        formData.append('position', String(nextLessonPosition))
         formData.append('video_file', lessonForm.value.videoFile)
         // Create lesson with FormData (backend will handle it)
         await contentService.createLesson(moduleId, formData as any)
@@ -548,6 +545,7 @@ async function saveLesson() {
           title: lessonForm.value.title,
           content_type: lessonForm.value.content_type,
           module: moduleId,
+          position: nextLessonPosition,
         }
 
         // Add video_url if provided
@@ -623,6 +621,29 @@ async function deleteLesson(lessonId: ID) {
   } catch (e: any) {
     showToast(e?.message || 'Không thể xóa bài học', 'error')
   }
+}
+
+function getNextModulePosition() {
+  if (!modules.value.length) return 1
+  const maxPos = Math.max(
+    ...modules.value.map((m, idx) => (typeof m.position === 'number' ? m.position : idx + 1)),
+  )
+  return maxPos + 1
+}
+
+function getNextModuleLabel() {
+  return `Chương ${getNextModulePosition()}`
+}
+
+function getNextLessonPosition(moduleId: ID) {
+  const lessons = lessonsByModule.value[String(moduleId)] || []
+  if (!lessons.length) return 1
+  const maxPos = Math.max(
+    ...lessons.map((lesson, idx) =>
+      typeof lesson.position === 'number' ? lesson.position : idx + 1,
+    ),
+  )
+  return maxPos + 1
 }
 
 function goBack() {

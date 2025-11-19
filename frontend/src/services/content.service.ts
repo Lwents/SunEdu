@@ -3,6 +3,18 @@ import http from '@/config/axios'
 
 export type ID = string | number
 
+function sortByPosition<T extends { position?: number; title?: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const posA = typeof a.position === 'number' ? a.position : 0
+    const posB = typeof b.position === 'number' ? b.position : 0
+    if (posA !== posB) return posA - posB
+    if (a.title && b.title) {
+      return String(a.title).localeCompare(String(b.title))
+    }
+    return 0
+  })
+}
+
 export interface Module {
   id: ID
   title: string
@@ -39,14 +51,19 @@ export const contentService = {
   // ====== MODULES (Chương) ======
   async listModules(courseId: ID): Promise<Module[]> {
     const { data } = await http.get(`/content/courses/${courseId}/modules/`)
-    return Array.isArray(data) ? data : data.results || []
+    const list = Array.isArray(data) ? data : data.results || []
+    return sortByPosition(list)
   },
 
   async createModule(courseId: ID, input: CreateModuleInput): Promise<Module> {
-    const { data } = await http.post(`/content/courses/${courseId}/modules/`, {
+    const payload: Record<string, any> = {
       title: input.title,
-      position: input.position
-    })
+      course: input.course ?? courseId,
+    }
+    if (typeof input.position === 'number') {
+      payload.position = input.position
+    }
+    const { data } = await http.post(`/content/courses/${courseId}/modules/`, payload)
     return data
   },
 
@@ -66,7 +83,8 @@ export const contentService = {
   // ====== LESSONS (Bài học) ======
   async listLessons(moduleId: ID): Promise<Lesson[]> {
     const { data } = await http.get(`/content/modules/${moduleId}/lessons/`)
-    return Array.isArray(data) ? data : data.results || []
+    const list = Array.isArray(data) ? data : data.results || []
+    return sortByPosition(list)
   },
 
   async createLesson(moduleId: ID, input: CreateLessonInput | FormData): Promise<Lesson> {
