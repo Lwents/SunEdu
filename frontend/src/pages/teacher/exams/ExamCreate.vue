@@ -35,8 +35,11 @@
                 v-model="form.level"
                 class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30"
               >
-                <option value="Khối 1–2">Khối 1–2</option>
-                <option value="Khối 3–5">Khối 3–5</option>
+                <option value="Khối 1">Khối 1</option>
+                <option value="Khối 2">Khối 2</option>
+                <option value="Khối 3">Khối 3</option>
+                <option value="Khối 4">Khối 4</option>
+                <option value="Khối 5">Khối 5</option>
               </select>
             </div>
 
@@ -61,14 +64,53 @@
             </div>
 
             <div>
+              <label class="mb-1 block text-sm font-medium">Số lần làm tối đa</label>
+              <input
+                v-model.number="form.maxAttempts"
+                type="number"
+                min="1"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30"
+                placeholder="Ví dụ: 1"
+              />
+              <p class="mt-1 text-xs text-slate-500">0 nghĩa là không giới hạn; mặc định 1 lần.</p>
+            </div>
+
+            <div>
               <label class="mb-1 block text-sm font-medium">Trạng thái</label>
               <select
                 v-model="form.status"
                 class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30"
+                @change="onStatusChange"
               >
                 <option value="draft">Nháp</option>
+                <option value="scheduled">Đã lên lịch</option>
                 <option value="published">Đã phát hành</option>
               </select>
+            </div>
+
+            <div v-if="form.status === 'scheduled'" class="md:col-span-2 space-y-4">
+              <div>
+                <label class="mb-1 block text-sm font-medium">Thời gian phát hành <span class="text-rose-600">*</span></label>
+                <input
+                  v-model="scheduledAtLocal"
+                  type="datetime-local"
+                  required
+                  :min="minDateTime"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30"
+                />
+                <p class="mt-1 text-xs text-slate-500">Đề thi sẽ tự động phát hành vào thời gian đã chọn</p>
+              </div>
+              <div>
+                <label class="mb-1 block text-sm font-medium">Thời gian kết thúc <span class="text-rose-600">*</span></label>
+                <input
+                  v-model="endAtLocal"
+                  type="datetime-local"
+                  required
+                  :min="scheduledAtLocal || minDateTime"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30"
+                />
+                <p class="mt-1 text-xs text-slate-500">Sau thời gian này, học sinh sẽ không thể làm bài thi nữa</p>
+              </div>
             </div>
 
             <div class="md:col-span-2">
@@ -386,19 +428,86 @@ const editingQuestionIndex = ref<number | null>(null)
 
 const form = reactive<Partial<ExamDetail>>({
   title: '',
-  level: 'Khối 1–2' as Level,
+  level: 'Khối 1' as Level,
   durationSec: 1800,
-  passScore: 12,
+  passScore: 10,
+  maxAttempts: 1,
   status: 'draft' as ExamStatus,
   description: '',
   shuffleQuestions: true,
   shuffleChoices: true,
   questions: [],
+  scheduledAt: undefined,
+  endAt: undefined,
 })
 
 const durationMin = computed({
   get: () => Math.round((form.durationSec || 0) / 60),
   set: (val) => { form.durationSec = val * 60 }
+})
+
+// Scheduled datetime handling
+const scheduledAtLocal = ref('')
+const endAtLocal = ref('')
+const minDateTime = computed(() => {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+  return now.toISOString().slice(0, 16)
+})
+
+function onStatusChange() {
+  if (form.status === 'scheduled' && !scheduledAtLocal.value) {
+    // Set default to 1 hour from now
+    const future = new Date()
+    future.setHours(future.getHours() + 1)
+    scheduledAtLocal.value = future.toISOString().slice(0, 16)
+    
+    // Set default end time to 1 day after start time
+    const endTime = new Date(future)
+    endTime.setDate(endTime.getDate() + 1)
+    endAtLocal.value = endTime.toISOString().slice(0, 16)
+  } else if (form.status !== 'scheduled') {
+    scheduledAtLocal.value = ''
+    endAtLocal.value = ''
+    form.scheduledAt = undefined
+    form.endAt = undefined
+  }
+}
+
+watch(scheduledAtLocal, (val) => {
+  if (val && form.status === 'scheduled') {
+    // Convert local datetime to ISO string
+    const date = new Date(val)
+    form.scheduledAt = date.toISOString()
+    
+    // Ensure end time is after start time
+    if (endAtLocal.value && new Date(endAtLocal.value) <= date) {
+      const endTime = new Date(date)
+      endTime.setDate(endTime.getDate() + 1)
+      endAtLocal.value = endTime.toISOString().slice(0, 16)
+    }
+  } else {
+    form.scheduledAt = undefined
+  }
+})
+
+watch(endAtLocal, (val) => {
+  if (val && form.status === 'scheduled') {
+    // Convert local datetime to ISO string
+    const date = new Date(val)
+    form.endAt = date.toISOString()
+    
+    // Validate that end time is after start time
+    if (scheduledAtLocal.value && date <= new Date(scheduledAtLocal.value)) {
+      showToast('Thời gian kết thúc phải sau thời gian phát hành', 'warning')
+      const startTime = new Date(scheduledAtLocal.value)
+      startTime.setDate(startTime.getDate() + 1)
+      endAtLocal.value = startTime.toISOString().slice(0, 16)
+      form.endAt = startTime.toISOString()
+    }
+  } else {
+    form.endAt = undefined
+  }
 })
 
 const canSubmit = computed(() => {
@@ -629,12 +738,20 @@ async function submit() {
     return
   }
 
+  // Double check title is not empty
+  if (!form.title || !form.title.trim()) {
+    showToast('Vui lòng nhập tên đề thi', 'warning')
+    return
+  }
+
   submitting.value = true
   try {
+    console.log('Submitting form:', { title: form.title, questionsCount: form.questions?.length })
     await examService.create(form)
     showToast('Đã tạo đề thi thành công!', 'success')
     router.push({ path: '/teacher/exams' })
   } catch (e: any) {
+    console.error('Submit error:', e)
     showToast(e?.message || 'Tạo đề thi thất bại', 'error')
   } finally {
     submitting.value = false
@@ -645,4 +762,3 @@ async function submit() {
 <style scoped>
 :host, .min-h-screen { overflow-x: hidden; }
 </style>
-

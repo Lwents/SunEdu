@@ -4,9 +4,12 @@
       <h1>Hoàn thành!</h1>
       <p class="lead">Đây là kết quả bài làm của bạn:</p>
 
-      <div class="score-display">
-        <span class="score-value">{{ score }}</span>
-        <span class="score-total">/ {{ total }}</span>
+      <div v-if="loading" class="loading-state">
+        <p>Đang tải kết quả...</p>
+      </div>
+      <div v-else class="score-display">
+        <span class="score-value">{{ formatScore(score) }}</span>
+        <span class="score-total">/ {{ formatScore(total) }}</span>
       </div>
 
       <p class="percentage" :style="{ color: resultStatus.color }">
@@ -49,10 +52,15 @@
           <div class="answer-details">
             <p>
               Đáp án của bạn:
-              <span class="user-answer">{{ answer.userAnswer || 'Chưa trả lời' }}</span>
+              <span class="user-answer" :class="{ 'text-red-600': !answer.correct, 'text-green-600': answer.correct }">
+                {{ answer.userAnswer || 'Chưa trả lời' }}
+              </span>
             </p>
             <p>
               Đáp án đúng: <span class="correct-answer">{{ answer.correctAnswer }}</span>
+            </p>
+            <p v-if="answer.maxScore > 0" class="score-info">
+              Điểm: <strong>{{ answer.score.toFixed(1) }}</strong> / {{ answer.maxScore }}
             </p>
           </div>
           <div
@@ -80,16 +88,24 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { examService } from '@/services/exam.service'
+import { showToast } from '@/utils/toast'
 
 const showReview = ref(false)
 const userAnswers = ref<any[]>([])
+const loading = ref(true)
 const route = useRoute()
 
 // --- Cấu hình Phân trang ---
 const currentPage = ref(1)
 const itemsPerPage = 10 // Hiển thị 10 câu mỗi trang
 
-// Dữ liệu mẫu nếu không nhận được gì từ trang trước
+// Dữ liệu từ API
+const attemptData = ref<any>(null)
+const totalScore = ref(0)
+const maxScore = ref(0)
+
+// Dữ liệu mẫu nếu không nhận được gì từ API
 const mockUserAnswers = [
   {
     questionText: 'Có lỗi xảy ra, không nhận được dữ liệu bài làm.',
@@ -99,78 +115,244 @@ const mockUserAnswers = [
   },
 ]
 
-function persistAnswers(answers: any[]) {
-  try {
-    const key = route.params.id ? `examResult:${route.params.id}` : 'examResult:last'
-    sessionStorage.setItem(
-      key,
-      JSON.stringify({ examId: route.params.id, answers, savedAt: Date.now() }),
-    )
-  } catch (error) {
-    console.warn('Không thể lưu tạm kết quả:', error)
+// Format answer để hiển thị
+function formatAnswerForDisplay(answer: any, question: any): string {
+  if (!answer && answer !== 0 && answer !== false) return 'Chưa trả lời'
+  
+  const qtype = question.type || 'single'
+  
+  // Single/Multi choice
+  if (qtype === 'single' || qtype === 'mcq') {
+    // Answer có thể là: string (UUID), object với selected_choice_id, hoặc dict
+    let selectedId: string | null = null
+    
+    if (typeof answer === 'string') {
+      // Nếu là string trực tiếp (UUID)
+      selectedId = answer
+    } else if (typeof answer === 'object' && answer !== null) {
+      // Nếu là object
+      selectedId = answer.selected_choice_id || answer.choice_id || null
+    }
+    
+    if (!selectedId) return 'Chưa trả lời'
+    
+    // Tìm choice trong danh sách
+    const choice = question.choices?.find((c: any) => {
+      const cid = String(c.id || c.choice_id || '')
+      const sid = String(selectedId || '')
+      return cid === sid || cid.includes(sid) || sid.includes(cid)
+    })
+    
+    return choice?.text || choice?.label || selectedId
   }
+  
+  if (qtype === 'multi') {
+    let selectedIds: string[] = []
+    
+    if (Array.isArray(answer)) {
+      selectedIds = answer.map(id => String(id))
+    } else if (typeof answer === 'object' && answer !== null) {
+      selectedIds = (answer.selected_choice_ids || answer.choice_ids || []).map((id: any) => String(id))
+    } else if (typeof answer === 'string') {
+      selectedIds = [answer]
+    }
+    
+    if (!selectedIds.length) return 'Chưa trả lời'
+    
+    const choices = question.choices?.filter((c: any) => {
+      const cid = String(c.id || c.choice_id || '')
+      return selectedIds.some(sid => cid === sid || cid.includes(sid) || sid.includes(cid))
+    }) || []
+    
+    return choices.length > 0 
+      ? choices.map((c: any) => c.text || c.label).join(', ')
+      : selectedIds.join(', ')
+  }
+  
+  // Boolean (True/False)
+  if (qtype === 'boolean') {
+    const val = typeof answer === 'object' && answer.value !== undefined 
+      ? answer.value 
+      : answer
+    if (val === true || val === 'true' || val === 'True') return 'Đúng'
+    if (val === false || val === 'false' || val === 'False') return 'Sai'
+    return String(val)
+  }
+  
+  // Fill/Short answer
+  if (qtype === 'fill' || qtype === 'short_answer') {
+    const val = typeof answer === 'object' && answer.value !== undefined
+      ? answer.value
+      : (Array.isArray(answer) ? answer.join(', ') : answer)
+    return String(val || 'Chưa trả lời')
+  }
+  
+  // Matching
+  if (qtype === 'match') {
+    if (typeof answer === 'object' && answer.pairs) {
+      return answer.pairs.map((p: any) => `${p.left} → ${p.right}`).join(', ')
+    }
+    return String(answer || 'Chưa trả lời')
+  }
+  
+  // Ordering
+  if (qtype === 'order') {
+    if (Array.isArray(answer)) {
+      return answer.map((item: any, idx: number) => `${idx + 1}. ${item}`).join(', ')
+    }
+    return String(answer || 'Chưa trả lời')
+  }
+  
+  return String(answer || 'Chưa trả lời')
 }
 
-function loadStoredAnswers(): any[] | null {
-  const keys: string[] = []
-  if (route.params.id) keys.push(`examResult:${route.params.id}`)
-  keys.push('examResult:last')
-
-  for (const key of keys) {
-    const raw = sessionStorage.getItem(key)
-    if (!raw) continue
-    try {
-      const payload = JSON.parse(raw)
-      if (Array.isArray(payload?.answers) && payload.answers.length) {
-        sessionStorage.removeItem(key)
-        return payload.answers
-      }
-    } catch (error) {
-      console.warn('Không đọc được kết quả đã lưu:', error)
-    }
+// Lấy đáp án đúng từ question (backend đã trả về correct_answer)
+function getCorrectAnswer(question: any): string {
+  // Backend trả về correct_answer trực tiếp nếu attempt đã finished
+  if (question.correct_answer) {
+    return question.correct_answer
   }
-  return null
+  
+  // Fallback nếu backend chưa trả về (cho tương thích ngược)
+  const qtype = question.type || 'single'
+  
+  // Single/Multi choice - tìm choice có is_correct = true
+  if (qtype === 'single' || qtype === 'mcq') {
+    const correctChoice = question.choices?.find((c: any) => c.is_correct === true)
+    return correctChoice?.text || 'N/A'
+  }
+  
+  if (qtype === 'multi') {
+    const correctChoices = question.choices?.filter((c: any) => c.is_correct === true) || []
+    return correctChoices.map((c: any) => c.text).join(', ') || 'N/A'
+  }
+  
+  // Boolean - lấy từ meta
+  if (qtype === 'boolean') {
+    const correct = question.meta?.correct_answer
+    if (correct === true || correct === 'true') return 'Đúng'
+    if (correct === false || correct === 'false') return 'Sai'
+    return String(correct || 'N/A')
+  }
+  
+  // Fill/Short answer - lấy từ meta
+  if (qtype === 'fill' || qtype === 'short_answer') {
+    return question.meta?.correct_answer || question.meta?.answer || 'N/A'
+  }
+  
+  // Matching - lấy từ pairs
+  if (qtype === 'match') {
+    const pairs = question.pairs || question.meta?.pairs || []
+    return pairs.map((p: any) => `${p.left} → ${p.right}`).join(', ') || 'N/A'
+  }
+  
+  // Ordering - lấy từ items
+  if (qtype === 'order') {
+    const items = question.items || question.meta?.items || []
+    return items.map((item: any, idx: number) => `${idx + 1}. ${item}`).join(', ') || 'N/A'
+  }
+  
+  return 'N/A'
+}
+
+// Load attempt data from API
+async function loadAttemptData() {
+  const attemptId = route.query.attemptId as string
+  if (!attemptId) {
+    console.warn('Không tìm thấy attemptId trong query string')
+    userAnswers.value = mockUserAnswers
+    loading.value = false
+    return
+  }
+  
+  try {
+    loading.value = true
+    const data = await examService.getAttemptSummary(attemptId)
+    attemptData.value = data
+    totalScore.value = data.totalScore || 0
+    maxScore.value = data.maxScore || data.totalCount || 0
+    
+    // Map questions to display format
+    const questions = data.questions || []
+    userAnswers.value = questions.map((q: any, index: number) => {
+      const userAnswer = q.answer || null
+      const correctAnswer = getCorrectAnswer(q)
+      
+      return {
+        originalIndex: index,
+        questionText: q.prompt || q.text || `Câu hỏi ${index + 1}`,
+        userAnswer: formatAnswerForDisplay(userAnswer, q),
+        correctAnswer: correctAnswer,
+        correct: q.correct || false,
+        score: q.answer_score || q.score || 0,
+        maxScore: q.points || q.maxScore || 0,
+        explanation: q.explanation || null,
+        question: q, // Keep full question data for reference
+      }
+    })
+    
+    if (userAnswers.value.length === 0) {
+      userAnswers.value = mockUserAnswers
+    }
+  } catch (error: any) {
+    console.error('Lỗi khi tải dữ liệu bài làm:', error)
+    showToast('Không thể tải dữ liệu bài làm: ' + (error.message || 'Lỗi không xác định'), 'error')
+    userAnswers.value = mockUserAnswers
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
-  const answersFromState =
-    history.state && Array.isArray(history.state.userAnswers) ? history.state.userAnswers : null
-  if (answersFromState?.length) {
-    userAnswers.value = answersFromState
-    persistAnswers(answersFromState)
-    return
+  const attemptId = route.query.attemptId as string | undefined
+  const examId = route.params.id as string | undefined
+  if (examId && attemptId) {
+    try {
+      localStorage.setItem(`exam_done_${examId}`, attemptId)
+    } catch (e) {
+      console.warn('Cannot persist done flag', e)
+    }
   }
-
-  const stored = loadStoredAnswers()
-  if (stored?.length) {
-    userAnswers.value = stored
-  } else {
-    console.warn('Không tìm thấy dữ liệu bài làm, đang sử dụng dữ liệu giả (mock data).')
-    userAnswers.value = mockUserAnswers
-  }
+  loadAttemptData()
 })
 
-function normalizeAnswer(val: any): string {
-  if (Array.isArray(val)) {
-    return val
-      .map((v) => (v ?? '').toString().trim().toLowerCase())
-      .filter(Boolean)
-      .sort()
-      .join('|')
+function isAnswerCorrect(answer: any) {
+  return answer.correct === true
+}
+
+const total = computed(() => {
+  if (attemptData.value && maxScore.value > 0) {
+    return maxScore.value
   }
-  return (val ?? '').toString().trim().toLowerCase()
-}
+  return userAnswers.value.length
+})
 
-function isAnswerCorrect(answer: { userAnswer: any; correctAnswer: any }) {
-  return normalizeAnswer(answer.userAnswer) === normalizeAnswer(answer.correctAnswer)
-}
+const score = computed(() => {
+  if (attemptData.value && totalScore.value > 0) {
+    return totalScore.value
+  }
+  // Fallback: tính từ số câu đúng
+  return userAnswers.value.filter((a) => isAnswerCorrect(a)).length
+})
 
-const total = computed(() => userAnswers.value.length)
-const score = computed(() => userAnswers.value.filter((a) => isAnswerCorrect(a)).length)
 const percentage = computed(() => {
   if (total.value === 0 || userAnswers.value === mockUserAnswers) return 0
-  return (score.value / total.value) * 100
+  if (attemptData.value && maxScore.value > 0 && totalScore.value >= 0) {
+    const pct = (totalScore.value / maxScore.value) * 100
+    return Math.min(100, Math.max(0, Math.round(pct))) // Đảm bảo trong khoảng 0-100
+  }
+  // Fallback: tính từ số câu đúng / tổng số câu
+  const correctCount = userAnswers.value.filter((a) => isAnswerCorrect(a)).length
+  const pct = (correctCount / userAnswers.value.length) * 100
+  return Math.min(100, Math.max(0, Math.round(pct))) // Đảm bảo trong khoảng 0-100
 })
+
+// Format score: nếu là số nguyên thì không hiển thị .0
+function formatScore(val: number): string {
+  if (typeof val !== 'number') return String(val)
+  if (Number.isInteger(val)) return String(val)
+  return val.toFixed(1)
+}
 
 const resultStatus = computed(() => {
   if (userAnswers.value === mockUserAnswers) {
@@ -477,6 +659,22 @@ function scrollToReviewTop() {
 
 .page-info {
   font-weight: 600;
+  color: #0f172a;
+}
+
+.loading-state {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.score-info {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.score-info strong {
   color: #0f172a;
 }
 

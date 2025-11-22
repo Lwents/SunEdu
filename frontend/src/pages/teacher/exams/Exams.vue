@@ -43,6 +43,7 @@
             >
               <option value="">Tất cả trạng thái</option>
               <option value="published">Đã phát hành</option>
+              <option value="scheduled">Đã lên lịch</option>
               <option value="draft">Nháp</option>
             </select>
             <span class="select-chevron" aria-hidden="true">
@@ -106,9 +107,11 @@
                 class="rounded-full border px-2 py-0.5 text-xs"
                 :class="e.status==='published'
                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                         : e.status === 'scheduled'
+                         ? 'bg-blue-50 text-blue-700 border-blue-200'
                          : 'bg-amber-50 text-amber-700 border-amber-200'"
               >
-                {{ e.status === 'published' ? 'Đã phát hành' : 'Nháp' }}
+                {{ e.status === 'published' ? 'Đã phát hành' : e.status === 'scheduled' ? 'Đã lên lịch' : 'Nháp' }}
               </span>
             </div>
             <div class="mt-1 text-xs sm:text-sm text-slate-500">
@@ -127,9 +130,15 @@
             </button>
             <button
               class="flex-1 sm:flex-none rounded-xl border px-3 py-2 text-sm hover:bg-slate-50 active:bg-slate-100"
-              @click="openGrading(e.id)"
+              @click="openEdit(e.id)"
             >
-              Xem bài làm
+              Sửa
+            </button>
+            <button
+              class="flex-1 sm:flex-none rounded-xl border border-rose-200 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 active:bg-rose-100"
+              @click="handleDelete(e.id, e.title)"
+            >
+              Xóa
             </button>
           </div>
         </article>
@@ -183,13 +192,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, onActivated, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from '@/utils/toast'
+import { showConfirm } from '@/utils/confirm'
 
 /** ===== Types ===== */
-type ExamStatus = 'published' | 'draft'
+type ExamStatus = 'published' | 'draft' | 'scheduled'
 type ExamRow = {
-  id: number
+  id: number | string  // Can be UUID (string) or number
   title: string
   course: string
   status: ExamStatus
@@ -221,8 +232,8 @@ function updateCompactFlag() {
   isCompact.value = window.innerWidth < 640
 }
 
-/** ===== Service adapter (không sửa service) ===== */
-type ServiceList = (params?: { level?: any; q?: string }) => Promise<any[]>
+/** ===== Service adapter ===== */
+type ServiceList = (params?: { level?: any; q?: string; status?: string; page?: number; pageSize?: number; includeStats?: boolean }) => Promise<{ items: any[]; total: number }>
 let serviceList: ServiceList | undefined
 
 async function tryInitService() {
@@ -231,16 +242,19 @@ async function tryInitService() {
     if (mod?.examService?.list) {
       serviceList = mod.examService.list as ServiceList
     }
-  } catch {
-    // giữ fallback mock
+  } catch (e) {
+    console.error('Failed to load exam service:', e)
+    throw new Error('Không thể tải dịch vụ bài kiểm tra')
   }
 }
 
 /** Map ExamSummary(service) -> ExamRow(component) */
 function mapSummaryToRow(s: any): ExamRow {
   const durMin = Math.max(1, Math.round((Number(s.durationSec) || 0) / 60))
-  const st: ExamStatus = s.status === 'published' ? 'published' : 'draft'
-  const id = Number(s.id)
+  const st: ExamStatus = s.status === 'published' ? 'published' : (s.status === 'scheduled' ? 'scheduled' : 'draft')
+  // Keep ID as string if it's UUID, otherwise convert to number
+  const id = typeof s.id === 'string' && s.id.includes('-') ? s.id : (Number(s.id) || s.id)
+  
   return {
     id,
     title: String(s.title || `Đề #${id}`),
@@ -248,29 +262,10 @@ function mapSummaryToRow(s: any): ExamRow {
     status: st,
     totalQuestions: Number(s.questionsCount || 0),
     durationMin: durMin,
-    submissions: (id * 13) % 120,
-    avgScore: (60 + (id % 40)) / 10,
-    updatedAt: new Date(s.updatedAt || Date.now()).toLocaleString(),
-  }
-}
-
-/** ===== Mock (ổn định) ===== */
-function mockPool(): ExamRow[] {
-  return Array.from({ length: 42 }).map((_, i) => {
-    const id = i + 1
-    const published = id % 3 !== 1
-    return {
-      id,
-      title: `Đề kiểm tra #${id}`,
-      course: `Khoá ${(id % 6) + 1}`,
-      status: published ? 'published' : 'draft',
-      totalQuestions: 20 + (id % 15),
-      durationMin: 20 + (id % 6) * 5,
-      submissions: (id * 13) % 120,
-      avgScore: (60 + (id % 40)) / 10,
-      updatedAt: new Date(Date.now() - id * 36e5).toLocaleString()
+    submissions: Number(s.submissions || 0),
+    avgScore: Number(s.avgScore || 0),
+    updatedAt: new Date(s.updatedAt || Date.now()).toLocaleString('vi-VN'),
     }
-  })
 }
 
 /** Lọc + sắp xếp + phân trang (dùng chung) */
@@ -307,15 +302,28 @@ async function fetchList(p = page.value) {
   loading.value = true
   page.value = p
   try {
-    let pool: ExamRow[] = []
-    if (serviceList) {
-      const summaries = await (serviceList(q.value ? { q: q.value } : undefined))
-      if (token !== fetchToken) return
-      pool = (summaries || []).map(mapSummaryToRow)
-    } else {
-      pool = mockPool()
+    if (!serviceList) {
+      await tryInitService()
     }
-
+    if (!serviceList) {
+      throw new Error('Không thể khởi tạo dịch vụ bài kiểm tra')
+    }
+    
+    // Build API params (no pagination - we do client-side pagination)
+    const params: any = { includeStats: true }
+    if (q.value) params.q = q.value
+    // Note: status filter is done client-side via applyViewParams
+    
+    const result = await serviceList(params)
+      if (token !== fetchToken) return
+    
+    // Extract items from result
+    const summaries = result?.items || []
+    
+    // Map summaries to rows (stats already included from backend)
+    const pool = summaries.map(mapSummaryToRow)
+    
+    // Apply client-side filtering, sorting, and pagination
     const res = applyViewParams(pool, {
       q: q.value || undefined,
       status: status.value,
@@ -326,6 +334,10 @@ async function fetchList(p = page.value) {
     if (token !== fetchToken) return
     items.value = res.items
     total.value = res.total
+  } catch (e: any) {
+    console.error('Error fetching exams:', e)
+    items.value = []
+    total.value = 0
   } finally {
     if (token === fetchToken) loading.value = false
   }
@@ -364,8 +376,31 @@ const pagesToShow = computed(() => {
 
 /** Actions */
 function createExam()           { router.push({ path: '/teacher/exams/new' }) }
-function openDetail(id: number) { router.push({ path: `/teacher/exams/${id}` }) }
-function openGrading(id: number){ router.push({ path: `/teacher/exams/${id}/grading` }) }
+function openDetail(id: number | string) { router.push({ path: `/teacher/exams/${id}` }) }
+function openEdit(id: number | string)   { router.push({ path: `/teacher/exams/${id}/edit` }) }
+
+async function handleDelete(id: number | string, title: string) {
+  const confirmed = await showConfirm({
+    message: `Bạn có chắc muốn xóa bài kiểm tra "${title}"? Hành động này không thể hoàn tác.`,
+    title: 'Xác nhận xóa bài kiểm tra',
+    type: 'danger',
+    confirmText: 'Xóa',
+    cancelText: 'Hủy'
+  })
+  
+  if (!confirmed) return
+  
+  try {
+    const { examService } = await import('@/services/exam.service')
+    await examService.delete(id)
+    showToast('Đã xóa bài kiểm tra thành công', 'success')
+    // Refresh list after deletion
+    await fetchList(page.value)
+  } catch (e: any) {
+    showToast('Không thể xóa bài kiểm tra: ' + (e?.message || 'Lỗi không xác định'), 'error')
+    console.error('Delete exam error:', e)
+  }
+}
 
 /** Mount */
 function onResize() { updateCompactFlag() }
@@ -373,7 +408,12 @@ onMounted(async () => {
   updateCompactFlag()
   window.addEventListener('resize', onResize, { passive: true })
   await tryInitService()
-  fetchList(1)
+  await fetchList(1)
+})
+
+// Refresh list when returning from edit page
+onActivated(async () => {
+  await fetchList(page.value)
 })
 
 onBeforeUnmount(() => {

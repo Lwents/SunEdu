@@ -26,9 +26,20 @@ ExerciseAttemptModel = apps.get_model('activities', 'ExerciseAttempt')
 ExerciseAnswerModel = apps.get_model('activities', 'ExerciseAnswer')
 
 # Optional models
-ExerciseSettingsModel = getattr(apps.get_model('activities', 'ExerciseSettings'), '__call__', None)
-HintModel = getattr(apps.get_model('activities', 'Hint'), '__call__', None)
-QuestionStatModel = getattr(apps.get_model('activities', 'QuestionStat'), '__call__', None)
+try:
+    ExerciseSettingsModel = apps.get_model('activities', 'ExerciseSettings')
+except LookupError:
+    ExerciseSettingsModel = None
+
+try:
+    HintModel = apps.get_model('activities', 'Hint')
+except LookupError:
+    HintModel = None
+
+try:
+    QuestionStatModel = apps.get_model('activities', 'QuestionStat')
+except LookupError:
+    QuestionStatModel = None
 
 
 # ----------------------
@@ -59,6 +70,7 @@ def save_exercise(domain: ExerciseDomain) -> ExerciseDomain:
     defaults = {
         'title': domain.title,
         'type': domain.type,
+        'published': domain.published,  # Update published status
     }
     if domain.lesson_id:
         defaults['lesson_id'] = domain.lesson_id
@@ -91,6 +103,61 @@ def save_exercise(domain: ExerciseDomain) -> ExerciseDomain:
             seen_cids.append(c.id)
         q.choices.exclude(id__in=seen_cids).delete()
     ex.questions.exclude(id__in=seen_qids).delete()
+
+    # Save settings to ExerciseSettings model
+    if ExerciseSettingsModel and domain.settings:
+        from datetime import datetime
+        settings_data = domain.settings.copy()
+        
+        # Handle scheduled_at if present
+        scheduled_at = settings_data.get('scheduled_at')
+        if scheduled_at:
+            # Parse ISO datetime string to datetime object
+            if isinstance(scheduled_at, str):
+                try:
+                    scheduled_at = datetime.fromisoformat(scheduled_at.replace('Z', '+00:00'))
+                except (ValueError, AttributeError):
+                    scheduled_at = None
+        else:
+            scheduled_at = None
+        
+        # Handle end_at if present
+        end_at = settings_data.get('end_at')
+        if end_at:
+            # Parse ISO datetime string to datetime object
+            if isinstance(end_at, str):
+                try:
+                    end_at = datetime.fromisoformat(end_at.replace('Z', '+00:00'))
+                except (ValueError, AttributeError):
+                    end_at = None
+        else:
+            end_at = None
+
+        # Normalize max_attempts (None -> unlimited)
+        max_attempts = settings_data.get('max_attempts')
+        try:
+            if max_attempts is not None:
+                max_attempts = int(max_attempts)
+        except (TypeError, ValueError):
+            max_attempts = None
+        
+        # Get existing settings if any
+        defaults = {
+            'time_limit_seconds': settings_data.get('duration_seconds'),
+            # Default pass score: 10 (thay vì 50) nếu không được cung cấp
+            'pass_score': settings_data.get('pass_score', 10.0),
+            'shuffle_questions': settings_data.get('shuffle_questions', True),
+            'shuffle_choices': settings_data.get('shuffle_choices', True),
+            'max_attempts': max_attempts,
+            'scheduled_at': scheduled_at,
+            'end_at': end_at,
+        }
+        
+        # Update or create ExerciseSettings
+        ExerciseSettingsModel.objects.update_or_create(
+            exercise=ex,
+            defaults=defaults
+        )
 
     return ExerciseDomain.from_model(ex)
 

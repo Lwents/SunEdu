@@ -60,6 +60,7 @@ useIdleLogout({
   async onLogout() {
     uiStore.closeIdleWarning()
     await authStore.logout().catch(() => {})
+    await router.push('/auth/login').catch(() => {})
   },
 })
 

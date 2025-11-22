@@ -1,11 +1,12 @@
 // src/store/exam.store.ts
 import { defineStore } from 'pinia'
+import { examService, type ExamSummary, type Level } from '@/services/exam.service'
 
 /** ========= Types ========= */
 export type ExamLevel = 'basic' | 'advanced'
 
 export interface Exam {
-  id: number
+  id: string | number
   title: string
   level: ExamLevel
   durationSec: number
@@ -13,27 +14,15 @@ export interface Exam {
   questionsCount: number
 }
 
-/** ========= MOCK POOL (ổn định) =========
- *  Bạn có thể thay thế bằng call API sau này
- */
-const SUBJECTS = ['Toán', 'Tiếng Việt', 'Tiếng Anh', 'Khoa học', 'Lịch sử'] as const
-const POOL: Exam[] = Array.from({ length: 120 }).map((_, i) => {
-  const id = i + 1
-  const subject = SUBJECTS[i % SUBJECTS.length]
-  const level: ExamLevel = i % 2 ? 'basic' : 'advanced'
-  const durationSec = 20 * 60 + (i % 5) * 60 // 20–24 phút
-  const passCount = 12 + (i % 5) // 12–16
-  const questionsCount = 20 + (i % 3) * 10 // 20 / 30 / 40
-
-  return {
-    id,
-    title: `Đề #${id} – ${subject} (${level === 'basic' ? 'Cơ bản' : 'Mở rộng'})`,
-    level,
-    durationSec,
-    passCount,
-    questionsCount,
+// Helper to convert backend Level to ExamLevel
+function mapLevel(level: Level): ExamLevel {
+  // Map 'Khối 1-2' to 'basic', 'Khối 3-5' to 'advanced'
+  // Or you can use a different mapping logic
+  if (level === 'Khối 1' || level === 'Khối 2') {
+    return 'basic'
   }
-})
+  return 'advanced'
+}
 
 /** ========= Store ========= */
 export const useExamStore = defineStore('exam', {
@@ -60,7 +49,7 @@ export const useExamStore = defineStore('exam', {
   },
 
   actions: {
-    /** Lấy 1 trang dữ liệu (mock) – KHÔNG dùng default param với this */
+    /** Lấy 1 trang dữ liệu từ API – KHÔNG dùng default param với this */
     async fetchExamsPage(page?: number, pageSize?: number) {
       // gán mặc định bên trong để tránh lỗi this chưa bind
       page = page ?? this.page
@@ -69,27 +58,59 @@ export const useExamStore = defineStore('exam', {
       this.loading = true
       this.error = ''
       try {
-        // filter trong mock
-        let list = POOL.slice()
+        // Build API params
+        const params: any = {
+          page,
+          pageSize,
+          status: 'published', // Only fetch published exams for students
+        }
+        
         if (this.q) {
-          const key = this.q.toLowerCase()
-          list = list.filter((e) => e.title.toLowerCase().includes(key))
+          params.q = this.q
         }
+
+        // Call API
+        const { items, total: totalItems } = await examService.list(params)
+        
+        // Filter by level on frontend (map backend level to frontend level)
+        let filteredItems = items || []
         if (this.level) {
-          list = list.filter((e) => e.level === this.level)
+          filteredItems = filteredItems.filter((ex: ExamSummary) => {
+            const examLevel = mapLevel(ex.level)
+            return examLevel === this.level
+          })
         }
 
-        // tính phân trang
-        this.total = list.length
-        const start = (page - 1) * pageSize
-        const pageItems = list.slice(start, start + pageSize)
+        // Map ExamSummary to Exam format
+        // passCount: number of questions needed to pass (based on passScore percentage)
+        const mappedExams: Exam[] = filteredItems.map((ex: ExamSummary) => {
+          // Calculate passCount: if passScore is percentage, convert to count
+          // Otherwise, if passScore is already a count, use it directly
+          // For now, assume passScore is a minimum score, convert to count
+          const passCount = ex.passScore <= ex.questionsCount 
+            ? Math.ceil(ex.passScore) 
+            : Math.ceil((ex.passScore / 100) * ex.questionsCount) || Math.ceil(ex.questionsCount * 0.6)
+          
+          return {
+            id: ex.id,
+            title: ex.title,
+            level: mapLevel(ex.level),
+            durationSec: ex.durationSec,
+            passCount,
+            questionsCount: ex.questionsCount,
+          }
+        })
 
-        // set state
-        this.exams = pageItems
+        // Set state
+        this.exams = mappedExams
+        this.total = this.level ? filteredItems.length : totalItems
         this.page = page
         this.pageSize = pageSize
       } catch (e: any) {
         this.error = e?.message || String(e)
+        console.error('Error fetching exams:', e)
+        this.exams = []
+        this.total = 0
       } finally {
         this.loading = false
       }
@@ -100,9 +121,15 @@ export const useExamStore = defineStore('exam', {
       await this.fetchExamsPage()
     },
 
-    /** Lấy exam trong pool theo id (không phụ thuộc trang hiện tại) */
-    getById(id: number): Exam | undefined {
-      return POOL.find((x) => x.id === Number(id))
+    /** Lấy exam theo id từ danh sách hiện tại hoặc fetch từ API */
+    getById(id: number | string): Exam | undefined {
+      // First check current list
+      const found = this.exams.find((x) => String(x.id) === String(id))
+      if (found) return found
+      
+      // If not found, try to fetch from API (async)
+      // For now, return undefined and let the detail page handle fetching
+      return undefined
     },
 
     /** Đảm bảo exam có trong danh sách hiện tại (tiện cho trang detail vào trực tiếp) */

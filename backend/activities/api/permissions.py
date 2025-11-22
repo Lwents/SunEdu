@@ -1,14 +1,17 @@
 from rest_framework import permissions
 
 class IsAdminOrReadOnly(permissions.BasePermission):
-    """Allow unsafe methods only to admin users or teachers."""
+    """Allow unsafe methods only to admin users or instructors."""
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
         if not request.user or not request.user.is_authenticated:
             return False
-        # Allow admin or teacher
-        return bool(request.user.is_staff or (hasattr(request.user, 'role') and request.user.role == 'teacher'))
+        # Allow admin or instructor (teacher role)
+        return bool(
+            request.user.is_staff or 
+            (hasattr(request.user, 'role') and request.user.role in ['admin', 'instructor'])
+        )
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):

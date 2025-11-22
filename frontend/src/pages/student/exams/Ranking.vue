@@ -65,16 +65,28 @@
 
       <div v-else class="space-y-6">
         <div class="grid gap-4 md:grid-cols-3">
+          <!-- Hạng 2 (bên trái) -->
           <div
-            v-if="rows[1]"
-            class="flex flex-col items-center rounded-lg border border-slate-200 bg-white px-4 py-6 text-center shadow-sm"
+            class="flex flex-col items-center rounded-lg border border-slate-200 px-4 py-6 text-center shadow-sm"
+            :class="rows[1] ? 'bg-white' : 'bg-slate-50 border-dashed'"
           >
-            <div class="text-sm font-semibold text-slate-600">🥈 Hạng 2</div>
-            <img :src="avatarOf(rows[1].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
-            <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[1].name }}</h3>
-            <p class="text-sm text-slate-600">{{ rows[1].time }}</p>
-            <p class="text-xl font-bold text-slate-900">{{ rows[1].score }} điểm</p>
+            <div class="text-sm font-semibold" :class="rows[1] ? 'text-slate-600' : 'text-slate-400'">🥈 Hạng 2</div>
+            <div v-if="rows[1]">
+              <img :src="avatarOf(rows[1].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
+              <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[1].name }}</h3>
+              <p class="text-sm text-slate-600">{{ rows[1].time }}</p>
+              <p class="text-xl font-bold text-slate-900">{{ rows[1].score }} điểm</p>
+            </div>
+            <div v-else class="mt-3 flex flex-col items-center">
+              <div class="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center">
+                <span class="text-3xl font-bold text-slate-400">?</span>
+              </div>
+              <h3 class="mt-3 text-lg font-bold text-slate-400">Chưa có</h3>
+              <p class="text-sm text-slate-400 mt-1">Đang chờ...</p>
+            </div>
           </div>
+          
+          <!-- Hạng 1 (ở giữa) -->
           <div
             v-if="rows[0]"
             class="flex flex-col items-center rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-6 text-center shadow-sm"
@@ -86,14 +98,36 @@
             <p class="text-2xl font-bold text-slate-900">{{ rows[0].score }} điểm</p>
           </div>
           <div
-            v-if="rows[2]"
-            class="flex flex-col items-center rounded-lg border border-slate-200 bg-white px-4 py-6 text-center shadow-sm"
+            v-else
+            class="flex flex-col items-center rounded-lg border-2 border-dashed border-amber-200 bg-amber-50/50 px-4 py-6 text-center shadow-sm"
           >
-            <div class="text-sm font-semibold text-slate-600">🥉 Hạng 3</div>
-            <img :src="avatarOf(rows[2].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
-            <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[2].name }}</h3>
-            <p class="text-sm text-slate-600">{{ rows[2].time }}</p>
-            <p class="text-xl font-bold text-slate-900">{{ rows[2].score }} điểm</p>
+            <div class="text-sm font-semibold text-amber-400">🥇 Hạng 1</div>
+            <div class="mt-3 h-18 w-18 rounded-full bg-amber-100 flex items-center justify-center border-4 border-amber-200">
+              <span class="text-4xl font-bold text-amber-300">?</span>
+            </div>
+            <h3 class="mt-3 text-lg font-bold text-amber-400">Chưa có</h3>
+            <p class="text-sm text-amber-400 mt-1">Đang chờ...</p>
+          </div>
+          
+          <!-- Hạng 3 (bên phải) -->
+          <div
+            class="flex flex-col items-center rounded-lg border border-slate-200 px-4 py-6 text-center shadow-sm"
+            :class="rows[2] ? 'bg-white' : 'bg-slate-50 border-dashed'"
+          >
+            <div class="text-sm font-semibold" :class="rows[2] ? 'text-slate-600' : 'text-slate-400'">🥉 Hạng 3</div>
+            <div v-if="rows[2]">
+              <img :src="avatarOf(rows[2].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
+              <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[2].name }}</h3>
+              <p class="text-sm text-slate-600">{{ rows[2].time }}</p>
+              <p class="text-xl font-bold text-slate-900">{{ rows[2].score }} điểm</p>
+            </div>
+            <div v-else class="mt-3 flex flex-col items-center">
+              <div class="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center">
+                <span class="text-3xl font-bold text-slate-400">?</span>
+              </div>
+              <h3 class="mt-3 text-lg font-bold text-slate-400">Chưa có</h3>
+              <p class="text-sm text-slate-400 mt-1">Đang chờ...</p>
+            </div>
           </div>
         </div>
 
@@ -200,9 +234,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
-
-// --- MOCK SERVICE (thay thế bằng service thật của bạn) ---
-const examService = createMockService();
+import { examService } from '@/services/exam.service'
 
 // --- TYPES ---
 type Exam = { id: number | string; title: string };
@@ -284,13 +316,17 @@ async function loadExams() {
   loadingExams.value = true;
   err.value = '';
   try {
-    const list = await examService.list();
-    exams.value = list;
-    if (list.length > 0) {
-      examId.value = list[0].id;
+    const result = await examService.list({ status: 'published' });
+    exams.value = result.items.map(ex => ({
+      id: ex.id,
+      title: ex.title
+    }));
+    if (exams.value.length > 0) {
+      examId.value = exams.value[0].id;
     }
   } catch (e: any) {
     err.value = e?.message || String(e);
+    console.error('Load exams error:', e);
   } finally {
     loadingExams.value = false;
   }
@@ -310,42 +346,78 @@ async function loadRanking(id: Exam['id']) {
 
   try {
     const r = await examService.ranking(id);
-    rows.value = r.top;
-    me.value = r.me;
+    // Map API response to component format
+    rows.value = (r.top || []).map((item: any) => ({
+      id: item.id,
+      name: item.name || 'Học viên',
+      score: item.score || 0,
+      correct: item.correct || 0,
+      total: item.total || 0,
+      time: formatTime(item.time) || '00:00',
+    }));
+    
+    // Map my stats
+    if (r.me) {
+      me.value = {
+        rank: r.me.rank || 0,
+        score: r.me.score || 0,
+        correct: r.me.correct || 0,
+        total: r.me.total || 0,
+        time: formatTime(r.me.time) || '00:00',
+      };
+    } else {
+      me.value = null;
+    }
   } catch (e: any) {
     err.value = e?.message || String(e);
+    console.error('Load ranking error:', e);
   } finally {
     loading.value = false;
   }
 }
 
+// Format time from seconds or MM:SS string
+function formatTime(time: string | number | undefined): string {
+  if (!time) return '00:00';
+  
+  // Handle number (seconds)
+  if (typeof time === 'number') {
+    // Ensure non-negative
+    const absTime = Math.abs(time);
+    const minutes = Math.floor(absTime / 60);
+    const seconds = Math.floor(absTime % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  
+  // If already in MM:SS format, validate and return
+  if (typeof time === 'string' && time.includes(':')) {
+    const parts = time.split(':');
+    if (parts.length === 2) {
+      const minutes = parseInt(parts[0], 10);
+      const seconds = parseInt(parts[1], 10);
+      // If negative, return 00:00
+      if (!isNaN(minutes) && !isNaN(seconds) && minutes >= 0 && seconds >= 0) {
+        return `${Math.abs(minutes).toString().padStart(2, '0')}:${Math.abs(seconds).toString().padStart(2, '0')}`;
+      }
+    }
+    // If format is invalid or negative, return 00:00
+    return '00:00';
+  }
+  
+  // Try to parse as seconds
+  const seconds = parseInt(String(time), 10);
+  if (!isNaN(seconds)) {
+    // Ensure non-negative
+    const absSeconds = Math.abs(seconds);
+    const minutes = Math.floor(absSeconds / 60);
+    const secs = Math.floor(absSeconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  
+  return '00:00';
+}
+
 // --- LIFECYCLE ---
 onMounted(loadExams);
 watch(examId, (id) => { if (id !== undefined) loadRanking(id) });
-
-// --- MOCK SERVICE ---
-function createMockService() {
-  const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
-  return {
-    async list(): Promise<Exam[]> {
-      await delay(500);
-      return Array.from({ length: 8 }).map((_, i) => ({
-        id: i + 1,
-        title: `Đề thi Thử Năng Lực #${i + 1}`
-      }));
-    },
-    async ranking(_examId: Exam['id']): Promise<{ top: RankRow[]; me: RankMe }> {
-      await delay(800);
-      const N = 73;
-      const top: RankRow[] = Array.from({ length: N }).map((_, i) => {
-        const correct = 50 - Math.floor(i / 2);
-        const score = Math.max(0, correct * 20);
-        const mm = (15 + (i % 20)).toString().padStart(2, '0');
-        const ss = ((i * 7) % 60).toString().padStart(2, '0');
-        return { id: i + 1, name: `Học viên ${String.fromCharCode(65 + i)}`, score, correct, total: 50, time: `${mm}:${ss}` };
-      });
-      return { top, me: { rank: 88, score: 720, correct: 36, total: 50, time: '22:31' } };
-    }
-  };
-}
 </script>

@@ -188,46 +188,98 @@
               </div>
             </div>
 
-            <div class="space-y-3">
+            <div class="space-y-4">
               <div
-                v-for="(q, idx) in mockQuestions"
-                :key="idx"
-                class="rounded-xl border border-slate-200 p-4"
+                v-for="(q, idx) in questions"
+                :key="q.id || idx"
+                class="rounded-xl border border-slate-200 bg-white p-5"
               >
-                <div class="mb-2 flex items-center justify-between">
-                  <span class="font-semibold">Câu {{ idx + 1 }}</span>
+                <!-- Question header -->
+                <div class="mb-3 flex items-center justify-between border-b border-slate-200 pb-2">
                   <div class="flex items-center gap-2">
-                  <span class="text-sm text-slate-500">{{ q.score }} điểm</span>
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">
+                      {{ idx + 1 }}
+                    </span>
+                    <span class="rounded-full bg-slate-100 border border-slate-300 px-2 py-0.5 text-xs font-medium text-slate-700">
+                      {{ getQuestionTypeLabel(q.type) }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm text-slate-500">{{ q.score || 0 }} điểm</span>
                     <span
                       class="rounded-full px-2 py-0.5 text-xs font-semibold"
-                      :class="mockScores[idx] === q.score
+                      :class="getQuestionScore(q.id) >= (q.score || 0)
                         ? 'bg-emerald-100 text-emerald-700'
+                        : getQuestionScore(q.id) > 0
+                        ? 'bg-amber-100 text-amber-700'
                         : 'bg-rose-100 text-rose-700'"
                     >
-                      {{ mockScores[idx] === q.score ? 'Đúng' : 'Sai' }}
+                      {{ getQuestionScore(q.id) >= (q.score || 0) ? 'Đúng' : getQuestionScore(q.id) > 0 ? 'Một phần' : 'Sai' }}
                     </span>
                   </div>
                 </div>
-                <p class="mb-3 text-sm font-medium">{{ q.text }}</p>
-                <div class="rounded-lg bg-slate-50 p-3 mb-2">
-                  <div class="mb-2 text-xs font-medium text-slate-600">Câu trả lời của học sinh:</div>
-                  <div class="text-sm font-semibold">{{ mockAnswers[idx] || 'Chưa trả lời' }}</div>
+
+                <!-- Question text -->
+                <p class="mb-4 text-sm font-medium text-slate-900 leading-relaxed">{{ q.text }}</p>
+
+                <!-- Choices (if available) -->
+                <div v-if="q.choices && q.choices.length > 0" class="mb-4 space-y-2">
+                  <div class="text-xs font-medium text-slate-600 mb-2">Các lựa chọn:</div>
+                  <div
+                    v-for="(choice, cIdx) in q.choices"
+                    :key="cIdx"
+                    class="flex items-start gap-2 rounded-lg p-2"
+                    :class="isCorrectChoice(q, choice)
+                      ? 'bg-emerald-50 border border-emerald-200'
+                      : isStudentChoice(q, choice)
+                      ? 'bg-amber-50 border border-amber-200'
+                      : 'bg-slate-50 border border-slate-200'"
+                  >
+                    <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                      :class="isCorrectChoice(q, choice)
+                        ? 'bg-emerald-600 text-white'
+                        : isStudentChoice(q, choice)
+                        ? 'bg-amber-600 text-white'
+                        : 'bg-slate-300 text-slate-700'"
+                    >
+                      {{ String.fromCharCode(65 + cIdx) }}
+                    </span>
+                    <span class="flex-1 text-sm text-slate-700">{{ choice.text }}</span>
+                    <span v-if="isCorrectChoice(q, choice)" class="text-emerald-600 font-semibold">✓</span>
+                    <span v-else-if="isStudentChoice(q, choice) && !isCorrectChoice(q, choice)" class="text-amber-600 font-semibold">✗</span>
+                  </div>
                 </div>
-                <div class="rounded-lg bg-emerald-50 p-3">
+
+                <!-- Student answer -->
+                <div class="mb-3 rounded-lg border border-slate-300 bg-slate-50 p-3">
+                  <div class="mb-1 text-xs font-medium text-slate-600">Câu trả lời của học sinh:</div>
+                  <div class="text-sm font-semibold text-slate-900">{{ getStudentAnswer(q.id) }}</div>
+                </div>
+
+                <!-- Correct answer -->
+                <div class="mb-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3">
                   <div class="mb-1 text-xs font-medium text-emerald-700">Đáp án đúng:</div>
-                  <div class="text-sm font-semibold text-emerald-900">{{ q.correctAnswer }}</div>
+                  <div class="text-sm font-semibold text-emerald-900">{{ getCorrectAnswer(q) }}</div>
                 </div>
-                <div class="mt-2 text-xs text-slate-500">
-                  Điểm đạt: {{ mockScores[idx] }} / {{ q.score }}
+
+                <!-- Score breakdown -->
+                <div class="flex items-center justify-between rounded-lg bg-slate-100 p-2 text-xs">
+                  <span class="text-slate-600">Điểm đạt:</span>
+                  <span class="font-semibold text-slate-900">
+                    {{ getQuestionScore(q.id).toFixed(1) }} / {{ q.score || 0 }}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div v-if="questions.length > 0" class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4">
               <span class="font-semibold text-slate-900">Tổng điểm:</span>
               <span class="text-xl font-bold text-slate-900">
-                {{ totalScore.toFixed(1) }} / {{ maxScore }}
+                {{ totalScore.toFixed(1) }} / {{ maxScore.toFixed(1) }}
               </span>
+            </div>
+            <div v-else class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-700">
+              Chưa có dữ liệu câu hỏi để hiển thị
             </div>
           </div>
 
@@ -251,17 +303,28 @@ import { useRoute } from 'vue-router'
 
 type RowStatus = 'pending' | 'submitted'
 type Row = {
-  id: number
+  id: number | string  // Support both number and UUID
   studentName: string
   classCode: string
   submittedAt: string | null
   score: number | null
   status: RowStatus
+  attemptId?: string
 }
 
 const route = useRoute()
-const id = ref<number>(Number(route.params.id))
 
+// Helper function to parse ID from route params (supports both UUID and number)
+function parseId(paramId: string | string[]): string | number {
+  const idStr = Array.isArray(paramId) ? paramId[0] : paramId
+  if (typeof idStr === 'string' && idStr.includes('-')) {
+    return idStr // UUID
+  }
+  const numId = Number(idStr)
+  return isNaN(numId) ? idStr : numId
+}
+
+const id = ref<string | number>(parseId(route.params.id))
 const header = ref(`Đề #${id.value}`)
 const loading = ref(true)
 const rows = ref<Row[]>([])
@@ -270,48 +333,71 @@ const q = ref('')
 const only = ref<'all' | RowStatus>('all')
 
 const viewingRow = ref<Row | null>(null)
-const mockQuestions = ref<Array<{ text: string; score: number; correctAnswer: string }>>([])
-const mockAnswers = ref<string[]>([])
-const mockScores = ref<number[]>([])
+const attemptDetail = ref<any>(null)
+const questions = ref<any[]>([])
+const answers = ref<Record<string, any>>({})
 
 type DetailFn = (id: string | number) => Promise<any>
+type AttemptSummaryFn = (attemptId: string) => Promise<any>
 let detailFn: DetailFn | undefined
+let getAttemptSummaryFn: AttemptSummaryFn | undefined
 
 async function tryInitService() {
   try {
     const mod = await import('@/services/exam.service')
     if (mod?.examService?.detail) detailFn = mod.examService.detail as DetailFn
-  } catch {}
-}
-
-function makeMockRows(examId: number): Row[] {
-  const total = (examId % 7) + 9
-  return Array.from({ length: total }).map((_, i) => {
-    const sid = examId * 1000 + i + 1
-    const submitted = (i + examId) % 3 !== 0
-    const score = submitted ? Math.round(((6 + ((i + examId) % 5)) + 0.1) * 10) / 10 : null
-    const cls = `L${(examId % 4) + 1}${String((i % 3) + 1).padStart(2, '0')}`
-    const name = `HS ${(examId % 9) + 1}${String(i + 1).padStart(2, '0')}`
-    const submittedAt = submitted ? new Date(Date.now() - (i + 1) * 36e5).toLocaleString() : null
-    return { id: sid, studentName: name, classCode: cls, submittedAt, score, status: submitted ? 'submitted' : 'pending' }
-  })
+    if (mod?.examService?.getAttemptSummary) getAttemptSummaryFn = mod.examService.getAttemptSummary as AttemptSummaryFn
+  } catch (e) {
+    console.error('Failed to load exam service:', e)
+  }
 }
 
 let loadToken = 0
-async function load(examId = id.value) {
+async function load(examId: string | number = id.value) {
   const token = ++loadToken
   loading.value = true
   try {
+    // Load exam title
     if (detailFn) {
       try {
         const d = await detailFn(examId)
         if (token === loadToken && d?.title) header.value = String(d.title)
-      } catch {}
-    } else header.value = `Đề #${examId}`
+      } catch (e) {
+        console.error('Failed to load exam detail:', e)
+      }
+    } else {
+      const displayId = typeof examId === 'string' && examId.includes('-') ? examId.substring(0, 8) : examId
+      header.value = `Đề #${displayId}`
+    }
 
-    const data = makeMockRows(examId)
+    // Load attempts list
+    const api = (await import('@/config/axios')).default
+    const { data } = await api.get(`/activities/exercises/${examId}/attempts/`)
     if (token !== loadToken) return
-    rows.value = data
+    
+    // Map backend attempts to frontend rows
+    const mappedRows: Row[] = (data || []).map((att: any) => {
+      // Handle attempt ID - can be UUID or number
+      const attemptId = String(att.id || '')
+      const rowId = attemptId.includes('-') 
+        ? attemptId.substring(0, 8) 
+        : (Number(attemptId) || attemptId)
+      
+      return {
+        id: rowId,
+        studentName: att.student_name || 'Unknown',
+        classCode: att.class_code || att.student_class_code || '—',
+        submittedAt: att.submitted_at || (att.finished_at ? new Date(att.finished_at).toLocaleString('vi-VN') : null),
+        score: att.score !== null && att.score !== undefined ? Number(att.score) : null,
+        status: att.status === 'submitted' ? 'submitted' : 'pending',
+        attemptId: attemptId, // Store attempt ID as string for detail view
+      }
+    })
+    
+    rows.value = mappedRows
+  } catch (e: any) {
+    console.error('Error loading attempts:', e)
+    rows.value = []
   } finally {
     if (token === loadToken) loading.value = false
   }
@@ -346,43 +432,202 @@ onMounted(async () => {
   await load(id.value)
 })
 watch(() => route.params.id, (nv) => {
-  id.value = Number(nv)
+  id.value = parseId(nv)
   load(id.value)
 })
 onBeforeUnmount(() => { if (ft) window.clearTimeout(ft) })
 
-function openView(row: Row) {
+async function openView(row: Row) {
   viewingRow.value = row
-  // Mock: tạo câu hỏi và câu trả lời mẫu
-  mockQuestions.value = Array.from({ length: 5 }).map((_, i) => ({
-    text: `Câu hỏi mẫu số ${i + 1}?`,
-    score: 2,
-    correctAnswer: `Đáp án đúng ${i + 1}`
-  }))
-  mockAnswers.value = Array.from({ length: 5 }).map((_, i) => 
-    `Đáp án ${i + 1} của học sinh}`
-  )
-  // Mock điểm - giả sử một số câu đúng, một số câu sai
-  mockScores.value = Array.from({ length: 5 }).map((_, i) => {
-    const isCorrect = (row.id + i) % 3 !== 0
-    return isCorrect ? mockQuestions.value[i].score : 0
-  })
+  if (!row.attemptId) {
+    console.error('No attempt ID for row:', row)
+    return
+  }
+  
+  try {
+    // Load attempt summary using service
+    if (!getAttemptSummaryFn) {
+      await tryInitService()
+      if (!getAttemptSummaryFn) {
+        throw new Error('Service không khả dụng')
+      }
+    }
+    
+    const attemptData = await getAttemptSummaryFn(row.attemptId)
+    attemptDetail.value = attemptData
+    
+    // Load exam detail to get full question info (choices, etc.)
+    if (detailFn) {
+      const examDetail = await detailFn(id.value)
+      // Map exam questions with attempt data
+      questions.value = (examDetail.questions || []).map((q: any) => {
+        const attemptQ = attemptData.questions?.find((aq: any) => String(aq.id) === String(q.id))
+        return {
+          ...q,
+          studentScore: attemptQ?.score || 0,
+          studentCorrect: attemptQ?.correct || false,
+        }
+      })
+    } else {
+      // Fallback: use questions from attempt summary
+      questions.value = (attemptData.questions || []).map((q: any) => ({
+        id: q.id,
+        text: q.prompt,
+        type: 'single', // Default, should be inferred from exam detail
+        score: q.points,
+        choices: [],
+      }))
+    }
+    
+    // Map answers from attempt
+    answers.value = attemptData.answers || {}
+  } catch (e: any) {
+    console.error('Error loading attempt detail:', e)
+    alert('Không thể tải chi tiết bài làm: ' + (e.response?.data?.detail || e.message))
+  }
 }
 
 function closeView() {
   viewingRow.value = null
-  mockQuestions.value = []
-  mockAnswers.value = []
-  mockScores.value = []
+  attemptDetail.value = null
+  questions.value = []
+  answers.value = {}
 }
 
 const totalScore = computed(() => {
-  return mockScores.value.reduce((sum, s) => sum + (s || 0), 0)
+  return attemptDetail.value?.totalScore || attemptDetail.value?.score || 0
 })
 
 const maxScore = computed(() => {
-  return mockQuestions.value.reduce((sum, q) => sum + q.score, 0)
+  return attemptDetail.value?.maxScore || questions.value.reduce((sum, q) => sum + (q.score || 0), 0)
 })
+
+function getQuestionScore(questionId: string | number): number {
+  if (!attemptDetail.value?.detail) {
+    // Fallback: get from questions array
+    const q = questions.value.find((q: any) => String(q.id) === String(questionId))
+    return q?.studentScore || 0
+  }
+  const detail = attemptDetail.value.detail.find((d: any) => String(d.qid || d.question_id) === String(questionId))
+  return detail?.score || 0
+}
+
+function getCorrectAnswer(q: any): string {
+  if (q.type === 'single' || q.type === 'multi') {
+    // Get correct choices from question answer field
+    const correctChoiceIds = q.answer || []
+    if (Array.isArray(correctChoiceIds) && correctChoiceIds.length > 0) {
+      const correctChoices = q.choices?.filter((c: any) => correctChoiceIds.includes(c.id)) || []
+      if (correctChoices.length > 0) {
+        return correctChoices.map((c: any) => c.text).join(', ')
+      }
+    }
+    // Fallback: show choice letters if we have choices
+    if (q.choices && q.choices.length > 0) {
+      const correctIndices = q.choices
+        .map((c: any, idx: number) => (c.isCorrect || correctChoiceIds.includes(c.id)) ? idx : -1)
+        .filter((idx: number) => idx >= 0)
+      if (correctIndices.length > 0) {
+        return correctIndices.map((idx: number) => String.fromCharCode(65 + idx)).join(', ')
+      }
+    }
+    return '—'
+  }
+  if (q.type === 'boolean') {
+    return q.answer === true || q.answer === 'true' ? 'Đúng' : 'Sai'
+  }
+  if (q.type === 'fill') {
+    return Array.isArray(q.answer) ? q.answer.join(', ') : String(q.answer || '—')
+  }
+  if (q.type === 'match' && q.pairs) {
+    return q.pairs.map((p: any) => `${p.left} → ${p.right}`).join('; ')
+  }
+  if (q.type === 'order' && Array.isArray(q.answer)) {
+    return q.answer.join(' → ')
+  }
+  return String(q.answer || '—')
+}
+
+function getStudentAnswer(questionId: string | number): string {
+  const answer = answers.value[String(questionId)]
+  if (answer === null || answer === undefined || answer === '') {
+    return 'Chưa trả lời'
+  }
+  
+  // Find question to get type and choices
+  const q = questions.value.find((q: any) => String(q.id) === String(questionId))
+  if (!q) {
+    // Fallback: return raw answer
+    return Array.isArray(answer) ? answer.join(', ') : String(answer)
+  }
+  
+  if (q.type === 'single' || q.type === 'multi') {
+    // Answer might be choice IDs or choice text
+    const answerIds = Array.isArray(answer) ? answer : [answer]
+    
+    // Try to find choices by ID first
+    if (q.choices && q.choices.length > 0) {
+      const choices = q.choices.filter((c: any) => {
+        return answerIds.includes(c.id) || answerIds.includes(String(c.id))
+      })
+      if (choices.length > 0) {
+        return choices.map((c: any, idx: number) => {
+          const letter = String.fromCharCode(65 + q.choices.indexOf(c))
+          return `${letter}. ${c.text}`
+        }).join(', ')
+      }
+      
+      // Fallback: if answer is text, return as is
+      if (typeof answer === 'string' || (Array.isArray(answer) && answer.every((a: any) => typeof a === 'string'))) {
+        return Array.isArray(answer) ? answer.join(', ') : answer
+      }
+    }
+    
+    // If no choices available, return answer as is
+    return Array.isArray(answer) ? answer.join(', ') : String(answer)
+  }
+  
+  if (q.type === 'boolean') {
+    return answer === true || answer === 'true' || answer === 1 ? 'Đúng' : 'Sai'
+  }
+  
+  if (Array.isArray(answer)) {
+    return answer.join(', ')
+  }
+  
+  return String(answer)
+}
+
+function getQuestionTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    'single': 'Trắc nghiệm (1 đáp án)',
+    'multi': 'Trắc nghiệm (nhiều đáp án)',
+    'boolean': 'Đúng/Sai',
+    'fill': 'Điền từ',
+    'match': 'Nối cặp',
+    'order': 'Sắp xếp'
+  }
+  return labels[type] || type.toUpperCase()
+}
+
+function isCorrectChoice(q: any, choice: any): boolean {
+  if (q.type === 'single' || q.type === 'multi') {
+    const correctIds = q.answer || []
+    return correctIds.includes(choice.id) || (choice.isCorrect === true)
+  }
+  return false
+}
+
+function isStudentChoice(q: any, choice: any): boolean {
+  const answer = answers.value[String(q.id)]
+  if (!answer) return false
+  
+  if (q.type === 'single' || q.type === 'multi') {
+    const answerIds = Array.isArray(answer) ? answer : [answer]
+    return answerIds.includes(choice.id) || answerIds.includes(String(choice.id))
+  }
+  return false
+}
 </script>
 
 <style scoped>

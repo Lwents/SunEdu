@@ -5,6 +5,13 @@ FROM python:3.12-slim as builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     postgresql-client \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libtiff-dev \
+    libwebp-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -23,6 +30,13 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     curl \
+    libjpeg62-turbo \
+    zlib1g \
+    libpng16-16 \
+    libfreetype6 \
+    liblcms2-2 \
+    libtiff6 \
+    libwebp7 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

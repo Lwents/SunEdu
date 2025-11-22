@@ -155,9 +155,11 @@
                   class="inline-flex rounded-full px-2 py-1 text-xs font-medium"
                   :class="e.status === 'published'
                     ? 'bg-green-100 text-green-800'
+                    : e.status === 'scheduled'
+                    ? 'bg-blue-100 text-blue-800'
                     : 'bg-yellow-100 text-yellow-800'"
               >
-                {{ e.status === 'published' ? 'Đã phát hành' : 'Nháp' }}
+                {{ e.status === 'published' ? 'Đã phát hành' : e.status === 'scheduled' ? 'Đã lên lịch' : 'Nháp' }}
               </span>
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-right text-sm">
@@ -266,9 +268,9 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 /** ===== Types ===== */
-type ExamStatus = 'published' | 'draft'
+type ExamStatus = 'published' | 'scheduled' | 'draft'
 type ReportRow = {
-  id: number
+  id: number | string  // Support both number and UUID
   title: string
   course: string
   status: ExamStatus
@@ -298,8 +300,8 @@ const total = ref(0)
 const loading = ref(true)
 const items = ref<ReportRow[]>([])
 
-/** ===== Service adapter (lazy) ===== */
-type ServiceList = (params?: { q?: string }) => Promise<any[]>
+/** ===== Service adapter ===== */
+type ServiceList = (params?: { level?: any; q?: string; status?: string; page?: number; pageSize?: number; includeStats?: boolean }) => Promise<{ items: any[]; total: number }>
 let serviceList: ServiceList | undefined
 
 async function tryInitService() {
@@ -308,45 +310,28 @@ async function tryInitService() {
     if (mod?.examService?.list) {
       serviceList = mod.examService.list as ServiceList
     }
-  } catch {
-    // fallback to mock
+  } catch (e) {
+    console.error('Failed to load exam service:', e)
+    throw new Error('Không thể tải dịch vụ bài kiểm tra')
   }
 }
 
 /** ===== Mapping helpers ===== */
 function mapFromService(s: any): ReportRow {
-  const id = Number(s.id)
-  const st: ExamStatus = s.status === 'published' ? 'published' : 'draft'
+  // Handle both UUID (string) and number IDs
+  const id = typeof s.id === 'string' && s.id.includes('-') ? s.id : (Number(s.id) || s.id)
+  const st: ExamStatus = s.status === 'published' ? 'published' : (s.status === 'scheduled' ? 'scheduled' : 'draft')
   const durationMin = Math.max(1, Math.round((Number(s.durationSec) || 1800) / 60))
-  const totalQuestions = Number(s.questionsCount ?? (20 + (id % 15)))
-  const course = String(s.level || `Khoá ${((id % 6) + 1)}`)
-  const submissions = (id * 13) % 160
-  const avgScore = Number((6 + (id % 4) + (id % 3) * 0.5).toFixed(1))
-  const passRate = Math.min(100, 50 + (id % 50))
-  const updatedTs = s.updatedAt ? Date.parse(s.updatedAt) : (Date.now() - id * 36e5)
+  const totalQuestions = Number(s.questionsCount || 0)
+  const course = String(s.level || '—')
+  const submissions = Number(s.submissions || 0)
+  const avgScore = Number(s.avgScore || s.avg_score || 0)
+  const passRate = Number(s.passRate || s.pass_rate || 0)
+  const updatedTs = s.updatedAt ? Date.parse(s.updatedAt) : Date.now()
   const updatedAtDisplay = new Date(updatedTs).toLocaleString('vi-VN')
-  return { id, title: String(s.title || `Đề #${id}`), course, status: st, totalQuestions, durationMin, submissions, avgScore, passRate, updatedTs, updatedAtDisplay }
-}
-
-function mockRows(): ReportRow[] {
-  return Array.from({ length: 42 }).map((_, i) => {
-    const id = i + 1
-    const published = id % 3 !== 1
-    const updatedTs = Date.now() - id * 36e5
-    return {
-      id,
-      title: `Đề kiểm tra #${id}`,
-      course: `Khoá ${((id % 6) + 1)}`,
-      status: published ? 'published' : 'draft',
-      totalQuestions: 20 + (id % 15),
-      durationMin: 20 + (id % 6) * 5,
-      submissions: (id * 13) % 160,
-      avgScore: Number((6 + (id % 4) + (id % 3) * 0.5).toFixed(1)),
-      passRate: Math.min(100, 50 + (id % 50)),
-      updatedTs,
-      updatedAtDisplay: new Date(updatedTs).toLocaleString('vi-VN')
-    }
-  })
+  // For display title, use a short version of UUID if it's a UUID
+  const displayId = typeof id === 'string' && id.includes('-') ? id.substring(0, 8) : id
+  return { id, title: String(s.title || `Đề #${displayId}`), course, status: st, totalQuestions, durationMin, submissions, avgScore, passRate, updatedTs, updatedAtDisplay }
 }
 
 /** ===== Fetch (chống race) ===== */
@@ -356,14 +341,26 @@ async function fetchList(p = page.value) {
   loading.value = true
   page.value = p
   try {
-    let pool: ReportRow[] = []
-    if (serviceList) {
-      const summaries = await serviceList(q.value ? { q: q.value } : undefined)
-      if (token !== fetchToken) return
-      pool = (summaries || []).map(mapFromService)
-    } else {
-      pool = mockRows()
+    if (!serviceList) {
+      await tryInitService()
     }
+    if (!serviceList) {
+      throw new Error('Không thể khởi tạo dịch vụ bài kiểm tra')
+    }
+    
+    // Build API params (no pagination - we do client-side pagination)
+    const params: any = { includeStats: true }
+    if (q.value) params.q = q.value
+    // Note: status, date filters, and sorting are done client-side
+    
+    const result = await serviceList(params)
+    if (token !== fetchToken) return
+    
+    // Extract items from result
+    const summaries = result?.items || []
+    
+    // Map summaries to rows (stats already included from backend)
+    const pool = summaries.map(mapFromService)
 
     const key = q.value.toLowerCase()
     let filtered = key
@@ -385,6 +382,10 @@ async function fetchList(p = page.value) {
     total.value = filtered.length
     const start = (page.value - 1) * pageSize.value
     items.value = filtered.slice(start, start + pageSize.value)
+  } catch (e: any) {
+    console.error('Error fetching reports:', e)
+    items.value = []
+    total.value = 0
   } finally {
     if (token === fetchToken) loading.value = false
   }
@@ -434,8 +435,12 @@ const pagesToShow = computed(() => {
 })
 
 /** Actions */
-function openDetail(id: number)  { router.push({ path: `/teacher/exams/${id}` }) }
-function openView(id: number) { router.push({ path: `/teacher/exams/${id}/grading` }) }
+function openDetail(id: number | string) {
+  router.push({ path: `/teacher/exams/${id}` })
+}
+function openView(id: number | string) {
+  router.push({ path: `/teacher/exams/${id}/grading` })
+}
 function clearDates() { from.value = ''; to.value = ''; fetchList(1) }
 
 /** Mount */
