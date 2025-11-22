@@ -5,30 +5,18 @@
       <div class="mb-8">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <h1 class="text-3xl font-bold text-slate-900">Khóa học của tôi</h1>
-            <p class="mt-2 text-slate-600">
-              Các khóa học bạn đang tham gia được chia theo từng cấp trình độ
-          </p>
+            <h1 class="text-3xl font-bold text-slate-900">Khóa học</h1>
         </div>
           <div class="flex gap-3">
-          <router-link
-              class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-            :to="{ name: 'student-learning-path' }"
-          >
+            <router-link
+              class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition"
+              :to="{ name: 'student-learning-path' }"
+            >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
-            Lộ trình
-          </router-link>
-          <router-link
-              class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition"
-            :to="{ name: 'student-catalog' }"
-          >
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            Catalog
-          </router-link>
+              Lộ trình
+            </router-link>
           </div>
         </div>
       </div>
@@ -61,72 +49,29 @@
       </div>
 
       <!-- Filters & Tabs -->
+      <!-- Tabs only (removed filters/search) -->
       <div class="mb-8 rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <!-- Tabs -->
-        <div class="flex gap-2">
-          <button
-                class="rounded-lg px-5 py-2.5 text-sm font-semibold transition"
-                :class="activeTab === 'main'
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-            @click="activeTab = 'main'"
-          >
-            Khóa học chính
-          </button>
-          <button
-                class="rounded-lg px-5 py-2.5 text-sm font-semibold transition"
-                :class="activeTab === 'supp'
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-            @click="activeTab = 'supp'"
-          >
-            Khóa học bổ trợ
-          </button>
-        </div>
-
-            <!-- Search & Filter -->
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div class="relative" @mouseleave="open = false">
+          <div class="flex gap-2">
             <button
-              type="button"
-                  class="inline-flex w-full items-center justify-between gap-3 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 sm:w-48"
-              @click="open = !open"
+              class="rounded-lg px-5 py-2.5 text-sm font-semibold transition"
+              :class="activeTab === 'main'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+              @click="activeTab = 'main'"
             >
-              <span>{{ gradeFilter ? `Lớp ${gradeFilter}` : 'Tất cả lớp' }}</span>
-                  <svg class="h-4 w-4 transition-transform" :class="open ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
+              Khóa học của tôi
             </button>
-            <ul
-              v-show="open"
-                  class="absolute z-20 mt-2 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+            <button
+              class="rounded-lg px-5 py-2.5 text-sm font-semibold transition"
+              :class="activeTab === 'supp'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+              @click="activeTab = 'supp'"
             >
-              <li
-                v-for="option in gradeFilterOptions"
-                :key="option ?? 'all'"
-                class="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                @click="setGradeFilter(option)"
-              >
-                {{ option ? `Lớp ${option}` : 'Tất cả lớp' }}
-              </li>
-            </ul>
+              Khóa học mở rộng
+            </button>
           </div>
-
-              <div class="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5">
-                <svg class="h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 21l-4.3-4.3" />
-                <circle cx="11" cy="11" r="7" />
-              </svg>
-              <input
-                v-model.trim="q"
-                placeholder="Tìm khóa học..."
-                  class="w-full border-none bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
-              />
-              </div>
-            </div>
-            </div>
         </div>
       </div>
 
@@ -376,7 +321,7 @@ const router = useRouter()
 /* Tabs */
 const activeTab = ref<'main'|'supp'>('main')
 
-/* Tìm kiếm / lọc */
+/* Tìm kiếm / lọc (đã bỏ UI filter, giữ state tối thiểu) */
 const q = ref('')
 const gradeFilter = ref<number | null>(null)
 const open = ref(false)
@@ -392,7 +337,7 @@ const err = ref('')
 const gradeOrder = [1, 2, 3, 4, 5] as const
 const gradeOptions = gradeOrder.map((grade) => ({
   grade,
-  label: grade <= 2 ? 'Cơ bản' : 'Nâng cao'
+  label: ''
 }))
 const gradeFilterOptions = [null, ...gradeOrder]
 const selectedGrade = ref<number | null>(null)

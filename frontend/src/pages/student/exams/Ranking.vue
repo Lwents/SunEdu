@@ -72,7 +72,7 @@
           >
             <div class="text-sm font-semibold" :class="rows[1] ? 'text-slate-600' : 'text-slate-400'">🥈 Hạng 2</div>
             <div v-if="rows[1]">
-              <img :src="avatarOf(rows[1].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
+            <img :src="avatarOf(rows[1].name, rows[1].avatar)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
               <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[1].name }}</h3>
               <p class="text-sm text-slate-600">{{ rows[1].time }}</p>
               <p class="text-xl font-bold text-slate-900">{{ rows[1].score }} điểm</p>
@@ -92,7 +92,7 @@
             class="flex flex-col items-center rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-6 text-center shadow-sm"
           >
             <div class="text-sm font-semibold text-amber-700">🥇 Hạng 1</div>
-            <img :src="avatarOf(rows[0].name)" alt="avatar" class="mt-3 h-18 w-18 rounded-full border-4 border-amber-200 object-cover" />
+            <img :src="avatarOf(rows[0].name, rows[0].avatar)" alt="avatar" class="mt-3 h-18 w-18 rounded-full border-4 border-amber-200 object-cover" />
             <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[0].name }}</h3>
             <p class="text-sm text-slate-600">{{ rows[0].time }}</p>
             <p class="text-2xl font-bold text-slate-900">{{ rows[0].score }} điểm</p>
@@ -116,7 +116,7 @@
           >
             <div class="text-sm font-semibold" :class="rows[2] ? 'text-slate-600' : 'text-slate-400'">🥉 Hạng 3</div>
             <div v-if="rows[2]">
-              <img :src="avatarOf(rows[2].name)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
+            <img :src="avatarOf(rows[2].name, rows[2].avatar)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
               <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[2].name }}</h3>
               <p class="text-sm text-slate-600">{{ rows[2].time }}</p>
               <p class="text-xl font-bold text-slate-900">{{ rows[2].score }} điểm</p>
@@ -140,7 +140,7 @@
             <div class="flex items-center gap-4">
               <div class="text-xl font-bold text-slate-600">#{{ getRestRank(index) }}</div>
               <div class="flex items-center gap-3">
-                <img :src="avatarOf(row.name)" alt="avatar" class="h-12 w-12 rounded-full object-cover border border-slate-200" />
+                <img :src="avatarOf(row.name, row.avatar)" alt="avatar" class="h-12 w-12 rounded-full object-cover border border-slate-200" />
                 <span class="text-base font-semibold text-slate-900">{{ row.name }}</span>
               </div>
             </div>
@@ -201,7 +201,7 @@
           <div class="flex items-center gap-4">
             <div class="text-2xl font-bold text-slate-700">#{{ me.rank }}</div>
             <div class="flex items-center gap-3">
-              <img :src="avatarOf('Bạn')" alt="avatar" class="h-12 w-12 rounded-full object-cover border border-slate-200" />
+              <img :src="avatarOf('Bạn', me?.avatar)" alt="avatar" class="h-12 w-12 rounded-full object-cover border border-slate-200" />
               <span class="text-base font-semibold text-slate-900">Vị trí của bạn</span>
             </div>
           </div>
@@ -235,11 +235,12 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
 import { examService } from '@/services/exam.service'
+import { getAvatarSrc } from '@/utils/avatar'
 
 // --- TYPES ---
 type Exam = { id: number | string; title: string };
-type RankRow = { id?: string | number; name: string; score: number; correct: number; total: number; time: string };
-type RankMe = { rank: number; score: number; correct: number; total: number; time: string };
+type RankRow = { id?: string | number; name: string; avatar?: string; gender?: string; score: number; correct: number; total: number; time: string };
+type RankMe = { rank: number; score: number; correct: number; total: number; time: string; avatar?: string; gender?: string };
 
 // --- STATE ---
 const exams = ref<Exam[]>([]);
@@ -306,9 +307,12 @@ const pagesToShow = computed(() => {
 
 
 // --- HELPERS ---
-function avatarOf(name: string) {
-  const safe = encodeURIComponent(name || 'User');
-  return `https://api.dicebear.com/7.x/initials/svg?seed=${safe}&backgroundColor=e2e8f0&textColor=64748b`;
+function avatarOf(name: string, avatarUrl?: string, gender?: string) {
+  // Use provided avatar; otherwise fallback to default avatar (student role)
+  const src = getAvatarSrc(avatarUrl || '', (gender as any) || undefined, 'student')
+  if (src) return src
+  const safe = encodeURIComponent(name || 'User')
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${safe}&backgroundColor=e2e8f0&textColor=64748b`
 }
 
 // --- DATA LOADERS ---
@@ -350,6 +354,8 @@ async function loadRanking(id: Exam['id']) {
     rows.value = (r.top || []).map((item: any) => ({
       id: item.id,
       name: item.name || 'Học viên',
+      avatar: item.avatar || item.avatar_url || item.photo || '',
+      gender: item.gender || '',
       score: item.score || 0,
       correct: item.correct || 0,
       total: item.total || 0,
@@ -364,6 +370,8 @@ async function loadRanking(id: Exam['id']) {
         correct: r.me.correct || 0,
         total: r.me.total || 0,
         time: formatTime(r.me.time) || '00:00',
+        avatar: r.me.avatar || r.me.avatar_url || r.me.photo || '',
+        gender: r.me.gender || '',
       };
     } else {
       me.value = null;
