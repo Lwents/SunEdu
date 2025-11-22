@@ -603,11 +603,22 @@ function onYouTubeStateChange(event: any) {
 
 function getVideoFileUrl(videoFile?: string): string {
   if (!videoFile) return ''
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
+
+  // Nếu BE trả về URL tuyệt đối (http/https), map sang endpoint stream để hỗ trợ Range
   if (videoFile.startsWith('http://') || videoFile.startsWith('https://')) {
-    return videoFile
+    try {
+      const url = new URL(videoFile)
+      const mediaPath = url.pathname.startsWith('/media/') ? url.pathname.replace(/^\/media\//, '') : url.pathname.replace(/^\//, '')
+      return `${apiBase}/api/media/stream/${encodeURI(mediaPath)}`
+    } catch {
+      return videoFile
+    }
   }
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  return `${apiBase}/media/${videoFile}`
+
+  // Nếu là path tương đối, cũng đưa qua stream endpoint
+  const safePath = videoFile.replace(/^\/+/, '') // bỏ slash đầu để tránh path trống
+  return `${apiBase}/api/media/stream/${encodeURI(safePath)}`
 }
 
 function formatDuration(min?: number){

@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 
 from student_api.permissions import IsStudent
 from content.models import Course, Enrollment, Lesson, LessonProgress, Module
+from ai_personalization.models import LearningPath
 
 
 def build_media_url(request, file_field):
@@ -517,3 +518,106 @@ class StudentLearningPathView(APIView):
                 path_data['grade_3_5'].append(course_data)
         
         return Response(path_data, status=status.HTTP_200_OK)
+
+
+class StudentLearningPathManageView(APIView):
+    """
+    GET /api/student/learning-path/manage/?course_id=...
+        - List all learning paths for student (if no course_id)
+        - Or return detail for one course_id
+    POST /api/student/learning-path/manage/
+        - Create/regenerate a learning path for a course (overwrites existing)
+        Payload: { "course_id": "<uuid|id>" }
+    """
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def _build_steps(self, course):
+        steps = []
+        lessons = Lesson.objects.filter(
+            module__course=course,
+            published=True
+        ).select_related('module').order_by('module__position', 'position', 'id')
+        for idx, l in enumerate(lessons, start=1):
+            steps.append({
+                "lesson_id": str(l.id),
+                "title": l.title,
+                "module": l.module.title if l.module else '',
+                "order": idx,
+                "status": "pending",
+            })
+        return steps
+
+    def _progress(self, student, course):
+        total = Lesson.objects.filter(module__course=course, published=True).count()
+        completed = LessonProgress.objects.filter(
+            lesson__module__course=course,
+            student=student,
+            completed=True
+        ).count()
+        progress_pct = int((completed / total * 100)) if total > 0 else 0
+        return total, completed, progress_pct
+
+    def get(self, request):
+        student = request.user
+        course_id = request.query_params.get('course_id')
+
+        qs = LearningPath.objects.filter(student=student).select_related('course')
+        if course_id:
+            qs = qs.filter(course_id=course_id)
+
+        data = []
+        for lp in qs:
+            total, completed, progress_pct = self._progress(student, lp.course)
+            next_steps = lp.path[:3] if isinstance(lp.path, list) else []
+            data.append({
+                "id": str(lp.id),
+                "course_id": str(lp.course.id),
+                "course_title": lp.course.title,
+                "progress": progress_pct,
+                "completed_steps": completed,
+                "total_steps": total,
+                "next_steps": next_steps,
+                "generated_at": lp.generated_at.isoformat(),
+                "metadata": lp.metadata or {},
+            })
+
+        if course_id:
+            if not data:
+                return Response({"detail": "Learning path not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(data[0], status=status.HTTP_200_OK)
+        return Response(data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        student = request.user
+        course_id = request.data.get('course_id')
+        if not course_id:
+            return Response({"detail": "course_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response({"detail": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # build path from published lessons
+        steps = self._build_steps(course)
+        lp, _ = LearningPath.objects.update_or_create(
+            student=student,
+            course=course,
+            defaults={
+                "path": steps,
+                "metadata": {"generated_by": "student_api", "version": 1},
+            },
+        )
+
+        total, completed, progress_pct = self._progress(student, course)
+        return Response({
+            "id": str(lp.id),
+            "course_id": str(course.id),
+            "course_title": course.title,
+            "progress": progress_pct,
+            "completed_steps": completed,
+            "total_steps": total,
+            "next_steps": lp.path[:3] if isinstance(lp.path, list) else [],
+            "generated_at": lp.generated_at.isoformat(),
+            "metadata": lp.metadata or {},
+        }, status=status.HTTP_201_CREATED)
