@@ -119,29 +119,6 @@
             </div>
           </div>
 
-          <!-- Phone -->
-          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
-            <label class="text-sm font-medium text-slate-700 lg:pt-2">
-              Số điện thoại <span class="text-red-500">*</span>
-            </label>
-            <div class="space-y-1">
-              <input
-                v-model.trim="form.phone"
-                type="tel"
-                placeholder="Nhập số điện thoại"
-                :class="[
-                  'w-full rounded-lg border px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2',
-                  errors.phone
-                    ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
-                    : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
-                ]"
-              />
-              <p v-if="errors.phone" class="text-xs text-red-600">
-                {{ errors.phone }}
-              </p>
-            </div>
-          </div>
-
           <!-- Date of Birth -->
           <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
             <label class="text-sm font-medium text-slate-700 lg:pt-2">Ngày sinh</label>
@@ -489,7 +466,6 @@ function onPickFile(e: Event) {
 const form = reactive({
   username: '',
   fullname: '',
-  phone: '',
   email: '',
   emailUpdates: false,
   gender: 'male',
@@ -637,7 +613,6 @@ function applyProfileToForm(profile?: ProfileDetails | null) {
   if (!profile) return
   form.username = profile.username || profile.name || ''
   form.fullname = profile.fullName || profile.name || ''
-  form.phone = profile.phone || ''
   form.email = profile.email || ''
   form.gender = (profile.gender as any) || form.gender
   form.emailUpdates = profile.email_updates ?? false
@@ -698,7 +673,7 @@ onMounted(async () => {
 })
 
 /** VALIDATION */
-const errors = reactive<{ fullname?: string; phone?: string; email?: string }>({})
+const errors = reactive<{ fullname?: string; email?: string }>({})
 const isEmail = (v: string) => /^\S+@\S+\.\S+$/.test(v)
 
 watch(
@@ -706,7 +681,6 @@ watch(
   () => {
     if (!ready.value) return
     errors.fullname = form.fullname ? '' : 'Vui lòng nhập họ và tên.'
-    errors.phone = form.phone ? '' : 'Vui lòng nhập số điện thoại.'
     errors.email = form.email && !isEmail(form.email) ? 'Email không hợp lệ.' : ''
   },
   { deep: true },
@@ -732,7 +706,7 @@ watch(selectedWardCode, (code) => {
   form.ward = ward?.name || ''
 })
 
-const isValidInfo = computed(() => !errors.fullname && !errors.phone && !errors.email)
+const isValidInfo = computed(() => !errors.fullname && !errors.email)
 const isDirty = computed(() => {
   const now = JSON.stringify({ ...form, dob: { ...dob }, avatarPreview: avatarPreview.value })
   return now !== initialJSON.value
@@ -753,7 +727,6 @@ async function saveProfile() {
   try {
     const payload: ProfileUpdatePayload = {
       full_name: form.fullname || undefined,
-      phone: form.phone || undefined,
       email: form.email || undefined,
       gender: form.gender || undefined,
       avatar_url:

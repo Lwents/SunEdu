@@ -5,6 +5,7 @@ from .courses_view import (
     StudentCourseDetailView,
     StudentCoursePlayerView,
     StudentLearningPathView,
+    StudentLearningPathManageView,
 )
 from .exams_view import (
     StudentExamsListView,
@@ -32,6 +33,7 @@ __all__ = [
     'StudentCourseDetailView',
     'StudentCoursePlayerView',
     'StudentLearningPathView',
+    'StudentLearningPathManageView',
     'StudentExamsListView',
     'StudentExamDetailView',
     'StudentExamStartView',
@@ -45,5 +47,4 @@ __all__ = [
     'StudentChangePasswordView',
     'StudentParentViewView',
 ]
-
 

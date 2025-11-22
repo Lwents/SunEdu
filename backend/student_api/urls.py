@@ -6,6 +6,7 @@ from student_api.views import (
     StudentCourseDetailView,
     StudentCoursePlayerView,
     StudentLearningPathView,
+    StudentLearningPathManageView,
     StudentExamsListView,
     StudentExamDetailView,
     StudentExamStartView,
@@ -38,6 +39,7 @@ urlpatterns = [
     path('courses/<uuid:pk>/player/', StudentCoursePlayerView.as_view(), name='course-player'),
     path('courses/<uuid:pk>/player/<uuid:lesson_id>/', StudentCoursePlayerView.as_view(), name='course-player-lesson'),
     path('learning-path/', StudentLearningPathView.as_view(), name='learning-path'),
+    path('learning-path/manage/', StudentLearningPathManageView.as_view(), name='learning-path-manage'),
     
     # Exams
     path('exams/', StudentExamsListView.as_view(), name='exams-list'),
@@ -62,5 +64,3 @@ urlpatterns = [
     path('notifications/<uuid:id>/read/', StudentNotificationReadView.as_view(), name='notification-read'),
     path('notifications/read-all/', StudentNotificationReadAllView.as_view(), name='notification-read-all'),
 ]
-
-

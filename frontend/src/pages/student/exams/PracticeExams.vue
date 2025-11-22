@@ -3,8 +3,8 @@
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 mb-2">Kho đề luyện tập</h1>
-        <p class="text-slate-600">Chọn một đề thi để bắt đầu thử thách và nâng cao kỹ năng của bạn</p>
+        <h1 class="text-3xl font-bold text-slate-900 mb-2">Bài kiểm tra</h1>
+        <p class="text-slate-600">Danh sách bài kiểm tra dành cho bạn. Chọn bài và làm ngay.</p>
       </div>
 
       <!-- Filters -->
@@ -131,8 +131,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-slate-900 mb-2">Không tìm thấy đề thi phù hợp</h3>
-        <p class="text-sm text-slate-500">Vui lòng thử lại với từ khóa hoặc bộ lọc khác</p>
+        <h3 class="text-lg font-semibold text-slate-900 mb-2">Chưa có bài kiểm tra</h3>
+        <p class="text-sm text-slate-500">Hiện chưa có bài kiểm tra nào. Hãy quay lại sau hoặc kiểm tra với giáo viên.</p>
       </div>
 
       <!-- Pagination -->

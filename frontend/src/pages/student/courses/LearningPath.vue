@@ -14,6 +14,64 @@
         </router-link>
       </div>
 
+      <!-- Nhịp học hôm nay -->
+      <div v-if="!loading" class="mb-6 grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2">
+        <div class="flex flex-col justify-between gap-3">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-sky-600">Nhịp học hôm nay</p>
+            <h2 class="text-xl font-bold text-slate-900">Tiến độ tổng quát</h2>
+            <p class="text-sm text-slate-600 mt-1">Bạn đã hoàn thành {{ overall.completed }} / {{ overall.total }} hoạt động.</p>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+              <p class="text-xs text-slate-500">Khoá học</p>
+              <p class="text-lg font-bold text-slate-900">{{ overall.courses }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+              <p class="text-xs text-slate-500">Bài hoàn thành</p>
+              <p class="text-lg font-bold text-slate-900">{{ overall.completed }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+              <p class="text-xs text-slate-500">Tiến độ</p>
+              <p class="text-lg font-bold text-slate-900">{{ overall.progress }}%</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-cyan-500 to-sky-600" :style="{ width: `${overall.progress}%` }"></div>
+            </div>
+            <button
+              class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+              @click="startFirstStep"
+            >
+              Bắt đầu học
+            </button>
+          </div>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-sm font-semibold text-slate-900 mb-3">Gợi ý hôm nay</p>
+          <div v-if="todayTasks.length" class="space-y-2">
+            <div
+              v-for="task in todayTasks"
+              :key="task.key"
+              class="flex items-center justify-between rounded-lg bg-white px-3 py-2 border border-slate-200"
+            >
+              <div>
+                <p class="text-sm font-semibold text-slate-900">{{ task.title }}</p>
+                <p class="text-xs text-slate-500">{{ task.course }}</p>
+              </div>
+              <button
+                class="rounded-lg bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-800"
+                @click="startStep(task.path, task.step)"
+              >
+                Học ngay
+              </button>
+            </div>
+          </div>
+          <p v-else class="text-sm text-slate-500">Chưa có bài cần học. Hãy chọn một khoá để bắt đầu.</p>
+        </div>
+      </div>
+
       <!-- Personalized Paths -->
       <div v-if="loading" class="space-y-4">
         <div v-for="i in 3" :key="i" class="h-48 animate-pulse rounded-2xl border border-slate-200 bg-white"></div>
@@ -101,12 +159,6 @@
             >
               Xem chi tiết
             </button>
-            <button
-              class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              @click="regeneratePath(path)"
-            >
-              Tạo lại lộ trình
-            </button>
           </div>
         </section>
       </div>
@@ -120,11 +172,11 @@
             <span class="rounded-full border border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20 px-3 py-1 text-xs font-bold text-cyan-700 dark:text-cyan-300">Nền tảng</span>
           </div>
           <p class="mt-2 text-slate-700">Củng cố Toán, Tiếng Việt, Tiếng Anh với các bài ngắn dễ tiếp thu.</p>
-          <ul class="mt-3 space-y-1 text-sm text-slate-700">
-            <li>• Kiến thức cốt lõi theo tuần</li>
-            <li>• Bài tập luyện thói quen học</li>
-            <li>• Theo dõi tiến độ đơn giản</li>
-          </ul>
+          <ol class="mt-3 space-y-1 text-sm text-slate-700 list-decimal list-inside">
+            <li>Bước 1: Ôn từ vựng & đọc hiểu</li>
+            <li>Bước 2: Luyện toán cơ bản</li>
+            <li>Bước 3: Làm bài kiểm tra mini (10 phút)</li>
+          </ol>
           <div class="mt-4">
             <router-link
               class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-extrabold text-white hover:bg-slate-800"
@@ -142,11 +194,11 @@
             <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">Mở rộng</span>
           </div>
           <p class="mt-2 text-slate-700">Hệ thống hoá & luyện thi: Toán, TV, Anh + Khoa học/Lịch sử.</p>
-          <ul class="mt-3 space-y-1 text-sm text-slate-700">
-            <li>• Quiz ôn tập định kỳ</li>
-            <li>• Lộ trình theo mục tiêu</li>
-            <li>• Báo cáo tiến bộ chi tiết</li>
-          </ul>
+          <ol class="mt-3 space-y-1 text-sm text-slate-700 list-decimal list-inside">
+            <li>Bước 1: Ôn kỹ năng đọc & ngữ pháp</li>
+            <li>Bước 2: Luyện đề Toán & Khoa học</li>
+            <li>Bước 3: Kiểm tra đánh giá, nhận phản hồi</li>
+          </ol>
           <div class="mt-4">
             <router-link
               class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-extrabold text-white hover:bg-slate-800"
@@ -158,68 +210,6 @@
         </section>
       </div>
 
-      <!-- Create New Path -->
-      <div class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
-        <h3 class="text-lg font-semibold text-slate-900">Tạo lộ trình mới</h3>
-        <p class="mt-2 text-sm text-slate-600">Chọn khóa học để tạo lộ trình học tập cá nhân hóa</p>
-        <button
-          class="mt-4 rounded-xl bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700"
-          @click="showCreateModal = true"
-        >
-          Tạo lộ trình
-        </button>
-      </div>
-
-      <!-- Create Path Modal -->
-      <div
-        v-if="showCreateModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="showCreateModal = false"
-      >
-        <div class="w-full max-w-2xl rounded-2xl bg-white p-6">
-          <h3 class="mb-4 text-lg font-semibold">Tạo lộ trình học tập mới</h3>
-          <div class="space-y-4">
-            <div>
-              <label class="mb-1 block text-sm font-medium">Chọn khóa học</label>
-              <select
-                v-model="selectedCourseId"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none"
-              >
-                <option value="">— Chọn khóa học —</option>
-                <option v-for="c in availableCourses" :key="c.id" :value="c.id">
-                  {{ c.title }}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium">Mức độ khó</label>
-              <select
-                v-model="difficulty"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none"
-              >
-                <option value="adaptive">Tự động điều chỉnh</option>
-                <option value="easy">Dễ</option>
-                <option value="medium">Trung bình</option>
-                <option value="hard">Khó</option>
-              </select>
-            </div>
-          </div>
-          <div class="mt-6 flex justify-end gap-3">
-            <button
-              class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50"
-              @click="showCreateModal = false"
-            >
-              Hủy
-            </button>
-            <button
-              class="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
-              @click="createPath"
-            >
-              Tạo lộ trình
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -233,10 +223,8 @@ const router = useRouter()
 
 const loading = ref(false)
 const personalizedPaths = ref<any[]>([])
-const availableCourses = ref<any[]>([])
-const showCreateModal = ref(false)
-const selectedCourseId = ref('')
-const difficulty = ref('adaptive')
+const todayTasks = ref<any[]>([])
+const overall = ref({ courses: 0, completed: 0, total: 0, progress: 0 })
 
 function formatDate(iso?: string) {
   if (!iso) return ''
@@ -315,19 +303,35 @@ async function loadPaths() {
     
     // Sort by progress (descending)
     personalizedPaths.value.sort((a, b) => b.progress - a.progress)
+
+    // Build summary + tasks
+    const totalSteps = personalizedPaths.value.reduce((s, p) => s + (p.totalSteps || 0), 0)
+    const completed = personalizedPaths.value.reduce((s, p) => s + (p.completedSteps || 0), 0)
+    overall.value = {
+      courses: personalizedPaths.value.length,
+      completed,
+      total: totalSteps,
+      progress: totalSteps > 0 ? Math.round((completed / totalSteps) * 100) : 0,
+    }
+
+    // Pick up to 3 upcoming steps for today
+    todayTasks.value = []
+    personalizedPaths.value.forEach((p) => {
+      (p.nextSteps || []).slice(0, 1).forEach((st: any, idx: number) => {
+        todayTasks.value.push({
+          key: `${p.id}-${st.lessonId || idx}`,
+          title: st.title,
+          course: p.courseTitle,
+          path: p,
+          step: st,
+        })
+      })
+    })
+    todayTasks.value = todayTasks.value.slice(0, 3)
   } catch (e: any) {
     console.error('Load paths error:', e)
   } finally {
     loading.value = false
-  }
-}
-
-async function loadCourses() {
-  try {
-    const { items } = await courseService.list({ page: 1, pageSize: 50, status: 'published' })
-    availableCourses.value = items || []
-  } catch (e: any) {
-    console.error('Load courses error:', e)
   }
 }
 
@@ -338,31 +342,23 @@ function startStep(path: any, step: any) {
   })
 }
 
+function startFirstStep() {
+  // Go to the first upcoming step in any path
+  if (todayTasks.value.length > 0) {
+    const first = todayTasks.value[0]
+    startStep(first.path, first.step)
+  } else if (personalizedPaths.value.length > 0) {
+    const p = personalizedPaths.value[0]
+    const step = (p.nextSteps && p.nextSteps[0]) || { lessonId: '1' }
+    startStep(p, step)
+  }
+}
+
 function viewFullPath(path: any) {
   router.push({ name: 'student-course-detail', params: { id: path.courseId } })
 }
 
-async function regeneratePath(path: any) {
-  if (confirm('Bạn có chắc muốn tạo lại lộ trình này?')) {
-    // Call API to regenerate
-    console.log('Regenerate path:', path.id)
-    await loadPaths()
-  }
-}
-
-async function createPath() {
-  if (!selectedCourseId.value) {
-    alert('Vui lòng chọn khóa học')
-    return
-  }
-  // Call API to create path
-  console.log('Create path:', { courseId: selectedCourseId.value, difficulty: difficulty.value })
-  showCreateModal.value = false
-  await loadPaths()
-}
-
 onMounted(async () => {
   await loadPaths()
-  await loadCourses()
 })
 </script>
