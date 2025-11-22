@@ -619,6 +619,8 @@ export const examService = {
           top: (data.top_students || []).map((s: any, idx: number) => ({
             id: s.student_id || idx + 1,
             name: s.student_name || s.name || 'Học viên',
+            avatar: s.avatar || s.avatar_url || s.photo || '',
+            gender: s.gender || '',
             score: Math.round(s.total_score || s.score || 0),
             correct: s.correct_count || 0,
             total: s.total_count || 0,
@@ -630,6 +632,8 @@ export const examService = {
             correct: data.my_stats.correct_count || 0,
             total: data.my_stats.total_count || 0,
             time: data.my_stats.time_taken || '00:00',
+            avatar: data.my_stats.avatar || data.my_stats.avatar_url || data.my_stats.photo || '',
+            gender: data.my_stats.gender || '',
           } : null,
         }
       } catch (e: any) {

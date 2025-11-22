@@ -161,11 +161,21 @@ def exercise_ranking(exercise_id: str, user_id: Optional[int] = None) -> Dict[st
             # If no valid time, show 00:00
             time_str = "00:00"
         
-        # Get student name from profile.display_name or username
+        # Get student name + avatar from profile
         student_name = "Học viên"
+        avatar_url = ""
+        gender = ""
         if attempt.student:
-            if hasattr(attempt.student, 'profile') and attempt.student.profile and attempt.student.profile.display_name:
-                student_name = attempt.student.profile.display_name
+            if hasattr(attempt.student, 'profile') and attempt.student.profile:
+                profile = attempt.student.profile
+                if getattr(profile, "display_name", None):
+                    student_name = profile.display_name
+                else:
+                    student_name = attempt.student.username or "Học viên"
+                avatar_url = getattr(profile, "avatar_url", "") or ""
+                gender = getattr(profile, "gender", "") or ""
+                if not avatar_url and isinstance(profile.metadata, dict):
+                    avatar_url = profile.metadata.get("avatar") or profile.metadata.get("avatar_url") or ""
             else:
                 student_name = attempt.student.username or "Học viên"
         
@@ -173,6 +183,8 @@ def exercise_ranking(exercise_id: str, user_id: Optional[int] = None) -> Dict[st
             "student_id": attempt.student.id if attempt.student else None,
             "student_name": student_name,
             "name": student_name,
+            "avatar": avatar_url,
+            "gender": gender,
             "score": round(attempt.score or 0, 1),
             "total_score": round(attempt.score or 0, 1),
             "correct_count": correct_count,
@@ -190,6 +202,8 @@ def exercise_ranking(exercise_id: str, user_id: Optional[int] = None) -> Dict[st
                 "correct_count": correct_count,
                 "total_count": total_questions,
                 "time_taken": time_str,
+                "avatar": avatar_url,
+                "gender": gender,
             }
         
         # Add to top students (limit to top 100)
