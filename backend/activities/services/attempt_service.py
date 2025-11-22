@@ -27,7 +27,10 @@ ExerciseAttemptModel = apps.get_model('activities', 'ExerciseAttempt')
 ExerciseAnswerModel = apps.get_model('activities', 'ExerciseAnswer')
 
 # Optional models
-ExerciseSettingsModel = getattr(apps.get_model('activities', 'ExerciseSettings'), '__call__', None)
+try:
+    ExerciseSettingsModel = apps.get_model('activities', 'ExerciseSettings')
+except LookupError:
+    ExerciseSettingsModel = None
 HintModel = getattr(apps.get_model('activities', 'Hint'), '__call__', None)
 QuestionStatModel = getattr(apps.get_model('activities', 'QuestionStat'), '__call__', None)
 
@@ -36,13 +39,46 @@ QuestionStatModel = getattr(apps.get_model('activities', 'QuestionStat'), '__cal
 # Attempt lifecycle
 # ----------------------
 def start_attempt(exercise_id: str, student_user) -> ExerciseAttemptDomain:
+    from django.utils import timezone
+    from django.apps import apps
+    
     exercise = get_exercise(exercise_id)
     student_id = student_user.id
-    num_attempts = ExerciseAttemptModel.objects.filter(
-        exercise_id=exercise_id, student=student_user).count()
-    if not exercise.can_attempt(num_attempts):
-        raise ValidationError("Max attempts reached.")
+    
+    # Check if exercise is published
+    if not exercise.published:
+        raise ValidationError("Exercise is not published yet.")
+    
+    # Check if exercise has expired (end_at has passed)
+    ExerciseSettingsModel = apps.get_model('activities', 'ExerciseSettings')
+    try:
+        settings = ExerciseSettingsModel.objects.get(exercise_id=exercise_id)
+        if settings.end_at and timezone.now() >= settings.end_at:
+            raise ValidationError("Exercise has closed. The deadline has passed.")
+    except ExerciseSettingsModel.DoesNotExist:
+        pass  # No settings, allow attempt
+    
+    # Check if student already has an attempt
+    attempt_qs = ExerciseAttemptModel.objects.filter(
+        exercise_id=exercise_id,
+        student=student_user
+    ).order_by('-started_at')
+    existing_attempt = attempt_qs.first()
 
+    # Nếu đang có bài làm dở, trả về attempt đó để tiếp tục
+    if existing_attempt and existing_attempt.finished_at is None:
+        return ExerciseAttemptDomain.from_model(existing_attempt, exercise)
+
+    # Đã làm xong trước đó: kiểm tra giới hạn số lần làm
+    attempt_count = attempt_qs.count()
+    if not exercise.can_attempt(attempt_count):
+        latest_id = str(existing_attempt.id) if existing_attempt else None
+        msg = "Bạn đã hoàn thành bài kiểm tra này và đã đạt giới hạn số lần làm bài cho phép."
+        if latest_id:
+            msg += f" Attempt ID: {latest_id}"
+        raise ValidationError(msg)
+
+    # Create new attempt
     attempt_domain = exercise.create_attempt(student_id=student_id)
     attempt_model = ExerciseAttemptModel.objects.create(
         id=attempt_domain.id,
@@ -265,4 +301,3 @@ def manual_grade_answer(
         correct=answer_model.correct,
         score=answer_model.answer.get('manual_score', None) if isinstance(answer_model.answer, dict) else None
     )
-

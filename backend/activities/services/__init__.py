@@ -22,6 +22,7 @@ from .attempt_service import (
 )
 from .analytic_service import (
     exercise_stats,
+    exercise_ranking,
     export_results_csv,
 )
 from .exceptions import (

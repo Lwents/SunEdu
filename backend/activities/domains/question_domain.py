@@ -91,6 +91,13 @@ class QuestionDomain:
         """
         qtype = self.meta.get('type', 'mcq')
         points = self.total_points()
+        
+        # Map 'single' and 'multi' to 'mcq' for compatibility
+        if qtype in ('single', 'multi'):
+            qtype = 'mcq'
+            # For 'multi', set multiple flag
+            if self.meta.get('type') == 'multi':
+                self.meta['multiple'] = True
 
         if qtype == 'mcq':
             # Answer payload conventions:
@@ -99,26 +106,63 @@ class QuestionDomain:
             multiple = bool(self.meta.get('multiple', False))
             correct_choice_ids = {c.id for c in self.choices if c.is_correct}
             if multiple:
-                selected = set(answer_payload.get('selected_choice_ids') or [])
+                # Support both formats: {'selected_choice_ids': [...]} or direct array
+                selected_ids = None
+                # Check if answer_payload is a dict first
+                if isinstance(answer_payload, dict):
+                    selected_ids = answer_payload.get('selected_choice_ids')
+                # If not found in dict or not a dict, try direct array
+                if selected_ids is None:
+                    # Try direct array (frontend may send array directly)
+                    if isinstance(answer_payload, list):
+                        selected_ids = answer_payload
+                    else:
+                        selected_ids = []
+                
+                selected = {str(sid) for sid in selected_ids}
                 if not selected:
                     return {"score": 0.0, "correct": False, "explanation": "No choice selected."}
+                
+                # Convert correct_choice_ids to strings for comparison
+                correct_choice_ids_str = {str(cid) for cid in correct_choice_ids}
                 # partial credit: (#correct_selected / #correct_total) - (#incorrect_selected / #choices)
-                correct_selected = len(selected & correct_choice_ids)
-                incorrect_selected = len(selected - correct_choice_ids)
-                if len(correct_choice_ids) == 0:
+                correct_selected = len(selected & correct_choice_ids_str)
+                incorrect_selected = len(selected - correct_choice_ids_str)
+                if len(correct_choice_ids_str) == 0:
                     base = 0.0
                 else:
-                    base = correct_selected / len(correct_choice_ids)
+                    base = correct_selected / len(correct_choice_ids_str)
                 penalty = incorrect_selected / max(1, len(self.choices))
                 raw = max(0.0, base - penalty * (1.0 if self.meta.get('penalize_wrong', False) else 0.0))
                 score = round(points * raw, 4)
-                correct_flag = (correct_selected == len(correct_choice_ids) and incorrect_selected == 0)
+                correct_flag = (correct_selected == len(correct_choice_ids_str) and incorrect_selected == 0)
                 return {"score": score, "correct": correct_flag, "explanation": None}
             else:
-                selected = answer_payload.get('selected_choice_id')
+                # Support both formats: {'selected_choice_id': '...'} or direct string/ID
+                selected = None
+                # Check if answer_payload is a dict first
+                if isinstance(answer_payload, dict):
+                    selected = answer_payload.get('selected_choice_id')
+                # If not found in dict or not a dict, try direct value
+                if selected is None:
+                    # Try direct value (frontend may send choice ID directly)
+                    if isinstance(answer_payload, str):
+                        selected = answer_payload
+                    elif isinstance(answer_payload, (list, tuple)) and len(answer_payload) > 0:
+                        # If it's a list, take first element
+                        selected = str(answer_payload[0])
+                    elif not isinstance(answer_payload, dict):
+                        # If answer_payload is not a dict, treat it as the choice ID
+                        selected = str(answer_payload)
+                
                 if selected is None:
                     return {"score": 0.0, "correct": False, "explanation": "No choice selected."}
-                if selected in correct_choice_ids:
+                
+                # Convert to string for comparison
+                selected = str(selected)
+                correct_choice_ids_str = {str(cid) for cid in correct_choice_ids}
+                
+                if selected in correct_choice_ids_str:
                     return {"score": points, "correct": True, "explanation": None}
                 else:
                     if self.meta.get('negative_marking', False):
@@ -128,7 +172,13 @@ class QuestionDomain:
 
         elif qtype == 'short_answer':
             # meta may contain 'accepted_answers': list[str] OR regex patterns
-            text = normalize_text(answer_payload.get('text', ''))
+            # Support both dict format and direct string
+            if isinstance(answer_payload, dict):
+                text = normalize_text(answer_payload.get('text', ''))
+            elif isinstance(answer_payload, str):
+                text = normalize_text(answer_payload)
+            else:
+                text = normalize_text(str(answer_payload))
             accepted = self.meta.get('accepted_answers', [])
             threshold = float(self.meta.get('similarity_threshold', 0.85))
             # exact or regex match
@@ -151,7 +201,12 @@ class QuestionDomain:
             # meta: expects 'pairs' or choices representing left/right stored separately.
             # answer_payload: {'pairs': [{'left_id': 'L1', 'right_id': 'R3'}, ...]}
             correct_pairs = self.meta.get('correct_pairs', {})  # left_id->right_id
-            submitted = {p['left_id']: p['right_id'] for p in (answer_payload.get('pairs') or [])}
+            pairs = []
+            if isinstance(answer_payload, dict):
+                pairs = answer_payload.get('pairs', [])
+            elif isinstance(answer_payload, list):
+                pairs = answer_payload
+            submitted = {p['left_id']: p['right_id'] for p in pairs if isinstance(p, dict) and 'left_id' in p and 'right_id' in p}
             if not submitted:
                 return {"score": 0.0, "correct": False, "explanation": "No pairs submitted."}
             total = len(correct_pairs)

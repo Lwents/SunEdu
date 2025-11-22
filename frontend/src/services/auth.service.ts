@@ -196,6 +196,23 @@ export const authService = {
     if (payload.avatar_url) backendPayload.avatar_url = payload.avatar_url
     if (payload.dob) backendPayload.dob = payload.dob
     if (payload.gender) backendPayload.gender = payload.gender
+    // Parent & contact info (backend copies these keys into metadata)
+    const copyKeys = [
+      'address',
+      'city',
+      'district',
+      'ward',
+      'parent_name',
+      'parent_phone',
+      'parent_email',
+      'parent_relation',
+      'parent_address',
+      'email_updates',
+    ] as const
+    for (const k of copyKeys) {
+      const v = (payload as any)[k]
+      if (v !== undefined) backendPayload[k] = v
+    }
     // Store title and bio in metadata
     const metadata: any = {}
     if ((payload as any).title !== undefined) metadata.title = (payload as any).title

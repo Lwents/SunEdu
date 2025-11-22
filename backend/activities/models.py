@@ -12,6 +12,7 @@ class Exercise(models.Model):
         max_length=32,
         choices=[('mcq', ('Multiple Choice')), ('short_answer', ('Short Answer')), ('matching', ('Matching'))]
     )
+    published = models.BooleanField(default=False)  # Whether the exercise is published and visible to students
 
     class Meta:
         verbose_name = ('Exercise')
@@ -88,6 +89,8 @@ class ExerciseSettings(models.Model):
     shuffle_choices = models.BooleanField(default=True)
     pass_score = models.FloatField(default=50.0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     negative_marking = models.BooleanField(default=False)  # penalize wrong answers
+    scheduled_at = models.DateTimeField(null=True, blank=True)  # When to automatically publish
+    end_at = models.DateTimeField(null=True, blank=True)  # When to automatically close the exam
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

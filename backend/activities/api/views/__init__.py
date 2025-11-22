@@ -18,6 +18,7 @@ from .view_for_instructor_and_admin import (
     RegradeAttemptView,
     ManualGradeView,
     ExerciseStatsView,
+    ExerciseAttemptsListView,
     ExportResultsView
 )
 
@@ -35,6 +36,7 @@ __all__ = [
     'RegradeAttemptView',
     'ManualGradeView',
     'ExerciseStatsView',
+    'ExerciseAttemptsListView',
     'ExportResultsView',
 ]
 

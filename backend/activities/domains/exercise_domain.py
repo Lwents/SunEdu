@@ -3,6 +3,7 @@ import uuid
 from typing import TypedDict, Optional, List, Dict, Any, TYPE_CHECKING
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
+from django.utils import timezone
 
 from activities.domains.question_domain import QuestionDomain
 
@@ -12,7 +13,8 @@ if TYPE_CHECKING:
 
 # ---------- Helpers ----------
 def now_utc() -> datetime:
-    return datetime.utcnow()
+    # timezone-aware now to keep datetime arithmetic consistent
+    return timezone.now()
 
 def normalize_text(s: str) -> str:
     s = s or ""
@@ -59,7 +61,28 @@ class ExerciseDomain:
         q_domains = [QuestionDomain.from_model(q) for q in getattr(model, 'questions').all()] if hasattr(model, 'questions') else []
         settings = {}
         if hasattr(model, 'settings') and model.settings:
-            settings = model.settings.__dict__ if isinstance(model.settings, object) else model.settings
+            settings_obj = model.settings
+            if hasattr(settings_obj, '__dict__'):
+                # ExerciseSettings model
+                settings = {
+                    'duration_seconds': getattr(settings_obj, 'time_limit_seconds', None),
+                    'pass_score': getattr(settings_obj, 'pass_score', 50.0),
+                    'max_attempts': getattr(settings_obj, 'max_attempts', None),
+                    'shuffle_questions': getattr(settings_obj, 'shuffle_questions', True),
+                    'shuffle_choices': getattr(settings_obj, 'shuffle_choices', True),
+                    'description': getattr(settings_obj, 'description', None),
+                    'level': getattr(settings_obj, 'level', None),
+                }
+                # Add scheduled_at if present
+                scheduled_at = getattr(settings_obj, 'scheduled_at', None)
+                if scheduled_at:
+                    settings['scheduled_at'] = scheduled_at.isoformat() if hasattr(scheduled_at, 'isoformat') else str(scheduled_at)
+                # Add end_at if present
+                end_at = getattr(settings_obj, 'end_at', None)
+                if end_at:
+                    settings['end_at'] = end_at.isoformat() if hasattr(end_at, 'isoformat') else str(end_at)
+            else:
+                settings = settings_obj if isinstance(settings_obj, dict) else {}
         # Handle lesson_id - can be None
         lesson_id = None
         if hasattr(model, 'lesson_id') and model.lesson_id:

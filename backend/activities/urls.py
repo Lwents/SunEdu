@@ -5,7 +5,7 @@ from activities.api.views import (
     ExerciseQuestionCreateView, QuestionDeleteView,
     QuestionChoiceCreateView, ChoiceDeleteView,
     StartAttemptView, SubmitAnswerView, FinalizeAttemptView, AttemptSummaryView,
-    RegradeAttemptView, ManualGradeView, ExerciseStatsView, ExportResultsView
+    RegradeAttemptView, ManualGradeView, ExerciseStatsView, ExportResultsView, ExerciseAttemptsListView
 )
 
 app_name = "activities"
@@ -28,5 +28,6 @@ urlpatterns = [
     path("attempts/<uuid:attempt_id>/regrade/", RegradeAttemptView.as_view(), name="regrade-attempt"),
     path("attempts/<uuid:attempt_id>/grade/", ManualGradeView.as_view(), name="manual-grade"),
     path("exercises/<uuid:exercise_id>/stats/", ExerciseStatsView.as_view(), name="exercise-stats"),
+    path("exercises/<uuid:exercise_id>/attempts/", ExerciseAttemptsListView.as_view(), name="exercise-attempts-list"),
     path("exercises/<uuid:exercise_id>/export/", ExportResultsView.as_view(), name="exercise-export"),
 ]

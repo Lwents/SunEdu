@@ -61,7 +61,8 @@ async function logoutNow() {
       localStorage.removeItem('refresh')
     }
   } finally {
-    router.push({ name: 'Login' }).catch(() => {})
+    // Chuyển thẳng về trang login (route không có name)
+    router.push('/auth/login').catch(() => {})
   }
 }
 </script>

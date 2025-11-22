@@ -35,11 +35,15 @@ ExerciseAnswerModel = apps.get_model('activities', 'ExerciseAnswer')
 class ChoiceModelSerializer(serializers.ModelSerializer):
     """ModelSerializer for Choice model. Has to_domain() for mapping to ChoiceDomain."""
     id = serializers.UUIDField(required=False)
+    question = serializers.PrimaryKeyRelatedField(required=False, allow_null=True, queryset=QuestionModel.objects.all())
 
     class Meta:
         model = ChoiceModel
         fields = ("id", "question", "text", "is_correct", "position")
         read_only_fields = ("id",)
+        extra_kwargs = {
+            'question': {'required': False, 'allow_null': True}
+        }
 
     def to_domain(self) -> ChoiceDomain:
         """Convert validated data -> ChoiceDomain."""
@@ -67,11 +71,15 @@ class QuestionModelSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(required=False)
     choices = ChoiceModelSerializer(many=True, required=False)
     meta = serializers.JSONField(required=False)
+    exercise = serializers.PrimaryKeyRelatedField(required=False, allow_null=True, queryset=ExerciseModel.objects.all())
 
     class Meta:
         model = QuestionModel
         fields = ("id", "exercise", "prompt", "meta", "choices")
         read_only_fields = ("id",)
+        extra_kwargs = {
+            'exercise': {'required': False, 'allow_null': True}
+        }
 
     def to_domain(self) -> QuestionDomain:
         """Convert serializer validated_data -> QuestionDomain (including nested choices)."""
@@ -119,25 +127,38 @@ class ExerciseModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExerciseModel
-        fields = ("id", "lesson", "title", "type", "settings", "questions")
+        fields = ("id", "lesson", "title", "type", "published", "settings", "questions")
         read_only_fields = ("id",)
         extra_kwargs = {
-            'lesson': {'required': False, 'allow_null': True}
+            'lesson': {'required': False, 'allow_null': True},
+            'type': {'required': False},  # Allow type to be optional on update
+            'published': {'required': False}  # Allow published to be optional on update
         }
 
     def to_domain(self) -> ExerciseDomain:
         """Convert validated_data -> ExerciseDomain (including nested questions)."""
         data = self.validated_data
-        eid = str(data.get("id") or uuid.uuid4())
+        eid = str(data.get("id") or (self.instance.id if self.instance else uuid.uuid4()))
         lesson_val = data.get("lesson")
         lesson_id = str(lesson_val) if lesson_val is not None else (str(self.instance.lesson.id) if self.instance and hasattr(self.instance, 'lesson') and self.instance.lesson else None)
-        title = data["title"]
-        typ = data["type"]
+        title = data.get("title") or (self.instance.title if self.instance else "")
+        # Get type from data, or fallback to instance type, or default to 'mcq'
+        typ = data.get("type") or (self.instance.type if self.instance else "mcq")
         settings = data.get("settings", {}) or {}
         questions_raw = self.validated_data.get("questions", [])
         q_domains: List[QuestionDomain] = []
+        existing_qids = set()
+        if self.instance and hasattr(self.instance, "questions"):
+            try:
+                existing_qids = {str(qm.id) for qm in self.instance.questions.all()}
+            except Exception:
+                existing_qids = set()
         for q in questions_raw:
-            qid = str(q.get("id") or uuid.uuid4())
+            incoming_qid = q.get("id")
+            if incoming_qid and str(incoming_qid) in existing_qids:
+                qid = str(incoming_qid)
+            else:
+                qid = str(incoming_qid or uuid.uuid4())
             # choices inside q already validated
             choices_raw = q.get("choices", [])
             c_domains = [
@@ -157,6 +178,13 @@ class ExerciseModelSerializer(serializers.ModelSerializer):
                 choices=c_domains,
                 hints=None
             ))
+        # Get published from validated_data if provided, otherwise from instance
+        published = data.get("published")
+        if published is None:
+            published = getattr(self.instance, "published", False) if self.instance else False
+        else:
+            published = bool(published)
+        
         return ExerciseDomain(
             id=eid,
             lesson_id=lesson_id,
@@ -164,7 +192,7 @@ class ExerciseModelSerializer(serializers.ModelSerializer):
             type=typ,
             settings=settings,
             questions=q_domains,
-            published=getattr(self.instance, "published", False) if self.instance else False,
+            published=published,
             created_on=getattr(self.instance, "created_on", None) if self.instance else None,
             updated_on=getattr(self.instance, "updated_on", None) if self.instance else None
         )
@@ -177,6 +205,7 @@ class ExerciseModelSerializer(serializers.ModelSerializer):
             "lesson": domain.lesson_id,
             "title": domain.title,
             "type": domain.type,
+            "published": domain.published,  # Include published status in response
             "settings": domain.settings,
             # include full question payloads
             "questions": [QuestionModelSerializer.from_domain(q) for q in domain.questions],

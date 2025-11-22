@@ -71,6 +71,7 @@
           v-for="e in exams"
           :key="e.id"
           class="flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+          :class="isDone(e.id) ? 'opacity-60' : ''"
         >
           <div class="space-y-3 mb-4">
             <span
@@ -101,15 +102,24 @@
             >
               {{ labelLevel(e.level) }}
             </span>
-            <router-link
-              class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-              :to="{ name: 'student-exam-detail', params: { id: e.id } }"
-            >
-              Bắt đầu
-              <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </router-link>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="isDone(e.id)"
+                class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"
+              >
+                Đã hoàn thành
+              </span>
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                @click="isDone(e.id) ? goResult(e.id) : goExam(e.id)"
+              >
+                {{ isDone(e.id) ? 'Xem kết quả' : 'Bắt đầu' }}
+                <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+            </div>
           </div>
         </article>
       </div>
@@ -165,11 +175,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useExamStore } from '@/store/exam.store'
 import { storeToRefs } from 'pinia'
 
 const store = useExamStore()
 const { exams, total, page, pageSize, loading } = storeToRefs(store)
+const router = useRouter()
 
 const q = ref(store.q)
 const level = ref<'' | 'basic' | 'advanced'>(store.level)
@@ -183,6 +195,30 @@ const levelOptions: Array<{ value: '' | 'basic' | 'advanced'; label: string }> =
 const levelLabel = computed(() =>
   level.value === 'basic' ? 'Cơ bản' : level.value === 'advanced' ? 'Nâng cao' : ''
 )
+
+// Helpers để chặn làm lại: đọc attemptId đã hoàn thành trong localStorage
+function doneAttemptId(id: number | string) {
+  try {
+    return localStorage.getItem(`exam_done_${id}`)
+  } catch (e) {
+    console.warn('Cannot read done flag', e)
+    return null
+  }
+}
+function isDone(id: number | string) {
+  return !!doneAttemptId(id)
+}
+function goExam(id: number | string) {
+  router.push({ name: 'student-exam-detail', params: { id } })
+}
+function goResult(id: number | string) {
+  const attemptId = doneAttemptId(id)
+  router.push({
+    name: 'student-exam-result',
+    params: { id },
+    query: attemptId ? { attemptId } : undefined,
+  })
+}
 
 function setLevel(v: '' | 'basic' | 'advanced') {
   level.value = v

@@ -55,11 +55,31 @@ class ExerciseListCreateView(APIView):
 
     def get(self, request: Request):
         lesson_id = request.query_params.get("lesson_id")
+        include_stats = request.query_params.get("include_stats", "false").lower() == "true"
         filters = {}
         if lesson_id:
             filters["lesson_id"] = lesson_id
         domains = list_exercises(filters=filters)
         data = [ExerciseModelSerializer.from_domain(d) for d in domains]
+        
+        # Add stats if requested
+        if include_stats:
+            from activities.services.analytic_service import exercise_stats
+            for item in data:
+                try:
+                    stats = exercise_stats(str(item["id"]))
+                    item["submissions"] = stats.get("submissions", 0)
+                    item["avgScore"] = stats.get("avgScore", 0)
+                    item["avg_score"] = stats.get("avgScore", 0)  # Alias
+                    item["passRate"] = stats.get("passRate", 0)
+                    item["pass_rate"] = stats.get("passRate", 0)  # Alias
+                except Exception:
+                    item["submissions"] = 0
+                    item["avgScore"] = 0
+                    item["avg_score"] = 0
+                    item["passRate"] = 0
+                    item["pass_rate"] = 0
+        
         return Response(data)
 
     def post(self, request: Request):

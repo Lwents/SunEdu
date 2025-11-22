@@ -20,18 +20,19 @@ from activities.serializers import (
     attempt_domain_to_response,
 )
 from activities.services import attempt_service, exercise_service, analytic_service
+from activities.models import ExerciseAttempt
 from activities.services.attempt_service import manual_grade_answer
 from activities.services import ServiceError, NotFoundError, ValidationError, PermissionDenied
 from activities.api.permissions import IsAdminOrReadOnly
 
 class IsTeacherOrAdmin(permissions.BasePermission):
-    """Allow instructors, teachers and admins."""
+    """Allow instructors and admins."""
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
         return bool(
             request.user.is_staff or 
-            (hasattr(request.user, 'role') and request.user.role in ['instructor', 'teacher', 'admin'])
+            (hasattr(request.user, 'role') and request.user.role in ['instructor', 'admin'])
         )
 
 
@@ -82,17 +83,71 @@ class ManualGradeView(APIView):
 class ExerciseStatsView(APIView):
     """
     GET /api/activities/exercises/{exercise_id}/stats/
-    Admin/instructor only (you can loosen permission if teachers should view).
+    Returns exercise statistics. If user is authenticated, also includes ranking data.
+    For students: returns ranking with their position.
+    For teachers/admins: returns full stats.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request: Request, exercise_id: str):
+        try:
+            from activities.services.analytic_service import exercise_stats, exercise_ranking
+            
+            # Get basic stats
+            stats = exercise_stats(exercise_id)
+            
+            # Add ranking data if user is authenticated
+            # For students, include their rank; for teachers, include top students
+            ranking_data = exercise_ranking(exercise_id, user_id=request.user.id if request.user.is_authenticated else None)
+            stats.update(ranking_data)
+            
+        except NotFoundError:
+            return Response({"detail": "Exercise not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(stats)
+
+
+class ExerciseAttemptsListView(APIView):
+    """
+    GET /api/activities/exercises/{exercise_id}/attempts/
+    Returns list of attempts for an exercise. Admin/instructor only.
     """
     permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def get(self, request: Request, exercise_id: str):
+        from activities.models import ExerciseAttempt, Exercise
+        from django.db.models import Q
+        
         try:
-            from activities.services.analytic_service import exercise_stats
-            stats = exercise_stats(exercise_id)
-        except NotFoundError:
+            # Verify exercise exists
+            exercise = Exercise.objects.get(id=exercise_id)
+        except Exercise.DoesNotExist:
             return Response({"detail": "Exercise not found"}, status=status.HTTP_404_NOT_FOUND)
-        return Response(stats)
+        
+        # Get all attempts for this exercise
+        attempts = ExerciseAttempt.objects.filter(exercise_id=exercise_id).select_related('student').order_by('-finished_at', '-started_at')
+        
+        # Build response
+        attempts_data = []
+        for attempt in attempts:
+            # Get student name from profile.display_name or username
+            student_name = 'Unknown'
+            if attempt.student:
+                if hasattr(attempt.student, 'profile') and attempt.student.profile and attempt.student.profile.display_name:
+                    student_name = attempt.student.profile.display_name
+                else:
+                    student_name = attempt.student.username or 'Unknown'
+            
+            attempts_data.append({
+                'id': str(attempt.id),
+                'student_id': str(attempt.student.id) if attempt.student else None,
+                'student_name': student_name,
+                'started_at': attempt.started_at.isoformat() if attempt.started_at else None,
+                'finished_at': attempt.finished_at.isoformat() if attempt.finished_at else None,
+                'score': float(attempt.score) if attempt.score else None,
+                'status': 'submitted' if attempt.finished_at else 'pending',
+            })
+        
+        return Response(attempts_data, status=status.HTTP_200_OK)
 
 
 class ExportResultsView(APIView):
