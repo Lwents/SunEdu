@@ -6,6 +6,7 @@ from teacher_api.views.notifications_view import (
     TeacherNotificationReadView,
     TeacherNotificationReadAllView,
 )
+from teacher_api.views.lesson_question_view import TeacherLessonQuestionView
 
 app_name = 'teacher_api'
 
@@ -18,9 +19,11 @@ urlpatterns = [
     path('notifications/', TeacherNotificationsView.as_view(), name='notifications'),
     path('notifications/<uuid:id>/read/', TeacherNotificationReadView.as_view(), name='notification-read'),
     path('notifications/read-all/', TeacherNotificationReadAllView.as_view(), name='notification-read-all'),
+    # Lesson Q&A
+    path('lesson-questions/', TeacherLessonQuestionView.as_view(), name='lesson-questions'),
+    path('lesson-questions/<uuid:pk>/reply/', TeacherLessonQuestionView.as_view(), name='lesson-question-reply'),
+    path('lesson-question-replies/<uuid:pk>/', TeacherLessonQuestionView.as_view(), name='lesson-question-reply-detail'),
 ]
-
-
 
 
 

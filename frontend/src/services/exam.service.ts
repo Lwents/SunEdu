@@ -46,6 +46,9 @@ export interface ExamDetail extends ExamSummary {
   scheduledAt?: string // ISO datetime string for scheduled publishing
   endAt?: string // ISO datetime string for exam closing time
   maxAttempts?: number
+  submissions?: number
+  avgScore?: number
+  passRate?: number
 }
 
 export interface AttemptQuestion {
@@ -291,53 +294,60 @@ export const examService = {
   },
 
   async detail(id: ID): Promise<ExamDetail> {
-      try {
-      const { data } = await api.get(`/activities/exercises/${id}/`)
-        // Map backend exercise to frontend exam format
-        return {
-          id: data.id,
-          title: data.title || 'Đề thi',
+    try {
+      const [examRes, stats] = await Promise.all([
+        api.get(`/activities/exercises/${id}/`),
+        this.getStats(id).catch(() => ({ submissions: 0, avgScore: 0, passRate: 0 })),
+      ])
+      const data = examRes.data
+      // Map backend exercise to frontend exam format
+      return {
+        id: data.id,
+        title: data.title || 'Đề thi',
         // Level is stored in settings.level or metadata.level
         level: data.settings?.level || data.metadata?.level || data.level || 'Khối 1',
         durationSec: data.settings?.duration_seconds || data.duration_seconds || 1800,
         passScore: data.settings?.pass_score || data.pass_score || 10,
         questionsCount: data.questions?.length || data.questions_count || 0,
-          status: data.published ? 'published' : (data.settings?.scheduled_at ? 'scheduled' : 'draft'),
-          updatedAt: data.updated_at || data.updatedAt || new Date().toISOString(),
+        status: data.published ? 'published' : (data.settings?.scheduled_at ? 'scheduled' : 'draft'),
+        updatedAt: data.updated_at || data.updatedAt || new Date().toISOString(),
         maxAttempts: data.settings?.max_attempts ?? data.max_attempts ?? 1,
         // Description is stored in settings.description
         description: data.settings?.description || data.description || '',
         scheduledAt: data.settings?.scheduled_at,
         endAt: data.settings?.end_at,
-          shuffleQuestions: data.settings?.shuffle_questions ?? true,
-          shuffleChoices: data.settings?.shuffle_choices ?? true,
-          questions: (data.questions || []).map((q: any) => {
-            // Map backend question to frontend question format
+        shuffleQuestions: data.settings?.shuffle_questions ?? true,
+        shuffleChoices: data.settings?.shuffle_choices ?? true,
+        submissions: stats.submissions ?? 0,
+        avgScore: stats.avgScore ?? 0,
+        passRate: stats.passRate ?? 0,
+        questions: (data.questions || []).map((q: any, idx: number) => {
+          // Map backend question to frontend question format
           // Question type and score are stored in meta field
           const questionType = q.meta?.type || q.type || 'single'
           const questionScore = q.meta?.score || q.score || 1
-            const base: QuestionBase = {
-              id: q.id,
+          const base: QuestionBase = {
+            id: q.id || idx,
             type: questionType,
-              text: q.prompt || q.text || '',
+            text: q.prompt || q.text || '',
             score: questionScore,
-            }
+          }
           if (questionType === 'single' || questionType === 'multi') {
-              return {
-                ...base,
+            return {
+              ...base,
               type: questionType,
-                choices: (q.choices || []).map((c: any, idx: number) => ({
-                  id: c.id || `c${idx + 1}`,
-                  text: c.text || '',
-                })),
-                answer: q.choices?.filter((c: any) => c.is_correct).map((c: any) => c.id) || [],
-              }
+              choices: (q.choices || []).map((c: any, cIdx: number) => ({
+                id: c.id || `c${cIdx + 1}`,
+                text: c.text || '',
+              })),
+              answer: q.choices?.filter((c: any) => c.is_correct).map((c: any) => c.id) || [],
             }
-            return base as Question
-          }),
-        }
-      } catch (e: any) {
-        console.error('Load exam detail error:', e)
+          }
+          return base as Question
+        }),
+      }
+    } catch (e: any) {
+      console.error('Load exam detail error:', e)
       throw new Error('Không thể tải chi tiết bài kiểm tra: ' + (e.response?.data?.detail || e.message))
     }
   },

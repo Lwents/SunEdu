@@ -19,6 +19,10 @@ from student_api.views import (
     StudentProfileView,
     StudentChangePasswordView,
     StudentParentViewView,
+    StudentLessonQuestionView,
+    StudentLessonQuestionReplyView,
+    StudentLessonQuestionReactionView,
+    StudentLessonQuestionReportView,
 )
 from student_api.views.notifications_view import (
     StudentNotificationsView,
@@ -40,6 +44,13 @@ urlpatterns = [
     path('courses/<uuid:pk>/player/<uuid:lesson_id>/', StudentCoursePlayerView.as_view(), name='course-player-lesson'),
     path('learning-path/', StudentLearningPathView.as_view(), name='learning-path'),
     path('learning-path/manage/', StudentLearningPathManageView.as_view(), name='learning-path-manage'),
+    path('lesson-questions/', StudentLessonQuestionView.as_view(), name='lesson-question'),
+    path('lesson-questions/<uuid:pk>/reply/', StudentLessonQuestionReplyView.as_view(), name='lesson-question-reply'),
+    path('lesson-questions/<uuid:pk>/', StudentLessonQuestionView.as_view(), name='lesson-question-detail'),
+    path('lesson-question-replies/<uuid:reply_id>/react/', StudentLessonQuestionReactionView.as_view(), name='lesson-question-reaction'),
+    path('lesson-question-replies/<uuid:reply_id>/', StudentLessonQuestionReplyView.as_view(), name='lesson-question-reply-detail'),
+    path('lesson-question-report/', StudentLessonQuestionReportView.as_view(), name='lesson-question-report'),
+    path('lesson-questions/', StudentLessonQuestionView.as_view(), name='lesson-question'),
     
     # Exams
     path('exams/', StudentExamsListView.as_view(), name='exams-list'),

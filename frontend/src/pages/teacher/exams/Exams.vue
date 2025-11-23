@@ -116,8 +116,7 @@
             </div>
             <div class="mt-1 text-xs sm:text-sm text-slate-500">
               Khoá: <span class="font-medium text-slate-700">{{ e.course }}</span> ·
-              {{ e.durationMin }} phút · {{ e.submissions }} bài nộp ·
-              Điểm TB {{ e.avgScore }} · Cập nhật {{ e.updatedAt }}
+              {{ e.durationMin }} phút
             </div>
           </div>
 
