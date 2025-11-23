@@ -97,7 +97,10 @@ const userAnswers = ref<any[]>([])
 const loading = ref(true)
 const route = useRoute()
 const auth = useAuthStore()
-const userKey = computed(() => auth.user?.id || 'guest')
+const userKey = computed(() => {
+  const u = auth.user
+  return String(u?.id ?? u?.email ?? u?.name ?? 'guest')
+})
 
 // --- Cấu hình Phân trang ---
 const currentPage = ref(1)

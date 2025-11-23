@@ -12,6 +12,8 @@ export interface Exam {
   durationSec: number
   passCount: number
   questionsCount: number
+  done?: boolean
+  attemptId?: string | number
 }
 
 // Helper to convert backend Level to ExamLevel
@@ -83,7 +85,7 @@ export const useExamStore = defineStore('exam', {
 
         // Map ExamSummary to Exam format
         // passCount: number of questions needed to pass (based on passScore percentage)
-        const mappedExams: Exam[] = filteredItems.map((ex: ExamSummary) => {
+        const mappedExams: Exam[] = filteredItems.map((ex: any) => {
           // Calculate passCount: if passScore is percentage, convert to count
           // Otherwise, if passScore is already a count, use it directly
           // For now, assume passScore is a minimum score, convert to count
@@ -98,6 +100,8 @@ export const useExamStore = defineStore('exam', {
             durationSec: ex.durationSec,
             passCount,
             questionsCount: ex.questionsCount,
+            done: !!ex.done,
+            attemptId: ex.attemptId,
           }
         })
 

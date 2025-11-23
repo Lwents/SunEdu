@@ -125,18 +125,18 @@
         <div class="flex items-start gap-4">
           <!-- Student Avatar -->
           <div class="relative flex-shrink-0">
-            <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-200 to-green-300 text-base font-bold text-green-700 shadow-md ring-2 ring-white transition-all group-hover:ring-green-200">
-            <img
-              v-if="q.avatar"
-              :src="q.avatar"
+            <div class="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-200 to-green-300 text-base font-bold text-green-700 shadow-md ring-2 ring-white transition-all group-hover:ring-green-200">
+              <img
+                v-if="!avatarErrors[`q-${q.id}`]"
+                :src="avatarUrlForQuestion(q)"
                 :alt="q.student || 'Học sinh'"
-                class="h-full w-full object-cover"
+                class="absolute inset-0 h-full w-full object-cover"
                 @error="handleAvatarError(`q-${q.id}`)"
                 @load="handleAvatarLoad(`q-${q.id}`)"
-            />
+              />
               <span 
-                v-if="!q.avatar || avatarErrors[`q-${q.id}`]"
-                class="flex h-full w-full items-center justify-center text-base"
+                v-if="avatarErrors[`q-${q.id}`]"
+                class="text-base"
               >
                 {{ getInitials(q.student) || 'HS' }}
               </span>
@@ -175,25 +175,25 @@
                   <!-- Reply Avatar -->
                   <div class="relative flex-shrink-0">
                     <div 
-                      class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm ring-2 ring-white transition-all"
+                      class="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm ring-2 ring-white transition-all"
                       :class="rep.is_teacher 
                         ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
                         : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700'"
                     >
-                    <img
-                      v-if="rep.avatar"
-                      :src="rep.avatar"
+                      <img
+                        v-if="!avatarErrors[`r-${rep.id}`]"
+                        :src="avatarUrlForReply(rep)"
                         :alt="rep.is_teacher ? 'Giáo viên' : (rep.user || 'Học sinh')"
-                        class="h-full w-full object-cover"
+                        class="absolute inset-0 h-full w-full object-cover"
                         @error="handleAvatarError(`r-${rep.id}`)"
                         @load="handleAvatarLoad(`r-${rep.id}`)"
-                    />
+                      />
                       <span 
-                        v-if="!rep.avatar || avatarErrors[`r-${rep.id}`]"
-                        class="flex h-full w-full items-center justify-center text-xs font-bold"
+                        v-if="avatarErrors[`r-${rep.id}`]"
+                        class="text-xs font-bold"
                       >
                         {{ rep.is_teacher ? 'GV' : getInitials(rep.user) || 'HS' }}
-                    </span>
+                      </span>
                     </div>
                     <div v-if="rep.is_teacher" class="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white shadow-sm">
                       <svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -312,6 +312,7 @@ import api from '@/config/axios'
 import { showToast } from '@/utils/toast'
 import { courseService, type CourseDetail } from '@/services/course.service'
 import { contentService } from '@/services/content.service'
+import { getAvatarSrc } from '@/utils/avatar'
 
 const route = useRoute()
 const initialLessonId = (route.params as any).lessonId || route.query.lessonId || ''
@@ -357,6 +358,31 @@ function handleAvatarLoad(key: string) {
   if (avatarErrors[key]) {
     delete avatarErrors[key]
   }
+}
+
+function normalizeAvatar(input: any) {
+  if (!input) return ''
+  const str = String(input).trim()
+  if (!str) return ''
+  const lower = str.toLowerCase()
+  if (lower === 'avatar' || lower === 'null' || lower === 'undefined' || lower === 'none') return ''
+  return str
+}
+
+function avatarUrlForQuestion(q: any) {
+  const source =
+    normalizeAvatar(q?.avatar) ||
+    normalizeAvatar(q?.avatar_url) ||
+    normalizeAvatar(q?.student_avatar)
+  return getAvatarSrc(source, (q?.gender as any) || 'male', 'student')
+}
+
+function avatarUrlForReply(rep: any) {
+  const source =
+    normalizeAvatar(rep?.avatar) ||
+    normalizeAvatar(rep?.avatar_url) ||
+    normalizeAvatar(rep?.user_avatar)
+  return getAvatarSrc(source, (rep?.gender as any) || 'male', rep?.is_teacher ? 'instructor' : 'student')
 }
 
 async function loadQuestions() {

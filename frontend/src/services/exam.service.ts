@@ -233,13 +233,15 @@ function scoreQuestion(q: Question, ans: any): number {
 export const examService = {
   async list(params?: { level?: Level; q?: string; status?: ExamStatus; page?: number; pageSize?: number; includeStats?: boolean }): Promise<{ items: ExamSummary[]; total: number }> {
     try {
-      const apiParams: any = {}
+     const apiParams: any = {}
       if (params?.q) apiParams.q = params.q
       if (params?.level) apiParams.level = params.level
       if (params?.status) apiParams.status = params.status
       if (params?.page) apiParams.page = params.page
       if (params?.pageSize) apiParams.pageSize = params.pageSize
       if (params?.includeStats) apiParams.include_stats = 'true'
+      // yêu cầu backend gửi kèm attempt của user nếu đã đăng nhập
+      apiParams.include_my_attempt = 'true'
       
       const { data } = await api.get('/activities/exercises/', { params: apiParams })
       
@@ -269,6 +271,9 @@ export const examService = {
         submissions: ex.stats?.total_attempts || ex.submissions || 0,
         avgScore: ex.stats?.avg_score || ex.avgScore || ex.avg_score || 0,
         passRate: ex.stats?.pass_rate || ex.passRate || ex.pass_rate || 0,
+        // attempt info per-user (backend attaches when authenticated)
+        done: !!ex.done || (!!ex.my_attempt && !!ex.my_attempt.finished_at),
+        attemptId: ex.my_attempt?.id || ex.my_attempt?.attempt_id,
         }))
       
       return { items, total: params?.status === 'published' ? filteredExercises.length : total }

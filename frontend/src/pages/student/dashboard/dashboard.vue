@@ -77,17 +77,17 @@
               >
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-4">
-                    <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                    <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
                       <img
-                        v-if="c.thumbnail"
+                        v-if="c.thumbnail && !imageErrors[String(c.id)]"
                         class="h-full w-full object-cover"
                         :src="getThumbnailUrl(c.thumbnail)"
                         :alt="c.title"
-                        @error="handleImageError"
+                        @error="handleImageError(c.id)"
                       />
-                      <div v-else class="flex h-full w-full items-center justify-center bg-slate-200">
-                        <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      <div v-else class="flex h-full w-full flex-col items-center justify-center bg-slate-200">
+                        <svg class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
                     </div>
@@ -194,15 +194,15 @@
             <!-- Image -->
             <div class="relative h-40 overflow-hidden bg-slate-200">
             <img
-              v-if="c.thumbnail"
+              v-if="c.thumbnail && !imageErrors[String(c.id)]"
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               :src="getThumbnailUrl(c.thumbnail)"
               :alt="c.title"
-              @error="handleImageError"
+              @error="handleImageError(c.id)"
             />
-              <div v-else class="flex h-full w-full items-center justify-center">
+              <div v-else class="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-100">
                 <svg class="h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
               <!-- Progress Badge -->
@@ -315,7 +315,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { courseService, type CourseSummary } from '@/services/course.service'
 import { useExamStore } from '@/store/exam.store'
@@ -330,6 +330,7 @@ const errMsg = ref('')
 const featured = ref<CourseCard[]>([])
 const resumeCourse = ref<CourseCard | null>(null)
 const animatedProgress = ref<Record<string, number>>({})
+const imageErrors = reactive<Record<string, boolean>>({})
 
 const completedCount = computed(() => featured.value.filter(c => c.done).length)
 
@@ -430,9 +431,8 @@ function openExamDetail(id: number | string) {
 
 const getThumbnailUrl = (thumbnail?: string) => resolveMediaUrl(thumbnail)
 
-function handleImageError(event: Event) {
-  const img = event.target as HTMLImageElement
-  img.src = '/images/placeholder-course.png'
+function handleImageError(courseId: string | number) {
+  imageErrors[String(courseId)] = true
 }
 
 onMounted(async () => {

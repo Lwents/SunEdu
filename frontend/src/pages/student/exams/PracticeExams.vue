@@ -198,17 +198,22 @@ const levelLabel = computed(() =>
   level.value === 'basic' ? 'Cơ bản' : level.value === 'advanced' ? 'Nâng cao' : ''
 )
 
-// Helpers để chặn làm lại: đọc attemptId đã hoàn thành trong localStorage
+// Helpers: ưu tiên trạng thái server (store.exams) rồi fallback localStorage
+function userStorageKey() {
+  const u = auth.user
+  return String(u?.id ?? u?.email ?? u?.name ?? 'guest')
+}
 function doneAttemptId(id: number | string) {
   try {
-    const userKey = auth.user?.id || 'guest'
-    return localStorage.getItem(`exam_done_${id}_${userKey}`)
+    return localStorage.getItem(`exam_done_${id}_${userStorageKey()}`)
   } catch (e) {
     console.warn('Cannot read done flag', e)
     return null
   }
 }
 function isDone(id: number | string) {
+  const found = exams.value.find((x) => String(x.id) === String(id))
+  if (found && found.done) return true
   return !!doneAttemptId(id)
 }
 function goExam(id: number | string) {

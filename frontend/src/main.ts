@@ -21,9 +21,6 @@ import router from '@/router'
 import 'element-plus/dist/index.css'
 import '@/styles/tailwind.css'
 import { Toaster } from 'vue-sonner'
-import { useAuthStore } from '@/store/auth.store'
-import { useUiStore } from '@/stores/ui.store'
-import { useIdleLogout } from '@/composables/useIdleLogout'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 
@@ -44,24 +41,5 @@ app.use(ElementPlus)
 
 // Register Sonner Toaster component globally
 app.component('Toaster', Toaster)
-
-const authStore = useAuthStore()
-authStore.hydrateFromStorage()
-const uiStore = useUiStore()
-
-useIdleLogout({
-  timeout: 15 * 60 * 1000,
-  warningTime: 5 * 60 * 1000,
-  onWarn(remaining) {
-    uiStore.openIdleWarning(remaining, () => {
-      localStorage.setItem('app-last-activity', String(Date.now()))
-    })
-  },
-  async onLogout() {
-    uiStore.closeIdleWarning()
-    await authStore.logout().catch(() => {})
-    await router.push('/auth/login').catch(() => {})
-  },
-})
 
 app.use(router).mount('#app')
