@@ -30,6 +30,11 @@ from .security_admin_view import (
     AdminSessionRevokeView,
     AdminAlertPolicyView
 )
+from .notifications_view import (
+    AdminNotificationsView,
+    AdminNotificationReadView,
+    AdminNotificationReadAllView
+)
 
 __all__ = [
     'AdminDashboardView', 'AdminActiveUsersRealtimeView',
@@ -54,6 +59,9 @@ __all__ = [
     'AdminSessionListView',
     'AdminSessionRevokeView',
     'AdminAlertPolicyView',
+    'AdminNotificationsView',
+    'AdminNotificationReadView',
+    'AdminNotificationReadAllView',
 ]
 
 

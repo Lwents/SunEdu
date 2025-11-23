@@ -254,197 +254,367 @@
     <transition name="fade">
       <div
         v-if="qaOpen"
-        class="fixed inset-0 z-40 bg-black/50"
+        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
         @click.self="toggleQA(false)"
       ></div>
     </transition>
     <transition name="slide">
       <div
         v-if="qaOpen"
-        class="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col bg-white shadow-2xl"
+        class="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-gradient-to-b from-white to-slate-50 shadow-2xl"
       >
-        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-orange-500">Hỏi đáp bài học</p>
-            <h3 class="text-lg font-bold text-slate-900">{{ currentLesson?.title || '—' }}</h3>
+              <p class="text-xs font-bold uppercase tracking-wider text-orange-600">HỎI ĐÁP BÀI HỌC</p>
+              <h3 class="mt-0.5 text-lg font-bold text-slate-900 line-clamp-1">{{ currentLesson?.title || '—' }}</h3>
+            </div>
           </div>
           <button
-            class="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+            class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 active:scale-95"
             @click="toggleQA(false)"
           >
-            ✕
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        <div class="border-b border-slate-200 bg-white p-4">
+        <!-- Input Area -->
+        <div class="border-b border-slate-200 bg-white px-6 py-5 shadow-sm">
+          <div class="relative">
           <textarea
             v-model="questionText"
             rows="3"
-            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+              class="w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100"
             placeholder="Nhập bình luận mới..."
           ></textarea>
-          <div class="mt-2 flex justify-end">
+            <div class="absolute bottom-3 right-3 flex items-center gap-2">
+              <span v-if="questionText.length > 0" class="text-xs text-slate-400">{{ questionText.length }} ký tự</span>
+            </div>
+          </div>
+          <div class="mt-3 flex justify-end">
             <button
-              class="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+              class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-200 transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none disabled:hover:translate-y-0"
               :disabled="sendingQuestion || !canSendQuestion"
               @click="submitQuestion()"
             >
               <span v-if="sendingQuestion" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+              <span v-else>
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </span>
               Đăng bình luận
             </button>
           </div>
         </div>
 
-        <div class="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div v-if="qaLoading" class="text-sm text-slate-500">Đang tải bình luận…</div>
-          <div v-else-if="qaItems.length === 0" class="text-sm text-slate-500">Chưa có bình luận nào. Hãy mở lời trước!</div>
-          <div v-else class="space-y-4">
+        <!-- Comments List -->
+        <div class="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+          <!-- Loading State -->
+          <div v-if="qaLoading" class="flex flex-col items-center justify-center py-12">
+            <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
+            <p class="mt-4 text-sm font-medium text-slate-500">Đang tải bình luận…</p>
+          </div>
+          
+          <!-- Empty State -->
+          <div v-else-if="qaItems.length === 0" class="flex flex-col items-center justify-center py-12">
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+              <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <p class="mt-4 text-sm font-semibold text-slate-600">Chưa có bình luận nào</p>
+            <p class="mt-1 text-xs text-slate-400">Hãy mở lời trước!</p>
+          </div>
+          
+          <!-- Comments -->
+          <div v-else class="space-y-5">
             <div
               v-for="q in qaItems"
               :key="q.id"
-              class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+              class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
             >
-              <div class="flex items-start gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
+              <div class="flex items-start gap-4">
+                <!-- Avatar -->
+                <div class="relative flex-shrink-0">
+                  <div class="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold text-slate-700 shadow-md ring-2 ring-white transition-all group-hover:ring-orange-200">
+                    <!-- Avatar Image -->
                   <img
                     v-if="q.avatar"
                     :src="q.avatar"
-                    alt="avatar"
-                    class="h-10 w-10 rounded-full object-cover"
-                  />
-                  <span v-else>
-                    {{ q.student?.slice(0, 2)?.toUpperCase() || 'HS' }}
+                      :alt="q.student || 'Học sinh'"
+                      class="absolute inset-0 h-full w-full object-cover"
+                      :class="{ 'opacity-0': avatarErrors[`q-${q.id}`] }"
+                      @error="handleAvatarError(`q-${q.id}`)"
+                      @load="handleAvatarLoad(`q-${q.id}`)"
+                    />
+                    <!-- Fallback Initials -->
+                    <span 
+                      class="absolute inset-0 flex h-full w-full items-center justify-center text-base bg-gradient-to-br from-slate-200 to-slate-300"
+                      :class="{ 'opacity-0': q.avatar && !avatarErrors[`q-${q.id}`], 'opacity-100': !q.avatar || avatarErrors[`q-${q.id}`] }"
+                    >
+                      {{ getInitials(q.student) || 'HS' }}
                   </span>
                 </div>
-                <div class="flex-1">
-                  <div class="flex items-center justify-between">
-                    <p class="font-semibold text-slate-900">{{ q.student || 'Học sinh' }}</p>
+                  <div v-if="q.is_owner" class="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 ring-2 ring-white shadow-md">
+                    <svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 min-w-0">
+                  <!-- Header -->
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
-                      <span class="text-xs text-slate-400">{{ formatDateTimeShort(q.created_at) }}</span>
-                      <div class="relative">
+                        <p class="font-bold text-slate-900">{{ q.student || 'Học sinh' }}</p>
+                        <span v-if="q.is_owner" class="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">Bạn</span>
+                      </div>
+                      <p class="mt-0.5 text-xs text-slate-500">{{ formatDateTimeShort(q.created_at) }}</p>
+                    </div>
+                    <div class="relative flex-shrink-0">
                         <button
-                          class="menu-btn"
+                        class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600"
                           @click="toggleQuestionMenu(q.id)"
-                        >•••</button>
+                      >
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                        </svg>
+                      </button>
+                      <transition name="fade">
                         <div
                           v-if="questionMenu[q.id]"
-                          class="menu-dropdown"
+                          class="absolute right-0 top-full z-10 mt-2 min-w-[140px] rounded-xl border border-slate-200 bg-white py-2 shadow-xl"
+                          @click.stop
                         >
-                          <button v-if="q.is_owner" @click="startEditQuestion(q); questionMenu[q.id]=false">Sửa</button>
-                          <button v-if="q.is_owner" class="text-rose-600" @click="deleteQuestion(q.id); questionMenu[q.id]=false">Xóa</button>
-                          <button v-if="!q.is_owner" class="text-amber-600" @click="openReport(q.id, null); questionMenu[q.id]=false">Báo cáo</button>
+                          <button v-if="q.is_owner" class="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" @click="startEditQuestion(q); questionMenu[q.id]=false">✏️ Sửa</button>
+                          <button v-if="q.is_owner" class="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" @click="deleteQuestion(q.id); questionMenu[q.id]=false">🗑️ Xóa</button>
+                          <button v-if="!q.is_owner" class="w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50" @click="openReport(q.id, null); questionMenu[q.id]=false">🚨 Báo cáo</button>
                         </div>
+                      </transition>
                       </div>
                     </div>
-                  </div>
-                  <div v-if="editingQuestion.id === q.id" class="space-y-2">
+                  
+                  <!-- Edit Mode -->
+                  <div v-if="editingQuestion.id === q.id" class="mt-3 space-y-3">
                     <textarea
                       v-model="editingQuestion.draft"
                       rows="3"
-                      class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                      class="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition-all focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100"
                     ></textarea>
                     <div class="flex gap-2">
                       <button
-                        class="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600"
+                        class="rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-bold text-white shadow-md transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-lg active:scale-95"
                         @click="saveEditQuestion(q.id)"
                       >
                         Lưu
                       </button>
                       <button
-                        class="rounded-lg border px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                        class="rounded-xl border-2 border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
                         @click="cancelEditQuestion"
                       >
                         Hủy
                       </button>
                     </div>
                   </div>
-                  <p v-else class="mt-1 text-sm text-slate-800 whitespace-pre-line">{{ q.content }}</p>
-                    <div class="mt-2 flex flex-wrap items-center gap-4 text-xs font-semibold text-sky-600">
-                    <button class="hover:underline" @click="toggleReactionOnQuestion(q.id)">❤️</button>
-                    <button class="hover:underline" @click="toggleReplyBox(q.id)">Phản hồi</button>
-                    <span class="text-slate-300">•</span>
-                    <span class="text-slate-400">Thích & phản hồi để thảo luận</span>
+                  
+                  <!-- Content -->
+                  <p v-else class="mt-3 text-sm leading-relaxed text-slate-800 whitespace-pre-line">{{ q.content }}</p>
+                  
+                  <!-- Actions -->
+                  <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:scale-105 active:scale-95"
+                      @click="toggleReactionOnQuestion(q.id)"
+                    >
+                      <span class="text-base">❤️</span>
+                      <span>Thích</span>
+                    </button>
+                    <button
+                      class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-600 transition-all hover:bg-sky-100 hover:scale-105 active:scale-95"
+                      @click="toggleReplyBox(q.id)"
+                    >
+                      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                      Phản hồi
+                    </button>
+                    <span class="text-xs text-slate-400">•</span>
+                    <span class="text-xs text-slate-500">Thích & phản hồi để thảo luận</span>
                   </div>
 
-                  <div class="mt-3 space-y-3">
+                  <!-- Replies -->
+                  <div v-if="q.replies && q.replies.length > 0" class="mt-4 space-y-3 border-t border-slate-100 pt-4">
                     <div
                       v-for="rep in q.replies"
                       :key="rep.id"
-                      class="rounded-lg border border-slate-100 bg-slate-50 p-2"
+                      class="group/reply rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm transition-all hover:border-slate-200 hover:shadow-md"
                     >
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
+                      <div class="flex items-start gap-3">
+                        <!-- Reply Avatar -->
+                        <div class="relative flex-shrink-0">
+                          <div 
+                            class="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm ring-2 ring-white transition-all group-hover/reply:ring-blue-200"
+                            :class="rep.is_teacher 
+                              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
+                              : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700'"
+                          >
+                            <!-- Avatar Image -->
                           <img
                             v-if="rep.avatar"
                             :src="rep.avatar"
-                            alt="avatar"
-                            class="h-6 w-6 rounded-full object-cover"
+                              :alt="rep.is_teacher ? 'Giáo viên' : (rep.user || 'Học sinh')"
+                              class="absolute inset-0 h-full w-full object-cover"
+                              :class="{ 'opacity-0': avatarErrors[`r-${rep.id}`] }"
+                              @error="handleAvatarError(`r-${rep.id}`)"
+                              @load="handleAvatarLoad(`r-${rep.id}`)"
                           />
-                          <span class="text-xs font-semibold" :class="rep.is_teacher ? 'text-blue-700' : 'text-slate-700'">
-                            {{ rep.is_teacher ? 'Giáo viên' : rep.user || 'Học sinh' }}
+                            <!-- Fallback Initials -->
+                            <span 
+                              class="absolute inset-0 flex h-full w-full items-center justify-center text-xs font-bold"
+                              :class="[
+                                rep.is_teacher 
+                                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
+                                  : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700',
+                                { 'opacity-0': rep.avatar && !avatarErrors[`r-${rep.id}`], 'opacity-100': !rep.avatar || avatarErrors[`r-${rep.id}`] }
+                              ]"
+                            >
+                              {{ rep.is_teacher ? 'GV' : getInitials(rep.user) || 'HS' }}
                           </span>
+                          </div>
+                          <div v-if="rep.is_teacher" class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white shadow-sm">
+                            <svg class="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          </div>
+                          <div v-else-if="rep.is_owner" class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 ring-2 ring-white shadow-sm">
+                            <svg class="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                        
+                        <!-- Reply Content -->
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                              <span class="text-xs font-bold" :class="rep.is_teacher ? 'text-blue-700' : 'text-slate-700'">
+                                {{ rep.is_teacher ? '👨‍🏫 Giáo viên' : rep.user || 'Học sinh' }}
+                              </span>
+                              <span v-if="rep.is_owner" class="rounded-full bg-orange-100 px-1.5 py-0.5 text-xs font-semibold text-orange-700">Bạn</span>
                         </div>
                         <div class="flex items-center gap-2">
                           <span class="text-xs text-slate-400">{{ formatDateTimeShort(rep.created_at) }}</span>
                           <div class="relative">
-                            <button class="menu-btn" @click="toggleReplyMenu(rep.id)">•••</button>
-                            <div v-if="replyMenu[rep.id]" class="menu-dropdown right-0">
-                              <button v-if="rep.is_owner" @click="startEditReply(rep); replyMenu[rep.id]=false">Sửa</button>
-                              <button v-if="rep.is_owner" class="text-rose-600" @click="deleteReply(rep.id, q.id); replyMenu[rep.id]=false">Xóa</button>
-                              <button v-if="!rep.is_owner" class="text-amber-600" @click="openReport(null, rep.id); replyMenu[rep.id]=false">Báo cáo</button>
+                                <button
+                                  class="flex h-6 w-6 items-center justify-center rounded text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600"
+                                  @click="toggleReplyMenu(rep.id)"
+                                >
+                                  <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                  </svg>
+                                </button>
+                                <transition name="fade">
+                                  <div
+                                    v-if="replyMenu[rep.id]"
+                                    class="absolute right-0 top-full z-10 mt-2 min-w-[140px] rounded-xl border border-slate-200 bg-white py-2 shadow-xl"
+                                    @click.stop
+                                  >
+                                    <button v-if="rep.is_owner" class="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" @click="startEditReply(rep); replyMenu[rep.id]=false">✏️ Sửa</button>
+                                    <button v-if="rep.is_owner" class="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" @click="deleteReply(rep.id, q.id); replyMenu[rep.id]=false">🗑️ Xóa</button>
+                                    <button v-if="!rep.is_owner" class="w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50" @click="openReport(null, rep.id); replyMenu[rep.id]=false">🚨 Báo cáo</button>
                             </div>
+                                </transition>
                           </div>
                         </div>
                       </div>
-                      <div v-if="editingReply.id === rep.id" class="space-y-2">
+                          
+                          <!-- Edit Reply -->
+                          <div v-if="editingReply.id === rep.id" class="mt-3 space-y-2">
                         <textarea
                           v-model="editingReply.draft"
                           rows="2"
-                          class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                              class="w-full rounded-lg border-2 border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-all focus:border-orange-400 focus:outline-none focus:ring-4 focus:ring-orange-100"
                         ></textarea>
                         <div class="flex gap-2">
-                          <button class="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600" @click="saveEditReply(rep.id, q.id)">
+                              <button
+                                class="rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1.5 text-xs font-bold text-white shadow-md transition-all hover:from-orange-600 hover:to-orange-700 active:scale-95"
+                                @click="saveEditReply(rep.id, q.id)"
+                              >
                             Lưu
                           </button>
-                          <button class="rounded-lg border px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50" @click="cancelEditReply">
+                              <button
+                                class="rounded-lg border-2 border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
+                                @click="cancelEditReply"
+                              >
                             Hủy
                           </button>
                         </div>
                       </div>
-                      <p v-else class="text-sm text-slate-800 whitespace-pre-line">{{ rep.content }}</p>
-                      <div class="mt-1 flex items-center gap-3 text-xs text-slate-500">
+                          
+                          <!-- Reply Text -->
+                          <p v-else class="mt-2 text-sm leading-relaxed text-slate-800 whitespace-pre-line">{{ rep.content }}</p>
+                          
+                          <!-- Reply Actions -->
+                          <div class="mt-3 flex items-center gap-3">
                         <button
-                          class="inline-flex items-center gap-1 rounded-full px-2 py-1 transition"
-                          :class="rep.reacted ? 'bg-rose-50 text-rose-600' : 'hover:bg-slate-100'"
+                              class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-all"
+                              :class="rep.reacted ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-600'"
                           :disabled="reacting[rep.id]"
                           @click="toggleReaction(rep.id)"
                         >
-                          ❤️ <span>{{ rep.reactions_count || 0 }}</span>
+                              <span class="text-sm">❤️</span>
+                              <span>{{ rep.reactions_count || 0 }}</span>
                         </button>
-                        <button v-if="rep.is_owner" class="hover:underline text-sky-600 font-semibold" @click="startEditReply(rep)">Sửa</button>
-                        <button v-if="rep.is_owner" class="hover:underline text-rose-600 font-semibold" @click="deleteReply(rep.id, q.id)">Xóa</button>
-                        <button class="hover:underline text-amber-600 font-semibold" @click="openReport(null, rep.id)">Báo cáo</button>
+                            <button v-if="rep.is_owner" class="text-xs font-semibold text-sky-600 hover:underline" @click="startEditReply(rep)">Sửa</button>
+                            <button v-if="rep.is_owner" class="text-xs font-semibold text-rose-600 hover:underline" @click="deleteReply(rep.id, q.id)">Xóa</button>
+                            <button class="text-xs font-semibold text-amber-600 hover:underline" @click="openReport(null, rep.id)">Báo cáo</button>
+                          </div>
+                        </div>
+                      </div>
                       </div>
                     </div>
 
-                    <div v-if="replyBox[q.id]" class="space-y-2 rounded-lg bg-slate-50 p-2">
+                  <!-- Reply Box -->
+                  <transition name="slide-down">
+                    <div v-if="replyBox[q.id]" class="mt-4 space-y-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-4">
                       <textarea
                         v-model="replyDrafts[q.id]"
                         rows="2"
-                        class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                        class="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-4 focus:ring-orange-100"
                         placeholder="Viết phản hồi của bạn..."
                       ></textarea>
-                      <div class="flex justify-end">
+                      <div class="flex justify-end gap-2">
                         <button
-                          class="rounded-lg bg-orange-500 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                          class="rounded-xl border-2 border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
+                          @click="toggleReplyBox(q.id)"
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          class="rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2 text-sm font-bold text-white shadow-md transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none"
                           :disabled="replying[q.id] || !(replyDrafts[q.id]?.trim())"
                           @click="submitReply(q.id)"
                         >
-                          {{ replying[q.id] ? 'Đang gửi...' : 'Gửi phản hồi' }}
+                          <span v-if="replying[q.id]" class="inline-flex items-center gap-2">
+                            <span class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                            Đang gửi...
+                          </span>
+                          <span v-else>Gửi phản hồi</span>
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </transition>
                 </div>
               </div>
             </div>
@@ -1148,6 +1318,7 @@ const editingReply = reactive<{ id: string | null; draft: string }>({ id: null, 
 const reporting = reactive<{ open: boolean; questionId?: string; replyId?: string; reason: string; detail: string }>({ open: false, reason: '', detail: '' })
 const questionMenu = reactive<Record<string, boolean>>({})
 const replyMenu = reactive<Record<string, boolean>>({})
+const avatarErrors = reactive<Record<string, boolean>>({})
 
 async function submitQuestion() {
   if (!canSendQuestion.value || sendingQuestion.value) return
@@ -1176,6 +1347,31 @@ function formatDateTimeShort(iso?: string) {
     return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   } catch {
     return iso
+  }
+}
+
+function getInitials(name?: string | null): string {
+  if (!name || !name.trim()) return ''
+  // Lấy chữ cái đầu tiên của từ đầu tiên và từ cuối cùng (nếu có)
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) {
+    // Chỉ có một từ, lấy 2 ký tự đầu
+    return name.slice(0, 2).toUpperCase()
+  }
+  // Có nhiều từ, lấy chữ cái đầu của từ đầu và từ cuối
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function handleAvatarError(key: string) {
+  // Khi avatar load lỗi, đánh dấu để hiển thị fallback
+  avatarErrors[key] = true
+  console.log(`Avatar load error for ${key}, showing fallback`)
+}
+
+function handleAvatarLoad(key: string) {
+  // Khi avatar load thành công, đảm bảo không có error flag
+  if (avatarErrors[key]) {
+    delete avatarErrors[key]
   }
 }
 
@@ -1420,6 +1616,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* Fade transition */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
@@ -1428,11 +1625,13 @@ onBeforeUnmount(() => {
 .fade-leave-to {
   opacity: 0;
 }
+
+/* Slide transition for drawer */
 .slide-enter-active {
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 .slide-leave-active {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1), opacity 0.25s ease;
 }
 .slide-enter-from,
 .slide-leave-to {
@@ -1440,43 +1639,67 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-.modal-backdrop {
-  background: rgba(0,0,0,0.45);
+/* Slide down transition for reply box */
+.slide-down-enter-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-down-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+.slide-down-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
+}
+.slide-down-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 500px;
+}
+.slide-down-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 500px;
+}
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
 }
 
-.menu-btn {
-  padding: 4px 6px;
-  border-radius: 999px;
-  font-weight: 700;
-  color: #94a3b8;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  font-size: 12px;
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
 }
-.menu-btn:hover {
-  background: #f8fafc;
+
+/* Line clamp utility */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.menu-dropdown {
-  position: absolute;
-  top: 110%;
-  right: 0;
-  min-width: 140px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-  padding: 6px 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
+
+/* Smooth scrollbar */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
 }
-.menu-dropdown button {
-  text-align: left;
-  padding: 8px 12px;
-  font-size: 13px;
-  color: #0f172a;
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
 }
-.menu-dropdown button:hover {
-  background: #f8fafc;
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgb(203 213 225);
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(148 163 184);
 }
 </style>

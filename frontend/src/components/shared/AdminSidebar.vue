@@ -2,9 +2,9 @@
 <template>
   <aside class="h-full flex flex-col">
     <!-- Brand -->
-    <div class="h-14 flex items-center gap-2 border-b px-4">
+    <div class="h-14 flex items-center gap-2 border-b px-3 sm:px-4">
       <button
-        class="mr-2 flex md:hidden items-center justify-center rounded p-2 hover:bg-gray-100"
+        class="mr-2 flex md:hidden items-center justify-center rounded p-2 hover:bg-gray-100 transition-colors"
         aria-label="Đóng menu"
         @click="$emit('close')"
       >
@@ -25,28 +25,17 @@
       </button>
       <RouterLink
         to="/admin/dashboard"
-        class="font-semibold text-gray-800 hover:text-gray-900"
-        style="
-          display: flex;
-          margin-right: 8px;
-          align-items: center;
-          gap: 8px;
-          justify-content: center;
-        "
+        class="font-semibold text-gray-800 hover:text-gray-900 flex items-center gap-2 flex-1 min-w-0"
       >
-        <!-- <div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600/10">
-          <span class="text-lg">🎓</span>
-        </div>
-        <span class="hidden text-base font-semibold text-emerald-700 sm:inline"> My Learning </span> -->
         <LogoSmartEdu
           :size="90"
-          style="justify-content: center; margin-left: 55px"
+          class="mx-auto sm:mx-0"
         />
       </RouterLink>
     </div>
 
     <!-- Nav -->
-    <nav class="flex-1 overflow-y-auto p-3">
+    <nav class="flex-1 overflow-y-auto p-2 sm:p-3">
       <template v-for="(group, gi) in groups" :key="gi">
         <div class="px-2 pt-3 pb-2 text-[11px] uppercase tracking-wide text-gray-400">
           {{ group.label }}
@@ -55,14 +44,14 @@
           <li v-for="item in group.items" :key="item.to" class="px-1">
             <RouterLink :to="item.to" v-slot="{ isActive }" class="block">
               <div
-                class="flex items-center gap-3 rounded px-3 py-2 text-sm transition"
+                class="flex items-center gap-2 sm:gap-3 rounded px-2 sm:px-3 py-2 text-xs sm:text-sm transition"
                 :class="
                   isActive
                     ? 'bg-blue-50 text-blue-700 font-medium'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 "
               >
-                <component :is="item.icon" class="h-4 w-4" />
+                <component :is="item.icon" class="h-4 w-4 shrink-0" />
                 <span class="truncate">{{ item.label }}</span>
               </div>
             </RouterLink>
@@ -72,7 +61,7 @@
     </nav>
 
     <!-- Footer -->
-    <div class="border-t p-3 text-xs text-gray-500">© {{ year }} Your Org</div>
+    <div class="border-t p-2 sm:p-3 text-[10px] sm:text-xs text-gray-500 text-center sm:text-left">© {{ year }} Your Org</div>
   </aside>
 </template>
 

@@ -75,8 +75,8 @@ export interface NoteItem { id: string; author?: string; note: string; time: str
 const USE_MOCK = false // chuyển sang dùng API thật
 
 function mapServerToUser(s: any): User {
-    // server sample fields: id, username, email, created_on, updated_on, phone, role, is_active
-    const status: User['status'] = s.is_active === false ? 'inactive' : 'active'
+    // server sample fields: id, username, email, created_on, updated_on, phone, role, is_active, last_login
+    const status: User['status'] = s.is_active === false ? 'locked' : 'active'
     return {
         id: s.id,
         username: s.username,
@@ -86,7 +86,7 @@ function mapServerToUser(s: any): User {
         avatar: s.avatar ?? undefined,
         role: (s.role as Role) ?? 'student',
         status,
-        lastLoginAt: s.last_login_at ?? s.lastLoginAt ?? undefined,
+        lastLoginAt: s.last_login ?? s.last_login_at ?? s.lastLoginAt ?? undefined,
         createdAt: s.created_on ?? s.createdAt ?? '',
     }
 }
@@ -159,6 +159,7 @@ export const userService = {
                 providers: data.providers ?? undefined,
                 isStaff: data.is_staff ?? undefined,
                 isActive: data.is_active ?? undefined,
+                lastLoginAt: data.last_login ?? data.last_login_at ?? data.lastLoginAt ?? base.lastLoginAt,
             }
             return detail
         }
@@ -206,12 +207,13 @@ export const userService = {
         return api.post(`/account/admin/password/set/${id}/`, payload)
     },
 
-    // ROLE & SECURITY (adjust endpoints if backend different)
-    // changeRole(id: ID, role: Role) { return api.post(`/account/admin/users/${id}/role/`, { role }) },
-    // resetPassword(id: ID) { return api.post(`/account/admin/users/${id}/reset-password/`) },
-    // lock(id: ID) { return api.post(`/account/admin/users/${id}/lock/`) },
-    // unlock(id: ID) { return api.post(`/account/admin/users/${id}/unlock/`) },
-    // ban(id: ID) { return api.post(`/account/admin/users/${id}/ban/`) },
+    // ROLE & SECURITY
+    lock(id: ID) { 
+        return api.patch(`/account/admin/users/${id}/`, { is_active: false })
+    },
+    unlock(id: ID) { 
+        return api.patch(`/account/admin/users/${id}/`, { is_active: true })
+    },
 
     // SESSIONS
     async sessions(id: ID): Promise<SessionRow[]> {

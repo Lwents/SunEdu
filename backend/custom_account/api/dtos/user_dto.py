@@ -55,6 +55,7 @@ class UserAdminOutput(BaseModel):
     phone: str | None
     role: str
     is_active: bool
+    last_login: Optional[datetime] = None
 
     def to_dict(self, exclude_none: bool = True) -> dict:
         """
@@ -73,6 +74,7 @@ class UpdateUserInput(BaseModel):
     username: str | None = None
     email: str | None = None
     phone: str | None = None
+    is_active: bool | None = None
 
     def to_dict(self, exclude_none: bool = True) -> dict:
         """

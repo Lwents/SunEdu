@@ -1,17 +1,17 @@
 <!-- src/components/shared/AdminNavbar.vue -->
 <template>
-  <header class="flex h-full items-center justify-between px-4">
+  <header class="flex h-full items-center justify-between px-2 sm:px-4">
     <!-- Left: Hamburger + dynamic title -->
-    <div class="flex items-center min-w-0 gap-2">
+    <div class="flex items-center min-w-0 gap-2 flex-1">
       <!-- Hamburger menu, chỉ hiện trên mobile -->
       <button
-        class="mr-2 flex md:hidden items-center justify-center rounded p-2 hover:bg-gray-100"
+        class="mr-1 sm:mr-2 flex md:hidden items-center justify-center rounded p-2 hover:bg-gray-100 transition-colors"
         aria-label="Mở menu"
         @click="$emit('toggle-sidebar')"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-6 w-6"
+          class="h-5 w-5 sm:h-6 sm:w-6"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -24,18 +24,17 @@
           />
         </svg>
       </button>
-      <h1 class="truncate text-base font-semibold text-gray-800">
+      <h1 class="truncate text-sm sm:text-base font-semibold text-gray-800">
         {{ pageTitle }}
       </h1>
     </div>
 
     <!-- Right: actions -->
-    <div class="flex items-center gap-2">
-      <button class="rounded p-2 hover:bg-gray-100" aria-label="Notifications">
-        <Bell class="h-5 w-5" />
-      </button>
+    <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+      <!-- Notification Bell Component for Admin -->
+      <NotificationBell :user-id="auth.user?.id" role="admin" />
 
-      <div class="hidden sm:flex flex-col items-end">
+      <div class="hidden lg:flex flex-col items-end">
         <span class="text-sm font-medium leading-4">{{ user?.name || 'Admin' }}</span>
         <span class="text-xs text-gray-500 leading-4">{{
           user?.email || 'admin@example.com'
@@ -43,16 +42,17 @@
       </div>
 
       <img
-        class="h-8 w-8 rounded-full object-cover"
+        class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover"
         :src="avatarSrc"
         alt="avatar"
       />
 
       <button
-        class="ml-2 inline-flex items-center gap-2 rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
+        class="inline-flex items-center gap-1 sm:gap-2 rounded bg-red-500 px-2 sm:px-3 py-1 text-xs sm:text-sm text-white hover:bg-red-600 transition-colors"
         @click="showConfirm = true"
       >
-        <LogOut class="h-4 w-4" /> Đăng xuất
+        <LogOut class="h-3 w-3 sm:h-4 sm:w-4" />
+        <span class="hidden sm:inline">Đăng xuất</span>
       </button>
     </div>
     <ConfirmLogout
@@ -68,8 +68,9 @@ import { ref, computed, defineEmits } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
 import ConfirmLogout from '@/components/ui/ConfirmLogout.vue'
-import { Bell, LogOut } from 'lucide-vue-next'
+import { LogOut } from 'lucide-vue-next'
 import { getAvatarSrc } from '@/utils/avatar'
+import NotificationBell from '@/components/shared/NotificationBell.vue'
 
 const emit = defineEmits(['toggle-sidebar'])
 

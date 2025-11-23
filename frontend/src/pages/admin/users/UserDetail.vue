@@ -2,10 +2,11 @@
   <div class="">
     <!-- Header -->
     <div class="rounded-lg bg-white p-4 ring-1 ring-black/5">
-      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div class="flex min-w-0 items-center gap-4">
-          <img :src="fallbackAvatar" class="h-16 w-16 rounded-full object-cover" />
-          <div class="min-w-0">
+      <div class="flex flex-col gap-4">
+        <!-- User Info -->
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <img :src="fallbackAvatar" class="h-16 w-16 shrink-0 rounded-full object-cover" />
+          <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
               <h2 class="truncate text-xl font-semibold text-gray-800">
                 {{ detail.name || detail.username || '—' }}
@@ -22,28 +23,51 @@
               <span v-if="detail.emailVerified" class="ml-1 text-emerald-600">(đã xác minh)</span>
             </div>
             <div class="mt-1 text-xs text-gray-500">
-              Lần đăng nhập cuối: <b>{{ fmtDate(detail.lastLoginAt) || '—' }}</b> • Tạo lúc:
+              Lần đăng nhập cuối: <b>{{ fmtDate((detail as any).lastLoginAt || (detail as any).last_login) || '—' }}</b> • Tạo lúc:
               <b>{{ fmtDate(detail.createdAt) }}</b>
+            </div>
             </div>
           </div>
 
+        <!-- Action Cards -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <!-- Change Password -->
           <div class="rounded-lg bg-white p-4 ring-1 ring-black/5">
             <h3 class="text-lg font-semibold text-gray-800">Đổi mật khẩu</h3>
             <p class="text-sm text-gray-500">Đặt mật khẩu mới cho người dùng này.</p>
             <div class="mt-4">
-              <el-button type="warning" @click="openChangePasswordDialog"> Đổi mật khẩu </el-button>
+              <el-button type="warning" @click="openChangePasswordDialog" class="w-full sm:w-auto"> Đổi mật khẩu </el-button>
+            </div>
+          </div>
+
+          <!-- Lock/Unlock Account -->
+          <div v-if="detail.role !== 'admin'" class="rounded-lg bg-white p-4 ring-1 ring-black/5">
+            <h3 class="text-lg font-semibold text-gray-800">{{ detail.status === 'locked' ? 'Mở khóa' : 'Khóa' }} tài khoản</h3>
+            <p class="text-sm text-gray-500">
+              {{ detail.status === 'locked' 
+                ? 'Mở khóa tài khoản này để người dùng có thể đăng nhập lại.' 
+                : 'Khóa tài khoản này tạm thời. Người dùng sẽ không thể đăng nhập.' }}
+            </p>
+            <div class="mt-4">
+              <el-button 
+                :type="detail.status === 'locked' ? 'success' : 'warning'" 
+                :loading="lockingAccount" 
+                @click="toggleLockAccount"
+                class="w-full sm:w-auto"
+              >
+                {{ detail.status === 'locked' ? 'Mở khóa tài khoản' : 'Khóa tài khoản' }}
+              </el-button>
             </div>
           </div>
 
           <!-- Delete Account -->
-          <div class="rounded-lg bg-white p-4 ring-1 ring-black/5">
+          <div v-if="detail.role !== 'admin'" class="rounded-lg bg-white p-4 ring-1 ring-black/5">
             <h3 class="text-lg font-semibold text-gray-800">Xóa tài khoản</h3>
             <p class="text-sm text-gray-500">
               Xóa tài khoản này vĩnh viễn. Hành động này không thể hoàn tác.
             </p>
             <div class="mt-4">
-              <el-button type="danger" :loading="deletingAccount" @click="deleteAccount">
+              <el-button type="danger" :loading="deletingAccount" @click="deleteAccount" class="w-full sm:w-auto">
                 Xóa tài khoản
               </el-button>
             </div>
@@ -143,6 +167,7 @@ const form = reactive<any>({})
 const profileRef = ref<FormInstance>()
 const savingProfile = ref(false)
 const deletingAccount = ref(false)
+const lockingAccount = ref(false)
 
 // Change Password State
 const changePasswordDialogVisible = ref(false)
@@ -232,6 +257,35 @@ async function changePassword() {
     showToast(error?.message || 'Đổi mật khẩu thất bại', 'error')
   } finally {
     changingPassword.value = false
+  }
+}
+
+// Lock/Unlock account
+async function toggleLockAccount() {
+  const action = detail.status === 'locked' ? 'mở khóa' : 'khóa'
+  const confirmed = await showConfirm({
+    title: 'Xác nhận',
+    message: `Bạn có chắc chắn muốn ${action} tài khoản này?`,
+    type: detail.status === 'locked' ? 'info' : 'warning',
+  })
+  if (!confirmed) return
+  
+  lockingAccount.value = true
+  try {
+    if (detail.status === 'locked') {
+      await userService.unlock(detail.id)
+      detail.status = 'active'
+      showToast('Đã mở khóa tài khoản', 'success')
+    } else {
+      await userService.lock(detail.id)
+      detail.status = 'locked'
+      showToast('Đã khóa tài khoản', 'success')
+    }
+    await load() // Reload để cập nhật thông tin
+  } catch (error: any) {
+    showToast(error?.message || `${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thất bại`, 'error')
+  } finally {
+    lockingAccount.value = false
   }
 }
 

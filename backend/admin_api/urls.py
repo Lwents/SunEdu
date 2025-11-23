@@ -24,6 +24,11 @@ from admin_api.views import (
     AdminAlertPolicyView
 )
 from admin_api.views.bulk_create_view import BulkCreateUsersView, BulkCreateRollbackView
+from admin_api.views.notifications_view import (
+    AdminNotificationsView,
+    AdminNotificationReadView,
+    AdminNotificationReadAllView
+)
 
 app_name = 'admin_api'
 
@@ -71,6 +76,7 @@ urlpatterns = [
 
     # Activity Logs
     path('activity-logs/', AdminActivityLogView.as_view(), name='activity-logs'),
+    path('activity-logs/<str:log_id>/', AdminActivityLogView.as_view(), name='activity-log-detail'),
 
     # Security
     path('security/policy/', AdminSecurityPolicyView.as_view(), name='security-policy'),
@@ -80,6 +86,11 @@ urlpatterns = [
     path('security/sessions/', AdminSessionListView.as_view(), name='security-sessions'),
     path('security/sessions/<str:jti>/', AdminSessionRevokeView.as_view(), name='security-session-revoke'),
     path('security/alerts/', AdminAlertPolicyView.as_view(), name='security-alerts'),
+    
+    # Notifications
+    path('notifications/', AdminNotificationsView.as_view(), name='notifications'),
+    path('notifications/<uuid:id>/read/', AdminNotificationReadView.as_view(), name='notification-read'),
+    path('notifications/read-all/', AdminNotificationReadAllView.as_view(), name='notification-read-all'),
 ]
 
 

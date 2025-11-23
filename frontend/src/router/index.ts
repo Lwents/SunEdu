@@ -102,12 +102,7 @@ const routes: RouteRecordRaw[] = [
         meta: { title: (to: any) => `Chi tiết khóa học #${to.params.id}` },
       },
 
-      // System
-      {
-        path: 'system',
-        component: () => import('@/pages/admin/system/SystemConfig.vue'),
-        meta: { title: 'Cấu hình hệ thống' },
-      },
+      // System - Order matters: specific routes first, then general
       {
         path: 'system/activity',
         component: () => import('@/pages/admin/system/ActivityLogs.vue'),
@@ -117,6 +112,11 @@ const routes: RouteRecordRaw[] = [
         path: 'system/security',
         component: () => import('@/pages/admin/system/SecuritySettings.vue'),
         meta: { title: 'Bảo mật hệ thống' },
+      },
+      {
+        path: 'system',
+        component: () => import('@/pages/admin/system/SystemConfig.vue'),
+        meta: { title: 'Cấu hình hệ thống' },
       },
 
       // Reports
