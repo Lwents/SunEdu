@@ -117,9 +117,23 @@ class ExerciseDomain:
         return sum(q.total_points() for q in self.questions)
 
     def can_attempt(self, student_attempt_count: int) -> bool:
+        """
+        Check if a student can attempt this exercise.
+        
+        Args:
+            student_attempt_count: Number of attempts THIS SPECIFIC student has made
+        
+        Returns:
+            True if student can attempt (either unlimited or under their limit)
+        
+        Note: max_attempts is per-student, NOT global. Multiple students can
+        independently attempt the same exercise.
+        """
         max_attempts = self.settings.get('max_attempts')
         if max_attempts is None:
+            # No limit - student can attempt unlimited times
             return True
+        # Check if student's attempt count is less than their personal limit
         return student_attempt_count < int(max_attempts)
 
     def create_attempt(self, student_id: Optional[int] = None):

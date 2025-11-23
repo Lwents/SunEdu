@@ -23,16 +23,13 @@ def avatar_for(user, request):
             avatar_path = getattr(profile, "avatar_url", None)
             if avatar_path and avatar_path.strip():
                 # Handle different avatar URL formats
-    if avatar_path.startswith(("http://", "https://", "data:")):
-        return avatar_path
-    if avatar_path.startswith("/"):
-        return request.build_absolute_uri(avatar_path) if request else avatar_path
+                if avatar_path.startswith(("http://", "https://", "data:")):
+                    return avatar_path
+                if avatar_path.startswith("/"):
+                    return request.build_absolute_uri(avatar_path) if request else avatar_path
                 # Relative path - build full URL
-    media_url = getattr(settings, "MEDIA_URL", "/media/").rstrip("/")
-                if request:
-                    base = request.build_absolute_uri(media_url + "/")
-                else:
-                    base = media_url + "/"
+                media_url = getattr(settings, "MEDIA_URL", "/media/").rstrip("/")
+                base = request.build_absolute_uri(media_url + "/") if request else media_url + "/"
                 return f"{base}{avatar_path.lstrip('/')}"
     except Exception:
         pass

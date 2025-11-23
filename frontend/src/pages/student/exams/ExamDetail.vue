@@ -37,6 +37,14 @@
             >
               Thoát
             </button>
+            <button
+              v-if="questions.length"
+              type="button"
+              class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+              @click="goFirstUnanswered"
+            >
+              Tới câu chưa làm
+            </button>
           </div>
         </div>
       </header>
@@ -60,6 +68,7 @@
                   ? 'border-slate-900 bg-slate-900 text-white'
                   : 'border-slate-200 bg-white text-slate-900',
                 isAnswered(q.id) && i !== idx ? 'border-blue-500 bg-blue-50 text-blue-700' : '',
+                !isAnswered(q.id) && i !== idx ? 'border-amber-200 bg-amber-50 text-amber-700' : '',
               ]"
               @click="go(i)"
             >
@@ -267,9 +276,11 @@ import { onMounted, onBeforeUnmount, computed, shallowRef, ref, nextTick } from 
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from '@/utils/toast'
 import { examService, type AttemptQuestion, type ExamDetail } from '@/services/exam.service'
+import { useAuthStore } from '@/store/auth.store'
 
 const router = useRouter()
 const route = useRoute()
+const auth = useAuthStore()
 
 // Exam info from API
 const exam = ref<ExamDetail | null>(null)
@@ -283,6 +294,10 @@ const submitting = ref(false)
 const duration = ref(0)
 const timeLeft = ref(0)
 let timer: number | null = null
+let autosaveTimer: number | null = null
+const userKey = computed(() => auth.user?.id || 'guest')
+const storageKey = computed(() => `exam_answers_${route.params.id || ''}_${userKey.value}`)
+const doneKey = computed(() => `exam_done_${route.params.id || ''}_${userKey.value}`)
 
 const q = computed(() => questions.value[idx.value])
 const answeredCount = computed(
@@ -338,7 +353,7 @@ async function confirmSubmit() {
     showToast('Đã nộp bài thành công!', 'success')
     // đánh dấu đã hoàn thành để khóa làm lại
     try {
-      localStorage.setItem(`exam_done_${route.params.id}`, attemptId.value)
+      localStorage.setItem(doneKey.value, attemptId.value)
     } catch (e) {
       console.warn('Cannot persist done flag', e)
     }
@@ -373,6 +388,10 @@ function next() {
 function prev() {
   if (idx.value > 0) idx.value--
 }
+function goFirstUnanswered() {
+  const first = questions.value.findIndex((question) => !isAnswered(question.id))
+  if (first >= 0) idx.value = first
+}
 function isAnswered(qid: string | number) {
   const ans = answers.value[qid]
   if (Array.isArray(ans)) return ans.length > 0 && ans.some(a => (a ?? '').toString().trim() !== '')
@@ -383,6 +402,10 @@ function stopTimer() {
     clearInterval(timer)
     timer = null
   }
+  if (autosaveTimer) {
+    clearInterval(autosaveTimer)
+    autosaveTimer = null
+  }
 }
 
 function getAnswer(qid: string | number) {
@@ -391,6 +414,11 @@ function getAnswer(qid: string | number) {
 
 function setAnswer(qid: string | number, val: any) {
   answers.value = { ...answers.value, [qid]: val }
+  try {
+    localStorage.setItem(storageKey.value, JSON.stringify(answers.value))
+  } catch (e) {
+    console.warn('Cannot save draft', e)
+  }
 }
 
 function handleChoiceChange(qid: string | number, choiceId: string, isMulti: boolean) {
@@ -445,6 +473,18 @@ async function loadExamAndStart() {
       attemptId.value = attempt.id
       questions.value = attempt.questions
       answers.value = { ...attempt.answers }
+      // Merge any locally saved draft (last write wins)
+      try {
+        const cached = localStorage.getItem(storageKey.value)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (parsed && typeof parsed === 'object') {
+            answers.value = { ...answers.value, ...parsed }
+          }
+        }
+      } catch (e) {
+        console.warn('Cannot load draft', e)
+      }
       
       // Calculate duration and time left
       const deadline = new Date(attempt.deadlineAt)
@@ -463,6 +503,14 @@ async function loadExamAndStart() {
           confirmSubmit()
         }
       }, 1000) as unknown as number
+      // Autosave every 15s
+      autosaveTimer = window.setInterval(() => {
+        try {
+          localStorage.setItem(storageKey.value, JSON.stringify(answers.value))
+        } catch (e) {
+          console.warn('Cannot save draft', e)
+        }
+      }, 15000) as unknown as number
       
       loading.value = false
     } catch (attemptErr: any) {
@@ -474,6 +522,11 @@ async function loadExamAndStart() {
         const finishedAttemptId = attemptIdMatch ? attemptIdMatch[1] : null
         
         if (finishedAttemptId) {
+          try {
+            localStorage.setItem(`exam_done_${examId}_${userKey.value}`, finishedAttemptId)
+          } catch (e) {
+            console.warn('Cannot persist done flag', e)
+          }
           // Redirect ngay lập tức, không cần toast và delay
           // Replace current route instead of push to avoid back button issues
           router.replace({
@@ -488,6 +541,11 @@ async function loadExamAndStart() {
           return
         }
       }
+      if (errorMsg.toLowerCase().includes('expired') || errorMsg.includes('closed') || errorMsg.includes('deadline')) {
+        showToast('Bài kiểm tra đã kết thúc hoặc quá hạn.', 'warning')
+        router.replace({ name: 'student-exams' })
+        return
+      }
       // Các lỗi khác: hiển thị và quay lại
       throw attemptErr
     }
@@ -500,9 +558,18 @@ async function loadExamAndStart() {
 
 onMounted(async () => {
   await loadExamAndStart()
+  window.addEventListener('beforeunload', beforeUnload)
 })
 
 onBeforeUnmount(() => {
   stopTimer()
+  window.removeEventListener('beforeunload', beforeUnload)
 })
+
+function beforeUnload(e: BeforeUnloadEvent) {
+  if (answeredCount.value > 0 && !submitting.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
 </script>

@@ -183,6 +183,7 @@ def exercise_ranking(exercise_id: str, user_id: Optional[int] = None) -> Dict[st
             "student_id": attempt.student.id if attempt.student else None,
             "student_name": student_name,
             "name": student_name,
+            "attempt_id": str(attempt.id),
             "avatar": avatar_url,
             "gender": gender,
             "score": round(attempt.score or 0, 1),
@@ -197,6 +198,7 @@ def exercise_ranking(exercise_id: str, user_id: Optional[int] = None) -> Dict[st
             user_rank = current_rank
             user_stats = {
                 "rank": current_rank,
+                "attempt_id": str(attempt.id),
                 "score": round(attempt.score or 0, 1),
                 "total_score": round(attempt.score or 0, 1),
                 "correct_count": correct_count,

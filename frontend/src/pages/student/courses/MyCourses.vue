@@ -122,6 +122,7 @@
                     class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     :src="getThumbnailUrl(c.thumbnail)"
                     :alt="c.title"
+                    loading="lazy"
                     @error="handleImageError"
                   />
                   <div v-else class="flex h-full w-full items-center justify-center">
@@ -232,6 +233,7 @@
                   class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   :src="getThumbnailUrl(s.thumbnail)" 
                   :alt="s.title" 
+                  loading="lazy"
                   @error="handleImageError"
                 />
                 <div v-else class="flex h-full w-full items-center justify-center">

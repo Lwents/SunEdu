@@ -39,6 +39,17 @@ QuestionStatModel = getattr(apps.get_model('activities', 'QuestionStat'), '__cal
 # Attempt lifecycle
 # ----------------------
 def start_attempt(exercise_id: str, student_user) -> ExerciseAttemptDomain:
+    """
+    Start a new exam attempt for a student.
+    
+    IMPORTANT: Each student can independently attempt the exam.
+    - Multiple students can take the same exam simultaneously
+    - Each student has their own attempt count (max_attempts is per-student, not global)
+    - Only restrictions are:
+      1. Exercise must be published
+      2. Exercise must not have expired (end_at check)
+      3. Student must not exceed their personal max_attempts limit
+    """
     from django.utils import timezone
     from django.apps import apps
     
@@ -50,6 +61,7 @@ def start_attempt(exercise_id: str, student_user) -> ExerciseAttemptDomain:
         raise ValidationError("Exercise is not published yet.")
     
     # Check if exercise has expired (end_at has passed)
+    # This is the ONLY global restriction - if deadline passed, NO student can start
     ExerciseSettingsModel = apps.get_model('activities', 'ExerciseSettings')
     try:
         settings = ExerciseSettingsModel.objects.get(exercise_id=exercise_id)
@@ -58,18 +70,20 @@ def start_attempt(exercise_id: str, student_user) -> ExerciseAttemptDomain:
     except ExerciseSettingsModel.DoesNotExist:
         pass  # No settings, allow attempt
     
-    # Check if student already has an attempt
+    # Check if THIS SPECIFIC STUDENT already has an attempt
+    # CRITICAL: This filter is per-student only. Other students' attempts are NOT considered.
     attempt_qs = ExerciseAttemptModel.objects.filter(
         exercise_id=exercise_id,
-        student=student_user
+        student=student_user  # ONLY count attempts by THIS specific student
     ).order_by('-started_at')
     existing_attempt = attempt_qs.first()
 
-    # Nếu đang có bài làm dở, trả về attempt đó để tiếp tục
+    # If student has an unfinished attempt, return it to continue
     if existing_attempt and existing_attempt.finished_at is None:
         return ExerciseAttemptDomain.from_model(existing_attempt, exercise)
 
-    # Đã làm xong trước đó: kiểm tra giới hạn số lần làm
+    # Check if THIS STUDENT has exceeded their personal attempt limit
+    # max_attempts is per-student, NOT global. Each student has their own limit.
     attempt_count = attempt_qs.count()
     if not exercise.can_attempt(attempt_count):
         latest_id = str(existing_attempt.id) if existing_attempt else None

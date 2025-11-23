@@ -42,9 +42,10 @@
       </div>
 
       <img
-        class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover"
+        class="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover aspect-square"
         :src="avatarSrc"
         alt="avatar"
+        @error="handleAvatarError"
       />
 
       <button
@@ -95,6 +96,13 @@ const pageTitle = computed(() => {
 
 // Confirm popup
 const showConfirm = ref(false)
+
+function handleAvatarError(event: Event) {
+  const img = event.target as HTMLImageElement
+  // Fallback to default avatar
+  const defaultAvatar = getAvatarSrc(null, auth.user?.gender as 'male' | 'female' | 'other' | null | undefined, 'admin')
+  img.src = defaultAvatar
+}
 
 async function handleLogout() {
   try {

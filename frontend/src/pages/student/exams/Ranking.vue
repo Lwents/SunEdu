@@ -8,33 +8,7 @@
             Vinh danh những học viên có thành tích xuất sắc nhất trong mỗi kỳ thi.
           </p>
         </div>
-        <div class="relative w-full max-w-sm" @mouseleave="openSelect = false">
-          <button
-            type="button"
-            class="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 transition"
-            :disabled="loadingExams"
-            @click="openSelect = !openSelect"
-          >
-            <span v-if="loadingExams">Đang tải đề...</span>
-            <span v-else>{{ selectedExamTitle || 'Vui lòng chọn đề thi' }}</span>
-            <svg class="h-4 w-4 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25 12 15.75 4.5 8.25" />
-            </svg>
-          </button>
-          <ul
-            v-show="openSelect"
-            class="absolute right-0 z-20 mt-2 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
-          >
-            <li
-              v-for="e in exams"
-              :key="e.id"
-              class="cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
-              @click="selectExam(e.id)"
-            >
-              {{ e.title }}
-            </li>
-          </ul>
-        </div>
+        <div></div>
       </header>
 
       <div v-if="loading" class="space-y-4">
@@ -63,103 +37,150 @@
         </p>
       </div>
 
-      <div v-else class="space-y-6">
-        <div class="grid gap-4 md:grid-cols-3">
-          <!-- Hạng 2 (bên trái) -->
-          <div
-            class="flex flex-col items-center rounded-lg border border-slate-200 px-4 py-6 text-center shadow-sm"
-            :class="rows[1] ? 'bg-white' : 'bg-slate-50 border-dashed'"
-          >
-            <div class="text-sm font-semibold" :class="rows[1] ? 'text-slate-600' : 'text-slate-400'">🥈 Hạng 2</div>
-            <div v-if="rows[1]">
-            <img :src="avatarOf(rows[1].name, rows[1].avatar)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
-              <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[1].name }}</h3>
-              <p class="text-sm text-slate-600">{{ rows[1].time }}</p>
-              <p class="text-xl font-bold text-slate-900">{{ rows[1].score }} điểm</p>
-            </div>
-            <div v-else class="mt-3 flex flex-col items-center">
-              <div class="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center">
-                <span class="text-3xl font-bold text-slate-400">?</span>
+      <div v-else class="space-y-8">
+        <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/70">
+          <div class="grid gap-5 items-end lg:grid-cols-3">
+            <!-- Hạng 2 -->
+            <div class="flex flex-col items-center rounded-2xl border-2 border-slate-200 bg-gradient-to-b from-slate-50 to-white px-6 py-8 text-center shadow min-h-[280px]">
+              <div class="flex items-center gap-2 text-sm font-semibold text-slate-500">
+                <span class="text-lg">🥈</span>
+                <span>Hạng 2</span>
               </div>
-              <h3 class="mt-3 text-lg font-bold text-slate-400">Chưa có</h3>
-              <p class="text-sm text-slate-400 mt-1">Đang chờ...</p>
-            </div>
-          </div>
-          
-          <!-- Hạng 1 (ở giữa) -->
-          <div
-            v-if="rows[0]"
-            class="flex flex-col items-center rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-6 text-center shadow-sm"
-          >
-            <div class="text-sm font-semibold text-amber-700">🥇 Hạng 1</div>
-            <img :src="avatarOf(rows[0].name, rows[0].avatar)" alt="avatar" class="mt-3 h-18 w-18 rounded-full border-4 border-amber-200 object-cover" />
-            <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[0].name }}</h3>
-            <p class="text-sm text-slate-600">{{ rows[0].time }}</p>
-            <p class="text-2xl font-bold text-slate-900">{{ rows[0].score }} điểm</p>
-          </div>
-          <div
-            v-else
-            class="flex flex-col items-center rounded-lg border-2 border-dashed border-amber-200 bg-amber-50/50 px-4 py-6 text-center shadow-sm"
-          >
-            <div class="text-sm font-semibold text-amber-400">🥇 Hạng 1</div>
-            <div class="mt-3 h-18 w-18 rounded-full bg-amber-100 flex items-center justify-center border-4 border-amber-200">
-              <span class="text-4xl font-bold text-amber-300">?</span>
-            </div>
-            <h3 class="mt-3 text-lg font-bold text-amber-400">Chưa có</h3>
-            <p class="text-sm text-amber-400 mt-1">Đang chờ...</p>
-          </div>
-          
-          <!-- Hạng 3 (bên phải) -->
-          <div
-            class="flex flex-col items-center rounded-lg border border-slate-200 px-4 py-6 text-center shadow-sm"
-            :class="rows[2] ? 'bg-white' : 'bg-slate-50 border-dashed'"
-          >
-            <div class="text-sm font-semibold" :class="rows[2] ? 'text-slate-600' : 'text-slate-400'">🥉 Hạng 3</div>
-            <div v-if="rows[2]">
-            <img :src="avatarOf(rows[2].name, rows[2].avatar)" alt="avatar" class="mt-3 h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
-              <h3 class="mt-3 text-lg font-bold text-slate-900">{{ rows[2].name }}</h3>
-              <p class="text-sm text-slate-600">{{ rows[2].time }}</p>
-              <p class="text-xl font-bold text-slate-900">{{ rows[2].score }} điểm</p>
-            </div>
-            <div v-else class="mt-3 flex flex-col items-center">
-              <div class="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center">
-                <span class="text-3xl font-bold text-slate-400">?</span>
+              <div class="mt-4 flex h-28 w-28 items-center justify-center rounded-full border-2 border-slate-300 bg-slate-100 shadow-inner overflow-hidden">
+                <template v-if="top2">
+                  <img :src="avatarOf(top2.name, top2.avatar, top2.gender)" alt="avatar" class="h-full w-full object-cover" />
+                </template>
+                <span v-else class="text-4xl font-bold text-slate-300">?</span>
               </div>
-              <h3 class="mt-3 text-lg font-bold text-slate-400">Chưa có</h3>
-              <p class="text-sm text-slate-400 mt-1">Đang chờ...</p>
+              <div class="mt-5 space-y-1">
+                <p class="text-lg font-bold text-slate-900 line-clamp-1">{{ top2?.name || 'Chưa có' }}</p>
+                <p class="text-sm text-slate-500">{{ top2 ? top2.time : 'Đang chờ...' }}</p>
+                <p class="text-2xl font-bold text-slate-800">{{ top2 ? `${top2.score} điểm` : '--' }}</p>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <!-- Hạng 1 -->
+            <div class="relative flex flex-col items-center rounded-[28px] border-4 border-amber-300 bg-gradient-to-b from-amber-50 via-amber-100 to-white px-8 py-10 text-center shadow-2xl shadow-amber-100 min-h-[320px]">
+              <span class="absolute -top-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-white shadow">TOP 1</span>
+              <div class="flex items-center gap-2 text-sm font-semibold text-amber-700">
+                <span class="text-xl">🥇</span>
+                <span>Hạng 1</span>
+              </div>
+              <div class="mt-5 flex h-36 w-36 items-center justify-center rounded-full border-4 border-amber-300 bg-white shadow-[0_18px_40px_rgba(251,191,36,0.35)] overflow-hidden">
+                <template v-if="top1">
+                  <img :src="avatarOf(top1.name, top1.avatar, top1.gender)" alt="avatar" class="h-full w-full object-cover" />
+                </template>
+                <span v-else class="text-5xl font-black text-amber-200">?</span>
+              </div>
+              <div class="mt-5 space-y-1.5">
+                <p class="text-xl font-extrabold text-slate-900 line-clamp-1">{{ top1?.name || 'Đang chờ' }}</p>
+                <p class="text-sm text-slate-600">{{ top1 ? top1.time : 'Chưa có ai hoàn thành' }}</p>
+                <p class="text-3xl font-black text-amber-700">{{ top1 ? `${top1.score} điểm` : '--' }}</p>
+              </div>
+            </div>
+
+            <!-- Hạng 3 -->
+            <div class="flex flex-col items-center rounded-2xl border-2 border-orange-200 bg-gradient-to-b from-orange-50 to-white px-6 py-8 text-center shadow min-h-[280px]">
+              <div class="flex items-center gap-2 text-sm font-semibold text-amber-600">
+                <span class="text-lg">🥉</span>
+                <span>Hạng 3</span>
+              </div>
+              <div class="mt-4 flex h-24 w-24 items-center justify-center rounded-full border-2 border-orange-200 bg-orange-50 shadow-inner overflow-hidden">
+                <template v-if="top3">
+                  <img :src="avatarOf(top3.name, top3.avatar, top3.gender)" alt="avatar" class="h-full w-full object-cover" />
+                </template>
+                <span v-else class="text-4xl font-bold text-orange-200">?</span>
+              </div>
+              <div class="mt-5 space-y-1">
+                <p class="text-lg font-bold text-slate-900 line-clamp-1">{{ top3?.name || 'Chưa có' }}</p>
+                <p class="text-sm text-slate-500">{{ top3 ? top3.time : 'Đang chờ...' }}</p>
+                <p class="text-2xl font-bold text-amber-700">{{ top3 ? `${top3.score} điểm` : '--' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 rounded-[22px] border border-amber-100 bg-gradient-to-r from-amber-50 via-white to-sky-50 p-5 shadow">
+            <div v-if="me" class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div class="flex items-center gap-4">
+                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-white text-lg font-bold text-amber-700 shadow-inner border border-amber-100">#{{ me.rank }}</div>
+                <div class="flex items-center gap-3">
+                  <img :src="meAvatarSrc" alt="avatar" class="h-12 w-12 rounded-full object-cover border border-white shadow" />
+                  <div>
+                    <p class="text-sm font-semibold text-slate-500">Vị trí của bạn</p>
+                    <p class="text-xl font-bold text-slate-900">Top {{ me.rank }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-slate-600">
+                <div class="rounded-lg bg-white/70 px-3 py-3 shadow-sm border border-amber-50">
+                  <p class="text-lg font-bold text-amber-700">{{ me.correct }}/{{ me.total }}</p>
+                  <p>Câu đúng</p>
+                </div>
+                <div class="rounded-lg bg-white/70 px-3 py-3 shadow-sm border border-amber-50">
+                  <p class="text-lg font-bold text-slate-900">{{ meTime }}</p>
+                  <p>Thời gian</p>
+                </div>
+                <div class="rounded-lg bg-white/70 px-3 py-3 shadow-sm border border-amber-50">
+                  <p class="text-lg font-bold text-emerald-700">{{ me.score }}</p>
+                  <p>Điểm</p>
+                </div>
+              </div>
+            </div>
+            <div v-else class="flex flex-col items-start gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-full bg-white text-slate-400 grid place-items-center border border-dashed border-slate-200">?</div>
+                <div>
+                  <p class="text-base font-semibold text-slate-900">Chưa có vị trí của bạn</p>
+                  <p class="text-sm text-slate-600">Hoàn thành bài thi để xuất hiện trên bảng xếp hạng.</p>
+                </div>
+              </div>
+              <router-link
+                v-if="examId"
+                :to="{ name: 'student-exam-detail', params: { id: examId } }"
+                class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Bắt đầu làm bài
+              </router-link>
+            </div>
+          </div>
+        </section>
+
+        <!-- Danh sách từ hạng 4 trở đi -->
+        <section v-if="restRows.length > 0" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/60">
+          <div class="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900">Bảng xếp hạng đầy đủ</h3>
+              <p class="text-sm text-slate-600 mt-1">Tổng cộng {{ rows.length }} học viên đã hoàn thành</p>
+            </div>
+          </div>
           <div
             v-for="(row, index) in paginatedRestRows"
             :key="row.id || row.name + '-' + getRestRank(index)"
-            class="flex flex-col gap-3 border-b border-slate-100 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+            class="mb-3 flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 shadow-sm last:mb-0 sm:flex-row sm:items-center sm:justify-between hover:border-amber-100 hover:bg-amber-50/40 transition"
           >
             <div class="flex items-center gap-4">
-              <div class="text-xl font-bold text-slate-600">#{{ getRestRank(index) }}</div>
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-base font-bold text-slate-700 shadow-inner border border-slate-200">#{{ getRestRank(index) }}</div>
               <div class="flex items-center gap-3">
-                <img :src="avatarOf(row.name, row.avatar)" alt="avatar" class="h-12 w-12 rounded-full object-cover border border-slate-200" />
+                <img :src="avatarOf(row.name, row.avatar, row.gender)" alt="avatar" class="h-11 w-11 rounded-full object-cover border border-white shadow" />
                 <span class="text-base font-semibold text-slate-900">{{ row.name }}</span>
               </div>
             </div>
             <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-slate-600">
-              <div>
+              <div class="rounded-lg bg-white px-3 py-2 shadow-sm border border-slate-100">
                 <p class="text-lg font-bold text-slate-900">{{ row.correct }}/{{ row.total }}</p>
                 <p>Câu đúng</p>
               </div>
-              <div>
+              <div class="rounded-lg bg-white px-3 py-2 shadow-sm border border-slate-100">
                 <p class="text-lg font-bold text-slate-900">{{ row.time }}</p>
                 <p>Thời gian</p>
               </div>
-              <div>
-                <p class="text-lg font-bold text-slate-900">{{ row.score }}</p>
+              <div class="rounded-lg bg-white px-3 py-2 shadow-sm border border-slate-100">
+                <p class="text-lg font-bold text-emerald-700">{{ row.score }}</p>
                 <p>Điểm</p>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
       <div v-if="totalPages > 1" class="mt-6 flex items-center justify-center gap-2">
@@ -194,35 +215,6 @@
       </div>
 
       <div
-        v-if="me"
-        class="mt-8 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4 shadow-sm"
-      >
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex items-center gap-4">
-            <div class="text-2xl font-bold text-slate-700">#{{ me.rank }}</div>
-            <div class="flex items-center gap-3">
-              <img :src="avatarOf('Bạn', me?.avatar)" alt="avatar" class="h-12 w-12 rounded-full object-cover border border-slate-200" />
-              <span class="text-base font-semibold text-slate-900">Vị trí của bạn</span>
-            </div>
-          </div>
-          <div class="grid flex-1 grid-cols-3 gap-3 text-center text-sm text-slate-600">
-            <div>
-              <p class="text-lg font-bold text-slate-900">{{ me.correct }}/{{ me.total }}</p>
-              <p>Câu đúng</p>
-            </div>
-            <div>
-              <p class="text-lg font-bold text-slate-900">{{ me.time }}</p>
-              <p>Thời gian</p>
-            </div>
-            <div>
-              <p class="text-lg font-bold text-slate-900">{{ me.score }}</p>
-              <p>Điểm</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
         v-if="err"
         class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-600"
       >
@@ -236,35 +228,51 @@
 import { onMounted, ref, watch, computed } from 'vue'
 import { examService } from '@/services/exam.service'
 import { getAvatarSrc } from '@/utils/avatar'
+import { useAuthStore } from '@/store/auth.store'
+import { useRoute } from 'vue-router'
 
 // --- TYPES ---
 type Exam = { id: number | string; title: string };
-type RankRow = { id?: string | number; name: string; avatar?: string; gender?: string; score: number; correct: number; total: number; time: string };
-type RankMe = { rank: number; score: number; correct: number; total: number; time: string; avatar?: string; gender?: string };
+type RankRow = { id?: string | number; name: string; avatar?: string; gender?: string; score: number; correct: number; total: number; time: string; attemptId?: string };
+type RankMe = { id?: string | number; name?: string; rank: number; score: number; correct: number; total: number; time: string; avatar?: string; gender?: string; attemptId?: string };
 
 // --- STATE ---
 const exams = ref<Exam[]>([]);
 const examId = ref<Exam['id'] | undefined>();
-const openSelect = ref(false);
+const route = useRoute()
+const auth = useAuthStore()
 
 const rows = ref<RankRow[]>([]);
+const limitedRows = computed(() => rows.value.slice(0, 100)); // Hiển thị tối đa 100 học viên
 const me = ref<RankMe | null>(null);
+const top1 = computed(() => limitedRows.value[0]);
+const top2 = computed(() => limitedRows.value[1]);
+const top3 = computed(() => limitedRows.value[2]);
+const meTime = computed(() => {
+  if (!me.value) return '00:00'
+  if (me.value.time) return me.value.time
+  const fallback = rows.value.find(r =>
+    (r.attemptId && me.value?.attemptId && r.attemptId === me.value.attemptId) ||
+    (me.value?.id && r.id && String(r.id) === String(me.value.id))
+  )
+  return fallback?.time || '00:00'
+});
+
+const meAvatarSrc = computed(() => {
+  const preferred = (me.value?.avatar && me.value.avatar.toLowerCase() !== 'avatar')
+    ? me.value.avatar
+    : (auth.user?.avatar || '')
+  const gender = (me.value?.gender || auth.user?.gender) as any
+  return getAvatarSrc(preferred, gender, 'student')
+})
 
 const loading = ref(true);
-const loadingExams = ref(true);
 const err = ref('');
-
-const selectedExamTitle = computed(() => exams.value.find(e => e.id === examId.value)?.title);
-
-function selectExam(id: Exam['id']) {
-  examId.value = id;
-  openSelect.value = false;
-}
 
 // --- PAGINATION (cho danh sách từ hạng 4) ---
 const currentPage = ref(1);
-const pageSize = 10;
-const restRows = computed(() => rows.value.slice(3)); // Bỏ qua top 3
+const pageSize = 20; // Tăng số lượng hiển thị mỗi trang
+const restRows = computed(() => limitedRows.value.slice(3)); // Bỏ qua top 3, hiển thị từ hạng 4 trở đi
 
 const paginatedRestRows = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
@@ -317,22 +325,21 @@ function avatarOf(name: string, avatarUrl?: string, gender?: string) {
 
 // --- DATA LOADERS ---
 async function loadExams() {
-  loadingExams.value = true;
   err.value = '';
   try {
-    const result = await examService.list({ status: 'published' });
-    exams.value = result.items.map(ex => ({
-      id: ex.id,
-      title: ex.title
-    }));
-    if (exams.value.length > 0) {
-      examId.value = exams.value[0].id;
+    const result = await examService.list({ status: 'published', pageSize: 1 });
+    exams.value = result.items?.map((ex: any) => ({ id: ex.id, title: ex.title })) || []
+    const firstId = result.items?.[0]?.id;
+    if (firstId !== undefined) {
+      examId.value = firstId;
+      await loadRanking(firstId);
+    } else {
+      loading.value = false;
     }
   } catch (e: any) {
     err.value = e?.message || String(e);
     console.error('Load exams error:', e);
-  } finally {
-    loadingExams.value = false;
+    loading.value = false;
   }
 }
 
@@ -350,10 +357,11 @@ async function loadRanking(id: Exam['id']) {
 
   try {
     const r = await examService.ranking(id);
-    // Map API response to component format
-    rows.value = (r.top || []).map((item: any) => ({
+    // Map API response to component format and sort by score (descending)
+    const mappedRows = (r.top || []).map((item: any) => ({
       id: item.id,
       name: item.name || 'Học viên',
+      attemptId: item.attemptId || item.attempt_id,
       avatar: item.avatar || item.avatar_url || item.photo || '',
       gender: item.gender || '',
       score: item.score || 0,
@@ -361,15 +369,24 @@ async function loadRanking(id: Exam['id']) {
       total: item.total || 0,
       time: formatTime(item.time) || '00:00',
     }));
+    // Sort by score descending (highest first), then by time ascending (faster first)
+    rows.value = mappedRows.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      // If scores are equal, sort by time (faster time first)
+      return a.time.localeCompare(b.time);
+    });
     
     // Map my stats
     if (r.me) {
       me.value = {
+        id: r.me.id || r.me.student_id,
+        name: r.me.name || r.me.student_name,
         rank: r.me.rank || 0,
         score: r.me.score || 0,
         correct: r.me.correct || 0,
         total: r.me.total || 0,
         time: formatTime(r.me.time) || '00:00',
+        attemptId: r.me.attemptId || r.me.attempt_id,
         avatar: r.me.avatar || r.me.avatar_url || r.me.photo || '',
         gender: r.me.gender || '',
       };
@@ -426,6 +443,17 @@ function formatTime(time: string | number | undefined): string {
 }
 
 // --- LIFECYCLE ---
-onMounted(loadExams);
-watch(examId, (id) => { if (id !== undefined) loadRanking(id) });
+onMounted(() => {
+  const idFromRoute = (route.query?.examId || route.query?.id || (window.history.state && (window.history.state as any).current?.params?.id)) as string | undefined
+  if (idFromRoute) {
+    examId.value = idFromRoute
+    loadRanking(idFromRoute)
+  } else {
+    loadExams()
+  }
+});
+
+watch(examId, (id, prev) => { 
+  if (id !== undefined && id !== prev) loadRanking(id) 
+});
 </script>

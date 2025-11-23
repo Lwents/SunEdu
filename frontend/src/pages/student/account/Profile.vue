@@ -44,13 +44,13 @@
             <div class="space-y-2">
                 <button
                   type="button"
-                class="group relative inline-flex h-24 w-24 items-center justify-center rounded-lg border border-slate-300 bg-white overflow-hidden transition hover:border-slate-400"
+                class="group relative inline-flex h-24 w-24 items-center justify-center rounded-full border border-slate-300 bg-white overflow-hidden transition hover:border-slate-400"
                   @click="openFile"
                 >
                   <img
                     :src="avatarPreview || currentAvatar"
                     alt="Ảnh đại diện"
-                  class="h-full w-full object-cover"
+                  class="h-full w-full object-cover aspect-square rounded-full"
                   />
                   <div
                   class="absolute inset-0 flex items-center justify-center bg-slate-900/60 opacity-0 transition group-hover:opacity-100"
