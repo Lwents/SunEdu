@@ -44,15 +44,22 @@ jobs:
             find backend -path '*/\.venv' -prune -o -type f -name '*.pyc' -delete 2>/dev/null || true
             
             echo "🌿 Checking out branch: $BRANCH_NAME"
+            
+            # Clean up any existing local branch to avoid conflicts after force push
+            if git rev-parse --verify "$BRANCH_NAME" >/dev/null 2>&1; then
+              echo "🧹 Removing old local branch to avoid conflicts..."
+              git checkout develop 2>/dev/null || git checkout -b develop origin/develop 2>/dev/null || true
+              git branch -D "$BRANCH_NAME" 2>/dev/null || true
+            fi
+            
+            # Fetch latest from origin
             git fetch origin --prune --no-tags "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME"
 
             if git rev-parse --verify "origin/$BRANCH_NAME" >/dev/null 2>&1; then
-              if git rev-parse --verify "$BRANCH_NAME" >/dev/null 2>&1; then
-                git checkout "$BRANCH_NAME"
-              else
-                git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
-              fi
+              # Create fresh branch from origin
+              git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
               git reset --hard "origin/$BRANCH_NAME"
+              echo "✅ Successfully checked out $BRANCH_NAME"
             else
               echo "❌ Branch $BRANCH_NAME not found on origin"
               exit 1
