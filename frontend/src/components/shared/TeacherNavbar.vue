@@ -39,9 +39,10 @@
             class="flex items-center gap-2 transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-slate-200 rounded-lg"
           >
             <img
-              class="h-10 w-10 rounded-full object-cover border-2 border-slate-200"
+              class="h-10 w-10 rounded-full object-cover border-2 border-slate-200 aspect-square"
               :src="avatarSrc"
               alt="avatar"
+              @error="handleAvatarError"
             />
           </button>
 
@@ -238,6 +239,13 @@ onClickOutside(mobileMenuWrapper, (event) => {
 function isActive(path: string) {
   if (path === '/teacher/dashboard') return route.path === path
   return route.path.startsWith(path)
+}
+
+function handleAvatarError(event: Event) {
+  const img = event.target as HTMLImageElement
+  // Fallback to default avatar
+  const defaultAvatar = getAvatarSrc(null, auth.user?.gender as 'male' | 'female' | 'other' | null | undefined, 'instructor')
+  img.src = defaultAvatar
 }
 
 async function handleLogout() {

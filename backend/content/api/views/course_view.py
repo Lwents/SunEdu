@@ -126,7 +126,18 @@ class CourseListCreateView(generics.ListCreateAPIView):
             course_model = Course.objects.get(id=created_domain.id)
             file_updated = False
             if 'thumbnail' in request.FILES and request.FILES['thumbnail']:
-                course_model.thumbnail = request.FILES['thumbnail']
+                # Optimize image before saving
+                from content.utils.image_optimizer import optimize_image
+                thumbnail_file = request.FILES['thumbnail']
+                optimized_thumbnail = optimize_image(
+                    thumbnail_file,
+                    max_width=1200,
+                    max_height=800,
+                    quality=85,
+                    format='JPEG'
+                )
+                # Use optimized version if available, otherwise use original
+                course_model.thumbnail = optimized_thumbnail if optimized_thumbnail else thumbnail_file
                 file_updated = True
             if 'video_file' in request.FILES and request.FILES['video_file']:
                 course_model.video_file = request.FILES['video_file']
@@ -245,7 +256,18 @@ class CourseDetailView(generics.RetrieveUpdateDestroyAPIView):
         
         # Also handle file uploads if provided
         if 'thumbnail' in request.FILES and request.FILES['thumbnail']:
-            instance.thumbnail = request.FILES['thumbnail']
+            # Optimize image before saving
+            from content.utils.image_optimizer import optimize_image
+            thumbnail_file = request.FILES['thumbnail']
+            optimized_thumbnail = optimize_image(
+                thumbnail_file,
+                max_width=1200,
+                max_height=800,
+                quality=85,
+                format='JPEG'
+            )
+            # Use optimized version if available, otherwise use original
+            instance.thumbnail = optimized_thumbnail if optimized_thumbnail else thumbnail_file
         if 'video_file' in request.FILES and request.FILES['video_file']:
             instance.video_file = request.FILES['video_file']
         if 'thumbnail' in request.FILES or 'video_file' in request.FILES:

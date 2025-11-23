@@ -178,10 +178,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useExamStore } from '@/store/exam.store'
 import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/store/auth.store'
 
 const store = useExamStore()
 const { exams, total, page, pageSize, loading } = storeToRefs(store)
 const router = useRouter()
+const auth = useAuthStore()
 
 const q = ref(store.q)
 const level = ref<'' | 'basic' | 'advanced'>(store.level)
@@ -199,7 +201,8 @@ const levelLabel = computed(() =>
 // Helpers để chặn làm lại: đọc attemptId đã hoàn thành trong localStorage
 function doneAttemptId(id: number | string) {
   try {
-    return localStorage.getItem(`exam_done_${id}`)
+    const userKey = auth.user?.id || 'guest'
+    return localStorage.getItem(`exam_done_${id}_${userKey}`)
   } catch (e) {
     console.warn('Cannot read done flag', e)
     return null

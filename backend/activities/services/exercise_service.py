@@ -134,12 +134,20 @@ def save_exercise(domain: ExerciseDomain) -> ExerciseDomain:
             end_at = None
 
         # Normalize max_attempts (None -> unlimited)
+        # IMPORTANT: max_attempts is per-student, NOT global
+        # If None or not set, students can attempt unlimited times
+        # If set to a number, each student can attempt that many times independently
         max_attempts = settings_data.get('max_attempts')
         try:
-            if max_attempts is not None:
+            if max_attempts is not None and max_attempts != '':
                 max_attempts = int(max_attempts)
+                # Ensure it's a positive number
+                if max_attempts <= 0:
+                    max_attempts = None  # Invalid value, treat as unlimited
+            else:
+                max_attempts = None  # No limit - allow unlimited attempts per student
         except (TypeError, ValueError):
-            max_attempts = None
+            max_attempts = None  # Invalid value, treat as unlimited
         
         # Get existing settings if any
         defaults = {

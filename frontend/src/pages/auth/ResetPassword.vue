@@ -1,11 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="text-center">
-      <h2 class="text-2xl font-bold text-gray-900 mb-2">Tạo mật khẩu mới</h2>
-      <p class="text-sm text-gray-600">Nhập mật khẩu mới cho tài khoản của bạn</p>
-    </div>
-
     <!-- Success Alert -->
     <div
       v-if="status === 'success'"
@@ -81,7 +75,7 @@
             autocomplete="new-password"
             class="form-input"
             :class="{ 'border-red-300': touchedPassword && !validPassword }"
-            :disabled="loading"
+            :disabled="loading || !hasValidLink"
             @blur="touchedPassword = true"
             @input="touchedPassword = false"
             required
@@ -165,7 +159,7 @@
             autocomplete="new-password"
             class="form-input"
             :class="{ 'border-red-300': touchedConfirm && !validConfirm }"
-            :disabled="loading"
+            :disabled="loading || !hasValidLink"
             @blur="touchedConfirm = true"
             @input="touchedConfirm = false"
             required
@@ -187,8 +181,10 @@
       <button
         type="submit"
         class="btn-primary"
-        :disabled="!validPassword || !validConfirm || loading"
-        :class="{ 'opacity-60 cursor-not-allowed': !validPassword || !validConfirm || loading }"
+        :disabled="!validPassword || !validConfirm || loading || !hasValidLink"
+        :class="{
+          'opacity-60 cursor-not-allowed': !validPassword || !validConfirm || loading || !hasValidLink
+        }"
       >
         <svg
           v-if="loading"
@@ -242,7 +238,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from '@/utils/toast'
@@ -262,16 +258,33 @@ const errMessage = ref('')
 const token = ref('')
 const email = ref('')
 const countdown = ref(10)
+const countdownTimer = ref<number | null>(null)
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const validPassword = computed(() => password.value.length >= 6)
 const validConfirm = computed(() => confirm.value === password.value && confirm.value.length >= 6)
+const hasValidLink = computed(() => !!token.value && emailPattern.test(email.value))
+
+const normalizeQueryParam = (value: unknown): string => {
+  if (Array.isArray(value)) return decodeURIComponent(String(value[0] ?? '')).trim()
+  if (typeof value === 'string' || typeof value === 'number') {
+    return decodeURIComponent(String(value)).trim()
+  }
+  return ''
+}
 
 onMounted(() => {
-  token.value = (route.query.token as string) || ''
-  email.value = (route.query.email as string) || ''
-  if (!token.value || !email.value) {
+  token.value = normalizeQueryParam(route.query.token)
+  email.value = normalizeQueryParam(route.query.email)
+  if (!hasValidLink.value) {
     errMessage.value = 'Link không hợp lệ hoặc đã hết hạn.'
     status.value = 'error'
+  }
+})
+
+onBeforeUnmount(() => {
+  if (countdownTimer.value) {
+    clearInterval(countdownTimer.value)
   }
 })
 
@@ -280,7 +293,7 @@ async function submit() {
   touchedConfirm.value = true
 
   if (!validPassword.value || !validConfirm.value || loading.value) return
-  if (!token.value || !email.value) {
+  if (!hasValidLink.value) {
     status.value = 'error'
     errMessage.value = 'Link không hợp lệ hoặc đã hết hạn.'
     return
@@ -298,11 +311,17 @@ async function submit() {
     showToast('Cập nhật mật khẩu thành công!', 'success')
 
     // Đếm ngược từ 10 giây
+    if (countdownTimer.value) {
+      clearInterval(countdownTimer.value)
+    }
     countdown.value = 10
-    const interval = setInterval(() => {
+    countdownTimer.value = window.setInterval(() => {
       countdown.value--
       if (countdown.value <= 0) {
-        clearInterval(interval)
+        if (countdownTimer.value) {
+          clearInterval(countdownTimer.value)
+          countdownTimer.value = null
+        }
         router.push('/auth/login')
       }
     }, 1000)

@@ -66,7 +66,7 @@
 
       <!-- Simple Card for Other Auth Pages -->
       <div v-else class="simple-auth-card">
-        <div class="brand-header">
+        <div v-if="!hideSimpleHeader" class="brand-header">
           <LogoSmartEdu :size="50" />
           <h2 class="form-title">{{ route.meta.title }}</h2>
         </div>
@@ -91,6 +91,7 @@ const isLoginOrRegister = computed(
 )
 
 const isRegisterPage = computed(() => route.path === '/auth/register')
+const hideSimpleHeader = computed(() => Boolean(route.meta?.hideSimpleHeader))
 
 function switchToLogin() {
   router.push('/auth/login')

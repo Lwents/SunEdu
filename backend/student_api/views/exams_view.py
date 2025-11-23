@@ -304,21 +304,57 @@ class StudentExamRankingView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Get top students
+        # Get all students who have completed the exam (top 100)
         top_attempts = ExerciseAttempt.objects.filter(
             exercise_id=pk,
             finished_at__isnull=False
-        ).select_related('student').order_by('-score')[:10]
+        ).select_related('student').order_by('-score', 'finished_at')[:100]
+        
+        # Get exercise to get total questions
+        from activities.models import Exercise, ExerciseAnswer
+        try:
+            exercise = Exercise.objects.get(id=pk)
+            total_questions = exercise.questions.count()
+        except Exercise.DoesNotExist:
+            total_questions = 0
         
         top = []
         for idx, attempt in enumerate(top_attempts):
+            # Calculate correct answers
+            correct_count = ExerciseAnswer.objects.filter(
+                attempt=attempt,
+                correct=True
+            ).count() if hasattr(attempt, 'answers') else 0
+            
+            # Calculate time taken
+            time_taken = '00:00'
+            if attempt.finished_at and attempt.started_at:
+                from datetime import timedelta
+                duration = attempt.finished_at - attempt.started_at
+                total_seconds = int(duration.total_seconds())
+                minutes = total_seconds // 60
+                seconds = total_seconds % 60
+                time_taken = f"{minutes:02d}:{seconds:02d}"
+            
+            # Get avatar from student profile
+            avatar = None
+            if attempt.student:
+                try:
+                    profile = getattr(attempt.student, 'profile', None)
+                    if profile:
+                        avatar = getattr(profile, 'avatar_url', None) or getattr(attempt.student, 'avatar', None)
+                except:
+                    pass
+            
             top.append({
                 'id': idx + 1,
                 'name': attempt.student.get_full_name() or attempt.student.username if attempt.student else 'Unknown',
+                'avatar': avatar,
+                'gender': getattr(attempt.student, 'gender', None) if attempt.student else None,
                 'score': float(attempt.score) if attempt.score else 0,
-                'correct': 0,  # Would need to calculate from answers
-                'total': 0,  # Would need to get from exercise
-                'time': '00:00',  # Would need to calculate from metadata
+                'correct': correct_count,
+                'total': total_questions,
+                'time': time_taken,
             })
         
         # Get student's rank
@@ -338,12 +374,40 @@ class StudentExamRankingView(APIView):
                 score__gt=best_attempt.score if best_attempt.score else 0
             ).count() + 1
             
+            # Calculate correct answers for student
+            correct_count = ExerciseAnswer.objects.filter(
+                attempt=best_attempt,
+                correct=True
+            ).count() if hasattr(best_attempt, 'answers') else 0
+            
+            # Calculate time taken
+            time_taken = '00:00'
+            if best_attempt.finished_at and best_attempt.started_at:
+                from datetime import timedelta
+                duration = best_attempt.finished_at - best_attempt.started_at
+                total_seconds = int(duration.total_seconds())
+                minutes = total_seconds // 60
+                seconds = total_seconds % 60
+                time_taken = f"{minutes:02d}:{seconds:02d}"
+            
+            # Get avatar
+            avatar = None
+            if best_attempt.student:
+                try:
+                    profile = getattr(best_attempt.student, 'profile', None)
+                    if profile:
+                        avatar = getattr(profile, 'avatar_url', None) or getattr(best_attempt.student, 'avatar', None)
+                except:
+                    pass
+            
             me = {
                 'rank': rank,
                 'score': float(best_attempt.score) if best_attempt.score else 0,
-                'correct': 0,
-                'total': 0,
-                'time': '00:00',
+                'correct': correct_count,
+                'total': total_questions,
+                'time': time_taken,
+                'avatar': avatar,
+                'gender': getattr(best_attempt.student, 'gender', None) if best_attempt.student else None,
             }
         
         return Response({

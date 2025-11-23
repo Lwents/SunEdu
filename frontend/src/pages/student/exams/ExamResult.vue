@@ -24,7 +24,7 @@
         </button>
         <router-link
           class="btn primary"
-          :to="{ name: 'student-exams-ranking' }"
+          :to="{ name: 'student-exams-ranking', query: { examId: route.params.id } }"
           style="color: black; border: 1px"
         >
           Xem bảng xếp hạng
@@ -90,11 +90,14 @@ import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { examService } from '@/services/exam.service'
 import { showToast } from '@/utils/toast'
+import { useAuthStore } from '@/store/auth.store'
 
 const showReview = ref(false)
 const userAnswers = ref<any[]>([])
 const loading = ref(true)
 const route = useRoute()
+const auth = useAuthStore()
+const userKey = computed(() => auth.user?.id || 'guest')
 
 // --- Cấu hình Phân trang ---
 const currentPage = ref(1)
@@ -308,7 +311,7 @@ onMounted(() => {
   const examId = route.params.id as string | undefined
   if (examId && attemptId) {
     try {
-      localStorage.setItem(`exam_done_${examId}`, attemptId)
+      localStorage.setItem(`exam_done_${examId}_${userKey.value}`, attemptId)
     } catch (e) {
       console.warn('Cannot persist done flag', e)
     }

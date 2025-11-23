@@ -13,6 +13,7 @@
               :src="getThumbnailUrl(course.thumbnail)"
               :alt="course.title"
               class="h-48 w-full rounded-2xl object-cover md:h-64 md:w-80"
+              loading="lazy"
               @error="handleImageError"
             />
             <div v-else class="flex h-48 w-full items-center justify-center rounded-2xl bg-slate-200 md:h-64 md:w-80">
@@ -146,7 +147,7 @@
                   <img
                     :src="getStudentAvatar(student)"
                     :alt="student.name"
-                    class="h-12 w-12 rounded-full object-cover"
+                    class="h-12 w-12 rounded-full object-cover aspect-square"
                   />
                   <div class="text-center">
                     <div class="text-sm font-semibold text-slate-900">{{ student.name }}</div>

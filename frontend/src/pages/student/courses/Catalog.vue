@@ -83,6 +83,7 @@
             :src="getThumbnailUrl(c.thumbnail)" 
             :alt="c.title" 
             class="h-36 w-full object-cover"
+            loading="lazy"
             @error="handleImageError"
           />
           <div v-else class="flex h-36 w-full items-center justify-center bg-slate-200">
