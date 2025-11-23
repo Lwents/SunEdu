@@ -165,6 +165,8 @@ jobs:
             # Ensure no git push operations happen
             echo "🔒 Disabling any git push operations..."
             cd /home/ubuntu/SunEdu
+            # Remove push URL to prevent accidental pushes
             git config --local --unset-all remote.origin.pushurl 2>/dev/null || true
-            git config --local remote.origin.pushurl "no-push" || true
+            # Create alias to block git push commands
+            echo 'alias git="git() { if [[ \"$1\" == \"push\" ]]; then echo \"❌ Git push is disabled on this server\"; return 1; fi; command git \"$@\"; }"' >> ~/.bashrc
             echo "✅ Git push disabled for this repo"
