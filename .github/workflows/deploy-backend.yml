@@ -161,3 +161,10 @@ jobs:
             docker system prune -f || true
 
             echo "✅ Deployment complete!"
+            
+            # Ensure no git push operations happen
+            echo "🔒 Disabling any git push operations..."
+            cd /home/ubuntu/SunEdu
+            git config --local --unset-all remote.origin.pushurl 2>/dev/null || true
+            git config --local remote.origin.pushurl "no-push" || true
+            echo "✅ Git push disabled for this repo"
