@@ -304,9 +304,9 @@ async function fetchNotifications() {
       params: { limit: maxNotifications * 2 }
     })
     
-    // Backend returns { notifications: [...] }
+    // Backend returns { notifications: [...], total: ..., unread_count: ... }
     const data = response.data || {}
-    const fetchedNotifications = data.notifications || []
+    const fetchedNotifications = data.notifications || data.items || []
     
     // Map backend data to frontend format
     notifications.value = fetchedNotifications.map((n: any) => ({
@@ -314,12 +314,12 @@ async function fetchNotifications() {
       title: n.title || 'Thông báo',
       message: n.message || '',
       type: n.type || 'info',
-      is_read: n.is_read || false,
+      is_read: n.is_read ?? false,
       created_at: n.created_at || new Date().toISOString(),
       category: n.category,
     }))
     
-    console.log(`Fetched ${notifications.value.length} notifications`)
+    console.log(`Fetched ${notifications.value.length} notifications for ${props.role}`)
   } catch (error: any) {
     console.error('Failed to fetch notifications:', error)
     console.error('Error details:', error?.response?.data || error?.message)

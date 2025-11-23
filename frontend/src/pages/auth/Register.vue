@@ -61,7 +61,7 @@ UI xóa những
             class="form-input"
             :class="{ error: errors.username }"
             @blur="validateUsername"
-            @input="errors.username = ''"
+            @input="validateUsernameOnInput"
           />
         </div>
         <p v-if="errors.username" class="error-msg">
@@ -379,10 +379,29 @@ const errors = reactive({
   confirm: '',
 })
 
+// ✅ Validate Username on Input - Show error immediately
+function validateUsernameOnInput() {
+  if (!form.username.trim()) {
+    errors.username = ''
+    return
+  }
+  // Kiểm tra có ký tự đặc biệt không
+  if (!/^[a-zA-Z0-9_]+$/.test(form.username)) {
+    errors.username = 'Không được chứa ký tự đặc biệt'
+    return
+  }
+  errors.username = ''
+}
+
 // ✅ Validate Username
 function validateUsername() {
   if (!form.username.trim()) {
     errors.username = 'Vui lòng nhập username'
+    return false
+  }
+  // Kiểm tra chỉ chứa chữ cái, số và dấu gạch dưới
+  if (!/^[a-zA-Z0-9_]+$/.test(form.username)) {
+    errors.username = 'Không được chứa ký tự đặc biệt'
     return false
   }
   errors.username = ''

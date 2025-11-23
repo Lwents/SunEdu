@@ -49,12 +49,36 @@ export const logService = {
             const { data } = await api.get('/admin/activity-logs/', { params })
             // Map backend response to frontend format
             return {
-                items: data.items.map((item: any) => ({
+                items: data.items.map((item: any) => {
+                    // Get role from details or userRole field
+                    let actorRole: 'admin' | 'teacher' | 'student' | 'system' = 'student'
+                    if (item.userRole) {
+                        // Backend returns role label
+                        if (item.userRole.includes('Admin') || item.userRole.toLowerCase() === 'admin') {
+                            actorRole = 'admin'
+                        } else if (item.userRole.includes('Giáo viên') || item.userRole.includes('Teacher') || item.userRole.toLowerCase().includes('instructor')) {
+                            actorRole = 'teacher'
+                        } else {
+                            actorRole = 'student'
+                        }
+                    } else if (item.details?.role) {
+                        // Fallback to role from details
+                        const role = item.details.role.toLowerCase()
+                        if (role === 'admin') {
+                            actorRole = 'admin'
+                        } else if (role === 'instructor' || role === 'teacher') {
+                            actorRole = 'teacher'
+                        } else {
+                            actorRole = 'student'
+                        }
+                    }
+                    
+                    return {
                     id: item.id,
                     ts: item.timestamp,
                     actorId: item.userId,
                     actorName: item.userEmail,
-                    actorRole: 'admin', // Placeholder
+                        actorRole: actorRole,
                     action: item.action || 'login',
                     targetType: undefined,
                     targetId: item.userId,
@@ -64,7 +88,8 @@ export const logService = {
                     traceId: undefined,
                     message: item.status,
                     meta: item.details || {}
-                })),
+                    }
+                }),
                 total: data.total
             }
         }
@@ -106,8 +131,44 @@ export const logService = {
 
     async detail(id: string): Promise<LogItem> {
         if (!USE_MOCK) {
-            const { data } = await api.get(`/admin/logs/${id}`)
-            return data
+            const { data } = await api.get(`/admin/activity-logs/${id}/`)
+            // Map backend response to frontend format
+            let actorRole: 'admin' | 'teacher' | 'student' | 'system' = 'student'
+            if (data.userRole) {
+                if (data.userRole.includes('Admin') || data.userRole.toLowerCase() === 'admin') {
+                    actorRole = 'admin'
+                } else if (data.userRole.includes('Giáo viên') || data.userRole.includes('Teacher') || data.userRole.toLowerCase().includes('instructor')) {
+                    actorRole = 'teacher'
+                } else {
+                    actorRole = 'student'
+                }
+            } else if (data.details?.role) {
+                const role = data.details.role.toLowerCase()
+                if (role === 'admin') {
+                    actorRole = 'admin'
+                } else if (role === 'instructor' || role === 'teacher') {
+                    actorRole = 'teacher'
+                } else {
+                    actorRole = 'student'
+                }
+            }
+            
+            return {
+                id: data.id,
+                ts: data.timestamp,
+                actorId: data.userId,
+                actorName: data.userEmail,
+                actorRole: actorRole,
+                action: data.action || 'login',
+                targetType: undefined,
+                targetId: data.userId,
+                result: data.status === 'success' ? 'success' : 'failed',
+                ip: data.ip,
+                userAgent: data.userAgent,
+                traceId: undefined,
+                message: data.status,
+                meta: data.details || {}
+            }
         }
         const base = (await this.list({ page: 1, pageSize: 1 })).items[0]
         return { ...base, id }

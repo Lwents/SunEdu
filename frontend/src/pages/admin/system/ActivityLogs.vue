@@ -104,33 +104,143 @@
       </div>
     </div>
 
-    <!-- Drawer -->
-    <el-drawer v-model="drawer" title="Chi tiết log" size="520px">
-      <div v-if="current" class="space-y-3">
-        <div class="text-sm">
-          ID: <b>{{ current.id }}</b>
+    <!-- Detail Dialog -->
+    <el-dialog
+      v-model="drawer"
+      title="Chi tiết hoạt động"
+      width="90%"
+      class="sm:!w-[600px]"
+      :close-on-click-modal="false"
+    >
+      <div v-if="current" class="space-y-4">
+        <!-- Header Info -->
+        <div class="rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <h3 class="text-lg font-bold text-slate-900">{{ current.action }}</h3>
+                <el-tag size="small" :type="current.result === 'success' ? 'success' : 'danger'">
+                  {{ current.result === 'success' ? 'Thành công' : 'Thất bại' }}
+                </el-tag>
+              </div>
+              <p class="text-sm text-slate-600">{{ fmt(current.ts) }}</p>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-500 mb-1">ID</div>
+              <div class="text-sm font-mono text-slate-700">{{ current.id }}</div>
+            </div>
+          </div>
         </div>
-        <div class="text-sm">Thời gian: {{ fmt(current.ts) }}</div>
-        <div class="text-sm">Actor: {{ current.actorName }} ({{ current.actorRole }})</div>
-        <div class="text-sm">
-          Action: <b>{{ current.action }}</b>
+
+        <!-- Actor Information -->
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <h4 class="font-semibold text-slate-900">Người thực hiện</h4>
+          </div>
+          <div class="space-y-2 pl-7">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 w-20">Email:</span>
+              <span class="text-sm text-slate-900">{{ current.actorName || '—' }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 w-20">Vai trò:</span>
+              <el-tag size="small" :type="current.actorRole === 'admin' ? 'danger' : current.actorRole === 'teacher' ? 'warning' : 'success'">
+                {{ current.actorRole === 'admin' ? 'Admin' : current.actorRole === 'teacher' ? 'Giáo viên' : 'Học sinh' }}
+              </el-tag>
+            </div>
+            <div v-if="current.actorId" class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 w-20">User ID:</span>
+              <span class="text-sm font-mono text-slate-600">#{{ current.actorId }}</span>
+            </div>
+          </div>
         </div>
-        <div class="text-sm">Target: {{ current.targetType }} #{{ current.targetId }}</div>
-        <div class="text-sm">
-          Kết quả:
-          <el-tag size="small" :type="current.result === 'success' ? 'success' : 'danger'">{{
-            current.result
-          }}</el-tag>
+
+        <!-- Action Details -->
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h4 class="font-semibold text-slate-900">Thông tin hành động</h4>
+          </div>
+          <div class="space-y-2 pl-7">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 w-24">Action:</span>
+              <span class="text-sm font-mono text-slate-900 bg-slate-50 px-2 py-1 rounded">{{ current.action }}</span>
+            </div>
+            <div v-if="current.targetType" class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 w-24">Target:</span>
+              <span class="text-sm text-slate-900">{{ current.targetType }} #{{ current.targetId }}</span>
+            </div>
+            <div v-if="current.message" class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 w-24">Message:</span>
+              <span class="text-sm text-slate-900">{{ current.message }}</span>
+            </div>
+          </div>
         </div>
-        <div class="text-sm">IP: {{ current.ip }} • UA: {{ current.userAgent }}</div>
-        <div class="text-sm">Trace: {{ current.traceId }}</div>
-        <div class="text-sm">Message: {{ current.message }}</div>
-        <div class="text-sm">
-          Meta:
-          <pre class="bg-gray-50 p-2 rounded overflow-auto">{{ pretty(current.meta) }}</pre>
+
+        <!-- Network Information -->
+        <div v-if="current.ip || current.userAgent" class="rounded-xl border border-slate-200 bg-white p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+            <h4 class="font-semibold text-slate-900">Thông tin mạng</h4>
+          </div>
+          <div class="space-y-2 pl-7">
+            <div v-if="current.ip" class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 w-20">IP Address:</span>
+              <span class="text-sm font-mono text-slate-900 bg-slate-50 px-2 py-1 rounded">{{ current.ip }}</span>
+            </div>
+            <div v-if="current.userAgent" class="flex items-start gap-2">
+              <span class="text-sm font-medium text-slate-700 w-20">User Agent:</span>
+              <span class="text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded break-all">{{ current.userAgent }}</span>
+            </div>
+            <div v-if="current.traceId" class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 w-20">Trace ID:</span>
+              <span class="text-sm font-mono text-slate-600">{{ current.traceId }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metadata -->
+        <div v-if="current.meta && Object.keys(current.meta).length > 0" class="rounded-xl border border-slate-200 bg-white p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h4 class="font-semibold text-slate-900">Metadata</h4>
+          </div>
+          <div class="pl-7">
+            <pre class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 overflow-auto max-h-64 font-mono">{{ pretty(current.meta) }}</pre>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-if="!current.ip && !current.userAgent && (!current.meta || Object.keys(current.meta).length === 0)" class="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+          <svg class="h-12 w-12 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-sm text-slate-500">Không có thông tin bổ sung</p>
         </div>
       </div>
-    </el-drawer>
+      
+      <div v-else class="flex items-center justify-center py-12">
+        <div class="text-center">
+          <div class="h-8 w-8 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-2"></div>
+          <p class="text-sm text-slate-500">Đang tải...</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end">
+          <el-button @click="drawer = false">Đóng</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

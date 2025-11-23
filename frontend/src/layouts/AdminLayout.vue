@@ -7,10 +7,10 @@
       </aside>
 
       <!-- Sidebar mobile overlay -->
-      <transition name="fade">
+      <transition name="slide">
         <div v-if="isSidebarOpen" class="fixed inset-0 z-40 flex md:hidden">
-          <div class="fixed inset-0 bg-black/30" @click="isSidebarOpen = false"></div>
-          <aside class="relative w-64 flex flex-col border-r bg-white h-full z-50">
+          <div class="fixed inset-0 bg-black/50" @click="isSidebarOpen = false"></div>
+          <aside class="relative w-[280px] max-w-[85vw] flex flex-col border-r bg-white h-full z-50 shadow-xl">
             <AdminSidebar @close="isSidebarOpen = false" />
           </aside>
         </div>
@@ -22,13 +22,28 @@
           <AdminNavbar @toggle-sidebar="isSidebarOpen = !isSidebarOpen" />
         </header>
 
-        <main class="min-h-0 flex-1 overflow-y-auto bg-gray-50 p-4">
+        <main class="min-h-0 flex-1 overflow-y-auto bg-gray-50 p-3 sm:p-4">
           <router-view />
         </main>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-enter-from aside {
+  transform: translateX(-100%);
+}
+
+.slide-leave-to aside {
+  transform: translateX(-100%);
+}
+</style>
 
 <script setup lang="ts">
 import { ref } from 'vue'

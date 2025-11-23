@@ -108,7 +108,7 @@
           <template #default="{ row }">{{ fmt(row.createdAt) }}</template>
         </el-table-column>
 
-        <el-table-column fixed="right" width="260">
+        <el-table-column fixed="right" width="180">
           <template #default="{ row }">
             <div class="flex justify-end gap-2">
               <el-button size="small" @click="goDetail(row)">Xem</el-button>
@@ -120,15 +120,6 @@
                 @click="promptRefund(row)"
               >
                 Hoàn tiền
-              </el-button>
-              <el-button
-                size="small"
-                type="danger"
-                plain
-                v-if="row.status !== 'Disputed'"
-                @click="markDispute(row)"
-              >
-                Tranh chấp
               </el-button>
             </div>
           </template>
@@ -288,18 +279,6 @@ async function promptRefund(row: TxSummary) {
     fetch()
   } catch (error: any) {
     showToast(error?.message || 'Không thể hoàn tiền', 'error')
-  }
-}
-async function markDispute(row: TxSummary) {
-  const note = window.prompt('Ghi chú cho tranh chấp (tuỳ chọn)', '')
-  const confirmed = note !== null ? true : false
-  if (!confirmed) return
-  try {
-    await paymentService.markDispute(row.id, note || '')
-    showToast('Đã đánh dấu tranh chấp', 'warning')
-    fetch()
-  } catch (error: any) {
-    showToast(error?.message || 'Không thể đánh dấu tranh chấp', 'error')
   }
 }
 

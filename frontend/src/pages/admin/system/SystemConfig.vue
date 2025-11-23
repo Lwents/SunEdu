@@ -238,6 +238,7 @@
 
             <div class="rounded-md border p-4 md:col-span-2">
               <div class="font-medium mb-2">Storage</div>
+              <el-form label-position="top">
               <div class="grid grid-cols-3 gap-3">
                 <el-form-item label="Provider">
                   <el-select v-model="form.integrations.storage.provider">
@@ -252,6 +253,7 @@
                   <el-input v-model="form.integrations.storage.region" />
                 </el-form-item>
               </div>
+              </el-form>
             </div>
           </div>
         </el-tab-pane>
