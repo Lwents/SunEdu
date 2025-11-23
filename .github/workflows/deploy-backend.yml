@@ -9,7 +9,6 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: deploy-backend-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -17,69 +16,41 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
-          BRANCH_NAME: ${{ github.ref_name }}
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 30m
           envs: BACKEND_ENV_FILE,BRANCH_NAME
           script: |
             set -euo pipefail
-
-            echo "🚀 Deploying branch: $BRANCH_NAME"
-            echo "📊 Disk usage: $(df -h / | tail -1 | awk '{print $5 " used"}')"
-
-            echo "📥 Updating code..."
+            echo "Updating code..."
             cd /home/ubuntu/SunEdu
-            
-            # Fix permissions and clean up cache files before git operations
-            echo "🧹 Cleaning up cache files and fixing permissions..."
+            echo "Cleaning up cache files and fixing permissions..."
             sudo chown -R ubuntu:ubuntu /home/ubuntu/SunEdu/backend || true
             find backend -path '*/\.venv' -prune -o -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
             find backend -path '*/\.venv' -prune -o -type f -name '*.pyc' -delete 2>/dev/null || true
-            
-            echo "🌿 Checking out branch: $BRANCH_NAME"
-            
-            # Clean up any existing local branch to avoid conflicts after force push
-            if git rev-parse --verify "$BRANCH_NAME" >/dev/null 2>&1; then
-              echo "🧹 Removing old local branch to avoid conflicts..."
-              git checkout develop 2>/dev/null || git checkout -b develop origin/develop 2>/dev/null || true
-              git branch -D "$BRANCH_NAME" 2>/dev/null || true
-            fi
-            
-            # Fetch latest from origin
-            git fetch origin --prune --no-tags "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME"
-
-            if git rev-parse --verify "origin/$BRANCH_NAME" >/dev/null 2>&1; then
-              # Create fresh branch from origin
-              git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
-              git reset --hard "origin/$BRANCH_NAME"
-              echo "✅ Successfully checked out $BRANCH_NAME"
-            else
-              echo "❌ Branch $BRANCH_NAME not found on origin"
-              exit 1
-            fi
-
+            echo "Removing old local branch to avoid conflicts..."
+            git checkout develop 2>/dev/null || git checkout -b develop origin/develop 2>/dev/null || true
+            echo "Fetching latest changes..."
+            git fetch origin main
+            echo "Checking out main branch..."
+            git checkout main 2>/dev/null || git checkout -b main origin/main
+            git reset --hard origin/main
             cd backend
-
-            # Setup .env file
-            if [ -n "${BACKEND_ENV_FILE:-}" ]; then
-              echo "📝 Creating .env from GitHub secrets..."
-              printf '%s\n' "$BACKEND_ENV_FILE" > .env
-              
-              # Ensure Redis config is present
+            if [ -n "$BACKEND_ENV_FILE" ]; then
+              echo "Creating .env from GitHub secrets..."
+              echo "$BACKEND_ENV_FILE" > .env
               if ! grep -q "REDIS_HOST" .env; then
                 echo "" >> .env
                 echo "REDIS_HOST=redis" >> .env
                 echo "REDIS_PORT=6379" >> .env
               fi
-              
-              # Ensure api.smartedu.click is in CORS/CSRF
               if grep -q "CORS_ALLOWED_ORIGINS=" .env; then
                 if ! grep "CORS_ALLOWED_ORIGINS=" .env | grep -q "api.smartedu.click"; then
                   sed -i 's|CORS_ALLOWED_ORIGINS=\(.*\)|CORS_ALLOWED_ORIGINS=\1,https://api.smartedu.click|' .env
@@ -94,79 +65,48 @@ jobs:
               else
                 echo "CSRF_TRUSTED_ORIGINS=https://smartedu.click,https://www.smartedu.click,https://api.smartedu.click" >> .env
               fi
-              
               chmod 600 .env
-              echo "✅ Updated .env from GitHub secrets"
+              echo "Updated .env from GitHub secrets"
             elif [ -f ".env" ]; then
-              echo "⚠️  Using existing .env file"
+              echo "Using existing .env file"
             else
-              echo "❌ No .env configuration found!"
+              echo "No .env configuration found!"
               exit 1
             fi
-
-            # Create required directories
             mkdir -p logs runtime_logs media staticfiles
             chmod 777 logs runtime_logs media || true
-
-            # Use production docker-compose if available
-            COMPOSE_FILE="docker-compose.prod.yml"
-            if [ ! -f "$COMPOSE_FILE" ]; then
+            if [ -f "docker-compose.prod.yml" ]; then
+              COMPOSE_FILE="docker-compose.prod.yml"
+            else
               COMPOSE_FILE="docker-compose.yml"
             fi
-
-            echo "🐳 Deploying with Docker Compose..."
-
-            # Stop old systemd services
+            echo "Deploying with Docker Compose..."
             sudo systemctl stop sunedu-backend 2>/dev/null || true
             sudo systemctl disable sunedu-backend 2>/dev/null || true
             sudo systemctl stop sunedu-celery 2>/dev/null || true
             sudo systemctl disable sunedu-celery 2>/dev/null || true
-
-            # Free up ports
             sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
             sudo lsof -ti:5432 | xargs -r sudo kill -9 || true
             sleep 2
-
-            # Stop old containers
-            docker compose -f "$COMPOSE_FILE" down --remove-orphans || true
-
-            # Clean old images
-            docker images | grep sunedu | awk '{print $3}' | xargs -r docker rmi -f || true
-
-            # Build and start
-            echo "🔨 Building..."
-            docker compose -f "$COMPOSE_FILE" build --no-cache --pull
-
-            echo "🚀 Starting services..."
+            docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
+            docker image prune -f 2>/dev/null || true
+            echo "Building..."
+            docker compose -f "$COMPOSE_FILE" build --no-cache
+            echo "Starting services..."
             docker compose -f "$COMPOSE_FILE" up -d
-
-            # Wait for health check
-            echo "⏳ Waiting for services..."
+            echo "Waiting for services..."
             for i in {1..30}; do
-              if docker compose -f "$COMPOSE_FILE" ps | grep -q "healthy\|Up"; then
-                echo "✅ Services are running"
+              if curl -f http://localhost:8000/health/ 2>/dev/null; then
+                echo "Services are running"
                 break
               fi
-              echo "⏳ Waiting... ($i/30)"
               sleep 3
             done
-
-            # Show status
-            echo "📊 Container status:"
+            echo "Container status:"
             docker compose -f "$COMPOSE_FILE" ps
-
-            echo "📊 Final disk usage: $(df -h / | tail -1 | awk '{print $5 " used, " $4 " free"}')"
-
-            # Cleanup
             docker system prune -f || true
-
-            echo "✅ Deployment complete!"
-            
-            # Ensure no git push operations happen
-            echo "🔒 Disabling any git push operations..."
+            echo "Deployment complete!"
+            echo "Disabling any git push operations..."
             cd /home/ubuntu/SunEdu
-            # Remove push URL to prevent accidental pushes
             git config --local --unset-all remote.origin.pushurl 2>/dev/null || true
-            # Create alias to block git push commands
-            echo 'alias git="git() { if [[ \"$1\" == \"push\" ]]; then echo \"❌ Git push is disabled on this server\"; return 1; fi; command git \"$@\"; }"' >> ~/.bashrc
-            echo "✅ Git push disabled for this repo"
+            echo "Git push disabled for this repo"
