@@ -295,7 +295,16 @@ const duration = ref(0)
 const timeLeft = ref(0)
 let timer: number | null = null
 let autosaveTimer: number | null = null
-const userKey = computed(() => auth.user?.id || 'guest')
+// Dùng khóa lưu trữ gắn với tài khoản (ưu tiên id, sau đó email/username) để tránh đè lẫn giữa các user
+const userKey = computed(() => {
+  const u = auth.user
+  return String(
+    u?.id ??
+    u?.email ??
+    u?.name ??
+    'guest'
+  )
+})
 const storageKey = computed(() => `exam_answers_${route.params.id || ''}_${userKey.value}`)
 const doneKey = computed(() => `exam_done_${route.params.id || ''}_${userKey.value}`)
 

@@ -9,15 +9,18 @@
         <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="flex flex-col gap-4 md:flex-row md:items-start">
             <img
-              v-if="course.thumbnail"
+              v-if="course.thumbnail && !thumbnailError"
               :src="getThumbnailUrl(course.thumbnail)"
               :alt="course.title"
               class="h-48 w-full rounded-2xl object-cover md:h-64 md:w-80"
               loading="lazy"
               @error="handleImageError"
             />
-            <div v-else class="flex h-48 w-full items-center justify-center rounded-2xl bg-slate-200 md:h-64 md:w-80">
-              <span class="text-slate-400">Chưa có ảnh</span>
+            <div v-else class="flex h-48 w-full flex-col items-center justify-center gap-2 rounded-2xl bg-slate-100 md:h-64 md:w-80">
+              <svg class="h-16 w-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="text-base font-medium text-slate-500">Không có ảnh</span>
             </div>
             <div class="flex-1 space-y-4">
               <div>
@@ -388,9 +391,10 @@ function getThumbnailUrl(thumbnail?: string): string {
   return `${apiBase}/media/${cleanThumbnail}`
 }
 
-function handleImageError(event: Event) {
-  const img = event.target as HTMLImageElement
-  img.src = 'https://via.placeholder.com/400x300?text=No+Image'
+const thumbnailError = ref(false)
+
+function handleImageError() {
+  thumbnailError.value = true
 }
 
 function getStudentAvatar(student: typeof students.value[0]): string {

@@ -347,21 +347,21 @@
                 <div class="relative flex-shrink-0">
                   <div class="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold text-slate-700 shadow-md ring-2 ring-white transition-all group-hover:ring-orange-200">
                     <!-- Avatar Image -->
-                  <img
-                    :src="avatarUrlForQuestion(q)"
+                    <img
+                      v-if="!avatarErrors[`q-${q.id}`]"
+                      :src="avatarUrlForQuestion(q)"
                       :alt="q.student || 'Học sinh'"
                       class="absolute inset-0 h-full w-full object-cover"
-                      :class="{ 'opacity-0': avatarErrors[`q-${q.id}`] }"
                       @error="handleAvatarError(`q-${q.id}`)"
                       @load="handleAvatarLoad(`q-${q.id}`)"
                     />
                     <!-- Fallback Initials -->
                     <span 
-                      class="absolute inset-0 flex h-full w-full items-center justify-center text-base bg-gradient-to-br from-slate-200 to-slate-300"
-                      :class="{ 'opacity-0': !avatarErrors[`q-${q.id}`], 'opacity-100': avatarErrors[`q-${q.id}`] }"
+                      v-if="avatarErrors[`q-${q.id}`]"
+                      class="text-base"
                     >
                       {{ getInitials(q.student) || 'HS' }}
-                  </span>
+                    </span>
                 </div>
                   <div v-if="q.is_owner" class="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 ring-2 ring-white shadow-md">
                     <svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -432,14 +432,15 @@
                   
                   <!-- Actions -->
                     <div class="mt-4 flex flex-wrap items-center gap-3">
-                      <button
-                        class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:scale-105 active:scale-95"
-                        @click="toggleReactionOnQuestion(q.id)"
-                      >
-                        <span class="text-base">❤️</span>
-                        <span>Thích</span>
-                        <span class="text-[11px] font-bold text-slate-500">{{ q.reactions_count || 0 }}</span>
-                      </button>
+                    <button
+                      class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
+                      :class="q.reacted ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-600'"
+                      :disabled="reacting[`q-${q.id}`]"
+                      @click="toggleReactionOnQuestion(q.id)"
+                    >
+                      <span class="text-sm">❤️</span>
+                      <span>{{ q.reactions_count || 0 }}</span>
+                    </button>
                     <button
                       class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-600 transition-all hover:bg-sky-100 hover:scale-105 active:scale-95"
                       @click="toggleReplyBox(q.id)"
@@ -449,8 +450,6 @@
                       </svg>
                       Phản hồi
                     </button>
-                    <span class="text-xs text-slate-400">•</span>
-                    <span class="text-xs text-slate-500">Thích & phản hồi để thảo luận</span>
                   </div>
 
                   <!-- Replies -->
@@ -470,26 +469,21 @@
                               : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700'"
                           >
                             <!-- Avatar Image -->
-                          <img
-                            :src="avatarUrlForReply(rep)"
+                            <img
+                              v-if="!avatarErrors[`r-${rep.id}`]"
+                              :src="avatarUrlForReply(rep)"
                               :alt="rep.is_teacher ? 'Giáo viên' : (rep.user || 'Học sinh')"
                               class="absolute inset-0 h-full w-full object-cover"
-                              :class="{ 'opacity-0': avatarErrors[`r-${rep.id}`] }"
                               @error="handleAvatarError(`r-${rep.id}`)"
                               @load="handleAvatarLoad(`r-${rep.id}`)"
-                          />
+                            />
                             <!-- Fallback Initials -->
                             <span 
-                              class="absolute inset-0 flex h-full w-full items-center justify-center text-xs font-bold"
-                              :class="[
-                                rep.is_teacher 
-                                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
-                                  : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700',
-                                { 'opacity-0': !avatarErrors[`r-${rep.id}`], 'opacity-100': avatarErrors[`r-${rep.id}`] }
-                              ]"
+                              v-if="avatarErrors[`r-${rep.id}`]"
+                              class="text-xs font-bold"
                             >
                               {{ rep.is_teacher ? 'GV' : getInitials(rep.user) || 'HS' }}
-                          </span>
+                            </span>
                           </div>
                           <div v-if="rep.is_teacher" class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white shadow-sm">
                             <svg class="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -1323,9 +1317,11 @@ const replyMenu = reactive<Record<string, boolean>>({})
 const avatarErrors = reactive<Record<string, boolean>>({})
 function normalizeAvatar(input: any) {
   if (!input) return ''
-  const lower = String(input).toLowerCase()
-  if (lower === 'avatar' || lower === 'null' || lower === 'undefined') return ''
-  return input
+  const str = String(input).trim()
+  if (!str) return ''
+  const lower = str.toLowerCase()
+  if (lower === 'avatar' || lower === 'null' || lower === 'undefined' || lower === 'none') return ''
+  return str
 }
 function avatarUrlForQuestion(q: any) {
   const source =
@@ -1333,7 +1329,7 @@ function avatarUrlForQuestion(q: any) {
     normalizeAvatar(q?.avatar) ||
     normalizeAvatar(q?.avatar_url) ||
     normalizeAvatar(q?.student_avatar)
-  return getAvatarSrc(source, (q?.gender as any) || 'other', q?.is_teacher ? 'instructor' : 'student')
+  return getAvatarSrc(source, (q?.gender as any) || 'male', q?.is_teacher ? 'instructor' : 'student')
 }
 function avatarUrlForReply(rep: any) {
   const source =
@@ -1341,7 +1337,7 @@ function avatarUrlForReply(rep: any) {
     normalizeAvatar(rep?.avatar) ||
     normalizeAvatar(rep?.avatar_url) ||
     normalizeAvatar(rep?.student_avatar)
-  return getAvatarSrc(source, (rep?.gender as any) || 'other', rep?.is_teacher ? 'instructor' : 'student')
+  return getAvatarSrc(source, (rep?.gender as any) || 'male', rep?.is_teacher ? 'instructor' : 'student')
 }
 
 async function submitQuestion() {
@@ -1419,6 +1415,7 @@ async function loadQuestions() {
           avatar: repOwner ? (auth.user?.avatar || rep.avatar || rep.avatar_url || rep.student_avatar) : (rep.avatar || rep.avatar_url || rep.student_avatar),
           gender: repOwner ? (auth.user?.gender || rep.gender) : rep.gender,
           reactions_count: rep.reactions_count || 0,
+          reacted: rep.reacted || false,
         }
       })
       return {
@@ -1427,6 +1424,7 @@ async function loadQuestions() {
         avatar,
         gender,
         reactions_count: q.reactions_count || 0,
+        reacted: q.reacted || false,
         replies,
       }
     })
@@ -1472,20 +1470,24 @@ async function toggleReaction(replyId: string) {
   if (reacting[replyId]) return
   reacting[replyId] = true
   try {
-    await api.post(`/student/lesson-question-replies/${replyId}/react/`)
-    // Optimistic: bump count
+    const { data } = await api.post(`/student/lesson-question-replies/${replyId}/react/`)
+    const reacted = data?.reacted ?? false
+    const reactionsCount = data?.reactions_count ?? 0
+    
+    // Update optimistic state
     qaItems.value.forEach((q: any) => {
       (q.replies || []).forEach((rep: any) => {
         if (rep.id === replyId) {
-          rep.reactions_count = Number(rep.reactions_count || 0) + 1
-          rep.reacted = true
+          rep.reacted = reacted
+          rep.reactions_count = reactionsCount
         }
       })
     })
-    await loadQuestions()
   } catch (e) {
     console.error('Reaction error:', e)
     showToast('Không thực hiện được thao tác', 'error')
+    // Reload to sync state
+    await loadQuestions()
   } finally {
     reacting[replyId] = false
   }
@@ -1499,23 +1501,27 @@ function toggleReplyBox(questionId: string) {
 }
 
 async function toggleReactionOnQuestion(questionId: string) {
-  if (reacting[questionId]) return
-  reacting[questionId] = true
+  const key = `q-${questionId}`
+  if (reacting[key]) return
+  reacting[key] = true
   try {
-    await api.post(`/student/lesson-questions/${questionId}/react/`)
-    // Optimistic update: bump reactions_count and mark reacted
+    const { data } = await api.post(`/student/lesson-questions/${questionId}/react/`)
+    const reacted = data?.reacted ?? false
+    const reactionsCount = data?.reactions_count ?? 0
+    
+    // Update optimistic state
     const target = qaItems.value.find((q: any) => q.id === questionId)
     if (target) {
-      const current = Number(target.reactions_count || 0)
-      target.reactions_count = current + 1
-      target.reacted = true
+      target.reacted = reacted
+      target.reactions_count = reactionsCount
     }
-    await loadQuestions()
   } catch (e: any) {
     console.error('Question reaction error:', e)
     showToast('Không thực hiện được thao tác', 'error')
+    // Reload to sync state
+    await loadQuestions()
   } finally {
-    reacting[questionId] = false
+    reacting[key] = false
   }
 }
 
