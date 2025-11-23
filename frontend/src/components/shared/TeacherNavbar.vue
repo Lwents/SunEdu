@@ -217,6 +217,7 @@ const menu = [
   { path: '/teacher/students', label: 'Học viên' },
   { path: '/teacher/exams', label: 'Bài kiểm tra' },
   { path: '/teacher/reports', label: 'Báo cáo' },
+  { path: '/teacher/lesson-qa', label: 'Hỏi đáp' },
 ]
 
 // Click outside handlers

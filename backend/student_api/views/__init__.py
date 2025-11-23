@@ -25,6 +25,12 @@ from .account_view import (
     StudentChangePasswordView,
     StudentParentViewView,
 )
+from .lesson_question_view import (
+    StudentLessonQuestionView,
+    StudentLessonQuestionReplyView,
+    StudentLessonQuestionReactionView,
+    StudentLessonQuestionReportView,
+)
 
 __all__ = [
     'StudentDashboardView',
@@ -34,6 +40,10 @@ __all__ = [
     'StudentCoursePlayerView',
     'StudentLearningPathView',
     'StudentLearningPathManageView',
+    'StudentLessonQuestionView',
+    'StudentLessonQuestionReplyView',
+    'StudentLessonQuestionReactionView',
+    'StudentLessonQuestionReportView',
     'StudentExamsListView',
     'StudentExamDetailView',
     'StudentExamStartView',
@@ -47,4 +57,3 @@ __all__ = [
     'StudentChangePasswordView',
     'StudentParentViewView',
 ]
-

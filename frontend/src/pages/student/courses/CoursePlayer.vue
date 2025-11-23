@@ -237,6 +237,262 @@
         </div>
       </div>
     </div>
+
+    <!-- Nút hỏi đáp nổi -->
+    <button
+      v-if="!lessonLocked"
+      class="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
+      @click="toggleQA(true)"
+    >
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-3 8a9 9 0 110-18 9 9 0 010 18z" />
+      </svg>
+      Hỏi đáp
+    </button>
+
+    <!-- Drawer hỏi đáp -->
+    <transition name="fade">
+      <div
+        v-if="qaOpen"
+        class="fixed inset-0 z-40 bg-black/50"
+        @click.self="toggleQA(false)"
+      ></div>
+    </transition>
+    <transition name="slide">
+      <div
+        v-if="qaOpen"
+        class="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col bg-white shadow-2xl"
+      >
+        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-orange-500">Hỏi đáp bài học</p>
+            <h3 class="text-lg font-bold text-slate-900">{{ currentLesson?.title || '—' }}</h3>
+          </div>
+          <button
+            class="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+            @click="toggleQA(false)"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="border-b border-slate-200 bg-white p-4">
+          <textarea
+            v-model="questionText"
+            rows="3"
+            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            placeholder="Nhập bình luận mới..."
+          ></textarea>
+          <div class="mt-2 flex justify-end">
+            <button
+              class="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+              :disabled="sendingQuestion || !canSendQuestion"
+              @click="submitQuestion()"
+            >
+              <span v-if="sendingQuestion" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+              Đăng bình luận
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div v-if="qaLoading" class="text-sm text-slate-500">Đang tải bình luận…</div>
+          <div v-else-if="qaItems.length === 0" class="text-sm text-slate-500">Chưa có bình luận nào. Hãy mở lời trước!</div>
+          <div v-else class="space-y-4">
+            <div
+              v-for="q in qaItems"
+              :key="q.id"
+              class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+            >
+              <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
+                  <img
+                    v-if="q.avatar"
+                    :src="q.avatar"
+                    alt="avatar"
+                    class="h-10 w-10 rounded-full object-cover"
+                  />
+                  <span v-else>
+                    {{ q.student?.slice(0, 2)?.toUpperCase() || 'HS' }}
+                  </span>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between">
+                    <p class="font-semibold text-slate-900">{{ q.student || 'Học sinh' }}</p>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-400">{{ formatDateTimeShort(q.created_at) }}</span>
+                      <div class="relative">
+                        <button
+                          class="menu-btn"
+                          @click="toggleQuestionMenu(q.id)"
+                        >•••</button>
+                        <div
+                          v-if="questionMenu[q.id]"
+                          class="menu-dropdown"
+                        >
+                          <button v-if="q.is_owner" @click="startEditQuestion(q); questionMenu[q.id]=false">Sửa</button>
+                          <button v-if="q.is_owner" class="text-rose-600" @click="deleteQuestion(q.id); questionMenu[q.id]=false">Xóa</button>
+                          <button v-if="!q.is_owner" class="text-amber-600" @click="openReport(q.id, null); questionMenu[q.id]=false">Báo cáo</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="editingQuestion.id === q.id" class="space-y-2">
+                    <textarea
+                      v-model="editingQuestion.draft"
+                      rows="3"
+                      class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                    ></textarea>
+                    <div class="flex gap-2">
+                      <button
+                        class="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600"
+                        @click="saveEditQuestion(q.id)"
+                      >
+                        Lưu
+                      </button>
+                      <button
+                        class="rounded-lg border px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                        @click="cancelEditQuestion"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </div>
+                  <p v-else class="mt-1 text-sm text-slate-800 whitespace-pre-line">{{ q.content }}</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-4 text-xs font-semibold text-sky-600">
+                    <button class="hover:underline" @click="toggleReactionOnQuestion(q.id)">❤️</button>
+                    <button class="hover:underline" @click="toggleReplyBox(q.id)">Phản hồi</button>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-slate-400">Thích & phản hồi để thảo luận</span>
+                  </div>
+
+                  <div class="mt-3 space-y-3">
+                    <div
+                      v-for="rep in q.replies"
+                      :key="rep.id"
+                      class="rounded-lg border border-slate-100 bg-slate-50 p-2"
+                    >
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                          <img
+                            v-if="rep.avatar"
+                            :src="rep.avatar"
+                            alt="avatar"
+                            class="h-6 w-6 rounded-full object-cover"
+                          />
+                          <span class="text-xs font-semibold" :class="rep.is_teacher ? 'text-blue-700' : 'text-slate-700'">
+                            {{ rep.is_teacher ? 'Giáo viên' : rep.user || 'Học sinh' }}
+                          </span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs text-slate-400">{{ formatDateTimeShort(rep.created_at) }}</span>
+                          <div class="relative">
+                            <button class="menu-btn" @click="toggleReplyMenu(rep.id)">•••</button>
+                            <div v-if="replyMenu[rep.id]" class="menu-dropdown right-0">
+                              <button v-if="rep.is_owner" @click="startEditReply(rep); replyMenu[rep.id]=false">Sửa</button>
+                              <button v-if="rep.is_owner" class="text-rose-600" @click="deleteReply(rep.id, q.id); replyMenu[rep.id]=false">Xóa</button>
+                              <button v-if="!rep.is_owner" class="text-amber-600" @click="openReport(null, rep.id); replyMenu[rep.id]=false">Báo cáo</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-if="editingReply.id === rep.id" class="space-y-2">
+                        <textarea
+                          v-model="editingReply.draft"
+                          rows="2"
+                          class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                        ></textarea>
+                        <div class="flex gap-2">
+                          <button class="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600" @click="saveEditReply(rep.id, q.id)">
+                            Lưu
+                          </button>
+                          <button class="rounded-lg border px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50" @click="cancelEditReply">
+                            Hủy
+                          </button>
+                        </div>
+                      </div>
+                      <p v-else class="text-sm text-slate-800 whitespace-pre-line">{{ rep.content }}</p>
+                      <div class="mt-1 flex items-center gap-3 text-xs text-slate-500">
+                        <button
+                          class="inline-flex items-center gap-1 rounded-full px-2 py-1 transition"
+                          :class="rep.reacted ? 'bg-rose-50 text-rose-600' : 'hover:bg-slate-100'"
+                          :disabled="reacting[rep.id]"
+                          @click="toggleReaction(rep.id)"
+                        >
+                          ❤️ <span>{{ rep.reactions_count || 0 }}</span>
+                        </button>
+                        <button v-if="rep.is_owner" class="hover:underline text-sky-600 font-semibold" @click="startEditReply(rep)">Sửa</button>
+                        <button v-if="rep.is_owner" class="hover:underline text-rose-600 font-semibold" @click="deleteReply(rep.id, q.id)">Xóa</button>
+                        <button class="hover:underline text-amber-600 font-semibold" @click="openReport(null, rep.id)">Báo cáo</button>
+                      </div>
+                    </div>
+
+                    <div v-if="replyBox[q.id]" class="space-y-2 rounded-lg bg-slate-50 p-2">
+                      <textarea
+                        v-model="replyDrafts[q.id]"
+                        rows="2"
+                        class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                        placeholder="Viết phản hồi của bạn..."
+                      ></textarea>
+                      <div class="flex justify-end">
+                        <button
+                          class="rounded-lg bg-orange-500 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                          :disabled="replying[q.id] || !(replyDrafts[q.id]?.trim())"
+                          @click="submitReply(q.id)"
+                        >
+                          {{ replying[q.id] ? 'Đang gửi...' : 'Gửi phản hồi' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Modal báo cáo -->
+    <transition name="fade">
+      <div
+        v-if="reporting.open"
+        class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
+        @click.self="reporting.open = false"
+      >
+        <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+          <h3 class="mb-3 text-lg font-semibold text-slate-900">Báo cáo vi phạm</h3>
+          <div class="space-y-3">
+            <input
+              v-model="reporting.reason"
+              type="text"
+              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+              placeholder="Lý do (vd: Nội dung không phù hợp)"
+            />
+            <textarea
+              v-model="reporting.detail"
+              rows="3"
+              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+              placeholder="Mô tả chi tiết..."
+            ></textarea>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button
+              class="rounded-lg border px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              @click="reporting.open = false"
+            >
+              Hủy
+            </button>
+            <button
+              class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+              @click="submitReport"
+            >
+              Gửi báo cáo
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
   <div v-else class="grid min-h-screen place-items-center text-gray-600 dark:text-gray-400">Đang tải…</div>
 </template>
@@ -247,6 +503,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { courseService, type CourseDetail } from '@/services/course.service'
 import { contentService } from '@/services/content.service'
 import api from '@/config/axios'
+import { showToast } from '@/utils/toast'
 
 type Lesson = CourseDetail['sections'][0]['lessons'][0];
 
@@ -398,6 +655,8 @@ const progressPct = computed(() => {
 const dash = computed(() => progressPct.value)
 
 const currentLesson = computed<UiLesson | null>(() => uiSections.value[cur.value.si]?.items[cur.value.li] || null);
+const currentLessonId = computed(() => currentLesson.value?.id || null)
+const currentLessonTitle = computed(() => currentLesson.value?.title || '')
 
 const currentFlatIndex = computed<number>(() => {
   const id = currentLesson.value?.id
@@ -873,6 +1132,212 @@ async function onVideoEnded() {
   console.log('Video ended - Final progress:', doneCount.value, '/', totalCount.value, '=', progressPct.value + '%')
 }
 
+// Q&A
+const qaOpen = ref(false)
+const qaLoading = ref(false)
+const qaItems = ref<any[]>([])
+const questionText = ref('')
+const sendingQuestion = ref(false)
+const canSendQuestion = computed(() => !!questionText.value.trim() && !!currentLessonId.value)
+const replyDrafts = reactive<Record<string, string>>({})
+const replying = reactive<Record<string, boolean>>({})
+const reacting = reactive<Record<string, boolean>>({})
+const replyBox = reactive<Record<string, boolean>>({})
+const editingQuestion = reactive<{ id: string | null; draft: string }>({ id: null, draft: '' })
+const editingReply = reactive<{ id: string | null; draft: string }>({ id: null, draft: '' })
+const reporting = reactive<{ open: boolean; questionId?: string; replyId?: string; reason: string; detail: string }>({ open: false, reason: '', detail: '' })
+const questionMenu = reactive<Record<string, boolean>>({})
+const replyMenu = reactive<Record<string, boolean>>({})
+
+async function submitQuestion() {
+  if (!canSendQuestion.value || sendingQuestion.value) return
+  sendingQuestion.value = true
+  try {
+    await api.post('/student/lesson-questions/', {
+      lesson_id: currentLessonId.value,
+      content: questionText.value.trim(),
+    })
+    showToast('Đã gửi câu hỏi tới giáo viên!', 'success')
+    questionText.value = ''
+    await loadQuestions()
+  } catch (e: any) {
+    console.error('Send question error:', e)
+    const msg = e?.response?.data?.detail || e?.message || 'Gửi câu hỏi thất bại'
+    showToast(msg, 'error')
+  } finally {
+    sendingQuestion.value = false
+  }
+}
+
+function formatDateTimeShort(iso?: string) {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return iso
+  }
+}
+
+async function loadQuestions() {
+  if (!currentLessonId.value) return
+  qaLoading.value = true
+  try {
+    const { data } = await api.get('/student/lesson-questions/', {
+      params: { lesson_id: currentLessonId.value },
+    })
+    qaItems.value = data?.items || []
+  } catch (e) {
+    console.error('Load questions error:', e)
+    showToast('Không tải được hỏi đáp', 'error')
+  } finally {
+    qaLoading.value = false
+  }
+}
+
+function toggleQA(open: boolean) {
+  qaOpen.value = open
+  if (open) {
+    loadQuestions()
+  }
+}
+
+function startReply(questionId: string) {
+  replying[questionId] = true
+  if (!replyDrafts[questionId]) replyDrafts[questionId] = ''
+}
+
+async function submitReply(questionId: string) {
+  const content = (replyDrafts[questionId] || '').trim()
+  if (!content) return
+  replying[questionId] = true
+  try {
+    await api.post(`/student/lesson-questions/${questionId}/reply/`, { content })
+    replyDrafts[questionId] = ''
+    await loadQuestions()
+  } catch (e: any) {
+    console.error('Send reply error:', e)
+    const msg = e?.response?.data?.detail || e?.message || 'Gửi phản hồi thất bại'
+    showToast(msg, 'error')
+  } finally {
+    replying[questionId] = false
+  }
+}
+
+async function toggleReaction(replyId: string) {
+  if (reacting[replyId]) return
+  reacting[replyId] = true
+  try {
+    await api.post(`/student/lesson-question-replies/${replyId}/react/`)
+    await loadQuestions()
+  } catch (e) {
+    console.error('Reaction error:', e)
+    showToast('Không thực hiện được thao tác', 'error')
+  } finally {
+    reacting[replyId] = false
+  }
+}
+
+function toggleReplyBox(questionId: string) {
+  replyBox[questionId] = !replyBox[questionId]
+  if (replyBox[questionId] && !replyDrafts[questionId]) {
+    replyDrafts[questionId] = ''
+  }
+}
+
+async function toggleReactionOnQuestion(questionId: string) {
+  // Hiện chưa lưu reaction cho câu hỏi, để placeholder giống “thích”
+  showToast('Đã ghi nhận', 'success')
+}
+
+function startEditQuestion(q: any) {
+  editingQuestion.id = q.id
+  editingQuestion.draft = q.content
+}
+function cancelEditQuestion() {
+  editingQuestion.id = null
+  editingQuestion.draft = ''
+}
+async function saveEditQuestion(id: string) {
+  if (!editingQuestion.draft.trim()) return
+  try {
+    await api.patch(`/student/lesson-questions/${id}/`, { content: editingQuestion.draft })
+    cancelEditQuestion()
+    await loadQuestions()
+    showToast('Đã cập nhật bình luận', 'success')
+  } catch (e: any) {
+    showToast(e?.response?.data?.detail || 'Không sửa được', 'error')
+  }
+}
+async function deleteQuestion(id: string) {
+  try {
+    await api.delete(`/student/lesson-questions/${id}/`)
+    await loadQuestions()
+    showToast('Đã xóa bình luận', 'success')
+  } catch (e: any) {
+    showToast(e?.response?.data?.detail || 'Không xóa được', 'error')
+  }
+}
+
+function startEditReply(rep: any) {
+  editingReply.id = rep.id
+  editingReply.draft = rep.content
+}
+function cancelEditReply() {
+  editingReply.id = null
+  editingReply.draft = ''
+}
+function toggleQuestionMenu(id: string) {
+  questionMenu[id] = !questionMenu[id]
+}
+function toggleReplyMenu(id: string) {
+  replyMenu[id] = !replyMenu[id]
+}
+async function saveEditReply(id: string, questionId: string) {
+  if (!editingReply.draft.trim()) return
+  try {
+    await api.patch(`/student/lesson-question-replies/${id}/`, { content: editingReply.draft })
+    cancelEditReply()
+    await loadQuestions()
+    showToast('Đã cập nhật phản hồi', 'success')
+  } catch (e: any) {
+    showToast(e?.response?.data?.detail || 'Không sửa được', 'error')
+  }
+}
+async function deleteReply(id: string, questionId: string) {
+  try {
+    await api.delete(`/student/lesson-question-replies/${id}/`)
+    await loadQuestions()
+    showToast('Đã xóa phản hồi', 'success')
+  } catch (e: any) {
+    showToast(e?.response?.data?.detail || 'Không xóa được', 'error')
+  }
+}
+
+function openReport(questionId?: string | null, replyId?: string | null) {
+  reporting.open = true
+  reporting.questionId = questionId || undefined
+  reporting.replyId = replyId || undefined
+  reporting.reason = ''
+  reporting.detail = ''
+}
+
+async function submitReport() {
+  if (!reporting.questionId && !reporting.replyId) return
+  try {
+    await api.post('/student/lesson-question-report/', {
+      question_id: reporting.questionId,
+      reply_id: reporting.replyId,
+      reason: reporting.reason || 'Báo cáo vi phạm',
+      detail: reporting.detail || '',
+    })
+    showToast('Đã gửi báo cáo tới admin', 'success')
+    reporting.open = false
+  } catch (e: any) {
+    showToast(e?.response?.data?.detail || 'Không gửi được báo cáo', 'error')
+  }
+}
+
 function openExercise(exerciseId: string | number) {
   // TODO: Open exercise modal or navigate to exercise page
   alert(`Mở bài tập ${exerciseId}. Tính năng này sẽ được implement sau.`)
@@ -922,6 +1387,9 @@ watchEffect(() => {
 watch(() => currentLesson.value?.id, async (newId) => {
   if (newId) {
     await loadLessonDetail(newId)
+    if (qaOpen.value) {
+      await loadQuestions()
+    }
   }
 }, { immediate: true })
 
@@ -950,3 +1418,65 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+.slide-enter-active {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.slide-leave-active {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.modal-backdrop {
+  background: rgba(0,0,0,0.45);
+}
+
+.menu-btn {
+  padding: 4px 6px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 12px;
+}
+.menu-btn:hover {
+  background: #f8fafc;
+}
+.menu-dropdown {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  min-width: 140px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+  padding: 6px 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+.menu-dropdown button {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #0f172a;
+}
+.menu-dropdown button:hover {
+  background: #f8fafc;
+}
+</style>

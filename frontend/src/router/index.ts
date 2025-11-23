@@ -172,6 +172,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/teacher/dashboard/dashboard.vue'),
         meta: { title: 'Trang chủ giảng viên' },
       },
+      {
+        path: 'lesson-qa',
+        name: 'teacher-lesson-qa',
+        component: () => import('@/pages/teacher/courses/LessonQA.vue'),
+        meta: { title: 'Hỏi đáp bài học' },
+      },
 
       //account
       {

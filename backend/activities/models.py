@@ -176,3 +176,76 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.user}"
+
+
+class LessonQuestion(models.Model):
+    """
+    Câu hỏi của học sinh về một bài học. Giáo viên sẽ trả lời.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lesson = models.ForeignKey('content.Lesson', on_delete=models.CASCADE, related_name='questions')
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lesson_questions')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Q by {self.student} on {self.lesson}"
+
+
+class LessonQuestionReply(models.Model):
+    """
+    Trả lời cho câu hỏi, có thể từ giáo viên hoặc học sinh.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.ForeignKey(LessonQuestion, on_delete=models.CASCADE, related_name='replies')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lesson_question_replies')
+    content = models.TextField()
+    is_teacher = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Reply by {self.user} on {self.question_id}"
+
+
+class LessonQuestionReaction(models.Model):
+    """
+    Cảm xúc/like cho câu trả lời.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reply = models.ForeignKey(LessonQuestionReply, on_delete=models.CASCADE, related_name='reactions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lesson_question_reactions')
+    emoji = models.CharField(max_length=16, default='like')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('reply', 'user')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.emoji} by {self.user} on {self.reply_id}"
+
+
+class LessonQuestionReport(models.Model):
+    """
+    Báo cáo vi phạm cho câu hỏi hoặc trả lời.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lesson_question_reports')
+    question = models.ForeignKey(LessonQuestion, null=True, blank=True, on_delete=models.CASCADE, related_name='reports')
+    reply = models.ForeignKey(LessonQuestionReply, null=True, blank=True, on_delete=models.CASCADE, related_name='reports')
+    reason = models.CharField(max_length=255, blank=True)
+    detail = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        target = self.question_id or self.reply_id
+        return f"Report {target} by {self.reporter}"

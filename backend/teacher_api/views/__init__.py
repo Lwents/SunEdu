@@ -6,6 +6,7 @@ from .notifications_view import (
     TeacherNotificationReadView,
     TeacherNotificationReadAllView,
 )
+from .lesson_question_view import TeacherLessonQuestionView
 
 __all__ = [
     'TeacherDashboardView', 
@@ -15,8 +16,8 @@ __all__ = [
     'TeacherNotificationsView',
     'TeacherNotificationReadView',
     'TeacherNotificationReadAllView',
+    'TeacherLessonQuestionView',
 ]
-
 
 
 
