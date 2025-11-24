@@ -6,6 +6,23 @@ from django.core.paginator import Paginator
 from content import models
 from content.serializers import ContentLibrarySerializer
 from custom_account.api.permissions import RestrictRoles
+from rest_framework import permissions
+
+
+class LibraryRolePermission(permissions.BasePermission):
+    """Allow teacher/instructor/admin."""
+    allowed_roles = {'teacher', 'admin', 'instructor'}
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        role = getattr(request.user, 'role', None)
+        if role in self.allowed_roles:
+            return True
+        # staff/superuser fallback
+        if getattr(request.user, 'is_staff', False) or getattr(request.user, 'is_superuser', False):
+            return True
+        return False
 
 
 class ContentLibraryListCreateView(generics.ListCreateAPIView):
@@ -14,7 +31,8 @@ class ContentLibraryListCreateView(generics.ListCreateAPIView):
     POST /api/content-library/     -> create (auth, teacher)
     """
     serializer_class = ContentLibrarySerializer
-    permission_classes = [permissions.IsAuthenticated, RestrictRoles(allow_roles=['teacher', 'admin'])]
+    # Allow instructors/teachers/admins
+    permission_classes = [permissions.IsAuthenticated, LibraryRolePermission]
 
     def get_queryset(self):
         queryset = models.ContentLibrary.objects.filter(owner=self.request.user)
@@ -67,7 +85,7 @@ class ContentLibraryDetailView(generics.RetrieveUpdateDestroyAPIView):
     DELETE /api/content-library/<id>/ -> delete (owner only)
     """
     serializer_class = ContentLibrarySerializer
-    permission_classes = [permissions.IsAuthenticated, RestrictRoles(allow_roles=['teacher', 'admin'])]
+    permission_classes = [permissions.IsAuthenticated, LibraryRolePermission]
     lookup_field = 'id'
 
     def get_queryset(self):
@@ -78,4 +96,3 @@ class ContentLibraryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_destroy(self, instance):
         instance.delete()
-

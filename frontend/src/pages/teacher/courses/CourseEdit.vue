@@ -122,19 +122,18 @@
               ></textarea>
             </label>
 
-            <!-- Giới thiệu chi tiết -->
+            <!-- Giới thiệu chi tiết (không bắt buộc) -->
             <label class="md:col-span-2">
               <span class="mb-2 block text-sm font-semibold text-gray-700">
-                Giới thiệu chi tiết <span class="text-rose-600">*</span>
+                Giới thiệu chi tiết
               </span>
               <textarea
                 v-model.trim="course.introduction"
                 rows="8"
-                required
                 class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition resize-y"
                 placeholder="Giới thiệu chi tiết về khóa học (sẽ hiển thị ở trang chi tiết khóa học)"
               ></textarea>
-              <p class="mt-1 text-xs text-gray-500">Nội dung này sẽ hiển thị ở trang chi tiết khóa học cho học sinh</p>
+              <p class="mt-1 text-xs text-gray-500">Không bắt buộc. Nếu nhập sẽ hiển thị ở trang chi tiết khóa học.</p>
             </label>
           </div>
         </div>
@@ -172,7 +171,7 @@
                 Đã chọn ảnh mới: <b>{{ coverFile.name }}</b> ({{ formatFileSize(coverFile.size) }})
               </p>
               <p v-if="coverErr" class="mt-2 text-sm text-rose-600 font-medium">{{ coverErr }}</p>
-              <p class="mt-2 text-xs text-gray-500">JPG/PNG, tối đa 5MB. Giữ ảnh cũ nếu không đổi.</p>
+              <p class="mt-2 text-xs text-gray-500">JPG/PNG, tối đa 10MB. Giữ ảnh cũ nếu không đổi.</p>
             </div>
           </div>
         </div>
@@ -317,9 +316,9 @@ function onPickCover(e: Event) {
     return
   }
   
-  const maxSize = 5 * 1024 * 1024 // 5MB
+  const maxSize = 10 * 1024 * 1024 // 10MB
   if (file.size > maxSize) {
-    coverErr.value = `File ảnh tối đa 5MB. File của bạn: ${formatFileSize(file.size)}`
+    coverErr.value = `File ảnh tối đa 10MB. File của bạn: ${formatFileSize(file.size)}`
     input.value = ''
     return
   }
@@ -379,11 +378,6 @@ async function save() {
     showToast('Vui lòng nhập tên khoá học.', 'warning')
     return
   }
-  if (!course.value.introduction?.trim()) {
-    showToast('Vui lòng nhập giới thiệu chi tiết.', 'warning')
-    return
-  }
-
   saving.value = true
   try {
     const fd = new FormData()

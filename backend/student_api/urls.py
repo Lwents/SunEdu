@@ -22,6 +22,7 @@ from student_api.views import (
     StudentLessonQuestionView,
     StudentLessonQuestionReplyView,
     StudentLessonQuestionReactionView,
+    StudentLessonQuestionQuestionReactionView,
     StudentLessonQuestionReportView,
 )
 from student_api.views.notifications_view import (
@@ -46,6 +47,8 @@ urlpatterns = [
     path('learning-path/manage/', StudentLearningPathManageView.as_view(), name='learning-path-manage'),
     path('lesson-questions/', StudentLessonQuestionView.as_view(), name='lesson-question'),
     path('lesson-questions/<uuid:pk>/reply/', StudentLessonQuestionReplyView.as_view(), name='lesson-question-reply'),
+    # Allow both pk and explicit question_id for reaction endpoint
+    path('lesson-questions/<uuid:pk>/react/', StudentLessonQuestionQuestionReactionView.as_view(), name='lesson-question-question-reaction'),
     path('lesson-questions/<uuid:pk>/', StudentLessonQuestionView.as_view(), name='lesson-question-detail'),
     path('lesson-question-replies/<uuid:reply_id>/react/', StudentLessonQuestionReactionView.as_view(), name='lesson-question-reaction'),
     path('lesson-question-replies/<uuid:reply_id>/', StudentLessonQuestionReplyView.as_view(), name='lesson-question-reply-detail'),

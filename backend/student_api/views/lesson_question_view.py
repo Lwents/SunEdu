@@ -46,79 +46,102 @@ def avatar_for(user, request):
     except Exception:
         pass
     
-    # Generate default avatar using UI Avatars service
-    # This creates a nice avatar based on name/email
-    try:
-        # Try to get display name from profile first
-        name = None
-        try:
-            profile = getattr(user, "profile", None)
-            if profile:
-                name = getattr(profile, "display_name", None)
-        except Exception:
-            pass
-        
-        # Fallback to username or email
-        if not name:
-            name = getattr(user, "username", "") or getattr(user, "email", "") or "User"
-        
-        # Clean name for URL (remove special chars, take first 2 words max)
-        name_parts = name.split()[:2]
-        name_clean = " ".join(name_parts) if name_parts else name[:10]
-        
-        # Determine background color based on role
-        bg_color = "4F46E5"  # Default blue
-        if hasattr(user, "role"):
-            if user.role == "instructor" or user.role == "teacher":
-                bg_color = "2563EB"  # Blue for teacher
-            elif user.role == "admin":
-                bg_color = "DC2626"  # Red for admin
-            else:
-                bg_color = "10B981"  # Green for student
-        
-        # Use UI Avatars service to generate avatar
-        # Format: https://ui-avatars.com/api/?name=Name&background=color&color=fff&size=128&bold=true
-        import urllib.parse
-        # URL encode name properly, but keep it simple for better compatibility
-        name_encoded = urllib.parse.quote(name_clean, safe='')
-        # Use uppercase for name to ensure consistent avatars
-        name_upper = name_clean.upper()
-        name_encoded = urllib.parse.quote(name_upper, safe='')
-        avatar_url = f"https://ui-avatars.com/api/?name={name_encoded}&background={bg_color}&color=fff&size=128&bold=true&format=png"
-        return avatar_url
-    except Exception:
-        pass
-    
+    # Return None to let frontend handle default avatar based on gender
+    # Frontend will use getAvatarSrc() which handles boy/girl avatars based on gender
     return None
 
 
 def serialize_reply(rep: LessonQuestionReply, user=None, request=None):
+    profile = getattr(rep.user, "profile", None)
+    gender = getattr(profile, "gender", None) if profile else None
+    
+    # Safely get reactions_count and reacted
+    # If model hasn't been migrated yet, these will default to 0 and False
+    reactions_count = 0
+    reacted = False
+    try:
+        reactions_count = rep.reactions.count()
+        if user:
+            reacted = rep.reactions.filter(user=user).exists()
+    except (AttributeError, Exception):
+        # Reactions relation doesn't exist (migration not run) - silently use defaults
+        pass
+    
     return {
         "id": str(rep.id),
         "user": rep.user.username,
         "avatar": avatar_for(rep.user, request),
+        "gender": gender,
         "user_id": rep.user.id,
         "is_owner": bool(user and user.id == rep.user.id),
         "is_teacher": rep.is_teacher,
         "content": rep.content,
         "created_at": rep.created_at.isoformat(),
-        "reactions_count": rep.reactions.count() if hasattr(rep, "reactions") else 0,
-        "reacted": bool(user and rep.reactions.filter(user=user).exists()),
+        "reactions_count": reactions_count,
+        "reacted": reacted,
     }
 
 
 def serialize_question(q: LessonQuestion, user=None, request=None):
-    return {
-        "id": str(q.id),
-        "lesson_id": str(q.lesson_id),
-        "student_id": q.student_id,
-        "student": q.student.username,
-        "avatar": avatar_for(q.student, request),
-        "is_owner": bool(user and user.id == q.student_id),
-        "content": q.content,
-        "created_at": q.created_at.isoformat(),
-        "replies": [serialize_reply(r, user=user, request=request) for r in q.replies.all()],
-    }
+    try:
+        profile = getattr(q.student, "profile", None)
+        gender = getattr(profile, "gender", None) if profile else None
+        
+        # Safely get reactions_count and reacted
+        # If model hasn't been migrated yet, these will default to 0 and False
+        reactions_count = 0
+        reacted = False
+        try:
+            reactions_count = q.reactions.count()
+            if user:
+                reacted = q.reactions.filter(user=user).exists()
+        except (AttributeError, Exception):
+            # Reactions relation doesn't exist (migration not run) - silently use defaults
+            pass
+        
+        # Safely serialize replies
+        replies = []
+        try:
+            replies = [serialize_reply(r, user=user, request=request) for r in q.replies.all()]
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error serializing replies for question {q.id}: {e}")
+            replies = []
+        
+        return {
+            "id": str(q.id),
+            "lesson_id": str(q.lesson_id),
+            "student_id": q.student_id,
+            "student": q.student.username,
+            "avatar": avatar_for(q.student, request),
+            "gender": gender,
+            "is_owner": bool(user and user.id == q.student_id),
+            "content": q.content,
+            "created_at": q.created_at.isoformat(),
+            "reactions_count": reactions_count,
+            "reacted": reacted,
+            "replies": replies,
+        }
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error serializing question {q.id if q else 'unknown'}: {e}", exc_info=True)
+        # Return minimal data to prevent complete failure
+        return {
+            "id": str(q.id) if q else "",
+            "lesson_id": str(q.lesson_id) if q else "",
+            "student_id": q.student_id if q else None,
+            "student": q.student.username if q and q.student else "",
+            "avatar": None,
+            "gender": None,
+            "is_owner": False,
+            "content": q.content if q else "",
+            "created_at": q.created_at.isoformat() if q and hasattr(q, 'created_at') else "",
+            "reactions_count": 0,
+            "reacted": False,
+            "replies": [],
+        }
 
 
 class StudentLessonQuestionView(APIView):
@@ -143,6 +166,7 @@ class StudentLessonQuestionView(APIView):
             "replies__user__profile",
             "replies__reactions",
         )
+        # Note: reactions for question will be handled safely in serialize_question
         data = [serialize_question(q, user=request.user, request=request) for q in qs.order_by("-created_at")]
         return Response({"items": data}, status=status.HTTP_200_OK)
 
@@ -302,6 +326,58 @@ class StudentLessonQuestionReactionView(APIView):
             {
                 "reacted": reacted,
                 "reactions_count": reply.reactions.count(),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class StudentLessonQuestionQuestionReactionView(APIView):
+    """
+    POST /api/student/lesson-questions/<question_id>/react/
+    Toggle like (emoji default 'like') for a question
+    """
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def post(self, request, question_id=None, pk=None):
+        # Accept both path converters: question_id or pk (DRF may pass pk)
+        question_id = question_id or pk
+        emoji = (request.data.get("emoji") or "like")[:16]
+        question = get_object_or_404(LessonQuestion, id=question_id)
+        from activities.models import LessonQuestionReaction
+        
+        try:
+            reaction, created = LessonQuestionReaction.objects.get_or_create(
+                question=question,
+                user=request.user,
+                defaults={"emoji": emoji}
+            )
+            if not created:
+                # toggle off
+                reaction.delete()
+                reacted = False
+            else:
+                reacted = True
+            
+            # Safely get reactions_count
+            try:
+                reactions_manager = getattr(question, 'reactions', None)
+                if reactions_manager is not None:
+                    reactions_count = reactions_manager.count()
+                else:
+                    reactions_count = 0
+            except Exception:
+                reactions_count = 0
+        except Exception as e:
+            # If model doesn't support question reactions yet (migration not run)
+            return Response(
+                {"detail": "Reaction feature not available. Please run migrations."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        
+        return Response(
+            {
+                "reacted": reacted,
+                "reactions_count": reactions_count,
             },
             status=status.HTTP_200_OK,
         )

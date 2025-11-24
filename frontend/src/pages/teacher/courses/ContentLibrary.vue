@@ -40,7 +40,7 @@
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            {{ courseId ? 'Tạo bài học mới' : 'Tạo nội dung mới' }}
+            {{ courseId ? 'Tạo nội dung mới' : 'Tạo nội dung mới' }}
           </button>
         </div>
       </div>
@@ -72,8 +72,11 @@
             @change="fetchList(1)"
           >
             <option value="">Tất cả khối</option>
-            <option value="Khối 1–2">Khối 1–2</option>
-            <option value="Khối 3–5">Khối 3–5</option>
+            <option value="Khối 1">Khối 1</option>
+            <option value="Khối 2">Khối 2</option>
+            <option value="Khối 3">Khối 3</option>
+            <option value="Khối 4">Khối 4</option>
+            <option value="Khối 5">Khối 5</option>
           </select>
           <select
             v-model="ctype"
@@ -85,6 +88,8 @@
             <option value="pdf">PDF</option>
             <option value="doc">Tài liệu</option>
             <option value="quiz">Quiz</option>
+            <option value="text">Văn bản</option>
+            <option value="image">Hình ảnh</option>
           </select>
         </div>
       </div>
@@ -101,7 +106,7 @@
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
           <p class="text-xs font-medium text-gray-600">Tài liệu</p>
-          <p class="mt-1 text-xl font-bold text-emerald-600">{{ typeCounts.doc + typeCounts.pdf }}</p>
+          <p class="mt-1 text-xl font-bold text-emerald-600">{{ typeCounts.doc + typeCounts.pdf + typeCounts.text }}</p>
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
           <p class="text-xs font-medium text-gray-600">Quiz</p>
@@ -264,10 +269,30 @@
         <svg class="h-16 w-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
-        <h3 class="mt-4 text-lg font-semibold text-gray-900">Không tìm thấy nội dung</h3>
+        <h3 class="mt-4 text-lg font-semibold text-gray-900">Chưa có nội dung</h3>
         <p class="mt-2 max-w-sm text-sm text-gray-500">
-          Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm để tìm nội dung phù hợp.
+          Bắt đầu bằng việc tạo nội dung mới, hoặc quay lại khóa học để thêm bài học trực tiếp.
         </p>
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition hover:from-cyan-700 hover:to-cyan-800 hover:shadow-xl"
+            @click="openCreateModal"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Tạo nội dung mới
+          </button>
+          <button
+            v-if="courseId"
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100"
+            @click="goBack"
+          >
+            Quay về khóa học
+          </button>
+        </div>
       </div>
 
       <!-- Pager -->
@@ -347,8 +372,14 @@
               v-model="lessonPosition"
               class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
             >
-              <option value="0">Đầu chương</option>
-              <option value="-1">Cuối chương</option>
+              <option
+                v-for="opt in positionOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ opt.label }}
+              </option>
+              <option :value="positionOptions.length">Cuối chương</option>
             </select>
           </div>
           <div v-if="!selectedModuleId">
@@ -434,7 +465,89 @@
               <option value="pdf">PDF</option>
               <option value="doc">Tài liệu</option>
               <option value="quiz">Quiz</option>
+              <option value="text">Văn bản</option>
+              <option value="image">Hình ảnh</option>
             </select>
+          </div>
+
+          <!-- Meta inputs tùy theo loại -->
+          <div v-if="editForm.type === 'text'">
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Nội dung văn bản</label>
+            <textarea
+              v-model.trim="editForm.meta.content"
+              rows="4"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+              placeholder="Nhập nội dung văn bản hoặc dán từ tài liệu..."
+            ></textarea>
+          </div>
+
+          <div v-if="editForm.type === 'image'">
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Tải file hình ảnh</label>
+            <input
+              type="file"
+              accept="image/*"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2"
+              @change="onFilePick($event, 'image')"
+            />
+            <p class="mt-1 text-xs text-gray-500">Chọn ảnh để lưu vào thư viện.</p>
+            <p v-if="editForm.meta.fileName" class="text-xs text-emerald-700">Đã chọn: {{ editForm.meta.fileName }}</p>
+          </div>
+
+          <div v-if="editForm.type === 'video'">
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Nguồn video</label>
+            <div class="flex gap-3">
+              <label class="flex items-center gap-2 text-sm">
+                <input type="radio" value="url" v-model="videoSource" />
+                Link (YouTube/MP4)
+              </label>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="radio" value="file" v-model="videoSource" />
+                Tải file
+              </label>
+            </div>
+            <div v-if="videoSource === 'url'" class="mt-2">
+              <input
+                v-model.trim="editForm.meta.url"
+                type="url"
+                class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                placeholder="https://youtube.com/watch?v=..."
+              />
+              <p class="mt-1 text-xs text-gray-500">Có thể nhập URL YouTube hoặc link video trực tiếp.</p>
+            </div>
+            <div v-else class="mt-2 space-y-2">
+              <input
+                type="file"
+                accept="video/*"
+                class="w-full rounded-lg border border-gray-300 px-4 py-2"
+                @change="onFilePick($event, 'video')"
+              />
+              <p class="text-xs text-gray-500">
+                Chọn file video (tạm thời lưu vào thư viện để chèn vào bài học).
+              </p>
+              <p v-if="editForm.meta.fileName" class="text-xs text-emerald-700">Đã chọn: {{ editForm.meta.fileName }}</p>
+            </div>
+          </div>
+
+          <div v-if="editForm.type === 'pdf' || editForm.type === 'doc'">
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Tải file tài liệu (PDF/DOCX)</label>
+            <input
+              type="file"
+              :accept="editForm.type === 'pdf' ? 'application/pdf' : '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2"
+              @change="onFilePick($event, editForm.type)"
+            />
+            <p class="mt-1 text-xs text-gray-500">File sẽ được lưu trong thư viện để dùng lại.</p>
+            <p v-if="editForm.meta.fileName" class="text-xs text-emerald-700">Đã chọn: {{ editForm.meta.fileName }}</p>
+          </div>
+
+          <div v-if="editForm.type === 'quiz'">
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Ghi chú quiz</label>
+            <input
+              v-model.trim="editForm.meta.note"
+              type="text"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+              placeholder="Ví dụ: 10 câu trắc nghiệm, thời gian 15 phút"
+            />
           </div>
 
           <!-- Khối lớp -->
@@ -444,8 +557,11 @@
               v-model="editForm.gradeBand"
               class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
             >
-              <option value="Khối 1–2">Khối 1–2</option>
-              <option value="Khối 3–5">Khối 3–5</option>
+              <option value="Khối 1">Khối 1</option>
+              <option value="Khối 2">Khối 2</option>
+              <option value="Khối 3">Khối 3</option>
+              <option value="Khối 4">Khối 4</option>
+              <option value="Khối 5">Khối 5</option>
             </select>
           </div>
         </div>
@@ -506,16 +622,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from '@/utils/toast'
-import { contentService, type Module } from '@/services/content.service'
+import { contentService, type Module, type Lesson } from '@/services/content.service'
 import { courseService } from '@/services/course.service'
 
 /* ==== TYPES ==== */
 type Subject = 'math' | 'vietnamese' | 'english' | 'science' | 'history'
-type Ctype = 'video' | 'pdf' | 'doc' | 'quiz'
-type GradeBand = 'Khối 1–2' | 'Khối 3–5'
+type Ctype = 'video' | 'pdf' | 'doc' | 'quiz' | 'text' | 'image'
+type GradeBand = 'Khối 1' | 'Khối 2' | 'Khối 3' | 'Khối 4' | 'Khối 5'
+type ContentMeta = {
+  duration?: string
+  size?: string
+  questions?: number
+  url?: string
+  video_url?: string
+  content?: string
+  note?: string
+  fileName?: string
+  fileData?: string
+}
+
 type ContentItem = {
   id: number
   title: string
@@ -523,7 +651,7 @@ type ContentItem = {
   type: Ctype
   gradeBand: GradeBand
   updatedAt: string
-  meta?: { duration?: string; size?: string; questions?: number }
+  meta: ContentMeta
 }
 type ListParams = {
   q?: string
@@ -548,6 +676,7 @@ const loading = ref(true)
 const items = ref<ContentItem[]>([])
 const courseTitle = ref('')
 const modules = ref<Module[]>([])
+const moduleLessons = ref<Record<string, Lesson[]>>({})
 
 /* Pagination */
 const page = ref(1)
@@ -563,6 +692,17 @@ const newModuleTitle = ref('')
 const lessonPosition = ref<number>(0)
 const adding = ref(false)
 
+const positionOptions = computed(() => {
+  if (!selectedModuleId.value) return []
+  const lessons = moduleLessons.value[selectedModuleId.value] || []
+  const opts: Array<{ value: number; label: string }> = []
+  opts.push({ value: 0, label: 'Đầu chương' })
+  lessons.forEach((l, idx) => {
+    opts.push({ value: idx + 1, label: `Sau bài: ${l.title}` })
+  })
+  return opts
+})
+
 /* Edit/Delete Modal */
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
@@ -575,27 +715,37 @@ const editForm = ref({
   title: '',
   subject: 'math' as Subject,
   type: 'video' as Ctype,
-  gradeBand: 'Khối 1–2' as GradeBand,
-  meta: {} as ContentItem['meta']
+  gradeBand: 'Khối 1' as GradeBand,
+  meta: {
+    url: '',
+    content: '',
+    note: '',
+    questions: undefined as number | undefined,
+    fileName: '',
+    fileData: '',
+  } as ContentItem['meta']
+})
+const videoSource = ref<'url' | 'file'>('url')
+
+watch(() => editForm.value.type, () => {
+  editForm.value.meta = { url: '', content: '', note: '', questions: undefined, fileName: '', fileData: '' }
+  if (editForm.value.type === 'video') {
+    videoSource.value = 'url'
+  }
 })
 
 /* Create Content */
 function openCreateModal() {
-  if (courseId) {
-    // Nếu đang ở trong context của một khóa học, đi đến trang quản lý nội dung
-    router.push({ name: 'teacher-course-content', params: { id: courseId } })
-  } else {
-    // Mở modal tạo mới
-    editingContent.value = null
-    editForm.value = {
-      title: '',
-      subject: 'math',
-      type: 'video',
-      gradeBand: 'Khối 1–2',
-      meta: {}
-    }
-    showEditModal.value = true
+  // Luôn mở modal tạo mới trong thư viện để giáo viên có thể tạo và tái sử dụng nhanh
+  editingContent.value = null
+  editForm.value = {
+    title: '',
+    subject: 'math',
+    type: 'video',
+    gradeBand: 'Khối 1',
+    meta: {}
   }
+  showEditModal.value = true
 }
 
 function openEditModal(item: ContentItem) {
@@ -604,8 +754,20 @@ function openEditModal(item: ContentItem) {
     title: item.title,
     subject: item.subject,
     type: item.type,
-    gradeBand: item.gradeBand,
-    meta: { ...item.meta }
+    gradeBand: item.gradeBand as GradeBand,
+    meta: {
+      url: item.meta?.url || item.meta?.video_url || '',
+      content: item.meta?.content || '',
+      note: item.meta?.note || '',
+      questions: item.meta?.questions,
+      fileName: item.meta?.fileName || '',
+      fileData: item.meta?.fileData || '',
+    }
+  }
+  if (item.type === 'video' && item.meta?.fileData) {
+    videoSource.value = 'file'
+  } else {
+    videoSource.value = 'url'
   }
   showEditModal.value = true
 }
@@ -617,9 +779,10 @@ function closeEditModal() {
     title: '',
     subject: 'math',
     type: 'video',
-    gradeBand: 'Khối 1–2',
-    meta: {}
+    gradeBand: 'Khối 1',
+    meta: { url: '', content: '', note: '', questions: undefined, fileName: '', fileData: '' }
   }
+  videoSource.value = 'url'
 }
 
 function openDeleteModal(item: ContentItem) {
@@ -637,7 +800,51 @@ async function saveContent() {
     showToast('Vui lòng nhập tên nội dung', 'error')
     return
   }
+  // Type-specific required fields
+  if (editForm.value.type === 'video') {
+    if (videoSource.value === 'url') {
+      if (!editForm.value.meta?.url) {
+        showToast('Vui lòng nhập URL video', 'error')
+        return
+      }
+    } else {
+      if (!editForm.value.meta?.fileData) {
+        showToast('Vui lòng chọn file video', 'error')
+        return
+      }
+    }
+  }
+  if ((editForm.value.type === 'pdf' || editForm.value.type === 'doc' || editForm.value.type === 'image') && !editForm.value.meta?.fileData) {
+    showToast('Vui lòng chọn file', 'error')
+    return
+  }
+  if (editForm.value.type === 'text' && !editForm.value.meta?.content) {
+    showToast('Vui lòng nhập nội dung văn bản', 'error')
+    return
+  }
+
+  // Build meta payload per type
+  const metaPayload: any = {}
+  if (editForm.value.type === 'video') {
+    if (videoSource.value === 'url') metaPayload.url = editForm.value.meta?.url
+    if (editForm.value.meta?.fileData) {
+      metaPayload.fileName = editForm.value.meta.fileName
+      metaPayload.fileData = editForm.value.meta.fileData
+    }
+  } else if (editForm.value.type === 'pdf' || editForm.value.type === 'doc' || editForm.value.type === 'image') {
+    if (editForm.value.meta?.fileData) {
+      metaPayload.fileName = editForm.value.meta.fileName
+      metaPayload.fileData = editForm.value.meta.fileData
+    }
+  } else if (editForm.value.type === 'text') {
+    metaPayload.content = editForm.value.meta?.content
+  } else if (editForm.value.type === 'quiz') {
+    if (editForm.value.meta?.note) metaPayload.note = editForm.value.meta.note
+    if (editForm.value.meta?.questions) metaPayload.questions = editForm.value.meta.questions
+  }
+
   saving.value = true
+  let createdItem: any = null
   try {
     if (editingContent.value) {
       // Update existing
@@ -646,7 +853,7 @@ async function saveContent() {
         subject: editForm.value.subject,
         type: editForm.value.type,
         grade_band: editForm.value.gradeBand,
-        meta: editForm.value.meta
+        meta: metaPayload
       })
       showToast('Đã cập nhật nội dung thành công', 'success')
     } else {
@@ -656,13 +863,29 @@ async function saveContent() {
         subject: editForm.value.subject,
         type: editForm.value.type,
         grade_band: editForm.value.gradeBand,
-        meta: editForm.value.meta
+        meta: metaPayload
       })
+      // Keep the created payload to allow adding to course immediately
+      createdItem = {
+        title: editForm.value.title,
+        subject: editForm.value.subject,
+        type: editForm.value.type,
+        gradeBand: editForm.value.gradeBand,
+        meta: metaPayload
+      }
       showToast('Đã tạo nội dung mới thành công', 'success')
     }
     closeEditModal()
     // Reload list để cập nhật
     await fetchList(page.value)
+    // Nếu đang ở context khóa học thì mở modal thêm vào khóa học ngay
+    if (!editingContent.value && courseId && createdItem) {
+      // Tìm item mới theo tiêu đề (vì API create đã lưu, fetchList sẽ đưa id)
+      const found = items.value.find((it) => it.title === createdItem.title && it.type === createdItem.type)
+      if (found) {
+        openAddModal(found)
+      }
+    }
   } catch (e: any) {
     showToast(e?.response?.data?.detail || e?.message || 'Không thể lưu nội dung', 'error')
   } finally {
@@ -688,7 +911,7 @@ async function deleteContent() {
 
 /* ==== COMPUTED ==== */
 const typeCounts = computed(() => {
-  const counts = { video: 0, pdf: 0, doc: 0, quiz: 0 }
+  const counts = { video: 0, pdf: 0, doc: 0, quiz: 0, text: 0, image: 0 }
   items.value.forEach(item => {
     if (item.type in counts) {
       counts[item.type as keyof typeof counts]++
@@ -696,6 +919,37 @@ const typeCounts = computed(() => {
   })
   return counts
 })
+
+const isValidUrl = (u?: string | null) => {
+  if (!u) return false
+  try {
+    new URL(u)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function onFilePick(e: Event, type: Ctype) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  // Basic size guard: 50MB
+  if (file.size > 50 * 1024 * 1024) {
+    showToast('File quá lớn (tối đa 50MB)', 'error')
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = () => {
+    const dataUrl = reader.result as string
+    editForm.value.meta = {
+      ...(editForm.value.meta || {}),
+      fileName: file.name,
+      fileData: dataUrl,
+      url: type === 'video' && videoSource.value === 'url' ? editForm.value.meta?.url : '', // giữ link nếu đang dùng url
+    }
+  }
+  reader.readAsDataURL(file)
+}
 
 /* ==== HELPERS ==== */
 const subjectLabel = (s: Subject) =>
@@ -710,21 +964,25 @@ const subjectLabel = (s: Subject) =>
           : 'Lịch sử'
 
 const getTypeClass = (type: Ctype) => {
-  const classes = {
+  const classes: Record<Ctype, string> = {
     video: 'bg-blue-100 text-blue-700',
     pdf: 'bg-rose-100 text-rose-700',
     doc: 'bg-emerald-100 text-emerald-700',
-    quiz: 'bg-amber-100 text-amber-700'
+    quiz: 'bg-amber-100 text-amber-700',
+    text: 'bg-slate-100 text-slate-700',
+    image: 'bg-indigo-100 text-indigo-700',
   }
   return classes[type] || 'bg-slate-100 text-slate-700'
 }
 
 const getTypeIcon = (type: Ctype) => {
-  const icons = {
+  const icons: Record<Ctype, string> = {
     video: '▶',
     pdf: '📄',
     doc: '📝',
-    quiz: '❓'
+    quiz: '❓',
+    text: '✏',
+    image: '🖼',
   }
   return icons[type] || '📦'
 }
@@ -775,7 +1033,8 @@ async function fetchList(p = page.value) {
 async function loadCourseInfo() {
   if (!courseId) return
   try {
-    const course = await courseService.detail(courseId, true)
+    // teacher context: dùng endpoint content/courses/, tránh 403 admin
+    const course = await courseService.detail(courseId, false)
     courseTitle.value = course.title
   } catch (e) {
     console.error('Error loading course:', e)
@@ -788,6 +1047,19 @@ async function loadModules() {
     modules.value = await contentService.listModules(courseId)
   } catch (e) {
     console.error('Error loading modules:', e)
+  }
+}
+
+async function loadLessonsForModule(moduleId: string) {
+  if (!moduleId) return
+  try {
+    const lessons = await contentService.listLessons(moduleId)
+    moduleLessons.value = {
+      ...moduleLessons.value,
+      [moduleId]: lessons,
+    }
+  } catch (e) {
+    console.error('Error loading lessons:', e)
   }
 }
 
@@ -856,17 +1128,37 @@ async function addToCourse() {
       modules.value.push(newModule)
     }
     
+    // Validate video URL if needed
+    if (selectedContent.value.type === 'video') {
+      const videoUrl = selectedContent.value.meta?.url
+      const fileData = selectedContent.value.meta?.fileData
+      if (videoUrl && !isValidUrl(videoUrl)) {
+        showToast('URL video không hợp lệ', 'error')
+        adding.value = false
+        return
+      }
+      if (!videoUrl && !fileData) {
+        showToast('Nội dung video thiếu link hoặc file', 'error')
+        adding.value = false
+        return
+      }
+    }
     // Tạo lesson từ content
     const lessonData: any = {
       title: selectedContent.value.title,
       content_type: selectedContent.value.type === 'quiz' ? 'exercise' : 'lesson',
-      position: lessonPosition.value === -1 ? -1 : lessonPosition.value
+      position: Number.isInteger(lessonPosition.value) ? lessonPosition.value : 0,
+      introduction: JSON.stringify({
+        contentType: selectedContent.value.type,
+        payload: selectedContent.value.meta || {},
+        source: 'library',
+      }),
     }
     
     // Map content type to lesson fields
-    if (selectedContent.value.type === 'video') {
-      lessonData.video_url = `content://${selectedContent.value.id}`
-    }
+    if (selectedContent.value.type === 'video' && selectedContent.value.meta?.url && isValidUrl(selectedContent.value.meta.url)) {
+      lessonData.video_url = selectedContent.value.meta.url
+  }
     
     await contentService.createLesson(moduleId, lessonData)
     
@@ -901,6 +1193,15 @@ onMounted(async () => {
     loadCourseInfo(),
     courseId && loadModules()
   ])
+})
+
+watch(selectedModuleId, (nv) => {
+  if (nv) {
+    lessonPosition.value = 0
+    if (!moduleLessons.value[nv]) {
+      loadLessonsForModule(nv)
+    }
+  }
 })
 </script>
 

@@ -167,15 +167,15 @@
           </div>
 
           <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm">
-              <div>
-                <span class="text-slate-500">Lớp:</span>
-                <span class="ml-2 font-medium">{{ viewingRow.classCode }}</span>
-              </div>
-              <div>
-                <span class="text-slate-500">Nộp lúc:</span>
-                <span class="ml-2 font-medium">{{ viewingRow.submittedAt }}</span>
-              </div>
+              <div class="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm">
+                <div>
+                  <span class="text-slate-500">Lớp:</span>
+                  <span class="ml-2 font-medium">{{ displayClass }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-500">Nộp lúc:</span>
+                  <span class="ml-2 font-medium">{{ viewingRow.submittedAt }}</span>
+                </div>
               <div>
                 <span class="text-slate-500">Điểm:</span>
                 <span class="ml-2 font-bold text-cyan-600">
@@ -300,6 +300,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { showToast } from '@/utils/toast'
 
 type RowStatus = 'pending' | 'submitted'
 type Row = {
@@ -336,6 +337,16 @@ const viewingRow = ref<Row | null>(null)
 const attemptDetail = ref<any>(null)
 const questions = ref<any[]>([])
 const answers = ref<Record<string, any>>({})
+const displayClass = computed(() => {
+  const ad = attemptDetail.value
+  return (
+    ad?.class_name ||
+    ad?.student_class ||
+    ad?.student?.class_name ||
+    viewingRow.value?.classCode ||
+    'Không rõ'
+  )
+})
 
 type DetailFn = (id: string | number) => Promise<any>
 type AttemptSummaryFn = (attemptId: string) => Promise<any>
@@ -386,7 +397,7 @@ async function load(examId: string | number = id.value) {
       return {
         id: rowId,
         studentName: att.student_name || 'Unknown',
-        classCode: att.class_code || att.student_class_code || '—',
+        classCode: att.class_code || att.class_name || att.student_class_code || '—',
         submittedAt: att.submitted_at || (att.finished_at ? new Date(att.finished_at).toLocaleString('vi-VN') : null),
         score: att.score !== null && att.score !== undefined ? Number(att.score) : null,
         status: att.status === 'submitted' ? 'submitted' : 'pending',
@@ -455,6 +466,18 @@ async function openView(row: Row) {
     
     const attemptData = await getAttemptSummaryFn(row.attemptId)
     attemptDetail.value = attemptData
+    const classCodeFromAttempt =
+      attemptData.class_name ||
+      attemptData.student_class ||
+      attemptData.student?.class_name ||
+      attemptData.student_class_code ||
+      row.classCode
+    // Cập nhật điểm hiển thị theo tổng điểm thực
+    viewingRow.value = {
+      ...row,
+      classCode: classCodeFromAttempt || row.classCode,
+      score: attemptData.totalScore ?? row.score,
+    }
     
     // Load exam detail to get full question info (choices, etc.)
     if (detailFn) {
@@ -483,7 +506,9 @@ async function openView(row: Row) {
     answers.value = attemptData.answers || {}
   } catch (e: any) {
     console.error('Error loading attempt detail:', e)
-    alert('Không thể tải chi tiết bài làm: ' + (e.response?.data?.detail || e.message))
+    const detail = e.response?.data?.detail || e.message || 'Lỗi không xác định'
+    showToast(`Không thể tải chi tiết bài làm: ${detail}`, 'error')
+    closeView()
   }
 }
 
@@ -549,9 +574,51 @@ function getCorrectAnswer(q: any): string {
 }
 
 function getStudentAnswer(questionId: string | number): string {
-  const answer = answers.value[String(questionId)]
+  let answer: any = answers.value[String(questionId)]
   if (answer === null || answer === undefined || answer === '') {
     return 'Chưa trả lời'
+  }
+  // If answer is a JSON string, try parse
+  if (typeof answer === 'string' && (answer.trim().startsWith('{') || answer.trim().startsWith('['))) {
+    try {
+      answer = JSON.parse(answer)
+    } catch {
+      // keep raw string
+    }
+  }
+  // Array of objects
+  if (Array.isArray(answer) && answer.some((v: any) => typeof v === 'object')) {
+    const texts = answer.map((v: any) => v?.text || v?.value || v?.label || v?.id || String(v))
+    return texts.join(', ')
+  }
+  // Object answer
+  if (typeof answer === 'object' && !Array.isArray(answer)) {
+    // Try choice id fields
+    const obj = answer as any
+    const choiceIds = obj.selected_choice_id
+      ? [obj.selected_choice_id]
+      : Array.isArray(obj.selected_choice_ids)
+      ? obj.selected_choice_ids
+      : Array.isArray(obj.selected_choices)
+      ? obj.selected_choices
+      : []
+    // If we have choices, map to text
+    if (choiceIds.length) {
+      const q = questions.value.find((q: any) => String(q.id) === String(questionId))
+      if (q?.choices?.length) {
+        const found = q.choices.filter((c: any) => choiceIds.includes(c.id) || choiceIds.includes(String(c.id)))
+        if (found.length) {
+          return found.map((c: any) => c.text).join(', ')
+        }
+      }
+    }
+    const text = obj.text || obj.value || obj.label || obj.id
+    if (text) return String(text)
+    try {
+      return JSON.stringify(answer)
+    } catch {
+      return String(answer)
+    }
   }
   
   // Find question to get type and choices

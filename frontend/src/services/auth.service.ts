@@ -41,6 +41,8 @@ export interface AuthUser {
   gender?: string
   avatar?: string
   createdAt?: string
+  class_name?: string
+  className?: string
 }
 
 export interface AuthPayload {
@@ -57,6 +59,8 @@ export interface ProfileUpdatePayload {
   avatar_url?: string
   dob?: string
   gender?: string
+  class_name?: string
+  className?: string
   email_updates?: boolean
   address?: string
   city?: string
@@ -75,6 +79,8 @@ export interface ProfileDetails extends AuthUser {
   avatar_url?: string
   dob?: string
   gender?: string
+  class_name?: string
+  className?: string
   email_updates?: boolean
   address?: string
   city?: string
@@ -104,6 +110,8 @@ function normalizeProfileResponse(data: any): ProfileDetails {
     fullName: data.full_name ?? undefined,
     dob: data.dob ?? undefined,
     gender: data.gender ?? undefined,
+    class_name: data.class_name ?? metadata.class_name ?? undefined,
+    className: data.class_name ?? metadata.class_name ?? undefined,
     email_updates: data.email_updates ?? metadata.email_updates ?? undefined,
     address: data.address ?? metadata.address ?? undefined,
     city: data.city ?? metadata.city ?? undefined,
@@ -196,6 +204,7 @@ export const authService = {
     if (payload.avatar_url) backendPayload.avatar_url = payload.avatar_url
     if (payload.dob) backendPayload.dob = payload.dob
     if (payload.gender) backendPayload.gender = payload.gender
+    if (payload.class_name || payload.className) backendPayload.class_name = payload.class_name || payload.className
     // Parent & contact info (backend copies these keys into metadata)
     const copyKeys = [
       'address',

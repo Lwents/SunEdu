@@ -21,6 +21,7 @@ from activities.serializers import (
 )
 from activities.services import attempt_service, exercise_service, analytic_service
 from activities.models import ExerciseAttempt
+from custom_account.models import Profile
 from activities.services.attempt_service import manual_grade_answer
 from activities.services import ServiceError, NotFoundError, ValidationError, PermissionDenied
 from activities.api.permissions import IsAdminOrReadOnly
@@ -124,23 +125,32 @@ class ExerciseAttemptsListView(APIView):
             return Response({"detail": "Exercise not found"}, status=status.HTTP_404_NOT_FOUND)
         
         # Get all attempts for this exercise
-        attempts = ExerciseAttempt.objects.filter(exercise_id=exercise_id).select_related('student').order_by('-finished_at', '-started_at')
+        attempts = ExerciseAttempt.objects.filter(exercise_id=exercise_id).select_related('student', 'student__profile').order_by('-finished_at', '-started_at')
         
         # Build response
         attempts_data = []
         for attempt in attempts:
             # Get student name from profile.display_name or username
             student_name = 'Unknown'
+            student_class = ''
             if attempt.student:
+                # ensure profile exists
+                profile, _ = Profile.objects.get_or_create(user=attempt.student, defaults={"language": "vietnamese"})
                 if hasattr(attempt.student, 'profile') and attempt.student.profile and attempt.student.profile.display_name:
                     student_name = attempt.student.profile.display_name
                 else:
                     student_name = attempt.student.username or 'Unknown'
+                if profile:
+                    meta = profile.metadata or {}
+                    student_class = getattr(profile, "class_name", "") or meta.get("class_name", "")
             
             attempts_data.append({
                 'id': str(attempt.id),
                 'student_id': str(attempt.student.id) if attempt.student else None,
                 'student_name': student_name,
+                'class_name': student_class,
+                'class_code': student_class,  # alias for FE compatibility
+                'student_class_code': student_class,
                 'started_at': attempt.started_at.isoformat() if attempt.started_at else None,
                 'finished_at': attempt.finished_at.isoformat() if attempt.finished_at else None,
                 'score': float(attempt.score) if attempt.score else None,

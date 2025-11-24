@@ -215,17 +215,27 @@ class LessonQuestionReply(models.Model):
 
 class LessonQuestionReaction(models.Model):
     """
-    Cảm xúc/like cho câu trả lời.
+    Cảm xúc/like cho câu hỏi hoặc câu trả lời.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    reply = models.ForeignKey(LessonQuestionReply, on_delete=models.CASCADE, related_name='reactions')
+    question = models.ForeignKey('LessonQuestion', on_delete=models.CASCADE, related_name='reactions', null=True, blank=True)
+    reply = models.ForeignKey(LessonQuestionReply, on_delete=models.CASCADE, related_name='reactions', null=True, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lesson_question_reactions')
     emoji = models.CharField(max_length=16, default='like')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('reply', 'user')
         ordering = ['-created_at']
+        # Use database-level constraints
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(question__isnull=False, reply__isnull=True) |
+                    models.Q(question__isnull=True, reply__isnull=False)
+                ),
+                name='lesson_question_reaction_must_have_question_or_reply'
+            )
+        ]
 
     def __str__(self):
         return f"{self.emoji} by {self.user} on {self.reply_id}"

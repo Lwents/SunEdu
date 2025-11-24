@@ -439,11 +439,16 @@ class ContentLibrarySerializer(serializers.ModelSerializer):
         ('video', 'Video'),
         ('pdf', 'PDF'),
         ('doc', 'Tài liệu'),
-        ('quiz', 'Quiz')
+        ('quiz', 'Quiz'),
+        ('text', 'Văn bản'),
+        ('image', 'Hình ảnh')
     ])
     grade_band = serializers.ChoiceField(choices=[
-        ('Khối 1–2', 'Khối 1–2'),
-        ('Khối 3–5', 'Khối 3–5')
+        ('Khối 1', 'Khối 1'),
+        ('Khối 2', 'Khối 2'),
+        ('Khối 3', 'Khối 3'),
+        ('Khối 4', 'Khối 4'),
+        ('Khối 5', 'Khối 5')
     ])
     owner = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=True)
     meta = serializers.JSONField(default=dict, required=False)

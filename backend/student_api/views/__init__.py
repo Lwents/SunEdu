@@ -29,6 +29,7 @@ from .lesson_question_view import (
     StudentLessonQuestionView,
     StudentLessonQuestionReplyView,
     StudentLessonQuestionReactionView,
+    StudentLessonQuestionQuestionReactionView,
     StudentLessonQuestionReportView,
 )
 
@@ -43,6 +44,7 @@ __all__ = [
     'StudentLessonQuestionView',
     'StudentLessonQuestionReplyView',
     'StudentLessonQuestionReactionView',
+    'StudentLessonQuestionQuestionReactionView',
     'StudentLessonQuestionReportView',
     'StudentExamsListView',
     'StudentExamDetailView',
