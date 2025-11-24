@@ -45,6 +45,119 @@
         </div>
       </div>
 
+    <!-- Preview Modal -->
+    <div
+      v-if="showPreviewModal && previewContentItem"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      @click.self="closePreviewModal"
+    >
+      <div class="w-full max-w-3xl rounded-3xl bg-white p-6 shadow-2xl">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold"
+              :class="getTypeClass(previewContentItem.type)"
+            >
+              {{ getTypeIcon(previewContentItem.type) }}
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Xem trước nội dung</p>
+              <h3 class="text-xl font-bold text-slate-900">{{ previewContentItem.title }}</h3>
+            </div>
+          </div>
+          <button
+            class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-cyan-300 hover:text-cyan-700"
+            @click="closePreviewModal"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
+          <span class="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+            {{ subjectLabel(previewContentItem.subject) }}
+          </span>
+          <span class="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-700">
+            {{ previewContentItem.gradeBand }}
+          </span>
+          <span class="text-slate-500">Cập nhật {{ previewContentItem.updatedAt }}</span>
+        </div>
+
+        <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+          <template v-if="previewContentItem.type === 'video'">
+            <div v-if="previewContentItem.meta?.url" class="aspect-video overflow-hidden rounded-xl border border-slate-200 bg-black/5">
+              <iframe
+                v-if="isYouTubeUrl(previewContentItem.meta.url)"
+                class="h-full w-full"
+                :src="getYouTubeEmbed(previewContentItem.meta.url)"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
+              <video
+                v-else
+                class="h-full w-full"
+                :src="previewContentItem.meta.url"
+                controls
+              ></video>
+            </div>
+            <div v-else-if="previewContentItem.meta?.fileName" class="text-sm text-slate-600">
+              <p>Video được lưu trong thư viện: <strong>{{ previewContentItem.meta.fileName }}</strong></p>
+            </div>
+            <p v-else class="text-sm text-rose-600">Không tìm thấy nguồn video.</p>
+          </template>
+
+          <template v-else-if="previewContentItem.type === 'text'">
+            <div class="rounded-2xl bg-white p-4 text-sm text-slate-700">
+              <pre class="whitespace-pre-wrap font-sans text-slate-800">{{ previewContentItem.meta?.content || 'Chưa có nội dung' }}</pre>
+            </div>
+          </template>
+
+          <template v-else-if="previewContentItem.type === 'image'">
+            <div v-if="previewContentItem.meta?.fileData" class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <img :src="previewContentItem.meta.fileData" :alt="previewContentItem.meta?.fileName || previewContentItem.title" class="w-full object-contain" />
+            </div>
+            <p v-else class="text-sm text-rose-600">Không tìm thấy hình ảnh.</p>
+          </template>
+
+          <template v-else-if="previewContentItem.type === 'pdf' || previewContentItem.type === 'doc'">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+              <p class="flex items-center gap-2">
+                <svg class="h-5 w-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span>
+                  {{ previewContentItem.meta?.fileName || 'Tài liệu đính kèm' }}
+                  <span class="block text-xs text-slate-500">Tải file từ mục chỉnh sửa để xem chi tiết.</span>
+                </span>
+              </p>
+            </div>
+          </template>
+
+          <template v-else-if="previewContentItem.type === 'quiz'">
+            <div class="space-y-3 rounded-2xl bg-white p-4 text-sm text-slate-700">
+              <p><strong>Kiểu:</strong> Quiz</p>
+              <p><strong>Ghi chú:</strong> {{ previewContentItem.meta?.note || 'Không có' }}</p>
+              <p><strong>Số câu hỏi:</strong> {{ previewContentItem.meta?.questions || 0 }}</p>
+            </div>
+          </template>
+
+          <template v-else>
+            <p class="text-sm text-slate-600">Chưa có bản xem trước cho loại nội dung này.</p>
+          </template>
+        </div>
+
+        <div class="mt-6 text-right">
+          <button
+            class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            @click="closePreviewModal"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+
       <!-- Tools -->
       <div class="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
         <!-- Search -->
@@ -160,25 +273,40 @@
                   Thêm vào khóa học
                 </span>
               </button>
-              <div v-else class="flex items-center gap-2">
+              <div class="relative">
                 <button
-                  class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
-                  @click="openEditModal(item)"
-                  title="Sửa"
+                  class="rounded-full border border-slate-200 p-1.5 text-slate-500 transition hover:border-cyan-300 hover:text-cyan-700"
+                  title="Tùy chọn"
+                  @click.stop="toggleMenu(item.id)"
                 >
-                  <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
                   </svg>
                 </button>
-                <button
-                  class="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
-                  @click="openDeleteModal(item)"
-                  title="Xóa"
+                <div
+                  v-if="openMenuId === item.id"
+                  class="absolute right-0 z-20 mt-2 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+                  @click.stop
                 >
-                  <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+                  <button
+                    class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    @click="handleEdit(item)"
+                  >
+                    <svg class="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Sửa
+                  </button>
+                  <button
+                    class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                    @click="handleDelete(item)"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Xóa
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -241,24 +369,6 @@
                 </svg>
                 Xem trước
               </span>
-            </button>
-            <button
-              v-if="!courseId"
-              class="rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
-              @click="openEditModal(item)"
-            >
-              <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-            <button
-              v-if="!courseId"
-              class="rounded-lg border border-rose-200 px-3 py-2 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
-              @click="openDeleteModal(item)"
-            >
-              <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
             </button>
           </div>
         </article>
@@ -622,7 +732,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from '@/utils/toast'
 import { contentService, type Module, type Lesson } from '@/services/content.service'
@@ -710,6 +820,9 @@ const editingContent = ref<ContentItem | null>(null)
 const deletingContent = ref<ContentItem | null>(null)
 const saving = ref(false)
 const deleting = ref(false)
+const openMenuId = ref<number | null>(null)
+const showPreviewModal = ref(false)
+const previewContentItem = ref<ContentItem | null>(null)
 
 const editForm = ref({
   title: '',
@@ -733,6 +846,24 @@ watch(() => editForm.value.type, () => {
     videoSource.value = 'url'
   }
 })
+
+function toggleMenu(id: number) {
+  openMenuId.value = openMenuId.value === id ? null : id
+}
+
+function closeMenu() {
+  openMenuId.value = null
+}
+
+function handleEdit(item: ContentItem) {
+  closeMenu()
+  openEditModal(item)
+}
+
+function handleDelete(item: ContentItem) {
+  closeMenu()
+  openDeleteModal(item)
+}
 
 /* Create Content */
 function openCreateModal() {
@@ -1175,8 +1306,35 @@ async function addToCourse() {
 }
 
 function previewContent(item: ContentItem) {
-  // TODO: Implement preview modal or navigate to preview page
-  showToast(`Xem trước: ${item.title}`, 'info')
+  previewContentItem.value = item
+  showPreviewModal.value = true
+}
+
+function closePreviewModal() {
+  showPreviewModal.value = false
+  previewContentItem.value = null
+}
+
+const isYouTubeUrl = (url?: string) => {
+  if (!url) return false
+  return /youtu\.?be/.test(url)
+}
+
+const getYouTubeEmbed = (url: string) => {
+  try {
+    const u = new URL(url)
+    if (u.hostname.includes('youtu.be')) {
+      return `https://www.youtube.com/embed/${u.pathname.slice(1)}`
+    }
+    if (u.hostname.includes('youtube.com')) {
+      const v = u.searchParams.get('v')
+      if (v) return `https://www.youtube.com/embed/${v}`
+      if (u.pathname.startsWith('/embed/')) return url
+    }
+  } catch {
+    return url
+  }
+  return url
 }
 
 function goBack() {
@@ -1193,6 +1351,11 @@ onMounted(async () => {
     loadCourseInfo(),
     courseId && loadModules()
   ])
+  window.addEventListener('click', closeMenu)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('click', closeMenu)
 })
 
 watch(selectedModuleId, (nv) => {
