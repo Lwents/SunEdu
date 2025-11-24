@@ -47,8 +47,8 @@ jobs:
             find backend -path '*/\.venv' -prune -o -type f -name '*.pyc' -delete 2>/dev/null || true
             echo "Removing old local branch to avoid conflicts..."
             git checkout develop 2>/dev/null || git checkout -b develop origin/develop 2>/dev/null || true
-            echo "Fetching latest changes..."
-            git fetch origin main
+            echo "Fetching latest changes for main..."
+            git fetch origin main:refs/remotes/origin/main
             echo "Checking out main branch..."
             git checkout main 2>/dev/null || git checkout -b main origin/main
             git reset --hard origin/main
