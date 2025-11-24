@@ -231,17 +231,22 @@ class ContentLibrary(models.Model):
             ('video', 'Video'),
             ('pdf', 'PDF'),
             ('doc', 'Tài liệu'),
-            ('quiz', 'Quiz')
+            ('quiz', 'Quiz'),
+            ('text', 'Văn bản'),
+            ('image', 'Hình ảnh')
         ],
         default='video'
     )
     grade_band = models.CharField(
         max_length=32,
         choices=[
-            ('Khối 1–2', 'Khối 1–2'),
-            ('Khối 3–5', 'Khối 3–5')
+            ('Khối 1', 'Khối 1'),
+            ('Khối 2', 'Khối 2'),
+            ('Khối 3', 'Khối 3'),
+            ('Khối 4', 'Khối 4'),
+            ('Khối 5', 'Khối 5'),
         ],
-        default='Khối 1–2'
+        default='Khối 1'
     )
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_library_items')
     meta = models.JSONField(default=dict, blank=True)  # duration, size, questions, etc.

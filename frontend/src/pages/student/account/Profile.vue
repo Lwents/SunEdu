@@ -186,6 +186,25 @@
             </div>
           </div>
 
+          <!-- Class -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Lớp học</label>
+            <div class="space-y-1">
+              <select
+                v-model="form.className"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+              >
+                <option value="">Chọn lớp</option>
+                <option value="1">Lớp 1</option>
+                <option value="2">Lớp 2</option>
+                <option value="3">Lớp 3</option>
+                <option value="4">Lớp 4</option>
+                <option value="5">Lớp 5</option>
+              </select>
+              <p class="text-xs text-slate-500">Chọn lớp hiện tại của bạn.</p>
+            </div>
+          </div>
+
           <!-- Email -->
           <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
             <label class="text-sm font-medium text-slate-700 lg:pt-2">Email</label>
@@ -469,6 +488,7 @@ const form = reactive({
   email: '',
   emailUpdates: false,
   gender: 'male',
+  className: '',
   address: '',
   city: '',
   district: '',
@@ -615,6 +635,7 @@ function applyProfileToForm(profile?: ProfileDetails | null) {
   form.fullname = profile.fullName || profile.name || ''
   form.email = profile.email || ''
   form.gender = (profile.gender as any) || form.gender
+  form.className = profile.class_name || profile.className || ''
   form.emailUpdates = profile.email_updates ?? false
   form.address = profile.address || ''
   form.city = profile.city || ''
@@ -732,6 +753,7 @@ async function saveProfile() {
       avatar_url:
         avatarPreview.value || profileDetails.value?.avatar || profileDetails.value?.avatar_url,
       email_updates: form.emailUpdates,
+      class_name: form.className || undefined,
       address: form.address || undefined,
       city: form.city || undefined,
       district: form.district || undefined,

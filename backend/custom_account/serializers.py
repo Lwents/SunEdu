@@ -159,6 +159,7 @@ class ProfileUpdateRequestSerializer(serializers.Serializer):
     avatar_url = serializers.CharField(required=False, allow_blank=True)
     dob = serializers.DateField(required=False)
     gender = serializers.ChoiceField(choices=["male", "female", "other"], required=False)
+    class_name = serializers.CharField(required=False, allow_blank=True, max_length=128)
     email_updates = serializers.BooleanField(required=False)
     address = serializers.CharField(required=False, allow_blank=True, max_length=255)
     city = serializers.CharField(required=False, allow_blank=True, max_length=100)

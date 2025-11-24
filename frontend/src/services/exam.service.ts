@@ -1,6 +1,21 @@
 // src/services/exam.service.ts
 import api from '@/config/axios'
 
+// Helper to avoid lost `this` when functions are destructured
+async function fetchExamStats(examId: ID): Promise<{ submissions: number; avgScore: number; passRate: number }> {
+  try {
+    const { data } = await api.get(`/activities/exercises/${examId}/stats/`)
+    return {
+      submissions: data.submissions || data.total_attempts || 0,
+      avgScore: data.avgScore || data.avg_score || 0,
+      passRate: data.passRate || data.pass_rate || 0,
+    }
+  } catch (e: any) {
+    console.error('Load stats error:', e)
+    return { submissions: 0, avgScore: 0, passRate: 0 }
+  }
+}
+
 export type ID = string | number
 export type Level = 'Khối 1' | 'Khối 2' | 'Khối 3' | 'Khối 4' | 'Khối 5'
 export type ExamStatus = 'draft' | 'scheduled' | 'published' | 'archived'
@@ -285,24 +300,14 @@ export const examService = {
   
   // New method to get stats for a single exam
   async getStats(examId: ID): Promise<{ submissions: number; avgScore: number; passRate: number }> {
-    try {
-      const { data } = await api.get(`/activities/exercises/${examId}/stats/`)
-      return {
-        submissions: data.submissions || data.total_attempts || 0,
-        avgScore: data.avgScore || data.avg_score || 0,
-        passRate: data.passRate || data.pass_rate || 0,
-      }
-    } catch (e: any) {
-      console.error('Load stats error:', e)
-      return { submissions: 0, avgScore: 0, passRate: 0 }
-    }
+    return fetchExamStats(examId)
   },
 
   async detail(id: ID): Promise<ExamDetail> {
     try {
       const [examRes, stats] = await Promise.all([
         api.get(`/activities/exercises/${id}/`),
-        this.getStats(id).catch(() => ({ submissions: 0, avgScore: 0, passRate: 0 })),
+        fetchExamStats(id).catch(() => ({ submissions: 0, avgScore: 0, passRate: 0 })),
       ])
       const data = examRes.data
       // Map backend exercise to frontend exam format
@@ -682,26 +687,31 @@ export const examService = {
   },
 
   // Get attempt summary with answers
-  async getAttemptSummary(attemptId: string): Promise<AttemptResult & { questions: any[]; answers: Record<string, any> }> {
+  async getAttemptSummary(attemptId: string): Promise<AttemptResult & { questions: any[]; answers: Record<string, any>; class_name?: string; student_class?: string; student?: any }> {
     try {
       const { data } = await api.get(`/activities/attempts/${attemptId}/`)
       
       // Map backend attempt summary to frontend format
-      const questions = (data.questions || []).map((q: any) => ({
-        id: q.question_id || q.id,
-        question_id: q.question_id || q.id,
-        prompt: q.prompt || q.text,
-        text: q.prompt || q.text,
-        points: q.points || 0,
-        score: q.answer_score || q.score || 0, // Use answer_score for actual score
-        maxScore: q.points || 0,
-        correct: q.correct || false,
-        answer: q.answer || null,
-        type: q.type || 'single',
-        choices: q.choices || [],
-        correct_answer: q.correct_answer || null,
-        answer_score: q.answer_score || 0,
-      }))
+      const questions = (data.questions || []).map((q: any) => {
+        const points = Number(q.points || 0)
+        const rawScore = Number(q.answer_score ?? q.score ?? 0)
+        const normalizedScore = points > 0 && rawScore > points ? points : rawScore
+        return {
+          id: q.question_id || q.id,
+          question_id: q.question_id || q.id,
+          prompt: q.prompt || q.text,
+          text: q.prompt || q.text,
+          points,
+          score: normalizedScore, // cap at max points
+          maxScore: points,
+          correct: q.correct || false,
+          answer: q.answer || null,
+          type: q.type || 'single',
+          choices: q.choices || [],
+          correct_answer: q.correct_answer || null,
+          answer_score: normalizedScore,
+        }
+      })
       
       // Build answers map
       const answers: Record<string, any> = {}
@@ -712,7 +722,7 @@ export const examService = {
       })
       
       // Calculate totals
-      const totalScore = questions.reduce((sum: number, q: any) => sum + (q.answer_score || q.score || 0), 0)
+      const totalScore = questions.reduce((sum: number, q: any) => sum + (q.score || 0), 0)
       const maxScore = questions.reduce((sum: number, q: any) => sum + (q.points || 0), 0)
       const correctCount = questions.filter((q: any) => q.correct).length
       const totalCount = questions.length
@@ -720,11 +730,11 @@ export const examService = {
       return {
         attemptId: data.attempt_id || attemptId,
         examId: data.exercise_id,
-        totalScore: data.score || totalScore,
-        maxScore,
+        totalScore: totalScore || data.score || 0,
+        maxScore: maxScore || totalScore,
         correctCount,
         totalCount,
-        passed: (data.score || totalScore) >= 50, // Assuming 50% is passing, adjust if needed
+        passed: maxScore ? totalScore >= 0.5 * maxScore : (data.score || totalScore) >= 50,
         detail: questions.map((q: any) => ({
           qid: q.id,
           score: q.score || 0,
@@ -732,6 +742,10 @@ export const examService = {
         })),
         questions,
         answers,
+        // Keep class information so grading modal can display
+        class_name: data.class_name || data.student_class || data.student?.class_name || '',
+        student_class: data.student_class || data.class_name || '',
+        student: data.student || null,
       }
     } catch (e: any) {
       console.error('Get attempt summary error:', e)

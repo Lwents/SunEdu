@@ -178,6 +178,32 @@ def test_max_attempts_enforced(admin_auth_client, auth_client):
 
 
 @pytest.mark.django_db
+def test_max_attempts_is_per_student_not_global(admin_auth_client, auth_client, user_factory):
+    admin_client, admin, _ = admin_auth_client
+    student1_client, student1, _ = auth_client
+
+    # create second student + client
+    student2 = user_factory(username="student_two")
+    student2_client = APIClient()
+    token2, _ = Token.objects.get_or_create(user=student2)
+    student2_client.credentials(HTTP_AUTHORIZATION=f"Token {token2.key}")
+
+    lesson = LessonFactory()
+    payload = build_exercise_payload(lesson.id, max_attempts=1)
+    r = admin_client.post(f"{BASE}exercises/", payload, format="json")
+    assert r.status_code == 201
+    exercise_id = r.data["id"]
+
+    # Student 1 uses their single attempt
+    r1 = student1_client.post(f"{BASE}exercises/{exercise_id}/start/")
+    assert r1.status_code == 201
+
+    # Student 2 should still be able to start their own attempt
+    r2 = student2_client.post(f"{BASE}exercises/{exercise_id}/start/")
+    assert r2.status_code == 201, r2.data
+
+
+@pytest.mark.django_db
 def test_short_answer_fuzzy_matching(admin_auth_client, auth_client):
     admin_client, admin, _ = admin_auth_client
     student_client, student, _ = auth_client

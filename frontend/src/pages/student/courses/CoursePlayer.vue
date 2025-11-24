@@ -28,11 +28,44 @@
           <!-- Introduction -->
           <div v-if="currentLessonDetail?.introduction && !lessonLocked" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 class="mb-3 text-lg font-semibold text-gray-900">Giới thiệu</h3>
-            <div class="text-gray-700 whitespace-pre-line">{{ currentLessonDetail.introduction }}</div>
+            <div class="text-gray-700 whitespace-pre-line" v-if="!lessonContentPayload">
+              {{ currentLessonDetail.introduction }}
+            </div>
+            <template v-else>
+              <div v-if="lessonContentPayload.contentType === 'text'" class="prose max-w-none text-gray-800">
+                <p class="whitespace-pre-line">{{ lessonContentPayload.payload?.content || 'Chưa có nội dung văn bản' }}</p>
+              </div>
+              <div v-else-if="lessonContentPayload.contentType === 'image'" class="space-y-2">
+                <img
+                  :src="lessonContentPayload.payload?.fileData || lessonContentPayload.payload?.url"
+                  alt="Nội dung hình ảnh"
+                  class="max-h-[480px] w-full rounded-2xl object-contain border border-slate-200"
+                />
+                <p class="text-xs text-gray-500" v-if="lessonContentPayload.payload?.fileName">
+                  {{ lessonContentPayload.payload.fileName }}
+                </p>
+              </div>
+              <div v-else-if="lessonContentPayload.contentType === 'pdf' || lessonContentPayload.contentType === 'doc'">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+                  <p class="text-sm font-semibold text-gray-900">Tài liệu</p>
+                  <a
+                    class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
+                    :href="lessonContentPayload.payload?.fileData || lessonContentPayload.payload?.url || '#'"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Xem / Tải tài liệu
+                  </a>
+                  <p class="text-xs text-gray-500" v-if="lessonContentPayload.payload?.fileName">
+                    {{ lessonContentPayload.payload.fileName }}
+                  </p>
+                </div>
+              </div>
+            </template>
           </div>
 
           <!-- Video Player -->
-          <div v-if="!lessonLocked" class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-lg shadow-slate-200">
+          <div v-if="!lessonLocked && hasVideo" class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-lg shadow-slate-200">
             <!-- Video từ YouTube -->
             <iframe
               v-if="lessonVideoUrl && isYouTubeUrl(lessonVideoUrl)"
@@ -86,6 +119,10 @@
                 {{ currentLesson?.title || course.title }}
               </h2>
             </div>
+          </div>
+          <div v-else-if="!lessonLocked" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900">Bài học</h3>
+            <p class="text-sm text-gray-600">Bài này không có video, hãy xem nội dung bên dưới.</p>
           </div>
 
           <!-- Exercise Section -->
@@ -824,6 +861,18 @@ const currentLesson = computed<UiLesson | null>(() => uiSections.value[cur.value
 const currentLessonId = computed(() => currentLesson.value?.id || null)
 const currentLessonTitle = computed(() => currentLesson.value?.title || '')
 
+const lessonContentPayload = computed(() => {
+  const intro = currentLessonDetail.value?.introduction
+  if (!intro || typeof intro !== 'string') return null
+  try {
+    const parsed = JSON.parse(intro)
+    if (parsed && parsed.contentType) return parsed
+  } catch {
+    return null
+  }
+  return null
+})
+
 const currentFlatIndex = computed<number>(() => {
   const id = currentLesson.value?.id
   return id != null ? flat.value.findIndex(l => String(l.id) === String(id)) : -1;
@@ -842,6 +891,10 @@ const nextLesson = computed<UiLesson | null>(() => {
 const lessonVideoUrl = computed(() => currentLessonDetail.value?.video_url)
 const lessonVideoFile = computed(() => currentLessonDetail.value?.video_file)
 const lessonVideoSrc = computed(() => {
+  // Nếu meta từ thư viện có video fileData, ưu tiên
+  if (lessonContentPayload.value?.contentType === 'video' && lessonContentPayload.value?.payload?.fileData) {
+    return lessonContentPayload.value.payload.fileData
+  }
   if (lessonVideoUrl.value) {
     if (isYouTubeUrl(lessonVideoUrl.value)) {
       return getYouTubeEmbedUrl(lessonVideoUrl.value)
@@ -868,7 +921,14 @@ const currentSrc = computed(() => {
     return getVideoFileUrl(course.value.video_file)
   }
   // Fallback: mock video
-  return 'https://pub-52a4bc53687a4601ac29f7d454bef601.r2.dev/test'
+  return null
+})
+
+const hasVideo = computed(() => {
+  if (lessonContentPayload.value && lessonContentPayload.value.contentType !== 'video') {
+    return false
+  }
+  return !!lessonVideoSrc.value
 })
 
 function isYouTubeUrl(url?: string): boolean {

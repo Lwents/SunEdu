@@ -76,6 +76,7 @@ export const useAuthStore = defineStore('auth', {
           const profile = await authService.getProfile()
           this.user = {
             ...(this.user as AuthUser),
+            id: (this.user as AuthUser)?.id ?? (profile as any)?.id ?? user.id,
             name: profile.fullName || profile.name || this.user?.name || '',
             email: profile.email || this.user?.email || '',
             phone: profile.phone || this.user?.phone,
@@ -83,6 +84,7 @@ export const useAuthStore = defineStore('auth', {
             gender: profile.gender ?? this.user?.gender,
             title: profile.title ?? this.user?.title,
             bio: profile.bio ?? this.user?.bio,
+            class_name: (profile as any).class_name || (profile as any).className || (this.user as any)?.class_name,
           }
           this.persist()
         } catch (error) {
@@ -191,6 +193,7 @@ export const useAuthStore = defineStore('auth', {
         gender: updated.gender ?? prev?.gender,
         title: updated.title ?? prev?.title,
         bio: updated.bio ?? prev?.bio,
+        class_name: (updated as any).class_name ?? (updated as any).className ?? (prev as any)?.class_name,
       }
       this.persist()
       return updated
@@ -227,9 +230,30 @@ export const useAuthStore = defineStore('auth', {
       return authService.changePasswordWithOtp(otp, newPassword)
     },
 
-    // Khởi tạo nhanh khi app load
-    init() {
+    // Khởi tạo nhanh khi app load, đồng bộ avatar từ profile để tránh fallback boy/girl
+    async init() {
       this.hydrateFromStorage() // [ADD]
+      if (this.token) {
+        try {
+          const profile = await authService.getProfile()
+          this.user = {
+            ...(this.user as AuthUser | null),
+            id: (this.user as AuthUser | null)?.id ?? (profile as any).id ?? 0,
+            name: profile.fullName || profile.name || this.user?.name || '',
+            email: profile.email || this.user?.email || '',
+            phone: profile.phone || this.user?.phone,
+            role: (this.user as AuthUser | null)?.role || (profile.role as Role) || 'student',
+            avatar: profile.avatar || profile.avatar_url || this.user?.avatar,
+            gender: profile.gender ?? this.user?.gender,
+            title: profile.title ?? this.user?.title,
+            bio: profile.bio ?? this.user?.bio,
+            class_name: (profile as any).class_name || (profile as any).className || (this.user as any)?.class_name,
+          }
+          this.persist()
+        } catch (err) {
+          console.warn('Không thể tải profile khi khởi tạo:', err)
+        }
+      }
     },
 
     // (Tùy chọn) Cập nhật avatar ngay để UI mượt hơn (optimistic)

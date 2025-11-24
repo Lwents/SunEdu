@@ -18,6 +18,8 @@ ExerciseAttempt = apps.get_model("activities", "ExerciseAttempt")
 ExerciseAnswer = apps.get_model("activities", "ExerciseAnswer")
 # content.Lesson expected in your project
 Lesson = apps.get_model("content", "Lesson")
+Module = apps.get_model("content", "Module")
+Course = apps.get_model("content", "Course")
 
 User = get_user_model()
 
@@ -42,6 +44,27 @@ class UserFactory(factory.django.DjangoModelFactory):
             obj.save()
 
 
+class CourseFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Course
+
+    id = factory.LazyFunction(lambda: uuid.uuid4())
+    title = factory.LazyAttribute(lambda o: f"Course {uuid.uuid4().hex[:6]}")
+    grade = "1"
+    published = True
+    owner = factory.SubFactory(UserFactory)
+
+
+class ModuleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Module
+
+    id = factory.LazyFunction(lambda: uuid.uuid4())
+    course = factory.SubFactory(CourseFactory)
+    title = factory.LazyAttribute(lambda o: f"Module {uuid.uuid4().hex[:6]}")
+    position = 0
+
+
 class LessonFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Lesson
@@ -50,6 +73,10 @@ class LessonFactory(factory.django.DjangoModelFactory):
     # If Lesson requires fields, adjust here. We'll set a title if exists.
     if hasattr(Lesson, "title"):
         title = factory.LazyAttribute(lambda o: f"Lesson {uuid.uuid4().hex[:6]}")
+    module = factory.SubFactory(ModuleFactory)
+    position = 0
+    content_type = "lesson"
+    published = True
 
 
 class ExerciseFactory(factory.django.DjangoModelFactory):

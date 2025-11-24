@@ -253,7 +253,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
-import type { AuthUser } from '@/services/auth.service'
+import { authService, type AuthUser } from '@/services/auth.service'
 import { getAvatarSrc } from '@/utils/avatar'
 import { showToast } from '@/utils/toast'
 
@@ -319,7 +319,10 @@ function handleEsc(e: KeyboardEvent) {
     closeLimitModal()
   }
 }
-onMounted(() => window.addEventListener('keydown', handleEsc))
+onMounted(() => {
+  window.addEventListener('keydown', handleEsc)
+  loadProfile()
+})
 onBeforeUnmount(() => window.removeEventListener('keydown', handleEsc))
 
 /** helpers */
@@ -327,6 +330,39 @@ function resetFile() {
   if (avatarInputRef.value) avatarInputRef.value.value = ''
   preview.value = null
   // không set errors.avatar ở đây vì oversize dùng modal thông báo
+}
+
+/** Load profile fresh from backend so F5 shows latest data */
+async function loadProfile() {
+  try {
+    const profile = await authService.getProfile()
+    const updatedUser: AuthUser = {
+      ...(auth.user ?? {}),
+      id: (auth.user as AuthUser | null)?.id ?? profile.id ?? 0,
+      name: profile.fullName || profile.name || auth.user?.name || '',
+      email: profile.email || auth.user?.email || '',
+      phone: profile.phone || auth.user?.phone,
+      role: (auth.user as AuthUser | null)?.role ?? 'instructor',
+      avatar: profile.avatar || profile.avatar_url || auth.user?.avatar,
+      gender: profile.gender ?? auth.user?.gender,
+      title: profile.title ?? (profile as any)?.metadata?.title ?? (auth.user as any)?.title,
+      bio: profile.bio ?? (profile as any)?.metadata?.bio ?? (auth.user as any)?.bio,
+    }
+    auth.user = updatedUser
+    auth.persist()
+    Object.assign(original, {
+      name: updatedUser.name ?? '',
+      email: updatedUser.email ?? '',
+      phone: updatedUser.phone ?? '',
+      title: (updatedUser as any)?.title ?? '',
+      bio: (updatedUser as any)?.bio ?? '',
+      gender: (updatedUser as any)?.gender ?? '',
+      avatar: updatedUser.avatar ?? '',
+    })
+    resetForm()
+  } catch (e) {
+    console.warn('Không thể tải hồ sơ giáo viên:', e)
+  }
 }
 
 const onPick = (e: Event) => {

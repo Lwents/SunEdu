@@ -21,6 +21,8 @@ class StudentProfileView(APIView):
     def get(self, request):
         """Get student profile"""
         user = request.user
+        from custom_account.models import Profile
+        profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
         
         profile_data = {
             'id': str(user.id),
@@ -31,6 +33,7 @@ class StudentProfileView(APIView):
             'fullName': user.get_full_name() or user.username,
             'phone': getattr(user, 'phone', ''),
             'avatar': getattr(user, 'avatar', None),
+            'class_name': getattr(profile, 'class_name', None) or (profile.metadata or {}).get("class_name"),
             'role': getattr(user, 'role', 'student'),
             'dateJoined': user.date_joined.isoformat() if user.date_joined else None,
         }
@@ -40,6 +43,8 @@ class StudentProfileView(APIView):
     def put(self, request):
         """Update student profile"""
         user = request.user
+        from custom_account.models import Profile
+        profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
         
         # Update allowed fields
         if 'firstName' in request.data:
@@ -50,8 +55,16 @@ class StudentProfileView(APIView):
             user.email = request.data['email']
         if 'phone' in request.data:
             setattr(user, 'phone', request.data['phone'])
+        if 'class_name' in request.data:
+            if hasattr(profile, 'class_name'):
+                profile.class_name = request.data.get('class_name') or profile.class_name
+            else:
+                meta = profile.metadata or {}
+                meta['class_name'] = request.data.get('class_name') or meta.get('class_name')
+                profile.metadata = meta
         
         user.save()
+        profile.save()
         
         profile_data = {
             'id': str(user.id),
@@ -62,6 +75,7 @@ class StudentProfileView(APIView):
             'fullName': user.get_full_name() or user.username,
             'phone': getattr(user, 'phone', ''),
             'avatar': getattr(user, 'avatar', None),
+            'class_name': getattr(profile, 'class_name', None) or (profile.metadata or {}).get("class_name"),
             'role': getattr(user, 'role', 'student'),
             'dateJoined': user.date_joined.isoformat() if user.date_joined else None,
         }
@@ -165,5 +179,3 @@ class StudentParentViewView(APIView):
         }
         
         return Response(parent_data, status=status.HTTP_200_OK)
-
-

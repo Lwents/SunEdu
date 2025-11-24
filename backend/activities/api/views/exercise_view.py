@@ -79,6 +79,32 @@ class ExerciseListCreateView(APIView):
                     item["avg_score"] = 0
                     item["passRate"] = 0
                     item["pass_rate"] = 0
+
+        # Attach current user's latest attempt info so FE biết đã làm hay chưa
+        if request.user and request.user.is_authenticated and data:
+            ex_ids = [item["id"] for item in data if item.get("id")]
+            attempt_map = {}
+            qs = ExerciseAttemptModel.objects.filter(
+                exercise_id__in=ex_ids,
+                student=request.user
+            ).order_by("exercise_id", "-started_at")
+            for att in qs:
+                key = str(att.exercise_id)
+                # keep first (latest ordered by started_at desc per exercise)
+                if key not in attempt_map:
+                    attempt_map[key] = att
+            for item in data:
+                att = attempt_map.get(str(item.get("id")))
+                if att:
+                    item["my_attempt"] = {
+                        "id": str(att.id),
+                        "finished_at": att.finished_at.isoformat() if att.finished_at else None,
+                        "score": float(att.score) if att.score is not None else None,
+                    }
+                    item["done"] = bool(att.finished_at)
+                else:
+                    item["my_attempt"] = None
+                    item["done"] = False
         
         return Response(data)
 

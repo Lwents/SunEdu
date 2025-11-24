@@ -54,7 +54,9 @@ def start_attempt(exercise_id: str, student_user) -> ExerciseAttemptDomain:
     from django.apps import apps
     
     exercise = get_exercise(exercise_id)
-    student_id = student_user.id
+    student_id = getattr(student_user, "id", None)
+    if not student_id:
+        raise ValidationError("Không xác định được người dùng để bắt đầu bài kiểm tra.")
     
     # Check if exercise is published
     if not exercise.published:
@@ -74,7 +76,7 @@ def start_attempt(exercise_id: str, student_user) -> ExerciseAttemptDomain:
     # CRITICAL: This filter is per-student only. Other students' attempts are NOT considered.
     attempt_qs = ExerciseAttemptModel.objects.filter(
         exercise_id=exercise_id,
-        student=student_user  # ONLY count attempts by THIS specific student
+        student_id=student_id  # ONLY count attempts by THIS specific student
     ).order_by('-started_at')
     existing_attempt = attempt_qs.first()
 
@@ -188,10 +190,34 @@ def regrade_attempt(attempt_id: str) -> Dict[str, Any]:
 
 
 def get_attempt_summary(attempt_id: str) -> Dict[str, Any]:
-    att = ExerciseAttemptModel.objects.get(id=attempt_id)
+    # Include profile to return class information alongside attempt summary
+    att = ExerciseAttemptModel.objects.select_related("student__profile", "exercise").get(id=attempt_id)
     exercise = ExerciseDomain.from_model(att.exercise)
     attempt = ExerciseAttemptDomain.from_model(att, exercise_domain=exercise)
-    return attempt.summary()
+
+    summary = attempt.summary()
+
+    # Enrich with student class info if available
+    student_class = ""
+    student_name = getattr(att.student, "username", "") if att.student else ""
+    profile = getattr(att.student, "profile", None)
+    if profile:
+        meta = profile.metadata or {}
+        student_class = getattr(profile, "class_name", "") or meta.get("class_name", "") or ""
+        student_name = getattr(profile, "display_name", "") or student_name
+
+    summary.update({
+        "student_class": student_class,
+        "class_name": student_class,
+        "class_code": student_class,
+        "student": {
+            "id": str(att.student_id) if att.student_id else None,
+            "name": student_name or getattr(att.student, "username", "") if att.student else "",
+            "class_name": student_class,
+            "class_code": student_class,
+        }
+    })
+    return summary
 
 
 def manual_grade_answer(

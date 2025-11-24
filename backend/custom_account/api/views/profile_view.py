@@ -29,6 +29,7 @@ def build_profile_payload(user, profile):
         "avatar_url": profile.avatar_url,
         "dob": profile.dob,
         "gender": profile.gender,
+        "class_name": getattr(profile, "class_name", None) or metadata.get("class_name", ""),
         "email_updates": metadata.get("email_updates", False),
         "address": metadata.get("address", ""),
         "city": metadata.get("city", ""),
@@ -75,6 +76,7 @@ class UserProfileView(RoleBasedOutputMixin, APIView):
 
         user = request.user
         profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
+        metadata = profile.metadata or {}
 
         user_updated = False
         if "username" in data and data["username"]:
@@ -103,9 +105,12 @@ class UserProfileView(RoleBasedOutputMixin, APIView):
             profile.dob = data.get("dob")
         if "gender" in data:
             profile.gender = data.get("gender")
-
-        metadata = profile.metadata or {}
-        for key in ("address", "city", "district", "ward", "parent_name", "parent_phone", "parent_email", "parent_relation", "parent_address", "title", "bio"):
+        if "class_name" in data:
+            if hasattr(profile, "class_name"):
+                profile.class_name = data.get("class_name") or profile.class_name
+            else:
+                metadata["class_name"] = data.get("class_name") or metadata.get("class_name")
+        for key in ("address", "city", "district", "ward", "parent_name", "parent_phone", "parent_email", "parent_relation", "parent_address", "title", "bio", "class_name"):
             if key in data:
                 metadata[key] = data[key]
         if "email_updates" in data:
