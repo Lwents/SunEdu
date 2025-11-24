@@ -30,6 +30,8 @@ jobs:
           envs: BACKEND_ENV_FILE,BRANCH_NAME
           script: |
             set -euo pipefail
+            BACKEND_ENV_FILE="${BACKEND_ENV_FILE:-}"
+            BRANCH_NAME="${BRANCH_NAME:-main}"
             echo "Updating code..."
             cd /home/ubuntu/SunEdu
             echo "Cleaning up cache files and fixing permissions..."
