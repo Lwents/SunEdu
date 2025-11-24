@@ -34,6 +34,13 @@ jobs:
             BRANCH_NAME="${BRANCH_NAME:-main}"
             echo "Updating code..."
             cd /home/ubuntu/SunEdu
+            echo "Current git remotes:"
+            git remote -v || true
+            if git remote get-url origin >/dev/null 2>&1; then
+              git remote set-url origin https://github.com/Lwents/SunEdu.git
+            else
+              git remote add origin https://github.com/Lwents/SunEdu.git
+            fi
             echo "Cleaning up cache files and fixing permissions..."
             sudo chown -R ubuntu:ubuntu /home/ubuntu/SunEdu/backend || true
             find backend -path '*/\.venv' -prune -o -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
@@ -45,6 +52,8 @@ jobs:
             echo "Checking out main branch..."
             git checkout main 2>/dev/null || git checkout -b main origin/main
             git reset --hard origin/main
+            echo "Current HEAD:"
+            git --no-pager log -1 --oneline
             cd backend
             if [ -n "$BACKEND_ENV_FILE" ]; then
               echo "Creating .env from GitHub secrets..."
