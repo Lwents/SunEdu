@@ -13,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import IdleWarning from '@/components/ui/IdleWarning.vue'
 import { RouterView } from 'vue-router'
 import { ElConfigProvider } from 'element-plus'
@@ -34,7 +35,7 @@ if (localStorage.getItem('accessToken') || authStore.token) {
 }
 
 // Đăng xuất tự động khi người dùng không hoạt động
-useIdleLogout({
+const idleControl = useIdleLogout({
   timeout: 15 * 60 * 1000, // 15 phút không tương tác
   warningTime: 5 * 60 * 1000, // cảnh báo trước 5 phút
   onWarn(remaining) {
@@ -48,6 +49,20 @@ useIdleLogout({
     await router.push('/auth/login').catch(() => {})
   },
 })
+
+watch(
+  () => authStore.isAuthenticated,
+  (isAuth) => {
+    if (isAuth) {
+      idleControl.start()
+    } else {
+      idleControl.stop()
+      uiStore.closeIdleWarning()
+      localStorage.removeItem('app-last-activity')
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <style>
