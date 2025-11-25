@@ -3,6 +3,7 @@ from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from content import models
 from activities.models import ExerciseAttempt
@@ -49,12 +50,16 @@ class LessonProgressView(APIView):
             progress.exercise_completed = bool(request.data['exercise_completed'])
             if 'exercise_score' in request.data:
                 progress.exercise_score = float(request.data['exercise_score'])
+
+        if 'completed' in request.data:
+            progress.completed = bool(request.data['completed'])
+            if progress.completed and not progress.completed_at:
+                progress.completed_at = timezone.now()
         
         # Mark as completed if all requirements met
-        if progress.video_watched:
+        if progress.video_watched and not progress.completed:
             if not lesson.requires_exercise_completion or progress.exercise_completed:
                 progress.completed = True
-                from django.utils import timezone
                 progress.completed_at = timezone.now()
         
         progress.save()

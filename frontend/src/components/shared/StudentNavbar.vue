@@ -204,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
 import { onClickOutside } from '@vueuse/core'
@@ -293,4 +293,12 @@ async function handleLogout() {
     isLoggingOut.value = false
   }
 }
+
+onMounted(() => {
+  if (typeof auth.refreshProfile === 'function') {
+    auth.refreshProfile().catch(() => {
+      /* ignore */
+    })
+  }
+})
 </script>

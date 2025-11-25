@@ -139,6 +139,7 @@ export const contentService = {
     video_watched?: boolean
     exercise_completed?: boolean
     exercise_score?: number
+    completed?: boolean
   }): Promise<any> {
     const { data } = await http.post(`/content/lessons/${lessonId}/progress/`, progress)
     return data

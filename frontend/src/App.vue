@@ -25,14 +25,10 @@ import router from '@/router'
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
-// Khởi tạo token/user từ localStorage trước khi mount
-authStore.hydrateFromStorage()
-// Làm tươi hồ sơ nếu đã có token (tránh hiển thị avatar cũ)
-if (localStorage.getItem('accessToken') || authStore.token) {
-  authStore.fetchCurrentUser().catch(() => {
-    /* ignore, sẽ dùng dữ liệu cache nếu fetch lỗi */
-  })
-}
+// Khởi tạo/làm tươi hồ sơ ngay khi app boot
+authStore.init().catch(() => {
+  /* ignore */
+})
 
 // Đăng xuất tự động khi người dùng không hoạt động
 const idleControl = useIdleLogout({
