@@ -221,28 +221,45 @@
                     :class="[
                       'flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm transition',
                       String(it.id) === String(currentLesson?.id)
-                        ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
+                        ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 ring-1 ring-cyan-100'
                         : 'bg-white text-gray-900 dark:text-gray-100 hover:bg-slate-50',
+                      lessonState(it) === 'next' ? 'ring-1 ring-cyan-50' : '',
                       it.done ? 'font-semibold' : '',
                     ]"
                     @click="goToLesson(si, li)"
                   >
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">{{ li + 1 }}</span>
-                      <span>{{ it.title }}</span>
-                    </div>
-                    <div class="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                      <span>{{ formatDuration(it.durationMinutes) }}</span>
-                      <svg
-                        v-if="it.done"
-                        class="h-4 w-4 text-cyan-500"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
+                    <div class="flex items-center gap-3">
+                      <span
+                        :class="[
+                          'flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold',
+                          lessonStateClass(lessonState(it))
+                        ]"
                       >
+                        <svg v-if="lessonState(it) === 'done'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
+                        <svg v-else-if="lessonKind(it) === 'video'" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                        <svg v-else-if="lessonKind(it) === 'quiz'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8z" />
+                        </svg>
+                        <svg v-else-if="lessonKind(it) === 'image'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M3 5h18v14H3z" />
+                          <path d="M21 15l-5-5-4 4-3-3-6 6" />
+                        </svg>
+                        <svg v-else class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                          <path d="M14 2v6h6" />
+                        </svg>
+                      </span>
+                      <div class="flex flex-col">
+                        <span class="text-sm font-semibold leading-tight">{{ li + 1 }}. {{ it.title }}</span>
+                        <span class="text-xs text-gray-500">{{ lessonStateLabel(lessonState(it)) }}</span>
+                      </div>
+                    </div>
+                    <div class="text-right text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[42px]">
+                      {{ formatDuration(it.durationMinutes) }}
                     </div>
                   </li>
                 </ul>
@@ -730,6 +747,7 @@ const unlockReason = ref<string>('')
 const videoWatchedPercentage = ref<number>(0)
 const hasMarkedAsWatched = ref<boolean>(false)
 const WATCHED_THRESHOLD = 75 // Phải xem 75% video mới tính là đã xem
+const autoCompletedLessons = new Set<string>()
 
 function normalizeRouteParam(param: any): string | number | undefined {
   if (Array.isArray(param)) return param[0]
@@ -809,9 +827,178 @@ async function load() {
   if (lessonParam) openIndex.value = findById(lessonParam)?.si ?? 0
 }
 
-type UiLesson = { id: string|number; title: string; durationMinutes?: number; type: Lesson['type']; done?: boolean }
+type LessonKind = 'video' | 'text' | 'image' | 'pdf' | 'doc' | 'quiz' | 'unknown'
+type UiLesson = {
+  id: string|number
+  title: string
+  durationMinutes?: number
+  type?: string
+  done?: boolean
+  kind: LessonKind
+}
 type UiSection = { id: string|number; title: string; items: UiLesson[] }
 const uiSections = ref<UiSection[]>([])
+type LessonState = LessonKind | 'done' | 'current' | 'next'
+const lessonStateLabels: Record<LessonState, string> = {
+  done: 'Đã hoàn thành',
+  current: 'Đang học',
+  next: 'Bài tiếp theo',
+  video: 'Video bài giảng',
+  text: 'Nội dung văn bản',
+  image: 'Hình ảnh',
+  pdf: 'Tài liệu PDF',
+  doc: 'Tài liệu',
+  quiz: 'Bài luyện tập',
+  unknown: 'Tài nguyên khóa học'
+}
+const lessonStateColors: Record<LessonState, string> = {
+  done: 'bg-emerald-100 text-emerald-600',
+  current: 'bg-cyan-600 text-white',
+  next: 'bg-cyan-100 text-cyan-600',
+  video: 'bg-cyan-50 text-cyan-600',
+  text: 'bg-slate-100 text-slate-500',
+  image: 'bg-indigo-100 text-indigo-600',
+  pdf: 'bg-rose-100 text-rose-600',
+  doc: 'bg-slate-100 text-slate-500',
+  quiz: 'bg-amber-100 text-amber-600',
+  unknown: 'bg-slate-100 text-slate-500'
+}
+
+type LessonIntroMeta = {
+  contentType?: string
+  payload?: any
+} | null
+
+const QUIZ_KEYWORDS = ['quiz', 'exercise', 'question', 'exam', 'test', 'practice']
+const VIDEO_KEYWORDS = ['video', 'mp4', 'mov', 'm4v', 'avi', 'mkv', 'youtube', 'youtu', 'vimeo']
+const PDF_KEYWORDS = ['pdf']
+const DOC_KEYWORDS = ['doc', 'docx', 'word', 'ppt', 'pptx', 'slides', 'presentation', 'xls', 'xlsx', 'sheet', 'document']
+const IMAGE_KEYWORDS = ['image', 'img', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp', 'webp', 'photo', 'ảnh']
+const TEXT_KEYWORDS = ['text', 'txt', 'markdown', 'note', 'article', 'md', 'văn bản']
+
+function matchKindFromString(value?: string | null): LessonKind | null {
+  if (!value) return null
+  const lowered = value.toString().toLowerCase()
+  if (QUIZ_KEYWORDS.some((key) => lowered.includes(key))) return 'quiz'
+  if (VIDEO_KEYWORDS.some((key) => lowered.includes(key))) return 'video'
+  if (PDF_KEYWORDS.some((key) => lowered.includes(key))) return 'pdf'
+  if (DOC_KEYWORDS.some((key) => lowered.includes(key))) return 'doc'
+  if (IMAGE_KEYWORDS.some((key) => lowered.includes(key))) return 'image'
+  if (TEXT_KEYWORDS.some((key) => lowered.includes(key))) return 'text'
+  return null
+}
+
+function kindFromPayload(payload: any): LessonKind | null {
+  if (!payload || typeof payload !== 'object') return null
+  const candidateKeys = ['contentType', 'type', 'mimeType', 'mime', 'fileType', 'format']
+  for (const key of candidateKeys) {
+    const match = matchKindFromString(payload[key])
+    if (match) return match
+  }
+  const fileName = payload.fileName || payload.name
+  if (typeof fileName === 'string') {
+    const ext = fileName.split('.').pop()?.toLowerCase()
+    const extMatch = matchKindFromString(ext)
+    if (extMatch) return extMatch
+  }
+  const url = payload.url || payload.fileData || payload.embedUrl
+  if (typeof url === 'string') {
+    const cleanUrl = url.split('?')[0]
+    const urlExt = cleanUrl.includes('.') ? cleanUrl.split('.').pop() : url
+    const urlMatch = matchKindFromString(urlExt)
+    if (urlMatch) return urlMatch
+  }
+  if (payload.questions || payload.quiz || payload.items || payload.options || payload.answers) {
+    return 'quiz'
+  }
+  if (payload.text || payload.content || payload.html || payload.markdown) {
+    return 'text'
+  }
+  if (payload.image || payload.imageUrl || payload.image_url || payload.images || payload.picture) {
+    return 'image'
+  }
+  return null
+}
+
+function parseJsonLike(value: any): any {
+  if (typeof value !== 'string') return value
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const isJson =
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+  if (!isJson) return null
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return null
+  }
+}
+
+function normalizeIntroduction(intro: any): LessonIntroMeta {
+  if (!intro) return null
+  let current: any = intro
+  for (let depth = 0; depth < 5; depth++) {
+    if (!current) return null
+    if (typeof current === 'string') {
+      const parsed = parseJsonLike(current)
+      if (!parsed) return null
+      current = parsed
+      continue
+    }
+    if (typeof current === 'object') {
+      const payloadRaw = (current as any).payload
+      const payloadParsed = parseJsonLike(payloadRaw)
+      const payload =
+        payloadParsed && typeof payloadParsed === 'object'
+          ? payloadParsed
+          : typeof payloadRaw === 'object'
+            ? payloadRaw
+            : undefined
+      const contentType =
+        (current as any).contentType ||
+        (current as any).type ||
+        (payload && (payload.contentType || payload.type))
+      if (contentType || payload) {
+        return {
+          contentType: typeof contentType === 'string' ? contentType : undefined,
+          payload,
+        }
+      }
+      if ((current as any).introduction) {
+        current = (current as any).introduction
+        continue
+      }
+      if (payload) {
+        current = payload
+        continue
+      }
+      return null
+    }
+    return null
+  }
+  return null
+}
+
+function resolveLessonKind(lesson: any, introOverride?: LessonIntroMeta | null): LessonKind {
+  const explicitType = String(lesson?.type || '').toLowerCase()
+  if (explicitType && explicitType !== 'lesson') {
+    const match = matchKindFromString(explicitType)
+    if (match) return match
+  }
+  if (lesson?.content_type === 'exercise') {
+    return 'quiz'
+  }
+  const introMeta = introOverride ?? normalizeIntroduction(lesson?.introduction)
+  const payloadKind = kindFromPayload(introMeta?.payload)
+  if (payloadKind) return payloadKind
+  const introKind = matchKindFromString(introMeta?.contentType)
+  if (introKind) return introKind
+  if (lesson?.video_url || lesson?.video_file) {
+    return 'video'
+  }
+  return 'text'
+}
 
 function buildUiSections() {
   if (!course.value) { uiSections.value = []; return }
@@ -823,7 +1010,8 @@ function buildUiSections() {
       title: l.title,
       durationMinutes: l.durationMinutes,
       type: l.type,
-      done: doneSet.has(String(l.id))
+      done: doneSet.has(String(l.id)),
+      kind: resolveLessonKind(l)
     }))
   }))
 }
@@ -861,16 +1049,18 @@ const currentLesson = computed<UiLesson | null>(() => uiSections.value[cur.value
 const currentLessonId = computed(() => currentLesson.value?.id || null)
 const currentLessonTitle = computed(() => currentLesson.value?.title || '')
 
+const currentLessonIntro = computed(() => normalizeIntroduction(currentLessonDetail.value?.introduction))
+
 const lessonContentPayload = computed(() => {
-  const intro = currentLessonDetail.value?.introduction
-  if (!intro || typeof intro !== 'string') return null
-  try {
-    const parsed = JSON.parse(intro)
-    if (parsed && parsed.contentType) return parsed
-  } catch {
-    return null
+  const meta = currentLessonIntro.value
+  if (!meta) return null
+  const payload = (meta.payload && typeof meta.payload === 'object') ? meta.payload : {}
+  const inferred = matchKindFromString(meta.contentType) || kindFromPayload(payload)
+  if (!inferred) return null
+  return {
+    contentType: inferred,
+    payload,
   }
-  return null
 })
 
 const currentFlatIndex = computed<number>(() => {
@@ -890,11 +1080,22 @@ const nextLesson = computed<UiLesson | null>(() => {
 
 const lessonVideoUrl = computed(() => currentLessonDetail.value?.video_url)
 const lessonVideoFile = computed(() => currentLessonDetail.value?.video_file)
-const lessonVideoSrc = computed(() => {
-  // Nếu meta từ thư viện có video fileData, ưu tiên
-  if (lessonContentPayload.value?.contentType === 'video' && lessonContentPayload.value?.payload?.fileData) {
-    return lessonContentPayload.value.payload.fileData
+
+const libraryMedia = computed(() => {
+  if (!lessonContentPayload.value) return { video: null, type: null, payload: null }
+  const { contentType: type, payload } = lessonContentPayload.value
+  let video: string | null = null
+  if (type === 'video' && payload) {
+    const source = payload.fileData || payload.url || payload.embedUrl
+    if (typeof source === 'string') {
+      video = isYouTubeUrl(source) ? getYouTubeEmbedUrl(source) : source
+    }
   }
+  return { video, type, payload }
+})
+
+const lessonVideoSrc = computed(() => {
+  if (libraryMedia.value.video) return libraryMedia.value.video
   if (lessonVideoUrl.value) {
     if (isYouTubeUrl(lessonVideoUrl.value)) {
       return getYouTubeEmbedUrl(lessonVideoUrl.value)
@@ -924,10 +1125,21 @@ const currentSrc = computed(() => {
   return null
 })
 
-const hasVideo = computed(() => {
-  if (lessonContentPayload.value && lessonContentPayload.value.contentType !== 'video') {
-    return false
+const currentLessonKind = computed<LessonKind>(() => {
+  if (currentLessonDetail.value) {
+    return resolveLessonKind(
+      { ...(currentLesson.value || {}), ...currentLessonDetail.value },
+      currentLessonIntro.value
+    )
   }
+  if (currentLesson.value) {
+    return resolveLessonKind(currentLesson.value)
+  }
+  return 'text'
+})
+
+const hasVideo = computed(() => {
+  if (currentLessonKind.value !== 'video') return false
   return !!lessonVideoSrc.value
 })
 
@@ -1114,6 +1326,30 @@ function formatDuration(min?: number){
   return `${mm}:${ss}`
 }
 
+function lessonState(lesson: UiLesson): LessonState {
+  const idStr = String(lesson.id)
+  if (lesson.done) return 'done'
+  if (String(currentLesson.value?.id || '') === idStr) return 'current'
+  if (nextLesson.value && String(nextLesson.value.id) === idStr) return 'next'
+  return lesson.kind || 'unknown'
+}
+
+function lessonStateLabel(state: LessonState): string {
+  return lessonStateLabels[state] || lessonStateLabels.unknown
+}
+
+function lessonStateClass(state: LessonState): string {
+  return lessonStateColors[state] || lessonStateColors.unknown
+}
+
+function lessonKind(lesson: UiLesson): LessonKind {
+  const idStr = String(lesson.id)
+  if (String(currentLesson.value?.id || '') === idStr) {
+    return currentLessonKind.value || lesson.kind || 'unknown'
+  }
+  return lesson.kind || 'unknown'
+}
+
 function goBack() {
   const courseId = normalizeRouteParam(route.params.id)
   // Navigate về course detail để trigger reload
@@ -1180,6 +1416,31 @@ async function loadLessonDetail(lessonId: string | number | null) {
     currentLessonExercises.value = []
     lessonProgress.value = null
     lessonLocked.value = false
+  }
+}
+
+async function autoCompleteNonVideo() {
+  const lessonId = currentLesson.value?.id
+  const kind = currentLessonKind.value
+  if (!lessonId || lessonLocked.value || !kind || kind === 'video') {
+    return
+  }
+  const key = String(lessonId)
+  if (autoCompletedLessons.has(key)) {
+    return
+  }
+  autoCompletedLessons.add(key)
+  try {
+    await contentService.updateLessonProgress(key, { video_watched: true, completed: true })
+    if (lessonProgress.value) {
+      lessonProgress.value.video_watched = true
+      lessonProgress.value.completed = true
+    }
+    hasMarkedAsWatched.value = true
+    markDone(key)
+  } catch (error) {
+    autoCompletedLessons.delete(key)
+    console.error('Failed to auto-complete non-video lesson:', error)
   }
 }
 
@@ -1271,7 +1532,8 @@ async function onVideoEnded() {
   // Cập nhật progress: video completed
   try {
     const progressResponse = await contentService.updateLessonProgress(lessonId, { 
-      video_watched: true
+      video_watched: true,
+      completed: true
     })
     console.log('Progress updated:', progressResponse)
     
@@ -1717,6 +1979,14 @@ watchEffect(() => {
     cur.value = { si: 0, li: 0 }
   }
 })
+
+watch(
+  () => [currentLesson.value?.id, currentLessonKind.value, lessonLocked.value],
+  () => {
+    autoCompleteNonVideo()
+  },
+  { immediate: true }
+)
 
 // Watch for lesson changes
 watch(() => currentLesson.value?.id, async (newId) => {

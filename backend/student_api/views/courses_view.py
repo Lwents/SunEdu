@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+import json
 
 from student_api.permissions import IsStudent
 from content.models import Course, Enrollment, Lesson, LessonProgress, Module
@@ -67,6 +68,29 @@ class StudentMyCoursesView(APIView):
             course__published=True  # Only show published courses
         ).select_related('course', 'course__subject', 'course__owner')
         
+        course_ids = [enrollment.course_id for enrollment in enrollments]
+        lessons_count_map = {
+            row['module__course_id']: row['count']
+            for row in Lesson.objects.filter(
+                module__course_id__in=course_ids,
+                published=True
+            ).values('module__course_id').annotate(count=Count('id'))
+        }
+        completed_count_map = {
+            row['lesson__module__course_id']: row['count']
+            for row in LessonProgress.objects.filter(
+                lesson__module__course_id__in=course_ids,
+                student=student,
+                completed=True
+            ).values('lesson__module__course_id').annotate(count=Count('id'))
+        }
+        enrollment_count_map = {
+            row['course_id']: row['count']
+            for row in Enrollment.objects.filter(
+                course_id__in=course_ids
+            ).values('course_id').annotate(count=Count('id'))
+        }
+
         courses_data = []
         
         for enrollment in enrollments:
@@ -100,16 +124,8 @@ class StudentMyCoursesView(APIView):
                     continue
             
             # Calculate progress
-            total_lessons = Lesson.objects.filter(
-                module__course=course,
-                published=True
-            ).count()
-            
-            completed_lessons = LessonProgress.objects.filter(
-                lesson__module__course=course,
-                student=student,
-                completed=True
-            ).count()
+            total_lessons = lessons_count_map.get(course.id, 0)
+            completed_lessons = completed_count_map.get(course.id, 0)
             
             progress = int((completed_lessons / total_lessons * 100)) if total_lessons > 0 else 0
             done = progress >= 100
@@ -125,7 +141,7 @@ class StudentMyCoursesView(APIView):
                 'teacherId': str(course.owner.id) if course.owner else '',
                 'teacherName': (course.owner.profile.display_name if hasattr(course.owner, 'profile') and course.owner.profile.display_name else course.owner.username) if course.owner else '',
                 'lessonsCount': total_lessons,
-                'enrollments': course.enrollments.count(),
+                'enrollments': enrollment_count_map.get(course.id, 0),
                 'status': 'published' if course.published else 'draft',
                 'createdAt': course.id.generation_time.isoformat() if hasattr(course.id, 'generation_time') else None,
                 'updatedAt': None,
@@ -192,7 +208,21 @@ class StudentCourseCatalogView(APIView):
         total = courses.count()
         start = (page - 1) * page_size
         end = start + page_size
-        courses = courses[start:end]
+        courses = list(courses[start:end])
+        page_course_ids = [course.id for course in courses]
+        lessons_count_map = {
+            row['module__course_id']: row['count']
+            for row in Lesson.objects.filter(
+                module__course_id__in=page_course_ids,
+                published=True
+            ).values('module__course_id').annotate(count=Count('id'))
+        }
+        enrollment_count_map = {
+            row['course_id']: row['count']
+            for row in Enrollment.objects.filter(
+                course_id__in=page_course_ids
+            ).values('course_id').annotate(count=Count('id'))
+        }
         
         # Check enrollment status for each course
         enrolled_course_ids = set(
@@ -211,8 +241,8 @@ class StudentCourseCatalogView(APIView):
                 'subject': course.subject.title if course.subject else '',
                 'teacherId': str(course.owner.id) if course.owner else '',
                 'teacherName': (course.owner.profile.display_name if hasattr(course.owner, 'profile') and course.owner.profile.display_name else course.owner.username) if course.owner else '',
-                'lessonsCount': Lesson.objects.filter(module__course=course, published=True).count(),
-                'enrollments': course.enrollments.count(),
+                'lessonsCount': lessons_count_map.get(course.id, 0),
+                'enrollments': enrollment_count_map.get(course.id, 0),
                 'status': 'published',
                 'createdAt': course.id.generation_time.isoformat() if hasattr(course.id, 'generation_time') else None,
                 'updatedAt': None,
@@ -260,25 +290,144 @@ class StudentCourseDetailView(APIView):
             )
         ).order_by('position')
         
+        lesson_ids = []
+        for module in modules:
+            lesson_ids.extend([lesson.id for lesson in module.lessons.all()])
+
+        progress_map = {
+            lp.lesson_id: lp
+            for lp in LessonProgress.objects.filter(
+                lesson_id__in=lesson_ids,
+                student=student
+            )
+        }
+
         sections = []
+        
+        def _detect_content_type(lesson: Lesson):
+            def _safe_parse(value):
+                if isinstance(value, str):
+                    trimmed = value.strip()
+                    if trimmed and (
+                        (trimmed.startswith('{') and trimmed.endswith('}')) or
+                        (trimmed.startswith('[') and trimmed.endswith(']'))
+                    ):
+                        try:
+                            return json.loads(trimmed)
+                        except Exception:
+                            return value
+                return value
+
+            def _extract_intro(raw):
+                current = raw
+                for _ in range(5):
+                    if not current:
+                        return None
+                    if isinstance(current, str):
+                        parsed = _safe_parse(current)
+                        if parsed is current:
+                            return None
+                        current = parsed
+                        continue
+                    if isinstance(current, dict):
+                        payload = _safe_parse(current.get('payload'))
+                        if isinstance(payload, dict):
+                            current = {**current, 'payload': payload}
+                        content_type = current.get('contentType') or current.get('type')
+                        if not content_type and isinstance(payload, dict):
+                            content_type = payload.get('contentType') or payload.get('type')
+                        if content_type or isinstance(payload, dict):
+                            return {
+                                'contentType': content_type,
+                                'payload': payload if isinstance(payload, dict) else None,
+                            }
+                        if 'introduction' in current:
+                            current = current['introduction']
+                            continue
+                        if isinstance(payload, dict):
+                            current = payload
+                            continue
+                        return current
+                return None
+
+            def _kind_from_string(value):
+                if not value:
+                    return None
+                lowered = str(value).lower()
+                quiz_keys = ['quiz', 'exercise', 'question', 'exam', 'test', 'practice']
+                video_keys = ['video', 'mp4', 'mov', 'avi', 'm4v', 'youtube', 'youtu', 'vimeo', 'mkv']
+                pdf_keys = ['pdf']
+                doc_keys = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'sheet', 'slides', 'presentation', 'document']
+                image_keys = ['image', 'img', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp', 'webp', 'photo']
+                text_keys = ['text', 'txt', 'markdown', 'note', 'article', 'md']
+                if any(key in lowered for key in quiz_keys):
+                    return 'quiz'
+                if any(key in lowered for key in video_keys):
+                    return 'video'
+                if any(key in lowered for key in pdf_keys):
+                    return 'pdf'
+                if any(key in lowered for key in doc_keys):
+                    return 'doc'
+                if any(key in lowered for key in image_keys):
+                    return 'image'
+                if any(key in lowered for key in text_keys):
+                    return 'text'
+                return None
+
+            def _kind_from_payload(payload):
+                if not isinstance(payload, dict):
+                    return None
+                for key in ('contentType', 'type', 'mimeType', 'mime', 'fileType', 'format'):
+                    match = _kind_from_string(payload.get(key))
+                    if match:
+                        return match
+                file_name = payload.get('fileName') or payload.get('name')
+                if isinstance(file_name, str):
+                    match = _kind_from_string(file_name.split('.')[-1])
+                    if match:
+                        return match
+                url = payload.get('url') or payload.get('fileData') or payload.get('embedUrl')
+                if isinstance(url, str):
+                    match = _kind_from_string(url)
+                    if match:
+                        return match
+                if any(payload.get(key) for key in ('questions', 'quiz', 'items', 'choices', 'answers')):
+                    return 'quiz'
+                if any(payload.get(key) for key in ('text', 'content', 'html', 'markdown')):
+                    return 'text'
+                if any(payload.get(key) for key in ('image', 'imageUrl', 'image_url', 'images', 'picture')):
+                    return 'image'
+                return None
+
+            intro_meta = _extract_intro(getattr(lesson, "introduction", None))
+            kind = None
+            if intro_meta:
+                kind = _kind_from_string(intro_meta.get('contentType'))
+                if not kind:
+                    kind = _kind_from_payload(intro_meta.get('payload'))
+            if not kind and lesson.content_type == 'exercise':
+                kind = 'quiz'
+            if not kind and (lesson.video_url or lesson.video_file):
+                kind = 'video'
+            if not kind:
+                kind = 'text'
+            return kind
         for module in modules:
             lessons = []
             for lesson in module.lessons.all():
                 # Get progress for this lesson
-                progress = LessonProgress.objects.filter(
-                    lesson=lesson,
-                    student=student
-                ).first()
+                progress = progress_map.get(lesson.id)
                 
                 lessons.append({
                     'id': str(lesson.id),
                     'title': lesson.title,
-                    'type': 'video' if lesson.video_url or lesson.video_file else 'pdf',
+                    'type': _detect_content_type(lesson),
                     'durationMinutes': None,  # Could calculate from video if available
                     'isPreview': False,  # First lesson could be preview
                     'completed': progress.completed if progress else False,
                     'videoWatched': progress.video_watched if progress else False,
                     'exerciseCompleted': progress.exercise_completed if progress else False,
+                    'introduction': lesson.introduction or '',
                 })
             
             sections.append({
@@ -479,6 +628,22 @@ class StudentLearningPathView(APIView):
         enrollments = Enrollment.objects.filter(
             student=student
         ).select_related('course', 'course__subject')
+        course_ids = [enrollment.course_id for enrollment in enrollments]
+        lessons_count_map = {
+            row['module__course_id']: row['count']
+            for row in Lesson.objects.filter(
+                module__course_id__in=course_ids,
+                published=True
+            ).values('module__course_id').annotate(count=Count('id'))
+        }
+        completed_count_map = {
+            row['lesson__module__course_id']: row['count']
+            for row in LessonProgress.objects.filter(
+                lesson__module__course_id__in=course_ids,
+                student=student,
+                completed=True
+            ).values('lesson__module__course_id').annotate(count=Count('id'))
+        }
         
         # Group by grade
         path_data = {
@@ -490,16 +655,8 @@ class StudentLearningPathView(APIView):
             course = enrollment.course
             
             # Calculate progress
-            total_lessons = Lesson.objects.filter(
-                module__course=course,
-                published=True
-            ).count()
-            
-            completed_lessons = LessonProgress.objects.filter(
-                lesson__module__course=course,
-                student=student,
-                completed=True
-            ).count()
+            total_lessons = lessons_count_map.get(course.id, 0)
+            completed_lessons = completed_count_map.get(course.id, 0)
             
             progress = int((completed_lessons / total_lessons * 100)) if total_lessons > 0 else 0
             

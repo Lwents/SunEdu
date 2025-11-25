@@ -6,6 +6,7 @@ import {
   type Role,
   type AuthUser,
   type ProfileUpdatePayload,
+  type ProfileDetails,
 } from '@/services/auth.service'
 import { ElMessage } from 'element-plus'
 import { getAvatarSrc } from '@/utils/avatar'
@@ -232,33 +233,41 @@ export const useAuthStore = defineStore('auth', {
 
     // Khởi tạo nhanh khi app load, đồng bộ avatar từ profile để tránh fallback boy/girl
     async init() {
-      this.hydrateFromStorage() // [ADD]
+      this.hydrateFromStorage()
       if (this.token) {
-        try {
-          const profile = await authService.getProfile()
-          this.user = {
-            ...(this.user as AuthUser | null),
-            id: (this.user as AuthUser | null)?.id ?? (profile as any).id ?? 0,
-            name: profile.fullName || profile.name || this.user?.name || '',
-            email: profile.email || this.user?.email || '',
-            phone: profile.phone || this.user?.phone,
-            role: (this.user as AuthUser | null)?.role || (profile.role as Role) || 'student',
-            avatar: profile.avatar || profile.avatar_url || this.user?.avatar,
-            gender: profile.gender ?? this.user?.gender,
-            title: profile.title ?? this.user?.title,
-            bio: profile.bio ?? this.user?.bio,
-            class_name: (profile as any).class_name || (profile as any).className || (this.user as any)?.class_name,
-          }
-          this.persist()
-        } catch (err) {
+        await this.refreshProfile().catch((err) => {
           console.warn('Không thể tải profile khi khởi tạo:', err)
-        }
+        })
       }
+    },
+
+    async refreshProfile(force = false): Promise<ProfileDetails | null> {
+      if (force) {
+        this.hydrateFromStorage()
+      }
+      if (!this.token) {
+        return null
+      }
+      const profile = await authService.getProfile()
+      this.user = {
+        ...(this.user as AuthUser | null),
+        id: profile.id || this.user?.id || 0,
+        name: profile.fullName || profile.name || this.user?.name || '',
+        email: profile.email || this.user?.email || '',
+        phone: profile.phone || this.user?.phone,
+        role: this.user?.role || (profile.role as Role) || 'student',
+        avatar: profile.avatar || profile.avatar_url || this.user?.avatar,
+        gender: profile.gender ?? this.user?.gender,
+        title: profile.title ?? this.user?.title,
+        bio: profile.bio ?? this.user?.bio,
+        class_name: profile.class_name || profile.className || (this.user as any)?.class_name,
+      }
+      this.persist()
+      return profile
     },
 
     // (Tùy chọn) Cập nhật avatar ngay để UI mượt hơn (optimistic)
     setAvatar(url: string) {
-      // [ADD]
       if (this.user) {
         this.user = { ...this.user, avatar: url }
         this.persist()
