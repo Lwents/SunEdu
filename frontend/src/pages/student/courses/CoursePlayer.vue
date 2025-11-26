@@ -241,7 +241,8 @@
               </h2>
             </div>
           </div>
-          <div v-else-if="!lessonLocked" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <!-- Chỉ hiển thị thông báo này khi thực sự là video nhưng thiếu video URL -->
+          <div v-else-if="!lessonLocked && currentLessonKind === 'video' && !hasVideo" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 class="text-lg font-semibold text-gray-900">Bài học</h3>
             <p class="text-sm text-gray-600">Bài này không có video, hãy xem nội dung bên dưới.</p>
           </div>
