@@ -25,8 +25,8 @@
             <p class="mt-2 text-sm text-amber-700">{{ unlockReason || 'Bạn cần hoàn thành bài học trước đó' }}</p>
           </div>
 
-          <!-- Content from lessonContentPayload (from content library) -->
-          <div v-if="!lessonLocked && lessonContentPayload" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <!-- Content from lessonContentPayload (from content library) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-if="!lessonLocked && lessonContentPayload && currentLessonKind !== 'video'" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div v-if="lessonContentPayload.contentType === 'text'" class="space-y-3">
               <div class="flex items-center gap-3">
                 <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
@@ -110,8 +110,8 @@
             </div>
           </div>
 
-          <!-- Introduction (fallback if no lessonContentPayload but introduction exists) -->
-          <div v-else-if="!lessonLocked && currentLessonDetail?.introduction && !lessonContentPayload" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <!-- Introduction (fallback if no lessonContentPayload but introduction exists) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-else-if="!lessonLocked && currentLessonDetail?.introduction && !lessonContentPayload && currentLessonKind !== 'video'" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex items-center gap-3 mb-3">
               <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
                 <span class="text-2xl">📝</span>
@@ -123,8 +123,8 @@
             </div>
           </div>
 
-          <!-- PDF Content (fallback from document_file) -->
-          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonDetail?.content_type === 'pdf' && currentLessonDetail?.document_file" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <!-- PDF Content (fallback from document_file) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonKind !== 'video' && currentLessonDetail?.content_type === 'pdf' && currentLessonDetail?.document_file" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100">
                 <span class="text-2xl">📄</span>
@@ -152,8 +152,8 @@
             </div>
           </div>
 
-          <!-- Document (Word/Docx) Content (fallback) -->
-          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonDetail?.content_type === 'document' && currentLessonDetail?.document_file" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <!-- Document (Word/Docx) Content (fallback) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonKind !== 'video' && currentLessonDetail?.content_type === 'document' && currentLessonDetail?.document_file" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
                 <span class="text-2xl">📑</span>
@@ -172,8 +172,8 @@
             </a>
           </div>
 
-          <!-- Text Content (fallback from content_type) -->
-          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonDetail?.content_type === 'text'" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <!-- Text Content (fallback from content_type) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonKind !== 'video' && currentLessonDetail?.content_type === 'text'" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex items-center gap-3 mb-4">
               <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
                 <span class="text-2xl">📝</span>
@@ -185,8 +185,8 @@
             </div>
           </div>
 
-          <!-- Video Player -->
-          <div v-if="!lessonLocked && hasVideo" class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-lg shadow-slate-200">
+          <!-- Video Player - CHỈ hiển thị khi là video -->
+          <div v-if="!lessonLocked && currentLessonKind === 'video' && hasVideo" class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-lg shadow-slate-200">
             <!-- Video từ YouTube -->
             <iframe
               v-if="lessonVideoUrl && isYouTubeUrl(lessonVideoUrl)"
