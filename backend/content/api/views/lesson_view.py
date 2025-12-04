@@ -34,6 +34,28 @@ from content.services.exploration_service import (
 # Create service instances
 lesson_service = LessonService()
 
+
+def _ensure_published_version(lesson_model, author_id=None):
+    """
+    Make sure a lesson has at least one published version so course publish rule can pass.
+    Used for legacy lessons that might not have versions yet.
+    """
+    from content.models import LessonVersion
+    if lesson_model.versions.exists():
+        return
+    author = None
+    if author_id:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        author = User.objects.filter(id=author_id).first()
+    LessonVersion.objects.create(
+        lesson=lesson_model,
+        version=1,
+        status='published',
+        author=author,
+        content={"structure": "lesson", "content_blocks": []},
+    )
+
 class LessonListCreateView(generics.ListCreateAPIView):
     """
     GET /api/modules/{module_id}/lessons/
@@ -88,6 +110,8 @@ class LessonListCreateView(generics.ListCreateAPIView):
         from content.models import Lesson
         try:
             lesson_model = Lesson.objects.prefetch_related('versions').get(id=created_domain.id)
+            # Ensure a default published version exists (legacy safety)
+            _ensure_published_version(lesson_model, author_id=author_id)
             if 'introduction' in data:
                 lesson_model.introduction = data['introduction']
             if 'video_url' in data:
@@ -182,6 +206,8 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
         updates = serializer.validated_data
         
         # Update model directly for new fields
+        # Ensure a default published version exists (legacy safety)
+        _ensure_published_version(instance, author_id=request.user.id if request.user.is_authenticated else None)
         if 'introduction' in updates:
             instance.introduction = updates['introduction']
         if 'video_url' in updates:

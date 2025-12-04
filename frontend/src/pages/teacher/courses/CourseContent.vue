@@ -448,6 +448,15 @@ async function loadModules() {
   }
 }
 
+function findLessonById(id: ID): Lesson | null {
+  const key = String(id)
+  for (const lessonList of Object.values(lessonsByModule.value)) {
+    const found = lessonList.find((l) => String(l.id) === key)
+    if (found) return found
+  }
+  return null
+}
+
 function showAddLesson(moduleId: ID) {
   showAddLessonModuleId.value = String(moduleId)
   
@@ -546,7 +555,7 @@ function editLesson(lesson: Lesson) {
     title: lesson.title,
     content_type: lesson.content_type || 'video',
     video_url: (lesson as any).video_url || '',
-    videoType: 'url',
+    videoType: ((lesson as any).video_file ? 'file' : 'url') as 'url' | 'file',
     videoFile: null,
     documentFile: null,
     text_content: (lesson as any).text_content || '',
@@ -555,6 +564,7 @@ function editLesson(lesson: Lesson) {
 }
 
 function goEditLesson(lessonId: string) {
+  // Điều hướng sang trang edit full-page để chỉnh sửa chi tiết
   router.push({ name: 'teacher-lesson-edit', params: { id: lessonId } })
 }
 

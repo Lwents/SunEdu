@@ -83,6 +83,19 @@
                   ⬇️ Tải về
                 </a>
               </div>
+              <div class="overflow-hidden rounded-xl border border-slate-200">
+                <object
+                  v-if="docUrlFromPayload"
+                  :data="docUrlFromPayload"
+                  type="application/pdf"
+                  class="h-[520px] w-full"
+                >
+                  <iframe
+                    :src="getDocViewerUrl(docUrlFromPayload, 'pdf')"
+                    class="h-[520px] w-full"
+                  ></iframe>
+                </object>
+              </div>
               <p class="text-xs text-gray-500" v-if="lessonContentPayload.payload?.fileName">
                 {{ lessonContentPayload.payload.fileName }}
               </p>
@@ -96,6 +109,13 @@
                   <h3 class="text-lg font-semibold text-gray-900">Tài liệu</h3>
                   <p class="text-sm text-gray-500">Tải về tài liệu để xem chi tiết</p>
                 </div>
+              </div>
+              <div class="overflow-hidden rounded-xl border border-slate-200">
+                <iframe
+                  v-if="docViewerFromPayload"
+                  :src="docViewerFromPayload"
+                  class="h-[520px] w-full"
+                ></iframe>
               </div>
               <a
                 class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
@@ -136,19 +156,31 @@
             </div>
             <div class="flex gap-3">
               <a
-                :href="getDocumentUrl(currentLessonDetail.document_file)"
+                :href="docUrlFromLesson"
                 target="_blank"
                 class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
               >
                 📖 Xem tài liệu
               </a>
               <a
-                :href="getDocumentUrl(currentLessonDetail.document_file)"
+                :href="docUrlFromLesson"
                 download
                 class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
                 ⬇️ Tải về
               </a>
+            </div>
+            <div class="mt-4 overflow-hidden rounded-xl border border-slate-200">
+              <object
+                :data="docUrlFromLesson"
+                type="application/pdf"
+                class="h-[520px] w-full"
+              >
+                <iframe
+                  :src="getDocViewerUrl(docUrlFromLesson, 'pdf')"
+                  class="h-[520px] w-full"
+                ></iframe>
+              </object>
             </div>
           </div>
 
@@ -164,12 +196,18 @@
               </div>
             </div>
             <a
-              :href="getDocumentUrl(currentLessonDetail.document_file)"
+              :href="docUrlFromLesson"
               download
               class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
             >
               ⬇️ Tải tài liệu Word
             </a>
+            <div class="mt-4 overflow-hidden rounded-xl border border-slate-200">
+              <iframe
+                :src="docViewerFromLesson"
+                class="h-[520px] w-full"
+              ></iframe>
+            </div>
           </div>
 
           <!-- Text Content (fallback from content_type) - Chỉ hiển thị khi KHÔNG phải video -->
@@ -239,6 +277,18 @@
               <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {{ currentLesson?.title || course.title }}
               </h2>
+              <div class="mt-2">
+                <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                  <span v-if="currentLessonKind === 'video'">🎬</span>
+                  <span v-else-if="currentLessonKind === 'quiz'">✏️</span>
+                  <span v-else-if="currentLessonKind === 'pdf'">📄</span>
+                  <span v-else-if="currentLessonKind === 'doc'">📑</span>
+                  <span v-else-if="currentLessonKind === 'text'">📝</span>
+                  <span v-else-if="currentLessonKind === 'image'">🖼️</span>
+                  <span v-else>📚</span>
+                  {{ lessonKindLabel(currentLessonKind) }}
+                </span>
+              </div>
             </div>
           </div>
           <!-- Chỉ hiển thị thông báo này khi thực sự là video nhưng thiếu video URL -->
@@ -383,6 +433,16 @@
                       <div class="flex flex-col">
                         <span class="text-sm font-semibold leading-tight">{{ li + 1 }}. {{ it.title }}</span>
                         <span class="text-xs text-gray-500">{{ lessonStateLabel(lessonState(it)) }}</span>
+                        <span class="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                          <span v-if="lessonKind(it) === 'video'">🎬</span>
+                          <span v-else-if="lessonKind(it) === 'quiz'">✏️</span>
+                          <span v-else-if="lessonKind(it) === 'pdf'">📄</span>
+                          <span v-else-if="lessonKind(it) === 'doc'">📑</span>
+                          <span v-else-if="lessonKind(it) === 'text'">📝</span>
+                          <span v-else-if="lessonKind(it) === 'image'">🖼️</span>
+                          <span v-else>📚</span>
+                          {{ lessonKindLabel(lessonKind(it)) }}
+                        </span>
                       </div>
                     </div>
                     <div class="text-right text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[42px]">
@@ -991,6 +1051,16 @@ const lessonStateColors: Record<LessonState, string> = {
   unknown: 'bg-slate-100 text-slate-500'
 }
 
+const lessonKindLabels: Record<LessonKind, string> = {
+  video: 'Video bài giảng',
+  text: 'Văn bản',
+  image: 'Hình ảnh',
+  pdf: 'Tài liệu PDF',
+  doc: 'Tài liệu',
+  quiz: 'Bài tập',
+  unknown: 'Bài học'
+}
+
 type LessonIntroMeta = {
   contentType?: string
   payload?: any
@@ -1312,13 +1382,20 @@ const libraryMedia = computed(() => {
   if (!lessonContentPayload.value) return { video: null, type: null, payload: null }
   const { contentType: type, payload } = lessonContentPayload.value
   let video: string | null = null
+  let doc: string | null = null
   if (type === 'video' && payload) {
     const source = payload.fileData || payload.url || payload.embedUrl
     if (typeof source === 'string') {
       video = isYouTubeUrl(source) ? getYouTubeEmbedUrl(source) : source
     }
   }
-  return { video, type, payload }
+  if (type === 'pdf' || type === 'doc') {
+    const source = payload?.fileData || payload?.url
+    if (typeof source === 'string') {
+      doc = resolveDocumentUrl(source)
+    }
+  }
+  return { video, doc, type, payload }
 })
 
 const lessonVideoSrc = computed(() => {
@@ -1352,6 +1429,29 @@ const currentSrc = computed(() => {
   return null
 })
 
+const docUrlFromPayload = computed(() => {
+  if (libraryMedia.value.doc) return libraryMedia.value.doc
+  return null
+})
+
+const docUrlFromLesson = computed(() => {
+  if (currentLessonDetail.value?.document_file) {
+    return resolveDocumentUrl(currentLessonDetail.value.document_file)
+  }
+  return ''
+})
+
+const docViewerFromPayload = computed(() => {
+  if (!docUrlFromPayload.value) return ''
+  return getDocViewerUrl(docUrlFromPayload.value, libraryMedia.value.type === 'doc' ? 'doc' : 'pdf')
+})
+
+const docViewerFromLesson = computed(() => {
+  if (!docUrlFromLesson.value) return ''
+  const type = currentLessonKind.value === 'doc' ? 'doc' : currentLessonKind.value === 'pdf' ? 'pdf' : undefined
+  return getDocViewerUrl(docUrlFromLesson.value, type)
+})
+
 const currentLessonKind = computed<LessonKind>(() => {
   if (currentLessonDetail.value) {
     return resolveLessonKind(
@@ -1364,6 +1464,8 @@ const currentLessonKind = computed<LessonKind>(() => {
   }
   return 'text'
 })
+
+const currentLessonKindLabel = computed(() => lessonKindLabel(currentLessonKind.value))
 
 const hasVideo = computed(() => {
   if (currentLessonKind.value !== 'video') return false
@@ -1559,6 +1661,62 @@ function getDocumentUrl(documentFile?: string): string {
   return `${apiBase}/media/${safePath}`
 }
 
+function getDocumentStreamUrl(documentFile?: string): string {
+  if (!documentFile) return ''
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
+
+  // Data URL hoặc tuyệt đối thì dùng luôn (cùng origin sẽ không bị CORS)
+  if (documentFile.startsWith('data:')) return documentFile
+  if (documentFile.startsWith('http://') || documentFile.startsWith('https://')) {
+    try {
+      const url = new URL(documentFile)
+      // Nếu cùng host, chuyển qua stream; nếu khác host, giữ nguyên để tải
+      const apiHost = new URL(apiBase)
+      if (url.host === apiHost.host) {
+        const mediaPath = url.pathname.startsWith('/media/') ? url.pathname.replace(/^\/media\//, '') : url.pathname.replace(/^\//, '')
+        return `${apiBase}/api/media/stream/${encodeURI(mediaPath)}`
+      }
+      return documentFile
+    } catch {
+      return documentFile
+    }
+  }
+
+  // Relative path -> stream endpoint để browser có content-type đúng
+  const safePath = documentFile.replace(/^\/+/, '')
+  return `${apiBase}/api/media/stream/${encodeURI(safePath)}`
+}
+
+function getDocViewerUrl(url?: string, type?: 'pdf' | 'doc'): string {
+  if (!url) return ''
+  const lower = url.toLowerCase()
+  const isPdf = type === 'pdf' || lower.endsWith('.pdf')
+  const isDoc = type === 'doc' || lower.endsWith('.doc') || lower.endsWith('.docx')
+  // PDF: trả về URL trực tiếp (object/pdf sẽ render)
+  if (isPdf) return url
+  // Word: dùng Office viewer nếu có thể
+  if (isDoc) {
+    const encoded = encodeURIComponent(url)
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encoded}`
+  }
+  // Fallback: dùng Google viewer
+  const encoded = encodeURIComponent(url)
+  return `https://docs.google.com/gview?url=${encoded}&embedded=true`
+}
+
+function resolveDocumentUrl(raw?: string): string {
+  if (!raw) return ''
+  // Data URL thì trả thẳng
+  if (raw.startsWith('data:')) return raw
+  // URL tuyệt đối
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    // Nếu cùng host, dùng stream để đảm bảo header
+    return getDocumentStreamUrl(raw)
+  }
+  // Relative -> ưu tiên stream để browser nhận đúng content-type, fallback /media
+  return getDocumentStreamUrl(raw)
+}
+
 function formatDuration(min?: number){
   if (!min || min <= 0) return '—'
   const total = Math.round(min * 60)
@@ -1589,6 +1747,10 @@ function lessonKind(lesson: UiLesson): LessonKind {
     return currentLessonKind.value || lesson.kind || 'unknown'
   }
   return lesson.kind || 'unknown'
+}
+
+function lessonKindLabel(kind: LessonKind): string {
+  return lessonKindLabels[kind] || lessonKindLabels.unknown
 }
 
 function goBack() {
@@ -1709,6 +1871,26 @@ async function goNext(){
     alert('Bạn cần hoàn thành bài tập trước khi tiếp tục!')
     return
   }
+  // Đảm bảo đánh dấu hoàn thành bài hiện tại trước khi sang bài tiếp theo
+  if (
+    currentLesson.value?.id &&
+    currentLessonKind.value === 'video' &&
+    !lessonProgress.value?.completed
+  ) {
+    try {
+      await contentService.updateLessonProgress(currentLesson.value.id, {
+        video_watched: true,
+        completed: true,
+      })
+      if (lessonProgress.value) {
+        lessonProgress.value.video_watched = true
+        lessonProgress.value.completed = true
+      }
+      markDone(currentLesson.value.id)
+    } catch (e) {
+      console.error('Không thể đánh dấu hoàn thành trước khi chuyển bài:', e)
+    }
+  }
   const found = findById(nextLesson.value.id)
   if (found) await goToLesson(found.si, found.li)
 }
@@ -1734,10 +1916,15 @@ async function checkAndMarkVideoWatched(percentage: number) {
   
   hasMarkedAsWatched.value = true
   try {
-    await contentService.updateLessonProgress(currentLesson.value.id, { video_watched: true })
+    await contentService.updateLessonProgress(currentLesson.value.id, {
+      video_watched: true,
+      completed: true,
+    })
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
+      lessonProgress.value.completed = true
     }
+    markDone(currentLesson.value.id)
     console.log(`Video marked as watched at ${percentage.toFixed(1)}%`)
   } catch (e) {
     console.error('Error updating video watched:', e)

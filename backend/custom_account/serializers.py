@@ -160,6 +160,8 @@ class ProfileUpdateRequestSerializer(serializers.Serializer):
     dob = serializers.DateField(required=False)
     gender = serializers.ChoiceField(choices=["male", "female", "other"], required=False)
     class_name = serializers.CharField(required=False, allow_blank=True, max_length=128)
+    title = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    bio = serializers.CharField(required=False, allow_blank=True, max_length=2000)
     email_updates = serializers.BooleanField(required=False)
     address = serializers.CharField(required=False, allow_blank=True, max_length=255)
     city = serializers.CharField(required=False, allow_blank=True, max_length=100)

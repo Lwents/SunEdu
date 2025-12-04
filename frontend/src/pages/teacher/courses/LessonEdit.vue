@@ -50,10 +50,28 @@
         </div>
       </div>
 
-      <!-- Video bài học -->
+      <!-- Loại nội dung -->
       <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900">Video bài học</h2>
-        <div class="space-y-4">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900">Nội dung bài học</h2>
+        <div class="mb-4 grid grid-cols-2 gap-2">
+          <button
+            v-for="opt in contentTypeOptions"
+            :key="opt.value"
+            type="button"
+            :class="[
+              'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition',
+              form.content_type === opt.value ? 'border-cyan-500 bg-cyan-50 text-cyan-700' : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'
+            ]"
+            @click="form.content_type = opt.value"
+          >
+            <span>{{ opt.icon }}</span>
+            <span>{{ opt.label }}</span>
+          </button>
+        </div>
+
+        <!-- Video -->
+        <div v-if="isVideoContent" class="space-y-4">
+          <h3 class="text-sm font-semibold text-gray-800">Video bài học</h3>
           <div class="mb-3 flex gap-4">
             <label class="flex items-center gap-2">
               <input type="radio" v-model="videoInputType" value="url" class="h-4 w-4" />
@@ -88,6 +106,39 @@
             </button>
             <span v-if="videoFile" class="text-sm text-gray-600">{{ videoFile.name }}</span>
           </div>
+        </div>
+
+        <!-- Văn bản -->
+        <div v-if="form.content_type === 'text'" class="mt-4 space-y-2">
+          <h3 class="text-sm font-semibold text-gray-800">Nội dung văn bản</h3>
+          <textarea
+            v-model="form.text_content"
+            rows="6"
+            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            placeholder="Nhập nội dung văn bản..."
+          ></textarea>
+        </div>
+
+        <!-- PDF/Word -->
+        <div v-if="form.content_type === 'pdf' || form.content_type === 'document'" class="mt-4 space-y-2">
+          <h3 class="text-sm font-semibold text-gray-800">Tài liệu</h3>
+          <input
+            ref="docInput"
+            type="file"
+            :accept="form.content_type === 'pdf' ? 'application/pdf' : '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'"
+            class="hidden"
+            @change="onPickDocument"
+          />
+          <button
+            type="button"
+            class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            @click="docInput?.click()"
+          >
+            Chọn tài liệu
+          </button>
+          <p v-if="docFile" class="text-sm text-gray-600">{{ docFile.name }}</p>
+          <p v-else-if="existingDocumentName" class="text-sm text-gray-600">Đã có: {{ existingDocumentName }}</p>
+          <p class="text-xs text-gray-500">PDF/Word ≤ 50MB</p>
         </div>
       </div>
 
@@ -195,7 +246,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { contentService } from '@/services/content.service'
 import http from '@/config/axios'
@@ -214,18 +265,35 @@ const saving = ref(false)
 const form = ref({
   title: '',
   introduction: '',
+  content_type: 'video',
   video_url: '',
   video_file: null as File | null,
+  document_file: null as File | null,
+  text_content: '',
   requires_exercise_completion: false
 })
 
+const contentTypeOptions = [
+  { value: 'video', label: 'Video bài giảng', icon: '🎬' },
+  { value: 'pdf', label: 'Tài liệu PDF', icon: '📄' },
+  { value: 'text', label: 'Văn bản', icon: '📝' },
+  { value: 'exercise', label: 'Bài tập', icon: '✏️' },
+  { value: 'document', label: 'Tài liệu Word', icon: '📑' },
+  { value: 'lesson', label: 'Bài học (cơ bản)', icon: '📚' },
+]
+
 const videoInputType = ref<'url' | 'file'>('url')
 const videoInput = ref<HTMLInputElement | null>(null)
+const docInput = ref<HTMLInputElement | null>(null)
 const videoFile = ref<File | null>(null)
+const docFile = ref<File | null>(null)
+const existingDocumentName = ref<string>('')
 
 const exercises = ref<any[]>([])
 const showAddExercise = ref(false)
 const exerciseForm = ref({ title: '', type: 'mcq' })
+
+const isVideoContent = computed(() => form.value.content_type === 'video' || form.value.content_type === 'lesson')
 
 async function loadLesson() {
   try {
@@ -234,11 +302,15 @@ async function loadLesson() {
     form.value = {
       title: data.title || '',
       introduction: data.introduction || '',
+      content_type: data.content_type || 'video',
       video_url: data.video_url || '',
       video_file: null,
+      document_file: null,
+      text_content: data.text_content || '',
       requires_exercise_completion: data.requires_exercise_completion || false
     }
     videoInputType.value = data.video_url ? 'url' : 'file'
+    existingDocumentName.value = data.document_file || ''
     
     // Load exercises
     if (data.exercises) {
@@ -264,6 +336,19 @@ function onPickVideo(e: Event) {
   }
   videoFile.value = file
   form.value.video_file = file
+}
+
+function onPickDocument(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  // 50MB max
+  if (file.size > 50 * 1024 * 1024) {
+    showToast('File quá lớn (tối đa 50MB)', 'warning')
+    return
+  }
+  docFile.value = file
+  form.value.document_file = file
 }
 
 async function addExercise() {
@@ -304,13 +389,24 @@ async function saveLesson() {
   try {
     const fd = new FormData()
     fd.append('title', form.value.title)
+    fd.append('content_type', form.value.content_type)
     if (form.value.introduction) {
       fd.append('introduction', form.value.introduction)
     }
-    if (videoInputType.value === 'url' && form.value.video_url) {
-      fd.append('video_url', form.value.video_url)
-    } else if (videoFile.value) {
-      fd.append('video_file', videoFile.value)
+    if (form.value.content_type === 'video' || form.value.content_type === 'lesson') {
+      if (videoInputType.value === 'url' && form.value.video_url) {
+        fd.append('video_url', form.value.video_url)
+      } else if (videoFile.value) {
+        fd.append('video_file', videoFile.value)
+      }
+    }
+    if (form.value.content_type === 'pdf' || form.value.content_type === 'document') {
+      if (docFile.value) {
+        fd.append('document_file', docFile.value)
+      }
+    }
+    if (form.value.content_type === 'text' && form.value.text_content) {
+      fd.append('text_content', form.value.text_content)
     }
     fd.append('requires_exercise_completion', String(form.value.requires_exercise_completion))
     
@@ -331,10 +427,5 @@ onMounted(() => {
   loadLesson()
 })
 </script>
-
-
-
-
-
 
 

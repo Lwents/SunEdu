@@ -165,14 +165,18 @@ class AdminUserListView(RoleBasedOutputMixin, APIView):
             # Convert domain entities to dict for response
             users_data = []
             for user_domain in result['results']:
+                role = 'admin' if getattr(user_domain, 'is_staff', False) else user_domain.role
                 users_data.append({
                     'id': user_domain.id,
                     'username': user_domain.username,
                     'email': user_domain.email,
-                    'role': user_domain.role,
+                    'role': role,
                     'is_staff': user_domain.is_staff,
                     'is_active': user_domain.is_active,
-                    'phone': getattr(user_domain, 'phone', None)
+                    'phone': getattr(user_domain, 'phone', None),
+                    'created_on': getattr(user_domain, 'created_on', None),
+                    'updated_on': getattr(user_domain, 'updated_on', None),
+                    'last_login': getattr(user_domain, 'last_login', None),
                 })
             
             return Response({

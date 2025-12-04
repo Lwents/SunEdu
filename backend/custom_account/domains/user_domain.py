@@ -13,8 +13,12 @@ class UserDict(TypedDict):
     username: str
     email: str
     created_on: datetime
+    updated_on: datetime
     role: str 
     phone: Optional[str]
+    is_active: bool
+    is_staff: bool
+    last_login: Optional[datetime]
 
 
 @dataclass
@@ -41,6 +45,7 @@ class UserDomain:
     phone: Optional[str] = None
     is_active: bool = True
     is_staff: bool = False
+    last_login: Optional[datetime] = None
 
 
     # --- Validation ---
@@ -73,8 +78,12 @@ class UserDomain:
             'username':self.username,
             'email':self.email,
             'created_on':self.created_on,
+            'updated_on': self.updated_on,
             'role':self.role,
-            'phone':self.phone
+            'phone':self.phone,
+            'is_active': self.is_active,
+            'is_staff': self.is_staff,
+            'last_login': self.last_login,
         }
     
     @classmethod
@@ -90,8 +99,12 @@ class UserDomain:
             username=data['username'],
             email=data['email'],
             created_on=data.get('created_on'),
+            updated_on=data.get('updated_on'),
             role=data.get('role', 'student'),
-            phone=data.get('phone')
+            phone=data.get('phone'),
+            is_active=data.get('is_active', True),
+            is_staff=data.get('is_staff', False),
+            last_login=data.get('last_login'),
         )
     
 
@@ -107,6 +120,10 @@ class UserDomain:
             phone=user_model.phone,
             role=user_model.role,
             created_on=user_model.created_on,
+            updated_on=user_model.updated_on,
+            is_active=user_model.is_active,
+            is_staff=user_model.is_staff,
+            last_login=user_model.last_login,
         )
     
     def to_model(self) -> UserModel:
@@ -151,4 +168,3 @@ class UserDomain:
 
 
     
-

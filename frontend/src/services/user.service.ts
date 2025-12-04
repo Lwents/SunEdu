@@ -77,17 +77,18 @@ const USE_MOCK = false // chuyển sang dùng API thật
 function mapServerToUser(s: any): User {
     // server sample fields: id, username, email, created_on, updated_on, phone, role, is_active, last_login
     const status: User['status'] = s.is_active === false ? 'locked' : 'active'
+    const role: Role = s.is_staff ? 'admin' : (s.role as Role) ?? 'student'
     return {
         id: s.id,
         username: s.username,
         name: s.username ?? s.name ?? undefined, // giữ username làm name nếu backend không trả name
         email: s.email ?? '',
         phone: s.phone ?? null,
-        avatar: s.avatar ?? undefined,
-        role: (s.role as Role) ?? 'student',
+        avatar: s.avatar ?? s.avatar_url ?? undefined,
+        role,
         status,
         lastLoginAt: s.last_login ?? s.last_login_at ?? s.lastLoginAt ?? undefined,
-        createdAt: s.created_on ?? s.createdAt ?? '',
+        createdAt: s.created_on ?? s.created_at ?? s.createdAt ?? '',
     }
 }
 

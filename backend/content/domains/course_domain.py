@@ -113,10 +113,16 @@ class CourseDomain:
 
     # ---- Publishing rules ----
     def can_publish(self, require_all_lessons_published: bool = False) -> Tuple[bool, str]:
-        # Rule 1: must have at least one module
+        # Rule 1: phải có ít nhất 1 chương
         if not self.modules:
-            return False, "Course must contain at least one module."
-        # Rule 2: must have at least one lesson with published version
+            return False, "Khóa học cần ít nhất 1 chương."
+
+        # Rule 2: phải có ít nhất 1 bài học
+        has_any_lesson = any(m.lessons for m in self.modules)
+        if not has_any_lesson:
+            return False, "Khóa học cần ít nhất 1 bài học."
+
+        # Rule 3: cần ít nhất 1 bài học đã xuất bản version
         any_published = False
         for m in self.modules:
             for l in m.lessons:
@@ -126,13 +132,15 @@ class CourseDomain:
             if any_published:
                 break
         if not any_published:
-            return False, "Course must contain at least one lesson with a published version."
-        # Rule 3 (optional strict): every lesson must have a published version
+            return False, "Cần ít nhất 1 bài học đã xuất bản (chọn bài học và xuất bản phiên bản)."
+
+        # Strict mode: toàn bộ bài học đều phải có version đã xuất bản
         if require_all_lessons_published:
             for m in self.modules:
                 for l in m.lessons:
                     if not l.has_published_version():
-                        return False, f"Lesson '{l.title}' must have a published version."
+                        return False, f"Bài học “{l.title}” chưa có phiên bản đã xuất bản."
+
         return True, "OK"
 
     def publish(self, require_all_lessons_published: bool = False):
