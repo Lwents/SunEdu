@@ -25,17 +25,27 @@
             <p class="mt-2 text-sm text-amber-700">{{ unlockReason || 'Bạn cần hoàn thành bài học trước đó' }}</p>
           </div>
 
-          <!-- Introduction -->
-          <div v-if="currentLessonDetail?.introduction && !lessonLocked" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 class="mb-3 text-lg font-semibold text-gray-900">Giới thiệu</h3>
-            <div class="text-gray-700 whitespace-pre-line" v-if="!lessonContentPayload">
-              {{ currentLessonDetail.introduction }}
-            </div>
-            <template v-else>
-              <div v-if="lessonContentPayload.contentType === 'text'" class="prose max-w-none text-gray-800">
-                <p class="whitespace-pre-line">{{ lessonContentPayload.payload?.content || 'Chưa có nội dung văn bản' }}</p>
+          <!-- Content from lessonContentPayload (from content library) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-if="!lessonLocked && lessonContentPayload && currentLessonKind !== 'video'" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div v-if="lessonContentPayload.contentType === 'text'" class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+                  <span class="text-2xl">📝</span>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">Nội dung bài học</h3>
               </div>
-              <div v-else-if="lessonContentPayload.contentType === 'image'" class="space-y-2">
+              <div class="prose max-w-none text-gray-800">
+                <p class="whitespace-pre-line">{{ lessonContentPayload.payload?.content || lessonContentPayload.payload?.text || currentLessonDetail?.introduction || 'Chưa có nội dung văn bản' }}</p>
+              </div>
+            </div>
+            <div v-else-if="lessonContentPayload.contentType === 'image'" class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100">
+                  <span class="text-2xl">🖼️</span>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">Hình ảnh</h3>
+              </div>
+              <div class="space-y-2">
                 <img
                   :src="lessonContentPayload.payload?.fileData || lessonContentPayload.payload?.url"
                   alt="Nội dung hình ảnh"
@@ -45,27 +55,138 @@
                   {{ lessonContentPayload.payload.fileName }}
                 </p>
               </div>
-              <div v-else-if="lessonContentPayload.contentType === 'pdf' || lessonContentPayload.contentType === 'doc'">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-                  <p class="text-sm font-semibold text-gray-900">Tài liệu</p>
-                  <a
-                    class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
-                    :href="lessonContentPayload.payload?.fileData || lessonContentPayload.payload?.url || '#'"
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    Xem / Tải tài liệu
-                  </a>
-                  <p class="text-xs text-gray-500" v-if="lessonContentPayload.payload?.fileName">
-                    {{ lessonContentPayload.payload.fileName }}
-                  </p>
+            </div>
+            <div v-else-if="lessonContentPayload.contentType === 'pdf'" class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100">
+                  <span class="text-2xl">📄</span>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">Tài liệu PDF</h3>
+                  <p class="text-sm text-gray-500">Xem hoặc tải về tài liệu bài học</p>
                 </div>
               </div>
-            </template>
+              <div class="flex gap-3">
+                <a
+                  class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
+                  :href="lessonContentPayload.payload?.fileData || lessonContentPayload.payload?.url || '#'"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  📖 Xem tài liệu
+                </a>
+                <a
+                  class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  :href="lessonContentPayload.payload?.fileData || lessonContentPayload.payload?.url || '#'"
+                  download
+                >
+                  ⬇️ Tải về
+                </a>
+              </div>
+              <p class="text-xs text-gray-500" v-if="lessonContentPayload.payload?.fileName">
+                {{ lessonContentPayload.payload.fileName }}
+              </p>
+            </div>
+            <div v-else-if="lessonContentPayload.contentType === 'doc'" class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
+                  <span class="text-2xl">📑</span>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">Tài liệu</h3>
+                  <p class="text-sm text-gray-500">Tải về tài liệu để xem chi tiết</p>
+                </div>
+              </div>
+              <a
+                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                :href="lessonContentPayload.payload?.fileData || lessonContentPayload.payload?.url || '#'"
+                download
+              >
+                ⬇️ Tải tài liệu
+              </a>
+              <p class="text-xs text-gray-500" v-if="lessonContentPayload.payload?.fileName">
+                {{ lessonContentPayload.payload.fileName }}
+              </p>
+            </div>
           </div>
 
-          <!-- Video Player -->
-          <div v-if="!lessonLocked && hasVideo" class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-lg shadow-slate-200">
+          <!-- Introduction (fallback if no lessonContentPayload but introduction exists) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-else-if="!lessonLocked && currentLessonDetail?.introduction && !lessonContentPayload && currentLessonKind !== 'video'" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+                <span class="text-2xl">📝</span>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900">Nội dung bài học</h3>
+            </div>
+            <div class="prose max-w-none text-gray-800">
+              <p class="whitespace-pre-line">{{ currentLessonDetail.introduction }}</p>
+            </div>
+          </div>
+
+          <!-- PDF Content (fallback from document_file) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonKind !== 'video' && currentLessonDetail?.content_type === 'pdf' && currentLessonDetail?.document_file" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100">
+                <span class="text-2xl">📄</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">Tài liệu PDF</h3>
+                <p class="text-sm text-gray-500">Xem hoặc tải về tài liệu bài học</p>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <a
+                :href="getDocumentUrl(currentLessonDetail.document_file)"
+                target="_blank"
+                class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
+              >
+                📖 Xem tài liệu
+              </a>
+              <a
+                :href="getDocumentUrl(currentLessonDetail.document_file)"
+                download
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                ⬇️ Tải về
+              </a>
+            </div>
+          </div>
+
+          <!-- Document (Word/Docx) Content (fallback) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonKind !== 'video' && currentLessonDetail?.content_type === 'document' && currentLessonDetail?.document_file" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
+                <span class="text-2xl">📑</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">Tài liệu Word</h3>
+                <p class="text-sm text-gray-500">Tải về tài liệu để xem chi tiết</p>
+              </div>
+            </div>
+            <a
+              :href="getDocumentUrl(currentLessonDetail.document_file)"
+              download
+              class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              ⬇️ Tải tài liệu Word
+            </a>
+          </div>
+
+          <!-- Text Content (fallback from content_type) - Chỉ hiển thị khi KHÔNG phải video -->
+          <div v-if="!lessonLocked && !lessonContentPayload && currentLessonKind !== 'video' && currentLessonDetail?.content_type === 'text'" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+                <span class="text-2xl">📝</span>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900">Nội dung bài học</h3>
+            </div>
+            <div class="prose max-w-none text-gray-800">
+              <p class="whitespace-pre-line">{{ currentLessonDetail.text_content || currentLessonDetail.introduction || 'Chưa có nội dung' }}</p>
+            </div>
+          </div>
+
+          <!-- Video Player - CHỈ hiển thị khi là video -->
+          <div v-if="!lessonLocked && currentLessonKind === 'video' && hasVideo" class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-lg shadow-slate-200">
             <!-- Video từ YouTube -->
             <iframe
               v-if="lessonVideoUrl && isYouTubeUrl(lessonVideoUrl)"
@@ -120,7 +241,8 @@
               </h2>
             </div>
           </div>
-          <div v-else-if="!lessonLocked" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <!-- Chỉ hiển thị thông báo này khi thực sự là video nhưng thiếu video URL -->
+          <div v-else-if="!lessonLocked && currentLessonKind === 'video' && !hasVideo" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 class="text-lg font-semibold text-gray-900">Bài học</h3>
             <p class="text-sm text-gray-600">Bài này không có video, hãy xem nội dung bên dưới.</p>
           </div>
@@ -236,14 +358,19 @@
                         ]"
                       >
                         <svg v-if="lessonState(it) === 'done'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
                         <svg v-else-if="lessonKind(it) === 'video'" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M8 5v14l11-7z" />
                         </svg>
                         <svg v-else-if="lessonKind(it) === 'quiz'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8z" />
+                          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                          <path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          <path d="M9 14l2 2 4-4" />
                         </svg>
+                        <span v-else-if="lessonKind(it) === 'pdf'" class="text-sm">📄</span>
+                        <span v-else-if="lessonKind(it) === 'doc'" class="text-sm">📑</span>
+                        <span v-else-if="lessonKind(it) === 'text'" class="text-sm">📝</span>
                         <svg v-else-if="lessonKind(it) === 'image'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M3 5h18v14H3z" />
                           <path d="M21 15l-5-5-4 4-3-3-6 6" />
@@ -938,41 +1065,86 @@ function parseJsonLike(value: any): any {
 function normalizeIntroduction(intro: any): LessonIntroMeta {
   if (!intro) return null
   let current: any = intro
+  
+  // Nếu là string rỗng, return null
+  if (typeof current === 'string' && !current.trim()) return null
+  
   for (let depth = 0; depth < 5; depth++) {
     if (!current) return null
+    
+    // Parse JSON string
     if (typeof current === 'string') {
-      const parsed = parseJsonLike(current)
-      if (!parsed) return null
-      current = parsed
-      continue
+      const trimmed = current.trim()
+      if (!trimmed) return null
+      
+      // Thử parse JSON
+      const parsed = parseJsonLike(trimmed)
+      if (parsed) {
+        current = parsed
+        continue
+      }
+      
+      // Nếu không phải JSON nhưng có nội dung, coi như text
+      if (trimmed.length > 0 && !trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        return {
+          contentType: 'text',
+          payload: { content: trimmed }
+        }
+      }
+      
+      return null
     }
-    if (typeof current === 'object') {
+    
+    // Xử lý object
+    if (typeof current === 'object' && current !== null) {
       const payloadRaw = (current as any).payload
       const payloadParsed = parseJsonLike(payloadRaw)
       const payload =
         payloadParsed && typeof payloadParsed === 'object'
           ? payloadParsed
-          : typeof payloadRaw === 'object'
+          : typeof payloadRaw === 'object' && payloadRaw !== null
             ? payloadRaw
-            : undefined
+            : typeof payloadRaw === 'string' && payloadRaw.trim()
+              ? { content: payloadRaw }
+              : undefined
+      
       const contentType =
         (current as any).contentType ||
         (current as any).type ||
         (payload && (payload.contentType || payload.type))
+      
+      // Nếu có contentType hoặc payload, return
       if (contentType || payload) {
         return {
           contentType: typeof contentType === 'string' ? contentType : undefined,
-          payload,
+          payload: payload || {},
         }
       }
+      
+      // Nếu có introduction nested, tiếp tục parse
       if ((current as any).introduction) {
         current = (current as any).introduction
         continue
       }
+      
+      // Nếu có payload nhưng chưa return, tiếp tục với payload
       if (payload) {
         current = payload
         continue
       }
+      
+      // Nếu object có keys nhưng không match pattern, coi như text
+      const keys = Object.keys(current)
+      if (keys.length > 0) {
+        // Kiểm tra xem có phải là object chứa nội dung text không
+        if ('content' in current || 'text' in current || 'html' in current) {
+          return {
+            contentType: 'text',
+            payload: current
+          }
+        }
+      }
+      
       return null
     }
     return null
@@ -981,21 +1153,36 @@ function normalizeIntroduction(intro: any): LessonIntroMeta {
 }
 
 function resolveLessonKind(lesson: any, introOverride?: LessonIntroMeta | null): LessonKind {
+  // Ưu tiên kiểm tra content_type từ backend trước
+  const contentType = lesson?.content_type?.toLowerCase()
+  if (contentType) {
+    if (contentType === 'exercise' || contentType === 'quiz') return 'quiz'
+    if (contentType === 'pdf') return 'pdf'
+    if (contentType === 'text') return 'text'
+    if (contentType === 'document') return 'doc'
+    if (contentType === 'video') return 'video'
+  }
+  
   const explicitType = String(lesson?.type || '').toLowerCase()
   if (explicitType && explicitType !== 'lesson') {
     const match = matchKindFromString(explicitType)
     if (match) return match
   }
-  if (lesson?.content_type === 'exercise') {
-    return 'quiz'
-  }
+  
   const introMeta = introOverride ?? normalizeIntroduction(lesson?.introduction)
   const payloadKind = kindFromPayload(introMeta?.payload)
   if (payloadKind) return payloadKind
   const introKind = matchKindFromString(introMeta?.contentType)
   if (introKind) return introKind
+  
   if (lesson?.video_url || lesson?.video_file) {
     return 'video'
+  }
+  if (lesson?.document_file) {
+    return 'pdf'
+  }
+  if (lesson?.text_content) {
+    return 'text'
   }
   return 'text'
 }
@@ -1052,15 +1239,55 @@ const currentLessonTitle = computed(() => currentLesson.value?.title || '')
 const currentLessonIntro = computed(() => normalizeIntroduction(currentLessonDetail.value?.introduction))
 
 const lessonContentPayload = computed(() => {
+  const intro = currentLessonDetail.value?.introduction
   const meta = currentLessonIntro.value
-  if (!meta) return null
-  const payload = (meta.payload && typeof meta.payload === 'object') ? meta.payload : {}
-  const inferred = matchKindFromString(meta.contentType) || kindFromPayload(payload)
-  if (!inferred) return null
-  return {
-    contentType: inferred,
-    payload,
+  
+  // Nếu có meta từ normalizeIntroduction, dùng nó
+  if (meta) {
+    const payload = (meta.payload && typeof meta.payload === 'object') ? meta.payload : {}
+    
+    // Ưu tiên: contentType từ meta, sau đó infer từ payload, cuối cùng dùng currentLessonKind
+    let contentType = matchKindFromString(meta.contentType) || kindFromPayload(payload)
+    
+    // Nếu vẫn không có, dùng currentLessonKind làm fallback (nhưng chỉ nếu không phải video)
+    if (!contentType && currentLessonKind.value && currentLessonKind.value !== 'video') {
+      contentType = currentLessonKind.value
+    }
+    
+    // Nếu có payload hoặc contentType, trả về
+    if (contentType || (payload && Object.keys(payload).length > 0)) {
+      return {
+        contentType: contentType || 'text', // Default to text nếu không xác định được
+        payload,
+      }
+    }
   }
+  
+  // Fallback: Nếu có introduction nhưng không parse được, coi như text
+  if (intro && typeof intro === 'string' && intro.trim()) {
+    const trimmed = intro.trim()
+    // Nếu không phải JSON string, coi như text content
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+      return {
+        contentType: 'text',
+        payload: { content: trimmed }
+      }
+    }
+    // Nếu là JSON string nhưng không parse được, vẫn coi như text
+    try {
+      JSON.parse(trimmed)
+      // Nếu parse được nhưng normalizeIntroduction trả về null, có thể là JSON không đúng format
+      // Vẫn return null để fallback về phần render introduction
+    } catch {
+      // Không phải JSON hợp lệ, coi như text
+      return {
+        contentType: 'text',
+        payload: { content: trimmed }
+      }
+    }
+  }
+  
+  return null
 })
 
 const currentFlatIndex = computed<number>(() => {
@@ -1316,6 +1543,20 @@ function getVideoFileUrl(videoFile?: string): string {
   // Nếu là path tương đối, cũng đưa qua stream endpoint
   const safePath = videoFile.replace(/^\/+/, '') // bỏ slash đầu để tránh path trống
   return `${apiBase}/api/media/stream/${encodeURI(safePath)}`
+}
+
+function getDocumentUrl(documentFile?: string): string {
+  if (!documentFile) return ''
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
+
+  // Nếu là URL tuyệt đối, trả về luôn
+  if (documentFile.startsWith('http://') || documentFile.startsWith('https://')) {
+    return documentFile
+  }
+
+  // Nếu là path tương đối, thêm media URL
+  const safePath = documentFile.replace(/^\/+/, '')
+  return `${apiBase}/media/${safePath}`
 }
 
 function formatDuration(min?: number){

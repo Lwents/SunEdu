@@ -28,7 +28,7 @@ const uiStore = useUiStore()
 // Khởi tạo/làm tươi hồ sơ ngay khi app boot
 authStore.init().catch(() => {
   /* ignore */
-})
+  })
 
 // Đăng xuất tự động khi người dùng không hoạt động
 const idleControl = useIdleLogout({

@@ -94,6 +94,10 @@ class LessonListCreateView(generics.ListCreateAPIView):
                 lesson_model.video_url = data['video_url']
             if 'video_file' in request.FILES and request.FILES['video_file']:
                 lesson_model.video_file = request.FILES['video_file']
+            if 'document_file' in request.FILES and request.FILES['document_file']:
+                lesson_model.document_file = request.FILES['document_file']
+            if 'text_content' in data:
+                lesson_model.text_content = data['text_content']
             if 'requires_exercise_completion' in data:
                 lesson_model.requires_exercise_completion = bool(data['requires_exercise_completion'])
             # Nếu có published trong request, dùng giá trị đó, nếu không thì giữ mặc định True từ service
@@ -167,7 +171,7 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
             data = dict(request.data)
         
         # Remove empty file fields
-        for field in ['video_file']:
+        for field in ['video_file', 'document_file']:
             if field in data:
                 value = data[field]
                 if value == '' or value is None or (hasattr(value, 'name') and not value.name):
@@ -184,6 +188,10 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
             instance.video_url = updates['video_url']
         if 'video_file' in request.FILES and request.FILES['video_file']:
             instance.video_file = request.FILES['video_file']
+        if 'document_file' in request.FILES and request.FILES['document_file']:
+            instance.document_file = request.FILES['document_file']
+        if 'text_content' in updates:
+            instance.text_content = updates['text_content']
         if 'requires_exercise_completion' in updates:
             instance.requires_exercise_completion = updates['requires_exercise_completion']
         instance.save()

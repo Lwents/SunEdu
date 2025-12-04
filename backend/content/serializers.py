@@ -299,17 +299,31 @@ class LessonSerializer(serializers.ModelSerializer):
     module = serializers.PrimaryKeyRelatedField(queryset=models.Module.objects.all(), source="module_id")
     title = serializers.CharField(max_length=255)
     position = serializers.IntegerField(default=0, min_value=0)
-    content_type = serializers.ChoiceField(choices=[("lesson", "Lesson"), ("exploration", "Exploration"), ("exercise", "Exercise"), ("quiz", "Quiz")], default="lesson")
+    content_type = serializers.ChoiceField(
+        choices=[
+            ("lesson", "Lesson"),
+            ("exploration", "Exploration"),
+            ("exercise", "Exercise"),
+            ("quiz", "Quiz"),
+            ("video", "Video"),
+            ("pdf", "PDF"),
+            ("text", "Text"),
+            ("document", "Document"),
+        ],
+        default="lesson"
+    )
     published = serializers.BooleanField(default=False)
     introduction = serializers.CharField(allow_blank=True, required=False, help_text="Giới thiệu bài học")
     video_url = serializers.URLField(allow_blank=True, required=False, allow_null=True, help_text="URL video bài học")
     video_file = serializers.FileField(required=False, allow_null=True, help_text="File video bài học")
+    document_file = serializers.FileField(required=False, allow_null=True, help_text="File tài liệu (PDF, DOCX)")
+    text_content = serializers.CharField(allow_blank=True, required=False, allow_null=True, help_text="Nội dung văn bản")
     requires_exercise_completion = serializers.BooleanField(default=False, help_text="Yêu cầu hoàn thành bài tập trước khi tiếp tục")
     versions = LessonVersionSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.Lesson
-        fields = ["id", "module", "title", "position", "content_type", "published", "introduction", "video_url", "video_file", "requires_exercise_completion", "versions"]
+        fields = ["id", "module", "title", "position", "content_type", "published", "introduction", "video_url", "video_file", "document_file", "text_content", "requires_exercise_completion", "versions"]
         read_only_fields = ["id", "versions"]
 
     def to_domain(self) -> LessonDomain:

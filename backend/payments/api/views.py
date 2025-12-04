@@ -277,12 +277,32 @@ class MoMoSyncPaymentView(APIView):
         if result_code == 0:
             # success
             if payment.status != "paid":
-                payment.status = "paid"
-                if trans_id and not payment.transaction_id:
-                    payment.transaction_id = str(trans_id)
-                if not payment.paid_at:
-                    payment.paid_at = timezone.now()
-                payment.save(update_fields=["status", "transaction_id", "paid_at", "metadata"])
+                with transaction.atomic():
+                    payment.status = "paid"
+                    if trans_id and not payment.transaction_id:
+                        payment.transaction_id = str(trans_id)
+                    if not payment.paid_at:
+                        payment.paid_at = timezone.now()
+                    payment.save(update_fields=["status", "transaction_id", "paid_at", "metadata"])
+
+                    # Tạo/cập nhật subscription nếu có plan (giống MoMoIPNView)
+                    if payment.plan:
+                        subscription, created = UserSubscription.objects.get_or_create(
+                            user=payment.user,
+                            plan=payment.plan,
+                            defaults={
+                                "start_date": timezone.now(),
+                                "end_date": timezone.now() + timedelta(days=payment.plan.duration_days),
+                                "active": True,
+                                "payment": payment,
+                            },
+                        )
+                        if not created:
+                            base_date = max(subscription.end_date, timezone.now())
+                            subscription.end_date = base_date + timedelta(days=payment.plan.duration_days)
+                            subscription.active = True
+                            subscription.payment = payment
+                            subscription.save(update_fields=["end_date", "active", "payment"])
         elif result_code in {1000, 7000}:
             # 1000: transaction not found or still pending in some docs; keep pending
             if payment.status != "pending":

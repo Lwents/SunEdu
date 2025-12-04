@@ -24,8 +24,8 @@ class StudentPaymentsHistoryView(APIView):
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('pageSize', 20))
         
-        # Get payments for student
-        payments = Payment.objects.filter(user=student)
+        # Get payments for student - newest first
+        payments = Payment.objects.filter(user=student).order_by('-created_at')
         
         # Apply status filter
         if status_filter:
