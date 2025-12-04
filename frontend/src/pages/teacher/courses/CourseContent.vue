@@ -94,13 +94,7 @@
               <div>
                 <p class="font-medium text-gray-900 dark:text-gray-100">{{ lesson.title }}</p>
                 <p class="text-xs text-gray-500">
-                  {{
-                    lesson.content_type === 'lesson'
-                      ? 'Bài học'
-                      : lesson.content_type === 'exercise'
-                        ? 'Bài tập'
-                        : 'Khám phá'
-                  }}
+                  {{ getContentTypeLabel(lesson.content_type) }}
                   <span v-if="lesson.published" class="ml-2 text-emerald-600">• Đã xuất bản</span>
                   <span v-else class="ml-2 text-amber-600">• Nháp</span>
                 </p>
@@ -202,18 +196,30 @@
               required
             />
           </div>
+          <!-- Loại nội dung -->
           <div class="mb-4">
             <label class="mb-2 block text-sm font-medium text-gray-700">Loại nội dung</label>
-            <select
-              v-model="lessonForm.content_type"
-              class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
-            >
-              <option value="lesson">Bài học</option>
-              <option value="exercise">Bài tập</option>
-              <option value="exploration">Khám phá</option>
-            </select>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-for="option in contentTypeOptions"
+                :key="option.value"
+                type="button"
+                :class="[
+                  'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition',
+                  lessonForm.content_type === option.value
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                    : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'
+                ]"
+                @click="lessonForm.content_type = option.value"
+              >
+                <span>{{ option.icon }}</span>
+                <span>{{ option.label }}</span>
+              </button>
+            </div>
           </div>
-          <div class="mb-4">
+
+          <!-- Video Section (chỉ hiện khi chọn video hoặc lesson) -->
+          <div v-if="lessonForm.content_type === 'video' || lessonForm.content_type === 'lesson'" class="mb-4">
             <label class="mb-2 block text-sm font-medium text-gray-700">Video</label>
             <div class="mb-2 flex gap-2">
               <button
@@ -272,6 +278,59 @@
               </p>
             </div>
           </div>
+
+          <!-- PDF Upload -->
+          <div v-if="lessonForm.content_type === 'pdf'" class="mb-4">
+            <label class="mb-2 block text-sm font-medium text-gray-700">Tải lên file PDF</label>
+            <input
+              ref="documentFileInput"
+              type="file"
+              accept=".pdf"
+              class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+              @change="onDocumentFileChange"
+            />
+            <p v-if="lessonForm.documentFile" class="mt-1 text-xs text-emerald-600">
+              Đã chọn: {{ lessonForm.documentFile.name }} ({{ formatFileSize(lessonForm.documentFile.size) }})
+            </p>
+            <p v-else class="mt-1 text-xs text-gray-500">Tối đa 50MB</p>
+          </div>
+
+          <!-- Document (Word) Upload -->
+          <div v-if="lessonForm.content_type === 'document'" class="mb-4">
+            <label class="mb-2 block text-sm font-medium text-gray-700">Tải lên tài liệu Word</label>
+            <input
+              ref="documentFileInput"
+              type="file"
+              accept=".doc,.docx,.odt"
+              class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+              @change="onDocumentFileChange"
+            />
+            <p v-if="lessonForm.documentFile" class="mt-1 text-xs text-emerald-600">
+              Đã chọn: {{ lessonForm.documentFile.name }} ({{ formatFileSize(lessonForm.documentFile.size) }})
+            </p>
+            <p v-else class="mt-1 text-xs text-gray-500">Hỗ trợ: DOC, DOCX, ODT. Tối đa 50MB</p>
+          </div>
+
+          <!-- Text Content -->
+          <div v-if="lessonForm.content_type === 'text'" class="mb-4">
+            <label class="mb-2 block text-sm font-medium text-gray-700">Nội dung văn bản</label>
+            <textarea
+              v-model="lessonForm.text_content"
+              rows="5"
+              class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+              placeholder="Nhập nội dung bài học..."
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-500">Bạn có thể thêm nội dung chi tiết sau</p>
+          </div>
+
+          <!-- Exercise Notice -->
+          <div v-if="lessonForm.content_type === 'exercise'" class="mb-4">
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p class="text-sm text-amber-700">
+                ✏️ Bài tập sẽ được tạo. Bạn có thể thêm câu hỏi và đáp án sau khi tạo bài học.
+              </p>
+            </div>
+          </div>
           <div class="flex justify-end gap-3">
             <button
               type="button"
@@ -322,18 +381,46 @@ const moduleForm = ref({ title: '' })
 const showAddLessonModuleId = ref<string | null>(null)
 const editingLesson = ref<Lesson | null>(null)
 const videoFileInput = ref<HTMLInputElement | null>(null)
+const documentFileInput = ref<HTMLInputElement | null>(null)
+
+const contentTypeOptions = [
+  { value: 'video', label: 'Video bài giảng', icon: '🎬' },
+  { value: 'pdf', label: 'Tài liệu PDF', icon: '📄' },
+  { value: 'text', label: 'Văn bản', icon: '📝' },
+  { value: 'exercise', label: 'Bài tập', icon: '✏️' },
+  { value: 'document', label: 'Tài liệu Word', icon: '📑' },
+  { value: 'lesson', label: 'Bài học (cơ bản)', icon: '📚' },
+]
+
+function getContentTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    video: '🎬 Video',
+    pdf: '📄 PDF',
+    text: '📝 Văn bản',
+    exercise: '✏️ Bài tập',
+    document: '📑 Word',
+    lesson: '📚 Bài học',
+    exploration: '🔍 Khám phá',
+  }
+  return labels[type] || type
+}
+
 const lessonForm = ref<{
   title: string
-  content_type: Lesson['content_type']
+  content_type: string
   video_url: string
   videoType: 'url' | 'file'
   videoFile: File | null
+  documentFile: File | null
+  text_content: string
 }>({
   title: '',
-  content_type: 'lesson',
+  content_type: 'video',
   video_url: '',
   videoType: 'url',
   videoFile: null,
+  documentFile: null,
+  text_content: '',
 })
 
 async function loadCourse() {
@@ -361,6 +448,15 @@ async function loadModules() {
   }
 }
 
+function findLessonById(id: ID): Lesson | null {
+  const key = String(id)
+  for (const lessonList of Object.values(lessonsByModule.value)) {
+    const found = lessonList.find((l) => String(l.id) === key)
+    if (found) return found
+  }
+  return null
+}
+
 function showAddLesson(moduleId: ID) {
   showAddLessonModuleId.value = String(moduleId)
   
@@ -373,14 +469,19 @@ function showAddLesson(moduleId: ID) {
   
   lessonForm.value = {
     title: autoTitle,
-    content_type: 'lesson',
+    content_type: 'video',
     video_url: '',
     videoType: 'url',
     videoFile: null,
+    documentFile: null,
+    text_content: '',
   }
   editingLesson.value = null
   if (videoFileInput.value) {
     videoFileInput.value.value = ''
+  }
+  if (documentFileInput.value) {
+    documentFileInput.value.value = ''
   }
 }
 
@@ -417,6 +518,24 @@ function formatFileSize(bytes: number): string {
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 
+function onDocumentFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files.length > 0) {
+    const file = input.files[0]
+    // Validate file size (50MB max)
+    const maxSize = 50 * 1024 * 1024 // 50MB
+    if (file.size > maxSize) {
+      showToast('File quá lớn. Tối đa 50MB', 'error')
+      input.value = ''
+      lessonForm.value.documentFile = null
+      return
+    }
+    lessonForm.value.documentFile = file
+  } else {
+    lessonForm.value.documentFile = null
+  }
+}
+
 function openAddModule() {
   // Tự động tạo tên chương: "Chương X" (X = số chương tiếp theo)
   moduleForm.value = { title: getNextModuleLabel() }
@@ -434,15 +553,18 @@ function editLesson(lesson: Lesson) {
   editingLesson.value = lesson
   lessonForm.value = {
     title: lesson.title,
-    content_type: lesson.content_type,
+    content_type: lesson.content_type || 'video',
     video_url: (lesson as any).video_url || '',
-    videoType: 'url',
+    videoType: ((lesson as any).video_file ? 'file' : 'url') as 'url' | 'file',
     videoFile: null,
+    documentFile: null,
+    text_content: (lesson as any).text_content || '',
   }
   showAddLessonModuleId.value = String(lesson.module)
 }
 
 function goEditLesson(lessonId: string) {
+  // Điều hướng sang trang edit full-page để chỉnh sửa chi tiết
   router.push({ name: 'teacher-lesson-edit', params: { id: lessonId } })
 }
 
@@ -457,11 +579,16 @@ function closeLessonModal() {
   showAddLessonModuleId.value = null
   editingLesson.value = null
   // Không reset form để giữ lại giá trị cho lần sau
-  // Chỉ reset video file
+  // Chỉ reset file inputs
   lessonForm.value.videoFile = null
   lessonForm.value.video_url = ''
+  lessonForm.value.documentFile = null
+  lessonForm.value.text_content = ''
   if (videoFileInput.value) {
     videoFileInput.value.value = ''
+  }
+  if (documentFileInput.value) {
+    documentFileInput.value.value = ''
   }
 }
 
@@ -504,23 +631,37 @@ async function saveLesson() {
     const moduleId = showAddLessonModuleId.value
     const nextLessonPosition = getNextLessonPosition(moduleId)
 
+    // Kiểm tra có file cần upload không
+    const hasVideoFile = lessonForm.value.videoFile && (lessonForm.value.content_type === 'video' || lessonForm.value.content_type === 'lesson')
+    const hasDocumentFile = lessonForm.value.documentFile && (lessonForm.value.content_type === 'pdf' || lessonForm.value.content_type === 'document')
+    const needsFormData = hasVideoFile || hasDocumentFile
+
     if (editingLesson.value) {
       // Update existing lesson
-      if (lessonForm.value.videoType === 'file' && lessonForm.value.videoFile) {
-        // Upload video file using FormData
+      if (needsFormData) {
         const formData = new FormData()
         formData.append('title', lessonForm.value.title)
         formData.append('content_type', lessonForm.value.content_type)
-        formData.append('video_file', lessonForm.value.videoFile)
+        if (hasVideoFile) {
+          formData.append('video_file', lessonForm.value.videoFile!)
+        }
+        if (hasDocumentFile) {
+          formData.append('document_file', lessonForm.value.documentFile!)
+        }
+        if (lessonForm.value.text_content) {
+          formData.append('text_content', lessonForm.value.text_content)
+        }
         await contentService.updateLesson(editingLesson.value.id, formData)
       } else {
-        // Update with video_url or other fields
         const lessonData: any = {
           title: lessonForm.value.title,
           content_type: lessonForm.value.content_type,
         }
         if (lessonForm.value.video_url && lessonForm.value.video_url.trim()) {
           lessonData.video_url = lessonForm.value.video_url.trim()
+        }
+        if (lessonForm.value.text_content) {
+          lessonData.text_content = lessonForm.value.text_content
         }
         await contentService.updateLesson(editingLesson.value.id, lessonData)
       }
@@ -529,26 +670,29 @@ async function saveLesson() {
       showToast('Đã cập nhật bài học thành công', 'success')
     } else {
       // Create new lesson
-      if (lessonForm.value.videoType === 'file' && lessonForm.value.videoFile) {
-        // Create lesson with video file using FormData
+      if (needsFormData) {
         const formData = new FormData()
         formData.append('title', lessonForm.value.title)
         formData.append('content_type', lessonForm.value.content_type)
         formData.append('module', String(moduleId))
         formData.append('position', String(nextLessonPosition))
-        formData.append('video_file', lessonForm.value.videoFile)
-        // Create lesson with FormData (backend will handle it)
+        if (hasVideoFile) {
+          formData.append('video_file', lessonForm.value.videoFile!)
+        }
+        if (hasDocumentFile) {
+          formData.append('document_file', lessonForm.value.documentFile!)
+        }
+        if (lessonForm.value.text_content) {
+          formData.append('text_content', lessonForm.value.text_content)
+        }
         await contentService.createLesson(moduleId, formData as any)
       } else {
-        // Create lesson with video_url or without video
         const lessonData: any = {
           title: lessonForm.value.title,
           content_type: lessonForm.value.content_type,
           module: moduleId,
           position: nextLessonPosition,
         }
-
-        // Add video_url if provided
         if (
           lessonForm.value.videoType === 'url' &&
           lessonForm.value.video_url &&
@@ -556,7 +700,9 @@ async function saveLesson() {
         ) {
           lessonData.video_url = lessonForm.value.video_url.trim()
         }
-
+        if (lessonForm.value.text_content) {
+          lessonData.text_content = lessonForm.value.text_content
+        }
         await contentService.createLesson(moduleId, lessonData)
       }
       
@@ -569,11 +715,16 @@ async function saveLesson() {
       
       // Tự động tạo tên bài học tiếp theo
       lessonForm.value.title = `Bài ${moduleNumber}.${nextLessonNumber}`
-      // Reset video fields để có thể thêm tiếp
+      // Reset fields để có thể thêm tiếp
       lessonForm.value.videoFile = null
       lessonForm.value.video_url = ''
+      lessonForm.value.documentFile = null
+      lessonForm.value.text_content = ''
       if (videoFileInput.value) {
         videoFileInput.value.value = ''
+      }
+      if (documentFileInput.value) {
+        documentFileInput.value.value = ''
       }
       
       showToast('Đã thêm bài học thành công', 'success')

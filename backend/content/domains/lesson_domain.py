@@ -11,7 +11,7 @@ from content.domains.value_objects import CreateLessonVersionCommand
 
 
 class LessonDomain:
-    VALID_CONTENT_TYPES = ("lesson", "exploration", "exercise", "quiz")
+    VALID_CONTENT_TYPES = ("lesson", "exploration", "exercise", "quiz", "video", "pdf", "text", "document")
 
     def __init__(self,
                  module_id: str,
@@ -100,6 +100,10 @@ class LessonDomain:
             result['video_url'] = self.video_url
         if hasattr(self, 'video_file'):
             result['video_file'] = self.video_file
+        if hasattr(self, 'document_file'):
+            result['document_file'] = self.document_file
+        if hasattr(self, 'text_content'):
+            result['text_content'] = self.text_content
         if hasattr(self, 'requires_exercise_completion'):
             result['requires_exercise_completion'] = self.requires_exercise_completion
         return result
@@ -114,6 +118,10 @@ class LessonDomain:
             l.video_url = model.video_url
         if hasattr(model, 'video_file') and model.video_file:
             l.video_file = str(model.video_file)
+        if hasattr(model, 'document_file') and model.document_file:
+            l.document_file = str(model.document_file)
+        if hasattr(model, 'text_content'):
+            l.text_content = model.text_content
         if hasattr(model, 'requires_exercise_completion'):
             l.requires_exercise_completion = model.requires_exercise_completion
         # Load versions - kiểm tra cả prefetched và related

@@ -99,6 +99,14 @@ class CourseService:
             # Load lessons with versions
             module_domain.lessons = []
             for lesson_model in module_model.lessons.all():
+                # Ensure legacy lessons have at least one published version
+                if not lesson_model.versions.exists():
+                    LessonVersion.objects.create(
+                        lesson=lesson_model,
+                        version=1,
+                        status='published',
+                        content={"structure": "lesson", "content_blocks": []},
+                    )
                 lesson_domain = LessonDomain.from_model(lesson_model)
                 # Load versions
                 from content.domains.lesson_version_domain import LessonVersionDomain

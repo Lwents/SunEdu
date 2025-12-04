@@ -57,6 +57,8 @@ export interface ProfileUpdatePayload {
   phone?: string
   email?: string
   avatar_url?: string
+  title?: string
+  bio?: string
   dob?: string
   gender?: string
   class_name?: string
@@ -205,6 +207,8 @@ export const authService = {
     if (payload.dob) backendPayload.dob = payload.dob
     if (payload.gender) backendPayload.gender = payload.gender
     if (payload.class_name || payload.className) backendPayload.class_name = payload.class_name || payload.className
+    if (payload.title !== undefined) backendPayload.title = payload.title
+    if (payload.bio !== undefined) backendPayload.bio = payload.bio
     // Parent & contact info (backend copies these keys into metadata)
     const copyKeys = [
       'address',
@@ -221,13 +225,6 @@ export const authService = {
     for (const k of copyKeys) {
       const v = (payload as any)[k]
       if (v !== undefined) backendPayload[k] = v
-    }
-    // Store title and bio in metadata
-    const metadata: any = {}
-    if ((payload as any).title !== undefined) metadata.title = (payload as any).title
-    if ((payload as any).bio !== undefined) metadata.bio = (payload as any).bio
-    if (Object.keys(metadata).length > 0) {
-      backendPayload.metadata = metadata
     }
     try {
     const { data } = await http.patch('/account/profile/', backendPayload)

@@ -399,16 +399,32 @@ class StudentCourseDetailView(APIView):
                     return 'image'
                 return None
 
+            # Ưu tiên kiểm tra content_type từ model trước
+            content_type = lesson.content_type
+            if content_type:
+                if content_type in ('exercise', 'quiz'):
+                    return 'quiz'
+                if content_type == 'pdf':
+                    return 'pdf'
+                if content_type == 'text':
+                    return 'text'
+                if content_type == 'document':
+                    return 'doc'
+                if content_type == 'video':
+                    return 'video'
+            
             intro_meta = _extract_intro(getattr(lesson, "introduction", None))
             kind = None
             if intro_meta:
                 kind = _kind_from_string(intro_meta.get('contentType'))
                 if not kind:
                     kind = _kind_from_payload(intro_meta.get('payload'))
-            if not kind and lesson.content_type == 'exercise':
-                kind = 'quiz'
             if not kind and (lesson.video_url or lesson.video_file):
                 kind = 'video'
+            if not kind and hasattr(lesson, 'document_file') and lesson.document_file:
+                kind = 'pdf'
+            if not kind and hasattr(lesson, 'text_content') and lesson.text_content:
+                kind = 'text'
             if not kind:
                 kind = 'text'
             return kind
@@ -422,6 +438,7 @@ class StudentCourseDetailView(APIView):
                     'id': str(lesson.id),
                     'title': lesson.title,
                     'type': _detect_content_type(lesson),
+                    'content_type': lesson.content_type,
                     'durationMinutes': None,  # Could calculate from video if available
                     'isPreview': False,  # First lesson could be preview
                     'completed': progress.completed if progress else False,
@@ -598,6 +615,8 @@ class StudentCoursePlayerView(APIView):
             'content_type': lesson.content_type,
             'video_url': lesson.video_url or '',
             'video_file': build_media_url(request, lesson.video_file) if lesson.video_file else None,
+            'document_file': build_media_url(request, lesson.document_file) if hasattr(lesson, 'document_file') and lesson.document_file else None,
+            'text_content': lesson.text_content if hasattr(lesson, 'text_content') else None,
             'introduction': lesson.introduction or '',
             'requires_exercise_completion': lesson.requires_exercise_completion,
             'progress': {

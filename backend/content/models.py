@@ -84,12 +84,22 @@ class Lesson(models.Model):
     content_type = models.CharField(
         max_length=32,
         default='lesson',
-        choices=[('lesson', ('Lesson')), ('exploration', ('Exploration')), ('exercise', ('Exercise'))]
+        choices=[
+            ('lesson', ('Lesson')),
+            ('exploration', ('Exploration')),
+            ('exercise', ('Exercise')),
+            ('video', ('Video')),
+            ('pdf', ('PDF')),
+            ('text', ('Text')),
+            ('document', ('Document')),
+        ]
     )
     published = models.BooleanField(default=False)
     # Thêm các trường mới
     video_url = models.URLField(blank=True, null=True, help_text="URL video cho bài học")
     video_file = models.FileField(upload_to='lesson_videos/', blank=True, null=True, help_text="File video cho bài học")
+    document_file = models.FileField(upload_to='lesson_documents/', blank=True, null=True, help_text="File tài liệu (PDF, DOCX)")
+    text_content = models.TextField(blank=True, null=True, help_text="Nội dung văn bản")
     introduction = models.TextField(blank=True, null=True, help_text="Giới thiệu bài học (hiển thị trước video)")
     requires_exercise_completion = models.BooleanField(default=False, help_text="Yêu cầu hoàn thành bài tập trước khi tiếp tục")
 

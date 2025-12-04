@@ -40,7 +40,7 @@ class AddModuleCommand:
 class CreateLessonCommand:
     module_id: str
     title: str
-    content_type: str = "lesson"  # lesson|exploration|exercise|quiz
+    content_type: str = "lesson"  # lesson|exploration|exercise|quiz|video|pdf|text|document
     position: Optional[int] = None
 
     def validate(self):
@@ -48,7 +48,7 @@ class CreateLessonCommand:
             raise DomainValidationError("module_id required.")
         if not self.title or not self.title.strip():
             raise DomainValidationError("lesson title required.")
-        if self.content_type not in ("lesson", "exploration", "exercise", "quiz"):
+        if self.content_type not in ("lesson", "exploration", "exercise", "quiz", "video", "pdf", "text", "document"):
             raise DomainValidationError("Invalid content_type.")
 
 @dataclass

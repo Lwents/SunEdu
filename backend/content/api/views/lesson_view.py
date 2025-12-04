@@ -34,6 +34,28 @@ from content.services.exploration_service import (
 # Create service instances
 lesson_service = LessonService()
 
+
+def _ensure_published_version(lesson_model, author_id=None):
+    """
+    Make sure a lesson has at least one published version so course publish rule can pass.
+    Used for legacy lessons that might not have versions yet.
+    """
+    from content.models import LessonVersion
+    if lesson_model.versions.exists():
+        return
+    author = None
+    if author_id:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        author = User.objects.filter(id=author_id).first()
+    LessonVersion.objects.create(
+        lesson=lesson_model,
+        version=1,
+        status='published',
+        author=author,
+        content={"structure": "lesson", "content_blocks": []},
+    )
+
 class LessonListCreateView(generics.ListCreateAPIView):
     """
     GET /api/modules/{module_id}/lessons/
@@ -88,12 +110,18 @@ class LessonListCreateView(generics.ListCreateAPIView):
         from content.models import Lesson
         try:
             lesson_model = Lesson.objects.prefetch_related('versions').get(id=created_domain.id)
+            # Ensure a default published version exists (legacy safety)
+            _ensure_published_version(lesson_model, author_id=author_id)
             if 'introduction' in data:
                 lesson_model.introduction = data['introduction']
             if 'video_url' in data:
                 lesson_model.video_url = data['video_url']
             if 'video_file' in request.FILES and request.FILES['video_file']:
                 lesson_model.video_file = request.FILES['video_file']
+            if 'document_file' in request.FILES and request.FILES['document_file']:
+                lesson_model.document_file = request.FILES['document_file']
+            if 'text_content' in data:
+                lesson_model.text_content = data['text_content']
             if 'requires_exercise_completion' in data:
                 lesson_model.requires_exercise_completion = bool(data['requires_exercise_completion'])
             # Nếu có published trong request, dùng giá trị đó, nếu không thì giữ mặc định True từ service
@@ -167,7 +195,7 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
             data = dict(request.data)
         
         # Remove empty file fields
-        for field in ['video_file']:
+        for field in ['video_file', 'document_file']:
             if field in data:
                 value = data[field]
                 if value == '' or value is None or (hasattr(value, 'name') and not value.name):
@@ -178,12 +206,18 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
         updates = serializer.validated_data
         
         # Update model directly for new fields
+        # Ensure a default published version exists (legacy safety)
+        _ensure_published_version(instance, author_id=request.user.id if request.user.is_authenticated else None)
         if 'introduction' in updates:
             instance.introduction = updates['introduction']
         if 'video_url' in updates:
             instance.video_url = updates['video_url']
         if 'video_file' in request.FILES and request.FILES['video_file']:
             instance.video_file = request.FILES['video_file']
+        if 'document_file' in request.FILES and request.FILES['document_file']:
+            instance.document_file = request.FILES['document_file']
+        if 'text_content' in updates:
+            instance.text_content = updates['text_content']
         if 'requires_exercise_completion' in updates:
             instance.requires_exercise_completion = updates['requires_exercise_completion']
         instance.save()

@@ -399,8 +399,32 @@
             />
           </div>
 
-          <!-- Video URL hoặc File -->
+          <!-- Loại nội dung -->
           <div>
+            <label class="mb-2 block text-sm font-semibold text-gray-700">
+              Loại nội dung <span class="text-rose-600">*</span>
+            </label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <button
+                v-for="option in contentTypeOptions"
+                :key="option.value"
+                type="button"
+                :class="[
+                  'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition',
+                  newLessonContentType === option.value
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                    : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'
+                ]"
+                @click="newLessonContentType = option.value as any"
+              >
+                <span>{{ option.icon }}</span>
+                <span>{{ option.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Video URL hoặc File (chỉ hiện khi chọn video) -->
+          <div v-if="newLessonContentType === 'video'">
             <label class="mb-2 block text-sm font-semibold text-gray-700">
               Video bài học (tùy chọn)
             </label>
@@ -476,12 +500,111 @@
                   </button>
                 </div>
                 <p class="mt-1 text-xs text-gray-500">
-                  Hỗ trợ: MP4, AVI, MOV. Tối đa 5MB
+                  Hỗ trợ: MP4, AVI, MOV. Tối đa 300MB
                 </p>
                 <p v-if="newLessonVideoFile" class="mt-1 text-xs text-green-600">
                   Đã chọn: {{ newLessonVideoFile.name }} ({{ formatFileSize(newLessonVideoFile.size) }})
                 </p>
               </div>
+            </div>
+          </div>
+
+          <!-- PDF Upload -->
+          <div v-if="newLessonContentType === 'pdf'">
+            <label class="mb-2 block text-sm font-semibold text-gray-700">
+              Tải lên file PDF
+            </label>
+            <input
+              ref="newLessonDocumentFileInput"
+              type="file"
+              accept=".pdf"
+              class="hidden"
+              @change="onPickDocument"
+            />
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                @click="newLessonDocumentFileInput?.click()"
+              >
+                📄 Chọn file PDF
+              </button>
+              <span v-if="newLessonDocumentFile" class="text-sm text-gray-600 flex-1 truncate">
+                {{ newLessonDocumentFile.name }}
+              </span>
+              <button
+                v-if="newLessonDocumentFile"
+                type="button"
+                class="text-rose-600 hover:text-rose-700 text-sm"
+                @click="clearDocumentFile"
+              >
+                Xóa
+              </button>
+            </div>
+            <p v-if="newLessonDocumentFile" class="mt-1 text-xs text-green-600">
+              Đã chọn: {{ newLessonDocumentFile.name }} ({{ formatFileSize(newLessonDocumentFile.size) }})
+            </p>
+            <p v-else class="mt-1 text-xs text-gray-500">Tối đa 50MB</p>
+          </div>
+
+          <!-- Document (Word/Docx) Upload -->
+          <div v-if="newLessonContentType === 'document'">
+            <label class="mb-2 block text-sm font-semibold text-gray-700">
+              Tải lên tài liệu Word
+            </label>
+            <input
+              ref="newLessonDocumentFileInput"
+              type="file"
+              accept=".doc,.docx,.odt"
+              class="hidden"
+              @change="onPickDocument"
+            />
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                @click="newLessonDocumentFileInput?.click()"
+              >
+                📑 Chọn file Word
+              </button>
+              <span v-if="newLessonDocumentFile" class="text-sm text-gray-600 flex-1 truncate">
+                {{ newLessonDocumentFile.name }}
+              </span>
+              <button
+                v-if="newLessonDocumentFile"
+                type="button"
+                class="text-rose-600 hover:text-rose-700 text-sm"
+                @click="clearDocumentFile"
+              >
+                Xóa
+              </button>
+            </div>
+            <p v-if="newLessonDocumentFile" class="mt-1 text-xs text-green-600">
+              Đã chọn: {{ newLessonDocumentFile.name }} ({{ formatFileSize(newLessonDocumentFile.size) }})
+            </p>
+            <p v-else class="mt-1 text-xs text-gray-500">Hỗ trợ: DOC, DOCX, ODT. Tối đa 50MB</p>
+          </div>
+
+          <!-- Text Content -->
+          <div v-if="newLessonContentType === 'text'">
+            <label class="mb-2 block text-sm font-semibold text-gray-700">
+              Nội dung văn bản
+            </label>
+            <textarea
+              v-model="newLessonTextContent"
+              rows="6"
+              class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              placeholder="Nhập nội dung bài học..."
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-500">Bạn có thể thêm nội dung chi tiết sau khi tạo bài học</p>
+          </div>
+
+          <!-- Exercise -->
+          <div v-if="newLessonContentType === 'exercise'">
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p class="text-sm text-amber-700">
+                ✏️ Bài tập sẽ được tạo. Bạn có thể thêm câu hỏi và đáp án sau khi tạo bài học.
+              </p>
             </div>
           </div>
         </div>
@@ -549,6 +672,20 @@ const newLessonVideoType = ref<'url' | 'file'>('url')
 const newLessonVideoUrl = ref('')
 const newLessonVideoFile = ref<File | null>(null)
 const newLessonVideoFileInput = ref<HTMLInputElement | null>(null)
+
+// Content type for lesson
+const newLessonContentType = ref<'video' | 'pdf' | 'text' | 'exercise' | 'document'>('video')
+const newLessonDocumentFile = ref<File | null>(null)
+const newLessonDocumentFileInput = ref<HTMLInputElement | null>(null)
+const newLessonTextContent = ref('')
+
+const contentTypeOptions = [
+  { value: 'video', label: 'Video bài giảng', icon: '🎬' },
+  { value: 'pdf', label: 'Tài liệu PDF', icon: '📄' },
+  { value: 'text', label: 'Văn bản', icon: '📝' },
+  { value: 'exercise', label: 'Bài tập', icon: '✏️' },
+  { value: 'document', label: 'Tài liệu (Word/Docx)', icon: '📑' },
+]
 
 const submitting = ref(false)
 
@@ -651,8 +788,14 @@ function showAddLesson(moduleIdx: number) {
   newLessonVideoType.value = 'url'
   newLessonVideoUrl.value = ''
   newLessonVideoFile.value = null
+  newLessonContentType.value = 'video'
+  newLessonDocumentFile.value = null
+  newLessonTextContent.value = ''
   if (newLessonVideoFileInput.value) {
     newLessonVideoFileInput.value.value = ''
+  }
+  if (newLessonDocumentFileInput.value) {
+    newLessonDocumentFileInput.value.value = ''
   }
 }
 
@@ -684,6 +827,45 @@ function onPickLessonVideo(e: Event) {
   newLessonVideoFile.value = file
 }
 
+function onPickDocument(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  
+  const maxSize = 50 * 1024 * 1024 // 50MB
+  if (file.size > maxSize) {
+    const fileSize = formatFileSize(file.size)
+    showToast(`File quá lớn (${fileSize}). Tối đa 50MB`, 'error')
+    input.value = ''
+    return
+  }
+  
+  // Validate file type based on content type
+  const fileName = file.name.toLowerCase()
+  if (newLessonContentType.value === 'pdf') {
+    if (!fileName.endsWith('.pdf')) {
+      showToast('Vui lòng chọn file PDF', 'error')
+      input.value = ''
+      return
+    }
+  } else if (newLessonContentType.value === 'document') {
+    if (!fileName.endsWith('.doc') && !fileName.endsWith('.docx') && !fileName.endsWith('.odt')) {
+      showToast('Vui lòng chọn file Word (DOC, DOCX, ODT)', 'error')
+      input.value = ''
+      return
+    }
+  }
+  
+  newLessonDocumentFile.value = file
+}
+
+function clearDocumentFile() {
+  newLessonDocumentFile.value = null
+  if (newLessonDocumentFileInput.value) {
+    newLessonDocumentFileInput.value.value = ''
+  }
+}
+
 function editLesson(moduleIdx: number, lessonIdx: number) {
   showAddLessonModuleIdx.value = moduleIdx
   editingLessonIdx.value = lessonIdx
@@ -707,8 +889,14 @@ function cancelAddLesson() {
   newLessonTitle.value = ''
   newLessonVideoUrl.value = ''
   newLessonVideoFile.value = null
+  newLessonContentType.value = 'video'
+  newLessonDocumentFile.value = null
+  newLessonTextContent.value = ''
   if (newLessonVideoFileInput.value) {
     newLessonVideoFileInput.value.value = ''
+  }
+  if (newLessonDocumentFileInput.value) {
+    newLessonDocumentFileInput.value.value = ''
   }
 }
 
@@ -738,23 +926,48 @@ function addLesson() {
   if (showAddLessonModuleIdx.value === null || !newLessonTitle.value.trim()) return
   const module = modules.value[showAddLessonModuleIdx.value]
   if (module) {
-    const lesson: { id?: string; title: string; video_url?: string; video_file?: File; editing?: boolean } = {
-      title: newLessonTitle.value.trim()
+    const lesson: { 
+      id?: string; 
+      title: string; 
+      content_type?: string;
+      video_url?: string; 
+      video_file?: File;
+      document_file?: File;
+      text_content?: string;
+      editing?: boolean 
+    } = {
+      title: newLessonTitle.value.trim(),
+      content_type: newLessonContentType.value
     }
-    if (newLessonVideoType.value === 'url' && newLessonVideoUrl.value.trim()) {
-      lesson.video_url = newLessonVideoUrl.value.trim()
-    } else if (newLessonVideoType.value === 'file' && newLessonVideoFile.value) {
-      lesson.video_file = newLessonVideoFile.value
+    
+    // Xử lý theo loại nội dung
+    if (newLessonContentType.value === 'video') {
+      if (newLessonVideoType.value === 'url' && newLessonVideoUrl.value.trim()) {
+        lesson.video_url = newLessonVideoUrl.value.trim()
+      } else if (newLessonVideoType.value === 'file' && newLessonVideoFile.value) {
+        lesson.video_file = newLessonVideoFile.value
+      }
+    } else if ((newLessonContentType.value === 'pdf' || newLessonContentType.value === 'document') && newLessonDocumentFile.value) {
+      lesson.document_file = newLessonDocumentFile.value
+    } else if (newLessonContentType.value === 'text' && newLessonTextContent.value.trim()) {
+      lesson.text_content = newLessonTextContent.value.trim()
     }
+    
     module.lessons.push(lesson)
     // Giữ modal mở và tự động tạo tên cho bài tiếp theo
     const nextLessonNumber = module.lessons.length + 1
     newLessonTitle.value = `Bài ${showAddLessonModuleIdx.value + 1}.${nextLessonNumber}`
     newLessonVideoUrl.value = ''
     newLessonVideoFile.value = null
-    newLessonVideoType.value = 'url' // Reset về URL
+    newLessonVideoType.value = 'url'
+    newLessonDocumentFile.value = null
+    newLessonTextContent.value = ''
+    // Giữ nguyên content type để tiện thêm tiếp cùng loại
     if (newLessonVideoFileInput.value) {
       newLessonVideoFileInput.value.value = ''
+    }
+    if (newLessonDocumentFileInput.value) {
+      newLessonDocumentFileInput.value.value = ''
     }
     showToast('Đã thêm bài học thành công! Bạn có thể thêm tiếp hoặc đóng modal.', 'success')
     // Không đóng modal để có thể thêm tiếp

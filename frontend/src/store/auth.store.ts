@@ -248,21 +248,21 @@ export const useAuthStore = defineStore('auth', {
       if (!this.token) {
         return null
       }
-      const profile = await authService.getProfile()
-      this.user = {
-        ...(this.user as AuthUser | null),
+          const profile = await authService.getProfile()
+          this.user = {
+            ...(this.user as AuthUser | null),
         id: profile.id || this.user?.id || 0,
-        name: profile.fullName || profile.name || this.user?.name || '',
-        email: profile.email || this.user?.email || '',
-        phone: profile.phone || this.user?.phone,
+            name: profile.fullName || profile.name || this.user?.name || '',
+            email: profile.email || this.user?.email || '',
+            phone: profile.phone || this.user?.phone,
         role: this.user?.role || (profile.role as Role) || 'student',
-        avatar: profile.avatar || profile.avatar_url || this.user?.avatar,
-        gender: profile.gender ?? this.user?.gender,
-        title: profile.title ?? this.user?.title,
-        bio: profile.bio ?? this.user?.bio,
+            avatar: profile.avatar || profile.avatar_url || this.user?.avatar,
+            gender: profile.gender ?? this.user?.gender,
+            title: profile.title ?? this.user?.title,
+            bio: profile.bio ?? this.user?.bio,
         class_name: profile.class_name || profile.className || (this.user as any)?.class_name,
-      }
-      this.persist()
+          }
+          this.persist()
       return profile
     },
 

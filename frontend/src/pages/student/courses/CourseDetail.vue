@@ -114,19 +114,24 @@
                         :key="lesson.id"
                         class="flex items-center gap-2 text-sm text-slate-600"
                       >
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                          />
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
+                        <!-- Video icon -->
+                        <svg v-if="getLessonKind(lesson) === 'video'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <!-- PDF icon -->
+                        <span v-else-if="getLessonKind(lesson) === 'pdf'" class="text-base">📄</span>
+                        <!-- Document icon -->
+                        <span v-else-if="getLessonKind(lesson) === 'doc'" class="text-base">📑</span>
+                        <!-- Text icon -->
+                        <span v-else-if="getLessonKind(lesson) === 'text'" class="text-base">📝</span>
+                        <!-- Exercise/Quiz icon -->
+                        <svg v-else-if="getLessonKind(lesson) === 'quiz'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        <!-- Default icon -->
+                        <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         <span>{{ lesson.title }}</span>
                         <span class="text-xs text-slate-400">{{ formatDuration(lesson.durationMinutes) }}</span>
@@ -348,6 +353,28 @@ function formatDuration(min?: number) {
   const mmStr = mm < 10 ? '0' + mm : String(mm)
   const ssStr = ss < 10 ? '0' + ss : String(ss)
   return `${mmStr}:${ssStr}`
+}
+
+function getLessonKind(lesson: any): string {
+  // Ưu tiên kiểm tra content_type
+  const contentType = lesson?.content_type?.toLowerCase()
+  if (contentType) {
+    if (contentType === 'exercise' || contentType === 'quiz') return 'quiz'
+    if (contentType === 'pdf') return 'pdf'
+    if (contentType === 'text') return 'text'
+    if (contentType === 'document') return 'doc'
+    if (contentType === 'video') return 'video'
+  }
+  // Fallback: kiểm tra type
+  const type = lesson?.type?.toLowerCase()
+  if (type) {
+    if (type === 'quiz' || type === 'exercise') return 'quiz'
+    if (type === 'pdf') return 'pdf'
+    if (type === 'doc') return 'doc'
+    if (type === 'text') return 'text'
+    if (type === 'video') return 'video'
+  }
+  return 'video' // default
 }
 
 function formatPrice(price?: number) {
