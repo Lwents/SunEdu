@@ -2,11 +2,11 @@ import random
 from datetime import timedelta
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 
 from custom_account.models import PasswordChangeOTP, UserModel
+from infrastructure.email_service import get_email_service, render_email_template
 
 
 OTP_EXP_MINUTES = getattr(settings, 'PASSWORD_CHANGE_OTP_EXPIRE_MINUTES', 5)
@@ -56,10 +56,32 @@ def request_password_change_otp(user: UserModel) -> None:
         f"Xin chào {user.username or user.email},\n\n"
         f"Mã OTP để đổi mật khẩu của bạn là: {code}.\n"
         f"Mã sẽ hết hạn sau {OTP_EXP_MINUTES} phút.\n\n"
-        "Vui lòng không chia sẻ mã này cho bất kỳ ai."
+        "Nếu bạn không yêu cầu, hãy bỏ qua email này và không chia sẻ mã cho bất kỳ ai."
+    )
+    brand = getattr(settings, 'SITE_NAME', 'SunEdu')
+    support_email = getattr(settings, 'SUPPORT_EMAIL', getattr(settings, 'DEFAULT_FROM_EMAIL', 'support@sunedu.vn'))
+    html_body = render_email_template(
+        'emails/gmail_base.html',
+        {
+            'subject': subject,
+            'brand': brand,
+            'salutation': f"Xin chào {user.username or user.email},",
+            'title': "Xác nhận đổi mật khẩu",
+            'intro': "Bạn vừa yêu cầu đổi mật khẩu. Nhập mã bên dưới để hoàn tất.",
+            'body_lines': [
+                f"Mã có hiệu lực trong {OTP_EXP_MINUTES} phút.",
+                "Nếu không phải bạn, hãy bỏ qua email này.",
+            ],
+            'highlight_label': "Mã OTP",
+            'highlight_text': code,
+            'footer_note': "Vì lí do bảo mật, đừng chia sẻ mã cho bất kỳ ai.",
+            'support_email': support_email,
+            'preheader': f"Mã OTP có hiệu lực {OTP_EXP_MINUTES} phút.",
+        },
     )
     default_sender = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@example.com')
-    send_mail(subject, message, default_sender, [user.email], fail_silently=False)
+    email_service = get_email_service()
+    email_service.send(user.email, subject, message, html_body=html_body, from_email=default_sender)
 
 
 def verify_password_change_otp(user: UserModel, code: str) -> PasswordChangeOTP:
