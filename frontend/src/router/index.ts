@@ -286,6 +286,14 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Báo cáo chấm thi' },
       },
 
+      // games
+      {
+        path: 'games',
+        name: 'teacher-games',
+        component: () => import('@/pages/teacher/games/GamesList.vue'),
+        meta: { title: 'Quản lý trò chơi' },
+      },
+
       //students feedback
       {
         path: 'students',

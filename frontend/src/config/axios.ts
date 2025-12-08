@@ -15,7 +15,7 @@ const apiPrefix = `/${normalizePrefix(import.meta.env.VITE_API_PREFIX)}`
 
 const http = axios.create({
   baseURL: `${apiUrl}${apiPrefix}`,
-  timeout: 10000,
+  timeout: 90000, // 90 giây - đủ cho AI API
   headers: { 'Content-Type': 'application/json' }
 })
 
@@ -170,7 +170,11 @@ http.interceptors.response.use(
 
       message = translateMessage(message)
     } else if (!error.response) {
-      message = 'Lỗi kết nối. Kiểm tra internet'
+      if (error.code === 'ECONNABORTED') {
+        message = 'Yêu cầu quá lâu. Vui lòng thử lại'
+      } else {
+        message = 'Lỗi mạng, Kiểm tra internet'
+      }
     }
 
     const enhancedError = error || new Error(message)

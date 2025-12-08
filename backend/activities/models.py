@@ -81,6 +81,13 @@ class ExerciseAnswer(models.Model):
     
 
 class ExerciseSettings(models.Model):
+    SHOW_ANSWERS_CHOICES = [
+        ('always', 'Luôn hiển thị sau khi nộp bài'),
+        ('after_duration', 'Chỉ hiển thị sau khi hết thời gian làm bài'),
+        ('after_end', 'Chỉ hiển thị sau khi hết hạn bài thi'),
+        ('never', 'Không hiển thị đáp án'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     exercise = models.OneToOneField('Exercise', on_delete=models.CASCADE, related_name='settings')
     time_limit_seconds = models.IntegerField(null=True, blank=True)  # None => no limit
@@ -89,6 +96,7 @@ class ExerciseSettings(models.Model):
     shuffle_choices = models.BooleanField(default=True)
     pass_score = models.FloatField(default=50.0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     negative_marking = models.BooleanField(default=False)  # penalize wrong answers
+    show_answers = models.CharField(max_length=16, choices=SHOW_ANSWERS_CHOICES, default='always')
     scheduled_at = models.DateTimeField(null=True, blank=True)  # When to automatically publish
     end_at = models.DateTimeField(null=True, blank=True)  # When to automatically close the exam
     created_at = models.DateTimeField(auto_now_add=True)

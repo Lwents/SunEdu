@@ -206,6 +206,40 @@ def get_attempt_summary(attempt_id: str) -> Dict[str, Any]:
         student_class = getattr(profile, "class_name", "") or meta.get("class_name", "") or ""
         student_name = getattr(profile, "display_name", "") or student_name
 
+    # Get show_answers setting from ExerciseSettings
+    show_answers = 'always'  # default
+    can_show_answers = True
+    try:
+        settings = att.exercise.settings
+        show_answers = getattr(settings, 'show_answers', 'always')
+        end_at = getattr(settings, 'end_at', None)
+        time_limit_seconds = getattr(settings, 'time_limit_seconds', None)
+        
+        from django.utils import timezone
+        
+        if show_answers == 'never':
+            can_show_answers = False
+        elif show_answers == 'after_duration':
+            # Chỉ hiển thị sau khi hết thời gian làm bài (started_at + duration)
+            if att.started_at and time_limit_seconds:
+                from datetime import timedelta
+                deadline = att.started_at + timedelta(seconds=time_limit_seconds)
+                if timezone.now() < deadline:
+                    can_show_answers = False
+                else:
+                    can_show_answers = True
+            else:
+                # Không có time limit, cho xem luôn
+                can_show_answers = True
+        elif show_answers == 'after_end':
+            # Chỉ hiển thị sau khi hết hạn bài thi (end_at)
+            if end_at and timezone.now() < end_at:
+                can_show_answers = False
+            else:
+                can_show_answers = True
+    except Exception:
+        pass  # No settings, default to always show
+
     summary.update({
         "student_class": student_class,
         "class_name": student_class,
@@ -215,7 +249,9 @@ def get_attempt_summary(attempt_id: str) -> Dict[str, Any]:
             "name": student_name or getattr(att.student, "username", "") if att.student else "",
             "class_name": student_class,
             "class_code": student_class,
-        }
+        },
+        "show_answers": show_answers,
+        "can_show_answers": can_show_answers,
     })
     return summary
 

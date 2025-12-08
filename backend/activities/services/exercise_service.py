@@ -161,6 +161,13 @@ def save_exercise(domain: ExerciseDomain) -> ExerciseDomain:
             'end_at': end_at,
         }
         
+        # Check if show_answers field exists before adding
+        try:
+            ExerciseSettingsModel._meta.get_field('show_answers')
+            defaults['show_answers'] = settings_data.get('show_answers', 'always')
+        except Exception:
+            pass  # Field doesn't exist yet, skip it
+        
         # Update or create ExerciseSettings
         ExerciseSettingsModel.objects.update_or_create(
             exercise=ex,

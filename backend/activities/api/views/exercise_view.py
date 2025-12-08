@@ -204,16 +204,7 @@ class GenerateQuestionsAIView(APIView):
             "}\n"
         )
 
-        # Gọi DeepSeek API trước, fallback sang Gemini nếu lỗi
-        deepseek_result = self._call_deepseek_api(prompt)
-        if deepseek_result.get("success"):
-            return Response({
-                "model": deepseek_result.get("model", "deepseek"),
-                "text": deepseek_result.get("text", ""),
-                "raw": deepseek_result.get("raw", {}),
-            })
-        
-        # DeepSeek lỗi -> thử Gemini
+        # Gọi Gemini API trước (ổn định hơn), fallback sang DeepSeek nếu lỗi
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         
         try:
@@ -238,11 +229,35 @@ class GenerateQuestionsAIView(APIView):
                 return Response({"detail": "AI không trả về kết quả"}, status=status.HTTP_502_BAD_GATEWAY)
             
             if resp.status_code == 429:
-                return Response({"detail": "AI đang quá tải (429). Vui lòng thử lại sau."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+                # Gemini quá tải -> fallback sang DeepSeek
+                deepseek_result = self._call_deepseek_api(prompt)
+                if deepseek_result.get("success"):
+                    return Response({
+                        "model": deepseek_result.get("model", "deepseek"),
+                        "text": deepseek_result.get("text", ""),
+                        "raw": deepseek_result.get("raw", {}),
+                    })
+                return Response({"detail": "AI đang quá tải. Vui lòng thử lại sau."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
             
+            # Gemini lỗi khác -> fallback sang DeepSeek
+            deepseek_result = self._call_deepseek_api(prompt)
+            if deepseek_result.get("success"):
+                return Response({
+                    "model": deepseek_result.get("model", "deepseek"),
+                    "text": deepseek_result.get("text", ""),
+                    "raw": deepseek_result.get("raw", {}),
+                })
             return Response({"detail": f"AI trả về lỗi {resp.status_code}", "raw": resp.text}, status=resp.status_code)
             
         except Exception as e:
+            # Gemini lỗi kết nối -> fallback sang DeepSeek
+            deepseek_result = self._call_deepseek_api(prompt)
+            if deepseek_result.get("success"):
+                return Response({
+                    "model": deepseek_result.get("model", "deepseek"),
+                    "text": deepseek_result.get("text", ""),
+                    "raw": deepseek_result.get("raw", {}),
+                })
             return Response({"detail": f"Lỗi kết nối AI: {str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
     
     def _call_deepseek_api(self, prompt):

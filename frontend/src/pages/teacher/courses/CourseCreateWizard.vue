@@ -70,10 +70,17 @@
             <input
               v-model.trim="form.title"
               type="text"
-              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              :class="[
+                'w-full rounded-lg border px-4 py-2.5 focus:ring-2 transition',
+                showTitleError
+                  ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-100'
+                  : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'
+              ]"
               placeholder="Ví dụ: Luyện thi Toán lớp 3"
               required
+              @blur="titleTouched = true"
             />
+            <p v-if="showTitleError" class="mt-1 text-xs text-rose-600">{{ titleError }}</p>
           </div>
 
           <div>
@@ -323,7 +330,7 @@
             type="button"
             class="rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
             :disabled="!canProceed"
-            @click="currentStep++"
+            @click="goNext"
           >
             Tiếp theo
           </button>
@@ -657,6 +664,11 @@ const form = ref({
   introduction: '',
   description: ''
 })
+const titleTouched = ref(false)
+const titleError = computed(() => {
+  return form.value.title.trim() ? '' : 'Vui lòng nhập tên khoá học'
+})
+const showTitleError = computed(() => titleTouched.value && !!titleError.value)
 
 const thumbnailInput = ref<HTMLInputElement | null>(null)
 const thumbnailFile = ref<File | null>(null)
@@ -706,6 +718,12 @@ function handleBack() {
     return
   }
   currentStep.value = Math.max(0, currentStep.value - 1)
+}
+
+function goNext() {
+  titleTouched.value = true
+  if (!canProceed.value) return
+  currentStep.value++
 }
 
 function getSubjectLabel(subject: string): string {
@@ -992,6 +1010,7 @@ function updateLessonTitle(moduleIdx: number, lessonIdx: number) {
 }
 
 async function submit() {
+  titleTouched.value = true
   if (!canSubmit.value) {
     showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'warning')
     return
@@ -1078,8 +1097,3 @@ onBeforeUnmount(() => {
   if (thumbnailPreview.value) URL.revokeObjectURL(thumbnailPreview.value)
 })
 </script>
-
-
-
-
-

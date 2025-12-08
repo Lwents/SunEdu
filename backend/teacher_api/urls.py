@@ -7,6 +7,12 @@ from teacher_api.views.notifications_view import (
     TeacherNotificationReadAllView,
 )
 from teacher_api.views.lesson_question_view import TeacherLessonQuestionView
+from gamification.api.views import (
+    TeacherGameListView,
+    TeacherGameDetailView,
+    TeacherGameStatsView,
+    TeacherGameAIGenerateView,
+)
 
 app_name = 'teacher_api'
 
@@ -23,6 +29,11 @@ urlpatterns = [
     path('lesson-questions/', TeacherLessonQuestionView.as_view(), name='lesson-questions'),
     path('lesson-questions/<uuid:pk>/reply/', TeacherLessonQuestionView.as_view(), name='lesson-question-reply'),
     path('lesson-question-replies/<uuid:pk>/', TeacherLessonQuestionView.as_view(), name='lesson-question-reply-detail'),
+    # Games
+    path('games/', TeacherGameListView.as_view(), name='game-list'),
+    path('games/ai-generate/', TeacherGameAIGenerateView.as_view(), name='game-ai-generate'),
+    path('games/<uuid:game_id>/', TeacherGameDetailView.as_view(), name='game-detail'),
+    path('games/<uuid:game_id>/stats/', TeacherGameStatsView.as_view(), name='game-stats'),
 ]
 
 

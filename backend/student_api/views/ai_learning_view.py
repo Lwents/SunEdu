@@ -1,0 +1,728 @@
+"""
+AI Learning Path APIs
+- AI Đánh giá đầu vào
+- AI Gợi ý bài học thông minh
+- AI Phân tích điểm yếu
+- AI Reward System
+
+Tích hợp DeepSeek API (chính) và Gemini API (dự phòng)
+"""
+import os
+import json
+import logging
+import requests as http_requests
+from datetime import datetime, timedelta
+
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.conf import settings
+from django.db.models import Avg, Count, Q
+from django.utils import timezone
+
+from student_api.permissions import IsStudent
+from content.models import Lesson, Module, Course, Enrollment, LessonProgress
+from activities.models import ExerciseAttempt, Exercise
+
+logger = logging.getLogger(__name__)
+
+
+class AIAPIClient:
+    """Client để gọi DeepSeek/Gemini API"""
+    
+    @staticmethod
+    def call_deepseek(prompt, max_tokens=1024):
+        """Gọi DeepSeek API qua OpenRouter"""
+        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            return {"error": "DeepSeek API chưa được cấu hình"}
+        
+        model = os.getenv("DEEPSEEK_MODEL") or "deepseek/deepseek-chat-v3-0324"
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://sunedu.local",
+            "X-Title": "SunEdu AI Learning",
+        }
+        
+        try:
+            resp = http_requests.post(
+                url,
+                headers=headers,
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                },
+                timeout=60,
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                text = data.get("choices", [])[0].get("message", {}).get("content", "")
+                if text and text.strip():
+                    return {"text": text.strip(), "model": model}
+                return {"error": "DeepSeek trả về nội dung rỗng"}
+            
+            return {"error": f"DeepSeek lỗi {resp.status_code}"}
+        except Exception as e:
+            logger.error(f"DeepSeek API error: {e}")
+            return {"error": str(e)}
+    
+    @staticmethod
+    def call_gemini(prompt, max_tokens=1024):
+        """Gọi Gemini API"""
+        api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
+        if not api_key:
+            return {"error": "Gemini API chưa được cấu hình"}
+        
+        model = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        
+        try:
+            resp = http_requests.post(
+                url,
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"maxOutputTokens": max_tokens},
+                },
+                timeout=60,
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    if text and text.strip():
+                        return {"text": text.strip(), "model": model}
+                return {"error": "Gemini trả về nội dung rỗng"}
+            
+            return {"error": f"Gemini lỗi {resp.status_code}"}
+        except Exception as e:
+            logger.error(f"Gemini API error: {e}")
+            return {"error": str(e)}
+    
+    @staticmethod
+    def call_ai(prompt, max_tokens=1024):
+        """Gọi AI với fallback: DeepSeek -> Gemini"""
+        # Thử DeepSeek trước
+        result = AIAPIClient.call_deepseek(prompt, max_tokens)
+        if not result.get("error"):
+            return result
+        
+        logger.warning(f"DeepSeek failed: {result.get('error')}, trying Gemini...")
+        
+        # Fallback sang Gemini
+        result = AIAPIClient.call_gemini(prompt, max_tokens)
+        if not result.get("error"):
+            return result
+        
+        return {"error": "Cả DeepSeek và Gemini đều không khả dụng"}
+
+
+class AILearningAnalyzerView(APIView):
+    """
+    GET /api/student/ai/learning-analyzer/
+    Phân tích tiến độ học tập và đề xuất bài học thông minh
+    """
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        user = request.user
+        
+        # Lấy các khóa học đã đăng ký
+        enrollments = Enrollment.objects.filter(
+            student=user,
+            status='active'
+        ).select_related('course')
+        
+        if not enrollments.exists():
+            return Response({
+                "has_courses": False,
+                "message": "Chưa có khóa học nào. Hãy đăng ký khóa học để bắt đầu!",
+                "suggestions": [],
+                "weaknesses": [],
+                "achievements": [],
+                "daily_goal": {"target": 2, "completed": 0, "streak": 0},
+            })
+        
+        # Phân tích tiến độ
+        analysis = self._analyze_progress(user, enrollments)
+        
+        # Tạo gợi ý AI
+        suggestions = self._generate_suggestions(user, enrollments, analysis)
+        
+        # Phát hiện điểm yếu
+        weaknesses = self._detect_weaknesses(user, enrollments)
+        
+        # Tính achievements
+        achievements = self._calculate_achievements(user, analysis)
+        
+        # Daily goal
+        daily_goal = self._get_daily_goal(user)
+        
+        # Tạo tin nhắn AI (có thể gọi API)
+        use_ai_api = request.query_params.get('use_ai', 'true').lower() == 'true'
+        ai_message = self._generate_ai_message(analysis, daily_goal, weaknesses, use_ai=use_ai_api)
+        
+        return Response({
+            "has_courses": True,
+            "analysis": analysis,
+            "suggestions": suggestions,
+            "weaknesses": weaknesses,
+            "achievements": achievements,
+            "daily_goal": daily_goal,
+            "ai_message": ai_message,
+        })
+    
+    def _analyze_progress(self, user, enrollments):
+        """Phân tích tiến độ học tập tổng thể"""
+        total_lessons = 0
+        completed_lessons = 0
+        total_exercises = 0
+        completed_exercises = 0
+        avg_score = 0
+        scores = []
+        
+        course_progress = []
+        
+        for enrollment in enrollments:
+            course = enrollment.course
+            modules = Module.objects.filter(course=course).prefetch_related('lessons')
+            
+            course_total = 0
+            course_completed = 0
+            
+            for module in modules:
+                lessons = module.lessons.all()
+                course_total += lessons.count()
+                
+                for lesson in lessons:
+                    total_lessons += 1
+                    progress = LessonProgress.objects.filter(
+                        student=user,
+                        lesson=lesson,
+                        completed=True
+                    ).first()
+                    if progress:
+                        completed_lessons += 1
+                        course_completed += 1
+            
+            # Lấy điểm bài tập
+            exercises = Exercise.objects.filter(lesson__module__course=course)
+            for exercise in exercises:
+                total_exercises += 1
+                attempt = ExerciseAttempt.objects.filter(
+                    student=user,
+                    exercise=exercise,
+                    finished_at__isnull=False
+                ).order_by('-finished_at').first()
+                if attempt:
+                    completed_exercises += 1
+                    if attempt.score is not None:
+                        scores.append(float(attempt.score))
+            
+            progress_pct = round((course_completed / course_total * 100) if course_total > 0 else 0)
+            course_progress.append({
+                "course_id": str(course.id),
+                "course_title": course.title,
+                "total": course_total,
+                "completed": course_completed,
+                "progress": progress_pct,
+            })
+        
+        avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+        overall_progress = round((completed_lessons / total_lessons * 100) if total_lessons > 0 else 0)
+        
+        return {
+            "total_lessons": total_lessons,
+            "completed_lessons": completed_lessons,
+            "total_exercises": total_exercises,
+            "completed_exercises": completed_exercises,
+            "overall_progress": overall_progress,
+            "avg_score": avg_score,
+            "course_progress": course_progress,
+        }
+    
+    def _generate_suggestions(self, user, enrollments, analysis):
+        """Tạo gợi ý bài học thông minh"""
+        suggestions = []
+        
+        # 1. Bài chưa hoàn thành (ưu tiên cao)
+        for enrollment in enrollments[:3]:  # Giới hạn 3 khóa
+            course = enrollment.course
+            modules = Module.objects.filter(course=course).prefetch_related('lessons').order_by('position')
+            
+            for module in modules:
+                for lesson in module.lessons.all().order_by('position'):
+                    progress = LessonProgress.objects.filter(
+                        student=user,
+                        lesson=lesson,
+                        completed=True
+                    ).exists()
+                    
+                    if not progress:
+                        suggestions.append({
+                            "type": "continue",
+                            "priority": "high",
+                            "icon": "🎯",
+                            "title": lesson.title,
+                            "subtitle": f"{course.title} - {module.title}",
+                            "reason": "Bài tiếp theo trong lộ trình",
+                            "lesson_id": str(lesson.id),
+                            "course_id": str(course.id),
+                            "estimated_time": 15,
+                        })
+                        break
+                if suggestions:
+                    break
+        
+        # 2. Bài cần ôn lại (đã lâu không học)
+        old_progress = LessonProgress.objects.filter(
+            student=user,
+            completed=True,
+            completed_at__lt=timezone.now() - timedelta(days=7)
+        ).select_related('lesson', 'lesson__module', 'lesson__module__course').order_by('completed_at')[:2]
+        
+        for progress in old_progress:
+            lesson = progress.lesson
+            suggestions.append({
+                "type": "review",
+                "priority": "medium",
+                "icon": "🔄",
+                "title": f"Ôn lại: {lesson.title}",
+                "subtitle": lesson.module.course.title if lesson.module else "",
+                "reason": f"Đã học cách đây {(timezone.now() - progress.completed_at).days} ngày",
+                "lesson_id": str(lesson.id),
+                "course_id": str(lesson.module.course.id) if lesson.module else "",
+                "estimated_time": 10,
+            })
+        
+        # 3. Bài tập chưa làm
+        pending_exercises = Exercise.objects.filter(
+            lesson__module__course__enrollments__student=user,
+            lesson__module__course__enrollments__status='active'
+        ).exclude(
+            attempts__student=user,
+            attempts__finished_at__isnull=False
+        ).select_related('lesson', 'lesson__module', 'lesson__module__course')[:2]
+        
+        for exercise in pending_exercises:
+            suggestions.append({
+                "type": "exercise",
+                "priority": "medium",
+                "icon": "📝",
+                "title": exercise.title,
+                "subtitle": exercise.lesson.module.course.title if exercise.lesson and exercise.lesson.module else "",
+                "reason": "Bài tập chưa làm",
+                "exercise_id": str(exercise.id),
+                "lesson_id": str(exercise.lesson.id) if exercise.lesson else "",
+                "course_id": str(exercise.lesson.module.course.id) if exercise.lesson and exercise.lesson.module else "",
+                "estimated_time": 10,
+            })
+        
+        return suggestions[:5]  # Giới hạn 5 gợi ý
+    
+    def _detect_weaknesses(self, user, enrollments):
+        """Phát hiện điểm yếu dựa trên điểm bài tập"""
+        weaknesses = []
+        
+        # Lấy các bài tập có điểm thấp
+        low_score_attempts = ExerciseAttempt.objects.filter(
+            student=user,
+            finished_at__isnull=False,
+            score__lt=60  # Dưới 60%
+        ).select_related(
+            'exercise', 
+            'exercise__lesson', 
+            'exercise__lesson__module',
+            'exercise__lesson__module__course'
+        ).order_by('score')[:5]
+        
+        for attempt in low_score_attempts:
+            exercise = attempt.exercise
+            if exercise and exercise.lesson and exercise.lesson.module:
+                weaknesses.append({
+                    "topic": exercise.lesson.title,
+                    "course": exercise.lesson.module.course.title,
+                    "score": float(attempt.score) if attempt.score else 0,
+                    "suggestion": f"Cần ôn lại bài {exercise.lesson.title}",
+                    "lesson_id": str(exercise.lesson.id),
+                    "course_id": str(exercise.lesson.module.course.id),
+                })
+        
+        return weaknesses
+    
+    def _calculate_achievements(self, user, analysis):
+        """Tính toán huy hiệu và thành tích"""
+        achievements = []
+        
+        completed = analysis['completed_lessons']
+        progress = analysis['overall_progress']
+        avg_score = analysis['avg_score']
+        
+        # Huy hiệu dựa trên số bài hoàn thành
+        if completed >= 1:
+            achievements.append({"id": "first_lesson", "name": "Bước đầu tiên", "icon": "🌱", "unlocked": True})
+        if completed >= 5:
+            achievements.append({"id": "five_lessons", "name": "Chăm chỉ", "icon": "📚", "unlocked": True})
+        if completed >= 10:
+            achievements.append({"id": "ten_lessons", "name": "Học giỏi", "icon": "⭐", "unlocked": True})
+        if completed >= 25:
+            achievements.append({"id": "master", "name": "Siêu sao", "icon": "🌟", "unlocked": True})
+        
+        # Huy hiệu dựa trên điểm
+        if avg_score >= 80:
+            achievements.append({"id": "high_score", "name": "Điểm cao", "icon": "🏆", "unlocked": True})
+        if avg_score >= 95:
+            achievements.append({"id": "perfect", "name": "Hoàn hảo", "icon": "💎", "unlocked": True})
+        
+        # Huy hiệu tiến độ
+        if progress >= 50:
+            achievements.append({"id": "halfway", "name": "Nửa đường", "icon": "🔥", "unlocked": True})
+        if progress >= 100:
+            achievements.append({"id": "complete", "name": "Hoàn thành", "icon": "🎉", "unlocked": True})
+        
+        return achievements
+    
+    def _get_daily_goal(self, user):
+        """Lấy mục tiêu học tập hàng ngày"""
+        today = timezone.now().date()
+        
+        # Đếm bài học đã học hôm nay (video_watched hoặc completed)
+        # Ưu tiên completed, nhưng cũng tính video_watched để khuyến khích học sinh
+        completed_today = LessonProgress.objects.filter(
+            student=user,
+            last_accessed_at__date=today
+        ).filter(
+            Q(completed=True) | Q(video_watched=True)
+        ).count()
+        
+        # Tính streak (số ngày liên tiếp có hoạt động học)
+        streak = 0
+        check_date = today
+        while streak < 365:  # Giới hạn tối đa 365 ngày
+            has_progress = LessonProgress.objects.filter(
+                student=user,
+                last_accessed_at__date=check_date
+            ).filter(
+                Q(completed=True) | Q(video_watched=True)
+            ).exists()
+            if has_progress:
+                streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+        
+        return {
+            "target": 2,  # Mục tiêu 2 bài/ngày
+            "completed": completed_today,
+            "streak": streak,
+        }
+    
+    def _generate_ai_message(self, analysis, daily_goal, weaknesses=None, use_ai=True):
+        """Tạo tin nhắn AI động viên - có thể gọi AI API để tạo tin nhắn cá nhân hóa"""
+        progress = analysis['overall_progress']
+        streak = daily_goal['streak']
+        completed_today = daily_goal['completed']
+        target = daily_goal['target']
+        completed_lessons = analysis['completed_lessons']
+        avg_score = analysis['avg_score']
+        
+        # Nếu bật AI và có đủ dữ liệu, gọi AI để tạo tin nhắn cá nhân hóa
+        if use_ai and completed_lessons > 0:
+            try:
+                prompt = f"""Bạn là AI trợ lý học tập cho học sinh tiểu học Việt Nam.
+Hãy tạo 1 tin nhắn động viên ngắn gọn (tối đa 50 từ) dựa trên thông tin sau:
+
+- Tiến độ học tập: {progress}%
+- Số bài đã hoàn thành: {completed_lessons}
+- Điểm trung bình: {avg_score}%
+- Streak (ngày học liên tiếp): {streak} ngày
+- Mục tiêu hôm nay: {completed_today}/{target} bài
+- Điểm yếu cần cải thiện: {len(weaknesses) if weaknesses else 0} chủ đề
+
+Yêu cầu:
+- Dùng ngôn ngữ thân thiện, gọi học sinh là "con"
+- Thêm emoji phù hợp
+- Động viên tích cực
+- Nếu có điểm yếu, nhắc nhẹ nhàng cần ôn lại
+
+Chỉ trả về tin nhắn, không giải thích."""
+                
+                result = AIAPIClient.call_ai(prompt, max_tokens=150)
+                if not result.get("error") and result.get("text"):
+                    return result["text"]
+            except Exception as e:
+                logger.error(f"AI message generation failed: {e}")
+        
+        # Fallback: tin nhắn mặc định
+        if completed_today >= target:
+            return f"🎉 Tuyệt vời! Con đã hoàn thành mục tiêu hôm nay! Streak: {streak} ngày liên tiếp!"
+        
+        remaining = target - completed_today
+        if progress == 0:
+            return "🌟 Chào con! Hãy bắt đầu bài học đầu tiên nhé! AI sẽ đồng hành cùng con!"
+        
+        if streak >= 7:
+            return f"🔥 Wow! {streak} ngày học liên tiếp! Con thật kiên trì! Còn {remaining} bài nữa thôi!"
+        
+        if streak >= 3:
+            return f"💪 Giỏi lắm! {streak} ngày streak! Cố thêm {remaining} bài nữa nhé!"
+        
+        if progress < 25:
+            return f"🌱 Con đang làm tốt lắm! Còn {remaining} bài nữa để đạt mục tiêu hôm nay!"
+        
+        if progress < 50:
+            return f"📚 Tiến bộ tốt! Đã hoàn thành {progress}% rồi. Cố lên nhé!"
+        
+        if progress < 75:
+            return f"⭐ Xuất sắc! Đã đi được hơn nửa đường! Còn {remaining} bài nữa thôi!"
+        
+        return f"🏆 Sắp hoàn thành rồi! Chỉ còn {100 - progress}% nữa thôi. Con làm được mà!"
+
+
+class AIAssessmentView(APIView):
+    """
+    POST /api/student/ai/assessment/
+    AI Đánh giá đầu vào cho khóa học
+    """
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def post(self, request):
+        course_id = request.data.get('course_id')
+        if not course_id:
+            return Response({"detail": "course_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response({"detail": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Tạo câu hỏi đánh giá bằng AI
+        use_ai = request.data.get('use_ai', True)
+        questions = self._generate_assessment_questions(course, use_ai=use_ai)
+        
+        return Response({
+            "course_id": str(course.id),
+            "course_title": course.title,
+            "questions": questions,
+            "total_questions": len(questions),
+            "estimated_time": len(questions) * 1,  # 1 phút/câu
+        })
+    
+    def _generate_assessment_questions(self, course, use_ai=True):
+        """Tạo câu hỏi đánh giá dựa trên nội dung khóa học - có thể dùng AI"""
+        modules = Module.objects.filter(course=course).prefetch_related('lessons')
+        
+        # Thu thập thông tin bài học
+        lesson_titles = []
+        for module in modules[:3]:
+            for lesson in module.lessons.all()[:2]:
+                lesson_titles.append({
+                    "title": lesson.title,
+                    "module": module.title,
+                    "lesson_id": str(lesson.id),
+                })
+        
+        if not lesson_titles:
+            return []
+        
+        # Thử dùng AI để tạo câu hỏi thông minh hơn
+        if use_ai:
+            try:
+                prompt = f"""Bạn là AI tạo câu hỏi đánh giá đầu vào cho học sinh tiểu học.
+Khóa học: {course.title}
+Các bài học: {', '.join([l['title'] for l in lesson_titles])}
+
+Hãy tạo {len(lesson_titles)} câu hỏi trắc nghiệm để đánh giá kiến thức ban đầu của học sinh.
+Mỗi câu hỏi có 4 lựa chọn từ dễ đến khó.
+
+Trả về JSON array với format:
+[
+  {{
+    "text": "Câu hỏi...",
+    "choices": ["Lựa chọn 1", "Lựa chọn 2", "Lựa chọn 3", "Lựa chọn 4"]
+  }}
+]
+
+Chỉ trả về JSON, không giải thích."""
+                
+                result = AIAPIClient.call_ai(prompt, max_tokens=1000)
+                if not result.get("error") and result.get("text"):
+                    # Parse JSON từ response
+                    text = result["text"].strip()
+                    # Tìm JSON array trong response
+                    start = text.find('[')
+                    end = text.rfind(']') + 1
+                    if start >= 0 and end > start:
+                        json_str = text[start:end]
+                        ai_questions = json.loads(json_str)
+                        
+                        # Map với lesson_id
+                        questions = []
+                        for i, q in enumerate(ai_questions[:len(lesson_titles)]):
+                            questions.append({
+                                "id": i + 1,
+                                "type": "single",
+                                "text": q.get("text", ""),
+                                "choices": q.get("choices", []),
+                                "module": lesson_titles[i]["module"],
+                                "lesson_id": lesson_titles[i]["lesson_id"],
+                                "ai_generated": True,
+                            })
+                        if questions:
+                            return questions
+            except Exception as e:
+                logger.error(f"AI assessment generation failed: {e}")
+        
+        # Fallback: câu hỏi mặc định
+        questions = []
+        for i, lesson in enumerate(lesson_titles):
+            questions.append({
+                "id": i + 1,
+                "type": "single",
+                "text": f"Bạn đã biết gì về {lesson['title']}?",
+                "choices": [
+                    "Chưa biết gì",
+                    "Biết một chút",
+                    "Biết khá nhiều",
+                    "Đã thành thạo"
+                ],
+                "module": lesson["module"],
+                "lesson_id": lesson["lesson_id"],
+                "ai_generated": False,
+            })
+        
+        return questions[:10]
+
+
+class AIAssessmentResultView(APIView):
+    """
+    POST /api/student/ai/assessment/result/
+    Xử lý kết quả đánh giá và tạo lộ trình cá nhân hóa
+    """
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def post(self, request):
+        course_id = request.data.get('course_id')
+        answers = request.data.get('answers', [])
+        
+        if not course_id:
+            return Response({"detail": "course_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response({"detail": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Phân tích kết quả với AI
+        use_ai = request.data.get('use_ai', True)
+        result = self._analyze_assessment(course, answers, use_ai=use_ai)
+        
+        return Response(result)
+    
+    def _analyze_assessment(self, course, answers, use_ai=True):
+        """Phân tích kết quả đánh giá và đề xuất lộ trình - có thể dùng AI"""
+        # Tính điểm trung bình (0-3 cho mỗi câu)
+        total_score = 0
+        for answer in answers:
+            choice = answer.get('choice', 0)
+            total_score += choice
+        
+        avg_score = total_score / len(answers) if answers else 0
+        
+        # Xác định level
+        if avg_score < 1:
+            level = "beginner"
+            level_text = "Người mới bắt đầu"
+            start_from = 1
+        elif avg_score < 2:
+            level = "elementary"
+            level_text = "Cơ bản"
+            start_from = 2
+        elif avg_score < 2.5:
+            level = "intermediate"
+            level_text = "Trung bình"
+            start_from = 3
+        else:
+            level = "advanced"
+            level_text = "Nâng cao"
+            start_from = 4
+        
+        # Lấy bài học đề xuất bắt đầu
+        modules = Module.objects.filter(course=course).prefetch_related('lessons').order_by('position')
+        suggested_lessons = []
+        all_lessons = []
+        
+        lesson_count = 0
+        for module in modules:
+            for lesson in module.lessons.all().order_by('position'):
+                lesson_count += 1
+                all_lessons.append({"title": lesson.title, "module": module.title})
+                if lesson_count >= start_from:
+                    suggested_lessons.append({
+                        "id": str(lesson.id),
+                        "title": lesson.title,
+                        "module": module.title,
+                    })
+                if len(suggested_lessons) >= 3:
+                    break
+            if len(suggested_lessons) >= 3:
+                break
+        
+        # Tạo recommendation bằng AI
+        recommendation = ""
+        if use_ai:
+            try:
+                prompt = f"""Bạn là AI tư vấn học tập cho học sinh tiểu học Việt Nam.
+Dựa trên kết quả đánh giá đầu vào, hãy đưa ra lời khuyên ngắn gọn (tối đa 30 từ).
+
+Khóa học: {course.title}
+Trình độ: {level_text}
+Điểm đánh giá: {round(avg_score, 1)}/3
+Các bài học: {', '.join([l['title'] for l in all_lessons[:5]])}
+
+Yêu cầu:
+- Ngôn ngữ thân thiện, gọi học sinh là "con"
+- Động viên tích cực
+- Đề xuất cụ thể nên bắt đầu từ đâu
+
+Chỉ trả về lời khuyên, không giải thích."""
+                
+                result = AIAPIClient.call_ai(prompt, max_tokens=100)
+                if not result.get("error") and result.get("text"):
+                    recommendation = result["text"]
+            except Exception as e:
+                logger.error(f"AI recommendation failed: {e}")
+        
+        # Fallback recommendation
+        if not recommendation:
+            if level == "beginner":
+                recommendation = "Bắt đầu từ bài đầu tiên để xây dựng nền tảng vững chắc."
+            elif level == "elementary":
+                recommendation = "Có thể bỏ qua phần giới thiệu và bắt đầu từ bài thực hành."
+            elif level == "intermediate":
+                recommendation = "Tập trung vào các bài nâng cao và bài tập thực hành."
+            else:
+                recommendation = "Có thể đi thẳng vào các bài kiểm tra và thử thách."
+        
+        return {
+            "level": level,
+            "level_text": level_text,
+            "score": round(avg_score, 1),
+            "max_score": 3,
+            "recommendation": recommendation,
+            "start_from_lesson": start_from,
+            "suggested_lessons": suggested_lessons,
+            "personalized_path": {
+                "skip_intro": avg_score >= 1.5,
+                "focus_practice": avg_score >= 2,
+                "challenge_mode": avg_score >= 2.5,
+            },
+            "ai_powered": use_ai,
+        }

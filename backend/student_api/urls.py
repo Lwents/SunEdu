@@ -31,6 +31,17 @@ from student_api.views.notifications_view import (
     StudentNotificationReadView,
     StudentNotificationReadAllView,
 )
+from student_api.views.ai_learning_view import (
+    AILearningAnalyzerView,
+    AIAssessmentView,
+    AIAssessmentResultView,
+)
+from gamification.api.views import (
+    StudentGameListView,
+    StudentGameDetailView,
+    StudentGameSessionView,
+    StudentGameLeaderboardView,
+)
 
 app_name = 'student_api'
 
@@ -79,4 +90,15 @@ urlpatterns = [
     path('notifications/', StudentNotificationsView.as_view(), name='notifications'),
     path('notifications/<uuid:id>/read/', StudentNotificationReadView.as_view(), name='notification-read'),
     path('notifications/read-all/', StudentNotificationReadAllView.as_view(), name='notification-read-all'),
+    
+    # AI Learning
+    path('ai/learning-analyzer/', AILearningAnalyzerView.as_view(), name='ai-learning-analyzer'),
+    path('ai/assessment/', AIAssessmentView.as_view(), name='ai-assessment'),
+    path('ai/assessment/result/', AIAssessmentResultView.as_view(), name='ai-assessment-result'),
+    
+    # Games
+    path('games/', StudentGameListView.as_view(), name='game-list'),
+    path('games/<uuid:game_id>/', StudentGameDetailView.as_view(), name='game-detail'),
+    path('games/<uuid:game_id>/<str:action>/', StudentGameSessionView.as_view(), name='game-session'),
+    path('games/<uuid:game_id>/leaderboard/', StudentGameLeaderboardView.as_view(), name='game-leaderboard'),
 ]
