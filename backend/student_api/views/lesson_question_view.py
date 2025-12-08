@@ -498,9 +498,12 @@ class StudentLessonQuestionAIAnswerView(APIView):
         # Tạo prompt với lịch sử hội thoại
         prompt = self._build_prompt(question.content, lesson_context, lesson, conversation_history)
         
-        # Gọi Gemini API với retry
+        # Gọi DeepSeek API trước, fallback sang Gemini nếu lỗi
         model = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
-        ai_response = self._call_gemini_api(api_key, model, prompt)
+        ai_response = self._call_deepseek_api(prompt)
+        if ai_response.get("error"):
+            # DeepSeek lỗi -> thử Gemini
+            ai_response = self._call_gemini_api(api_key, model, prompt)
         
         if ai_response.get("error"):
             return Response({"detail": ai_response["error"]}, status=status.HTTP_502_BAD_GATEWAY)
@@ -711,98 +714,93 @@ YÊU CẦU QUAN TRỌNG:
 Trả lời bằng tiếng Việt:"""
 
     def _call_gemini_api(self, api_key, model, prompt):
-        """Gọi Gemini API với retry"""
-        # Chỉ sử dụng model được chỉ định (gemini-2.5-flash)
-        models_to_try = [model]
+        """Gọi Gemini API, fallback sang DeepSeek nếu lỗi"""
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         
-        max_retries = 2
-        base_delay = 2
-        last_error = None
-        used_model = model
-        
-        for current_model in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={api_key}"
+        try:
+            resp = http_requests.post(
+                url,
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"maxOutputTokens": 1024},
+                },
+                timeout=60,
+            )
             
-            for attempt in range(max_retries):
+            if resp.status_code == 200:
+                data = resp.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    if text and text.strip():
+                        return {"text": text.strip(), "model": model}
+                # Gemini không trả về kết quả -> thử DeepSeek
+                return self._call_deepseek_api(prompt)
+            
+            if resp.status_code == 429:
+                # Gemini quá tải -> fallback sang DeepSeek
+                deepseek_result = self._call_deepseek_api(prompt)
+                if not deepseek_result.get("error"):
+                    return deepseek_result
+                # DeepSeek cũng lỗi hoặc chưa cấu hình
+                return {"error": "AI đang quá tải (429). Vui lòng thử lại sau."}
+            
+            # Lỗi khác từ Gemini -> thử DeepSeek
+            return self._call_deepseek_api(prompt)
+            
+        except Exception as e:
+            # Gemini lỗi kết nối -> thử DeepSeek
+            deepseek_result = self._call_deepseek_api(prompt)
+            if not deepseek_result.get("error"):
+                return deepseek_result
+            return {"error": f"Lỗi kết nối cả 2 AI: {str(e)}"}
+    
+    def _call_deepseek_api(self, prompt):
+        """Gọi DeepSeek API (OpenRouter) làm fallback"""
+        # DeepSeek API key qua OpenRouter
+        deepseek_api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+        if not deepseek_api_key:
+            return {"error": "DeepSeek API chưa được cấu hình"}
+        
+        deepseek_model = os.getenv("DEEPSEEK_MODEL") or "deepseek/deepseek-chat-v3-0324"
+        
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {deepseek_api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://sunedu.local",
+            "X-Title": "SunEdu AI Assistant",
+        }
+        
+        try:
+            resp = http_requests.post(
+                url,
+                headers=headers,
+                json={
+                    "model": deepseek_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1024,
+                },
+                timeout=60,
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
                 try:
-                    resp = http_requests.post(
-                        url,
-                        json={
-                            "contents": [{"parts": [{"text": prompt}]}],
-                            "generationConfig": {"maxOutputTokens": 1024},
-                        },
-                        timeout=30,
-                    )
-                    
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        text = ""
-                        
-                        # Kiểm tra candidates
-                        candidates = data.get("candidates", [])
-                        if not candidates:
-                            # Không có candidates - kiểm tra lý do
-                            block_reason = data.get("promptFeedback", {}).get("blockReason", "")
-                            if block_reason:
-                                last_error = f"Nội dung bị chặn: {block_reason}"
-                            else:
-                                last_error = "AI không trả về kết quả"
-                            break
-                        
-                        # Parse text từ candidates
-                        try:
-                            candidate = candidates[0]
-                            content = candidate.get("content", {})
-                            parts = content.get("parts", [])
-                            if parts and len(parts) > 0:
-                                text = parts[0].get("text", "")
-                            
-                            # Kiểm tra finish reason
-                            finish_reason = candidate.get("finishReason", "")
-                            if finish_reason == "SAFETY":
-                                last_error = "Nội dung bị chặn bởi bộ lọc an toàn"
-                                break
-                        except (IndexError, KeyError, TypeError) as e:
-                            last_error = f"Lỗi parse: {str(e)}"
-                            break
-                        
-                        if text and text.strip():
-                            return {"text": text.strip(), "model": current_model}
-                        else:
-                            last_error = "AI trả về nội dung rỗng"
-                            break
-                    
-                    if resp.status_code == 429:
-                        last_error = "AI đang quá tải, vui lòng thử lại sau"
-                        if attempt < max_retries - 1:
-                            time.sleep(base_delay * (2 ** attempt))
-                        continue
-                    
-                    if resp.status_code == 404:
-                        # Model không tồn tại
-                        try:
-                            error_data = resp.json()
-                            error_msg = error_data.get("error", {}).get("message", "Model không tồn tại")
-                        except:
-                            error_msg = "Model không tồn tại"
-                        last_error = f"Model {current_model}: {error_msg}"
-                        break
-                    
-                    # Các lỗi khác
-                    try:
-                        error_data = resp.json()
-                        error_msg = error_data.get("error", {}).get("message", f"Lỗi {resp.status_code}")
-                    except:
-                        error_msg = f"Lỗi API {resp.status_code}"
-                    last_error = error_msg
-                    break
-                        
-                except Exception as e:
-                    last_error = str(e)
-                    if attempt < max_retries - 1:
-                        time.sleep(base_delay * (2 ** attempt))
+                    text = data.get("choices", [])[0].get("message", {}).get("content", "")
+                    if text and text.strip():
+                        return {"text": text.strip(), "model": deepseek_model}
+                    return {"error": "DeepSeek trả về nội dung rỗng"}
+                except (IndexError, KeyError, TypeError) as e:
+                    return {"error": f"Lỗi parse DeepSeek: {str(e)}"}
             
-            # Try next model
-            time.sleep(base_delay)
-        
-        return {"error": last_error or "AI không phản hồi"}
+            # Xử lý lỗi
+            try:
+                error_data = resp.json()
+                error_msg = error_data.get("error", {}).get("message", f"Lỗi {resp.status_code}")
+            except:
+                error_msg = f"Lỗi DeepSeek API {resp.status_code}"
+            return {"error": error_msg}
+            
+        except Exception as e:
+            return {"error": f"Lỗi kết nối DeepSeek: {str(e)}"}

@@ -204,76 +204,93 @@ class GenerateQuestionsAIView(APIView):
             "}\n"
         )
 
-        # Chỉ sử dụng model được chỉ định (gemini-2.5-flash)
-        models_to_try = [model]
+        # Gọi DeepSeek API trước, fallback sang Gemini nếu lỗi
+        deepseek_result = self._call_deepseek_api(prompt)
+        if deepseek_result.get("success"):
+            return Response({
+                "model": deepseek_result.get("model", "deepseek"),
+                "text": deepseek_result.get("text", ""),
+                "raw": deepseek_result.get("raw", {}),
+            })
         
-        # Retry với exponential backoff cho lỗi 429
-        max_retries_per_model = 2
-        base_delay = 2  # seconds
-        resp = None
-        last_error = None
-        used_model = model
+        # DeepSeek lỗi -> thử Gemini
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         
-        for current_model in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={api_key}"
-            
-            for attempt in range(max_retries_per_model):
-                try:
-                    resp = requests.post(
-                        url,
-                        json={
-                            "contents": [{"parts": [{"text": prompt}]}],
-                            "generationConfig": {"maxOutputTokens": 2048},
-                        },
-                        timeout=30,
-                    )
-                    
-                    # Nếu thành công, lưu model đã dùng
-                    if resp.status_code == 200:
-                        used_model = current_model
-                        break
-                    
-                    # Nếu không phải 429, thoát khỏi vòng lặp retry
-                    if resp.status_code != 429:
-                        break
-                        
-                    # Nếu là 429 và còn retry, đợi rồi thử lại
-                    if attempt < max_retries_per_model - 1:
-                        delay = base_delay * (2 ** attempt)  # 2s, 4s
-                        time.sleep(delay)
-                        
-                except Exception as exc:
-                    last_error = exc
-                    if attempt < max_retries_per_model - 1:
-                        delay = base_delay * (2 ** attempt)
-                        time.sleep(delay)
-            
-            # Nếu thành công hoặc lỗi khác 429, thoát
-            if resp is not None and resp.status_code != 429:
-                used_model = current_model
-                break
-            
-            # Nếu vẫn 429, thử model tiếp theo sau khi đợi
-            if resp is not None and resp.status_code == 429:
-                time.sleep(base_delay)
-        
-        if resp is None:
-            return Response({"detail": f"Lỗi gọi AI: {last_error}"}, status=status.HTTP_502_BAD_GATEWAY)
-
-        if resp.status_code == 429:
-            return Response({"detail": "AI đang quá tải hoặc hết quota (429). Đã thử nhiều models nhưng vẫn bị giới hạn. Vui lòng đợi 1 phút rồi thử lại."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
-        if resp.status_code >= 400:
-            return Response({"detail": f"AI trả về lỗi {resp.status_code}", "raw": resp.text}, status=resp.status_code)
-
-        data = resp.json()
-        text = ""
         try:
-            text = data.get("candidates", [])[0].get("content", {}).get("parts", [])[0].get("text", "")
-        except Exception:
-            text = ""
-
-        return Response({
-            "model": used_model,
-            "text": text,
-            "raw": data,
-        })
+            resp = requests.post(
+                url,
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"maxOutputTokens": 2048},
+                },
+                timeout=60,
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                text = ""
+                try:
+                    text = data.get("candidates", [])[0].get("content", {}).get("parts", [])[0].get("text", "")
+                except Exception:
+                    text = ""
+                if text and text.strip():
+                    return Response({"model": model, "text": text, "raw": data})
+                return Response({"detail": "AI không trả về kết quả"}, status=status.HTTP_502_BAD_GATEWAY)
+            
+            if resp.status_code == 429:
+                return Response({"detail": "AI đang quá tải (429). Vui lòng thử lại sau."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+            
+            return Response({"detail": f"AI trả về lỗi {resp.status_code}", "raw": resp.text}, status=resp.status_code)
+            
+        except Exception as e:
+            return Response({"detail": f"Lỗi kết nối AI: {str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+    
+    def _call_deepseek_api(self, prompt):
+        """Gọi DeepSeek API (OpenRouter) làm fallback khi Gemini quá tải"""
+        # DeepSeek API key qua OpenRouter
+        deepseek_api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+        if not deepseek_api_key:
+            return {"error": "DeepSeek API chưa được cấu hình"}
+        
+        deepseek_model = os.getenv("DEEPSEEK_MODEL") or "deepseek/deepseek-chat-v3-0324"
+        
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {deepseek_api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://sunedu.local",
+            "X-Title": "SunEdu AI Question Generator",
+        }
+        
+        try:
+            resp = requests.post(
+                url,
+                headers=headers,
+                json={
+                    "model": deepseek_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 2048,
+                },
+                timeout=60,
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                try:
+                    text = data.get("choices", [])[0].get("message", {}).get("content", "")
+                    if text and text.strip():
+                        return {"success": True, "text": text.strip(), "model": deepseek_model, "raw": data}
+                    return {"error": "DeepSeek trả về nội dung rỗng"}
+                except (IndexError, KeyError, TypeError) as e:
+                    return {"error": f"Lỗi parse DeepSeek: {str(e)}"}
+            
+            # Xử lý lỗi
+            try:
+                error_data = resp.json()
+                error_msg = error_data.get("error", {}).get("message", f"Lỗi {resp.status_code}")
+            except:
+                error_msg = f"Lỗi DeepSeek API {resp.status_code}"
+            return {"error": error_msg}
+            
+        except Exception as e:
+            return {"error": f"Lỗi kết nối DeepSeek: {str(e)}"}
