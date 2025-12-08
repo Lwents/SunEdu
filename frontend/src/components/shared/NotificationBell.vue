@@ -5,6 +5,7 @@
     <button
       @click="toggleDropdown"
       class="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-slate-200"
+      :class="{ 'animate-bell-shake text-slate-900': hasNewAnimation }"
       aria-label="Thông báo"
     >
       <!-- Bell Icon -->
@@ -24,8 +25,11 @@
       </svg>
 
       <!-- Badge -->
-      <span v-if="unreadCount > 0" class="absolute top-1 right-1 flex items-center justify-center">
-        <span class="h-2 w-2 rounded-full bg-red-500 border border-white"></span>
+      <span
+        v-if="unreadCount > 0"
+        class="absolute -top-1 -right-1 flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white shadow ring-2 ring-white"
+      >
+        {{ unreadCount > 99 ? '99+' : unreadCount }}
       </span>
     </button>
 
@@ -222,7 +226,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 
 // ===== TYPES =====
@@ -253,6 +257,10 @@ const notifications = ref<Notification[]>([])
 const notificationRef = ref<HTMLElement | null>(null)
 const maxNotifications = 20
 const focusedNotification = ref<Notification | null>(null)
+const lastUnreadCount = ref(0)
+const hasNewAnimation = ref(false)
+let pollTimer: ReturnType<typeof setInterval> | null = null
+const pollIntervalMs = 20000
 
 // ===== COMPUTED =====
 const displayedNotifications = computed(() => {
@@ -295,8 +303,9 @@ function toggleDropdown() {
   }
 }
 
-async function fetchNotifications() {
-  loading.value = true
+async function fetchNotifications(silent = false) {
+  if (!silent) loading.value = true
+  const prevUnread = lastUnreadCount.value
   try {
     // Use axios instead of fetch for consistency
     const api = (await import('@/config/axios')).default
@@ -319,14 +328,22 @@ async function fetchNotifications() {
       category: n.category,
     }))
     
-    console.log(`Fetched ${notifications.value.length} notifications for ${props.role}`)
+    const currentUnread = unreadCount.value
+    if (currentUnread > prevUnread) {
+      // Trigger bell shake when new unread arrives
+      hasNewAnimation.value = true
+      setTimeout(() => {
+        hasNewAnimation.value = false
+      }, 1500)
+    }
+    lastUnreadCount.value = currentUnread
   } catch (error: any) {
     console.error('Failed to fetch notifications:', error)
     console.error('Error details:', error?.response?.data || error?.message)
     // Only use mock if API completely fails
     notifications.value = []
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
 }
 
@@ -525,6 +542,15 @@ function getNotificationIconPath(type: string): string {
 onClickOutside(notificationRef, () => {
   isOpen.value = false
 })
+
+onMounted(() => {
+  fetchNotifications(true)
+  pollTimer = setInterval(() => fetchNotifications(true), pollIntervalMs)
+})
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
+})
 </script>
 
 <style scoped>
@@ -533,5 +559,20 @@ onClickOutside(notificationRef, () => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+@keyframes bell-shake {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(-18deg); }
+  30% { transform: rotate(16deg); }
+  45% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); }
+  75% { transform: rotate(-4deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-bell-shake {
+  animation: bell-shake 0.9s ease-in-out;
+  transform-origin: top center;
 }
 </style>

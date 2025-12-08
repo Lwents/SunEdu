@@ -159,6 +159,16 @@ class AdminCourseDetailView(APIView):
             'sections': sections
         }, status=status.HTTP_200_OK)
 
+    def delete(self, request, pk):
+        """Delete a course (admin only). Cascades to modules/lessons/enrollments."""
+        try:
+            course = Course.objects.get(id=pk)
+        except Course.DoesNotExist:
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        course.delete()
+        return Response({'success': True}, status=status.HTTP_204_NO_CONTENT)
+
 
 class AdminCourseApproveView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -284,7 +294,6 @@ class AdminCourseBulkActionView(APIView):
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'success': True, 'count': courses.count()}, status=status.HTTP_200_OK)
-
 
 
 

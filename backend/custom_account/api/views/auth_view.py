@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+from dj_rest_auth.views import LoginView
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
 from dj_rest_auth.views import PasswordResetConfirmView
@@ -56,6 +57,33 @@ class RegisterView(RoleBasedOutputMixin, APIView):
     
 
 # ---------- Login -----------
+class CustomLoginView(LoginView):
+    """
+    Override login to show a clear message when the account is locked/inactive.
+    """
+
+    def post(self, request, *args, **kwargs):
+        identifier = (
+            request.data.get("username")
+            or request.data.get("email")
+            or request.data.get("username_or_email")
+            or request.data.get("email_or_username")
+        )
+
+        if identifier:
+            user = User.objects.filter(username__iexact=identifier).first()
+            if not user:
+                user = User.objects.filter(email__iexact=identifier).first()
+
+            if user and not user.is_active:
+                return Response(
+                    {"detail": "Tài khoản đã bị khóa. Vui lòng liên hệ hỗ trợ."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        return super().post(request, *args, **kwargs)
+
+
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
 

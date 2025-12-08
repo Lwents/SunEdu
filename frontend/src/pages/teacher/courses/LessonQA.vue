@@ -178,24 +178,33 @@
                       class="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm ring-2 ring-white transition-all"
                       :class="rep.is_teacher 
                         ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
-                        : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700'"
+                        : (isAIReply(rep) ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white' : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700')"
                     >
+                      <!-- AI icon -->
+                      <span v-if="isAIReply(rep)" class="text-sm">🤖</span>
+                      <!-- Avatar image -->
                       <img
-                        v-if="!avatarErrors[`r-${rep.id}`]"
+                        v-else-if="!avatarErrors[`r-${rep.id}`]"
                         :src="avatarUrlForReply(rep)"
                         :alt="rep.is_teacher ? 'Giáo viên' : (rep.user || 'Học sinh')"
                         class="absolute inset-0 h-full w-full object-cover"
                         @error="handleAvatarError(`r-${rep.id}`)"
                         @load="handleAvatarLoad(`r-${rep.id}`)"
                       />
+                      <!-- Fallback initials -->
                       <span 
-                        v-if="avatarErrors[`r-${rep.id}`]"
+                        v-else
                         class="text-xs font-bold"
                       >
                         {{ rep.is_teacher ? 'GV' : getInitials(rep.user) || 'HS' }}
                       </span>
                     </div>
-                    <div v-if="rep.is_teacher" class="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white shadow-sm">
+                    <div v-if="isAIReply(rep)" class="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 ring-2 ring-white shadow-sm">
+                      <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                    <div v-else-if="rep.is_teacher" class="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white shadow-sm">
                       <svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
@@ -206,10 +215,11 @@
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between gap-2">
                       <div class="flex items-center gap-2">
-                        <span class="text-sm font-bold" :class="rep.is_teacher ? 'text-blue-700' : 'text-slate-700'">
-                          {{ rep.is_teacher ? '👨‍🏫 Giáo viên' : rep.user || 'Học sinh' }}
+                        <span class="text-sm font-bold" :class="rep.is_teacher ? 'text-blue-700' : (isAIReply(rep) ? 'text-purple-700' : 'text-slate-700')">
+                          {{ rep.is_teacher ? '👨‍🏫 Giáo viên' : (isAIReply(rep) ? '🤖 Trợ lý AI' : rep.user || 'Học sinh') }}
                         </span>
-                        <span v-if="rep.is_owner" class="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">Bạn</span>
+                        <span v-if="isAIReply(rep)" class="rounded-full bg-gradient-to-r from-purple-100 to-indigo-100 px-2 py-0.5 text-xs font-semibold text-purple-700">AI</span>
+                        <span v-else-if="rep.is_owner" class="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">Bạn</span>
                   </div>
                   <div class="flex items-center gap-2">
                     <span class="text-xs text-slate-400">{{ formatDateTimeShort(rep.created_at) }}</span>
@@ -378,11 +388,17 @@ function avatarUrlForQuestion(q: any) {
 }
 
 function avatarUrlForReply(rep: any) {
+  if (isAIReply(rep)) return ''
   const source =
     normalizeAvatar(rep?.avatar) ||
     normalizeAvatar(rep?.avatar_url) ||
     normalizeAvatar(rep?.user_avatar)
   return getAvatarSrc(source, (rep?.gender as any) || 'male', rep?.is_teacher ? 'instructor' : 'student')
+}
+
+function isAIReply(rep: any) {
+  const name = (rep?.user || '').toString().trim()
+  return name === 'AI_Assistant'
 }
 
 async function loadQuestions() {

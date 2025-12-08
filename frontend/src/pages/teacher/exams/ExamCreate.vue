@@ -148,13 +148,23 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-6">
           <div class="mb-4 flex items-center justify-between">
             <h2 class="text-lg font-semibold">Câu hỏi ({{ form.questions?.length || 0 }})</h2>
-            <button
-              type="button"
-              class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
-              @click="showAddQuestion = true"
-            >
-              + Thêm câu hỏi
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="rounded-xl border px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                :disabled="aiGenerating"
+                @click="aiDialogOpen = true"
+              >
+                Tạo bằng AI
+              </button>
+              <button
+                type="button"
+                class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+                @click="showAddQuestion = true"
+              >
+                + Thêm câu hỏi
+              </button>
+            </div>
           </div>
 
           <div v-if="!form.questions || form.questions.length === 0" class="py-8 text-center text-slate-500">
@@ -411,6 +421,64 @@
       </div>
     </main>
   </div>
+
+  <!-- Modal cấu hình AI -->
+  <transition name="fade">
+    <div
+      v-if="aiDialogOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      @click.self="aiDialogOpen = false"
+    >
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Tạo câu hỏi bằng AI</h3>
+          <button class="text-sm text-slate-500 hover:text-slate-700" @click="aiDialogOpen = false">Đóng</button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium">Số câu cần tạo</label>
+            <input
+              v-model.number="aiCount"
+              type="number"
+              min="1"
+              max="10"
+              class="w-28 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none"
+            />
+            <p class="mt-1 text-xs text-slate-500">Tối đa 10 câu/lần.</p>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium">Mô tả mong muốn (tùy chọn)</label>
+            <textarea
+              v-model.trim="aiHint"
+              rows="3"
+              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none"
+              placeholder="Ví dụ: tập trung kiến thức phép cộng, độ khó vừa phải..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-lg border px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            @click="aiDialogOpen = false"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            class="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+            :disabled="aiGenerating"
+            @click="generateQuestionsWithAI"
+          >
+            {{ aiGenerating ? 'Đang tạo...' : 'Tạo câu hỏi' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -419,12 +487,17 @@ import { useRouter } from 'vue-router'
 import { examService, type ExamDetail, type Question, type QType, type Level, type ExamStatus } from '@/services/exam.service'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
+import http from '@/config/axios'
 
 const router = useRouter()
 
 const submitting = ref(false)
 const showAddQuestion = ref(false)
 const editingQuestionIndex = ref<number | null>(null)
+const aiGenerating = ref(false)
+const aiCount = ref(5)
+const aiDialogOpen = ref(false)
+const aiHint = ref('')
 
 const form = reactive<Partial<ExamDetail>>({
   title: '',
@@ -590,6 +663,107 @@ function removePair(index: number) {
   if (currentQuestion.pairs && currentQuestion.pairs.length > 2) {
     currentQuestion.pairs.splice(index, 1)
   }
+}
+
+async function generateQuestionsWithAI() {
+  if (!form.title || !form.title.trim()) {
+    showToast('Vui lòng nhập tên đề thi trước khi tạo câu hỏi bằng AI', 'warning')
+    return
+  }
+  const count = Math.max(1, Math.min(aiCount.value || 5, 10))
+  aiGenerating.value = true
+  try {
+    const { data } = await http.post('/activities/ai/generate-questions/', {
+      title: form.title,
+      level: form.level,
+      description: form.description,
+      count,
+      hint: aiHint.value,
+      model: import.meta.env.VITE_GEMINI_MODEL,
+    })
+    const text = data?.text || ''
+    const parsed = parseAIResponse(text)
+    if (!parsed.length) {
+      showToast('AI không trả về câu hỏi hợp lệ', 'warning')
+      return
+    }
+    if (!form.questions) form.questions = []
+    parsed.forEach((q) => form.questions!.push(q))
+    showToast(`Đã thêm ${parsed.length} câu hỏi từ AI`, 'success')
+  } catch (e: any) {
+    console.error('AI generate error:', e)
+    const message = e?.response?.data?.detail || e?.message || 'Không thể tạo câu hỏi bằng AI'
+    showToast(message, 'error')
+  } finally {
+    aiGenerating.value = false
+  }
+}
+
+function parseAIResponse(raw: string): Question[] {
+  if (!raw) return []
+  let jsonText = raw.trim()
+  // Nếu có code block, lấy nội dung bên trong
+  const match = jsonText.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/)
+  if (match && match[1]) {
+    jsonText = match[1]
+  }
+  try {
+    const obj = JSON.parse(jsonText)
+    const list = Array.isArray(obj) ? obj : obj.questions
+    if (!Array.isArray(list)) return []
+    return list.map((item: any, idx: number) => normalizeAIQuestion(item, idx))
+      .filter(Boolean) as Question[]
+  } catch (err) {
+    console.warn('Cannot parse AI JSON, raw text:', raw)
+    return []
+  }
+}
+
+function normalizeAIQuestion(item: any, idx: number): Question | null {
+  const id = makeId(`aiq${idx}`)
+  const type = (item.type || 'single') as QType
+  const score = Number(item.score) || 1
+  const text = String(item.text || '').trim()
+  if (!text) return null
+
+  if (type === 'single' || type === 'multi') {
+    const choices = (item.choices || []).map((c: any, i: number) => ({ id: `c${i + 1}`, text: String(c || '') }))
+    const correctIdx = Array.isArray(item.correct_indices) ? item.correct_indices : [item.correct_index ?? 0]
+    const answer = correctIdx.filter((n: any) => Number.isInteger(n) && choices[n]) .map((n: number) => choices[n].id)
+    if (choices.length < 2 || answer.length === 0) return null
+    return { id, type, text, score, choices, answer } as Question
+  }
+
+  if (type === 'boolean') {
+    // Hỗ trợ cả correct_answer và answers
+    let ans = item.correct_answer
+    if (ans === undefined) {
+      ans = Array.isArray(item.answers) ? item.answers[0] : item.answers
+    }
+    const val = ans === true || ans === 'true' || ans === 'True'
+    return { id, type: 'boolean', text, score, answer: val } as Question
+  }
+
+  if (type === 'fill') {
+    const blanks = Number(item.blanks) || 2
+    const answers = Array.isArray(item.answers) ? item.answers.filter((x: any) => String(x || '').trim()) : []
+    if (answers.length < blanks) return null
+    return { id, type: 'fill', text, score, blanks, answer: answers.slice(0, blanks) } as Question
+  }
+
+  if (type === 'match') {
+    const pairs = Array.isArray(item.pairs) ? item.pairs.map((p: any) => ({ left: String(p.left || ''), right: String(p.right || '') })) : []
+    if (pairs.length < 2) return null
+    return { id, type: 'match', text, score, pairs } as Question
+  }
+
+  if (type === 'order') {
+    const items = Array.isArray(item.items) ? item.items.map((t: any) => String(t || '')) : []
+    if (items.length < 2) return null
+    return { id, type: 'order', text, score, items, answer: items.slice() } as Question
+  }
+
+  return null
 }
 
 function saveQuestion() {

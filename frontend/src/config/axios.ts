@@ -36,10 +36,7 @@ function getAccessToken() {
 }
 
 http.interceptors.response.use(
-  (response) => {
-    console.log('Response Data:', response.data)
-    return response
-  },
+  (response) => response,
   (error) => Promise.reject(error)
 )
 

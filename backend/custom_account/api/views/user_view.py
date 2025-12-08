@@ -278,7 +278,8 @@ class AdminUserDetailView(RoleBasedOutputMixin, APIView):
         instance = self.get_object(pk)
 
         # Validate input using the serializer
-        serializer = UserSerializer(instance, data=request.data, partial=True)
+        # Provide request in context so serializer can allow is_active/role for staff
+        serializer = UserSerializer(instance, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
         

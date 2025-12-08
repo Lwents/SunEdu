@@ -269,6 +269,8 @@ export const examService = {
       if (params?.status === 'published') {
         filteredExercises = exercises.filter((ex: any) => ex.published === true)
       }
+      // Loại bỏ bài tập gắn với bài học (chỉ giữ đề thi độc lập)
+      filteredExercises = filteredExercises.filter((ex: any) => !ex.lesson)
       
       // Map exercises to ExamSummary format
       const items = filteredExercises.map((ex: any) => ({
