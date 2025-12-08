@@ -35,6 +35,7 @@ from .notifications_view import (
     AdminNotificationReadView,
     AdminNotificationReadAllView
 )
+from .ai_settings_view import AdminAISettingsView
 
 __all__ = [
     'AdminDashboardView', 'AdminActiveUsersRealtimeView',

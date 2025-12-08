@@ -21,6 +21,11 @@ from custom_account.api.views.user_view import (
     AdminMaintenanceView,
     PasswordChangeOTPRequestView,
     PasswordChangeOTPConfirmView,
+    AdminBulkChangeRoleView,
+    AdminBulkLockView,
+    AdminBulkUnlockView,
+    AdminBulkBanView,
+    AdminUserExportView,
 )
 from custom_account.api.views.profile_view import UserProfileView, AdminProfileListView, AdminProfileDetailView
 
@@ -46,6 +51,11 @@ urlpatterns = [
     path('admin/refresh-access/<int:user_id>/', AdminRefreshUserAccessView.as_view(), name='admin_refresh_access'),
     path('admin/logout-user/<int:user_id>/', AdminLogoutUserView.as_view(), name='admin_logout_user'),
     path("admin/users/", AdminUserListView.as_view(), name="admin-user-list"),
+    path("admin/users/export/", AdminUserExportView.as_view(), name="admin-user-export"),
+    path("admin/users/bulk/role/", AdminBulkChangeRoleView.as_view(), name="admin-bulk-role"),
+    path("admin/users/bulk/lock/", AdminBulkLockView.as_view(), name="admin-bulk-lock"),
+    path("admin/users/bulk/unlock/", AdminBulkUnlockView.as_view(), name="admin-bulk-unlock"),
+    path("admin/users/bulk/ban/", AdminBulkBanView.as_view(), name="admin-bulk-ban"),
     path('admin/maintenance/', AdminMaintenanceView.as_view(), name='admin-system-maintenance'),
     path("admin/users/<int:pk>/", AdminUserDetailView.as_view(), name="admin-user-detail"),
     path("admin/profiles/", AdminProfileListView.as_view(), name="admin-profile-list"),

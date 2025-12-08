@@ -60,11 +60,32 @@ class ExerciseListCreateView(APIView):
     def get(self, request: Request):
         lesson_id = request.query_params.get("lesson_id")
         include_stats = request.query_params.get("include_stats", "false").lower() == "true"
+        q = request.query_params.get("q", "").strip()
+        status_filter = request.query_params.get("status", "").strip()
+        level_filter = request.query_params.get("level", "").strip()
+        
         filters = {}
         if lesson_id:
             filters["lesson_id"] = lesson_id
         domains = list_exercises(filters=filters)
         data = [ExerciseModelSerializer.from_domain(d) for d in domains]
+        
+        # Filter by search query (title)
+        if q:
+            q_lower = q.lower()
+            data = [item for item in data if q_lower in (item.get("title") or "").lower()]
+        
+        # Filter by status (published/draft)
+        if status_filter:
+            if status_filter == "published":
+                data = [item for item in data if item.get("published", False)]
+            elif status_filter == "draft":
+                data = [item for item in data if not item.get("published", False)]
+        
+        # Filter by level
+        if level_filter:
+            level_lower = level_filter.lower()
+            data = [item for item in data if level_lower in (item.get("level") or "").lower()]
         
         # Add stats if requested
         if include_stats:

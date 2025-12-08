@@ -607,11 +607,228 @@
           </div>
 
           <!-- Exercise -->
-          <div v-if="newLessonContentType === 'exercise'">
-            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p class="text-sm text-amber-700">
-                ✏️ Bài tập sẽ được tạo. Bạn có thể thêm câu hỏi và đáp án sau khi tạo bài học.
-              </p>
+          <div v-if="newLessonContentType === 'exercise'" class="space-y-4">
+            <!-- Header với nút thêm và AI -->
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-gray-800">Danh sách câu hỏi</h3>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg border border-cyan-500 px-3 py-1.5 text-sm font-medium text-cyan-600 hover:bg-cyan-50"
+                  @click="showAIGenerateModal = true"
+                >
+                  🤖 AI tạo đề
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-cyan-700"
+                  @click="addNewQuestion"
+                >
+                  + Thêm câu hỏi
+                </button>
+              </div>
+            </div>
+
+            <!-- Danh sách câu hỏi -->
+            <div v-if="exerciseQuestions.length === 0" class="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+              <p class="text-gray-500">Chưa có câu hỏi nào. Nhấn "+ Thêm câu hỏi" hoặc "AI tạo đề" để bắt đầu.</p>
+            </div>
+
+            <div v-else class="max-h-[400px] overflow-y-auto space-y-4 pr-2">
+              <div
+                v-for="(question, qIdx) in exerciseQuestions"
+                :key="qIdx"
+                class="rounded-xl border border-gray-200 bg-gray-50 p-4"
+              >
+                <div class="mb-3 flex items-start justify-between">
+                  <span class="rounded bg-cyan-100 px-2 py-0.5 text-xs font-medium text-cyan-700">
+                    Câu {{ qIdx + 1 }}
+                  </span>
+                  <button
+                    type="button"
+                    class="text-xs text-rose-600 hover:underline"
+                    @click="removeExerciseQuestion(qIdx)"
+                  >
+                    Xóa
+                  </button>
+                </div>
+
+                <!-- Loại câu hỏi -->
+                <div class="mb-3">
+                  <label class="mb-1 block text-xs font-medium text-gray-600">Loại câu hỏi</label>
+                  <select
+                    v-model="question.type"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                  >
+                    <option value="mcq">Trắc nghiệm</option>
+                    <option value="short_answer">Tự luận ngắn</option>
+                    <option value="matching">Nối cặp</option>
+                  </select>
+                </div>
+
+                <!-- Nội dung câu hỏi -->
+                <div class="mb-3">
+                  <label class="mb-1 block text-xs font-medium text-gray-600">Nội dung câu hỏi</label>
+                  <textarea
+                    v-model="question.prompt"
+                    rows="2"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    placeholder="Nhập nội dung câu hỏi..."
+                  ></textarea>
+                </div>
+
+                <!-- Đáp án trắc nghiệm -->
+                <div v-if="question.type === 'mcq'" class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="text-xs font-medium text-gray-600">Đáp án (chọn đáp án đúng)</label>
+                    <button
+                      type="button"
+                      class="text-xs text-cyan-600 hover:underline"
+                      @click="addChoiceToQuestion(qIdx)"
+                    >
+                      + Thêm đáp án
+                    </button>
+                  </div>
+                  <div v-for="(choice, cIdx) in question.choices" :key="cIdx" class="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      :name="'q-' + qIdx + '-correct'"
+                      :checked="choice.is_correct"
+                      class="h-4 w-4 text-cyan-600"
+                      @change="setCorrectChoice(qIdx, cIdx)"
+                    />
+                    <input
+                      v-model="choice.text"
+                      type="text"
+                      class="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                      :placeholder="'Đáp án ' + (cIdx + 1)"
+                    />
+                    <button
+                      v-if="question.choices.length > 2"
+                      type="button"
+                      class="text-xs text-rose-500 hover:underline"
+                      @click="removeChoiceFromQuestion(qIdx, cIdx)"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Đáp án tự luận -->
+                <div v-if="question.type === 'short_answer'" class="space-y-2">
+                  <label class="text-xs font-medium text-gray-600">Đáp án chấp nhận (cách nhau bởi dấu phẩy)</label>
+                  <input
+                    v-model="question.accepted_answers"
+                    type="text"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    placeholder="Ví dụ: đáp án 1, đáp án 2, đáp án 3"
+                  />
+                </div>
+
+                <!-- Nối cặp -->
+                <div v-if="question.type === 'matching'" class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="text-xs font-medium text-gray-600">Các cặp nối</label>
+                    <button
+                      type="button"
+                      class="text-xs text-cyan-600 hover:underline"
+                      @click="addMatchingPairToQuestion(qIdx)"
+                    >
+                      + Thêm cặp
+                    </button>
+                  </div>
+                  <div v-for="(pair, pIdx) in question.matching_pairs" :key="pIdx" class="grid grid-cols-2 gap-2">
+                    <input
+                      v-model="pair.left"
+                      type="text"
+                      class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                      :placeholder="'Vế trái ' + (pIdx + 1)"
+                    />
+                    <div class="flex gap-2">
+                      <input
+                        v-model="pair.right"
+                        type="text"
+                        class="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                        :placeholder="'Vế phải ' + (pIdx + 1)"
+                      />
+                      <button
+                        v-if="question.matching_pairs.length > 2"
+                        type="button"
+                        class="text-xs text-rose-500 hover:underline"
+                        @click="removeMatchingPairFromQuestion(qIdx, pIdx)"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Điểm -->
+                <div class="mt-3">
+                  <label class="mb-1 block text-xs font-medium text-gray-600">Điểm</label>
+                  <input
+                    v-model.number="question.points"
+                    type="number"
+                    min="1"
+                    class="w-24 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Cài đặt bài tập -->
+            <div class="rounded-xl border border-gray-200 bg-white p-4">
+              <h4 class="mb-3 text-sm font-semibold text-gray-800">Cài đặt bài tập</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600">Thời gian làm bài (phút)</label>
+                  <input
+                    v-model.number="exerciseSettings.duration_minutes"
+                    type="number"
+                    min="1"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    placeholder="Không giới hạn"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600">Điểm đạt (%)</label>
+                  <input
+                    v-model.number="exerciseSettings.pass_score"
+                    type="number"
+                    min="0"
+                    max="100"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600">Số lần làm tối đa</label>
+                  <input
+                    v-model.number="exerciseSettings.max_attempts"
+                    type="number"
+                    min="1"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    placeholder="Không giới hạn"
+                  />
+                </div>
+                <div class="flex items-center gap-4">
+                  <label class="flex items-center gap-2">
+                    <input
+                      v-model="exerciseSettings.shuffle_questions"
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-gray-300"
+                    />
+                    <span class="text-xs text-gray-700">Xáo trộn câu hỏi</span>
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <input
+                      v-model="exerciseSettings.shuffle_choices"
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-gray-300"
+                    />
+                    <span class="text-xs text-gray-700">Xáo trộn đáp án</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -633,6 +850,88 @@
             {{ editingLessonIdx !== null ? 'Lưu' : 'Thêm' }}
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Generate Modal -->
+  <div v-if="showAIGenerateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">🤖 AI Tạo đề tự động</h3>
+        <button
+          type="button"
+          class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          @click="showAIGenerateModal = false"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Chủ đề / Nội dung *</label>
+          <textarea
+            v-model="aiTopic"
+            rows="3"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            placeholder="Ví dụ: Phép cộng trong phạm vi 100, Bảng cửu chương..."
+          ></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Số câu hỏi</label>
+            <select
+              v-model="aiQuestionCount"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            >
+              <option :value="3">3 câu</option>
+              <option :value="5">5 câu</option>
+              <option :value="10">10 câu</option>
+              <option :value="15">15 câu</option>
+              <option :value="20">20 câu</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Độ khó</label>
+            <select
+              v-model="aiDifficulty"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            >
+              <option value="easy">Dễ</option>
+              <option value="medium">Trung bình</option>
+              <option value="hard">Khó</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-cyan-200 bg-cyan-50 p-3">
+          <p class="text-xs text-cyan-700">
+            💡 AI sẽ tạo câu hỏi trắc nghiệm dựa trên chủ đề bạn nhập. 
+            Bạn có thể chỉnh sửa sau khi tạo.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          @click="showAIGenerateModal = false"
+        >
+          Hủy
+        </button>
+        <button
+          type="button"
+          class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
+          :disabled="!aiTopic.trim() || aiGenerating"
+          @click="generateQuestionsWithAI"
+        >
+          {{ aiGenerating ? '⏳ Đang tạo...' : '✨ Tạo câu hỏi' }}
+        </button>
       </div>
     </div>
   </div>
@@ -698,6 +997,187 @@ const contentTypeOptions = [
   { value: 'exercise', label: 'Bài tập', icon: '✏️' },
   { value: 'document', label: 'Tài liệu (Word/Docx)', icon: '📑' },
 ]
+
+// Exercise types
+interface ExerciseChoice {
+  text: string
+  is_correct: boolean
+}
+
+interface MatchingPair {
+  left: string
+  right: string
+}
+
+interface ExerciseQuestion {
+  type: 'mcq' | 'short_answer' | 'matching'
+  prompt: string
+  points: number
+  choices: ExerciseChoice[]
+  accepted_answers: string
+  matching_pairs: MatchingPair[]
+}
+
+const exerciseQuestions = ref<ExerciseQuestion[]>([])
+const exerciseSettings = ref({
+  duration_minutes: null as number | null,
+  pass_score: 50,
+  max_attempts: null as number | null,
+  shuffle_questions: true,
+  shuffle_choices: true
+})
+
+// AI Generate Modal
+const showAIGenerateModal = ref(false)
+const aiGenerating = ref(false)
+const aiTopic = ref('')
+const aiQuestionCount = ref(5)
+const aiDifficulty = ref<'easy' | 'medium' | 'hard'>('medium')
+
+function addNewQuestion() {
+  exerciseQuestions.value.push({
+    type: 'mcq',
+    prompt: '',
+    points: 1,
+    choices: [
+      { text: '', is_correct: true },
+      { text: '', is_correct: false },
+      { text: '', is_correct: false },
+      { text: '', is_correct: false }
+    ],
+    accepted_answers: '',
+    matching_pairs: [
+      { left: '', right: '' },
+      { left: '', right: '' }
+    ]
+  })
+}
+
+function removeExerciseQuestion(idx: number) {
+  exerciseQuestions.value.splice(idx, 1)
+}
+
+function addChoiceToQuestion(qIdx: number) {
+  if (exerciseQuestions.value[qIdx].choices.length < 6) {
+    exerciseQuestions.value[qIdx].choices.push({ text: '', is_correct: false })
+  }
+}
+
+function removeChoiceFromQuestion(qIdx: number, cIdx: number) {
+  if (exerciseQuestions.value[qIdx].choices.length > 2) {
+    exerciseQuestions.value[qIdx].choices.splice(cIdx, 1)
+  }
+}
+
+function setCorrectChoice(qIdx: number, cIdx: number) {
+  exerciseQuestions.value[qIdx].choices.forEach((c, i) => {
+    c.is_correct = i === cIdx
+  })
+}
+
+function addMatchingPairToQuestion(qIdx: number) {
+  exerciseQuestions.value[qIdx].matching_pairs.push({ left: '', right: '' })
+}
+
+function removeMatchingPairFromQuestion(qIdx: number, pIdx: number) {
+  if (exerciseQuestions.value[qIdx].matching_pairs.length > 2) {
+    exerciseQuestions.value[qIdx].matching_pairs.splice(pIdx, 1)
+  }
+}
+
+function resetExerciseQuestions() {
+  exerciseQuestions.value = []
+  exerciseSettings.value = {
+    duration_minutes: null,
+    pass_score: 50,
+    max_attempts: null,
+    shuffle_questions: true,
+    shuffle_choices: true
+  }
+}
+
+async function generateQuestionsWithAI() {
+  if (!aiTopic.value.trim()) {
+    showToast('Vui lòng nhập chủ đề', 'warning')
+    return
+  }
+  
+  aiGenerating.value = true
+  try {
+    const axios = (await import('@/config/axios')).default
+    const { data } = await axios.post('/activities/ai/generate-questions/', {
+      title: aiTopic.value,
+      description: aiTopic.value,
+      count: aiQuestionCount.value,
+      level: `Lớp ${form.value.grade}`,
+      hint: `Độ khó: ${aiDifficulty.value === 'easy' ? 'Dễ' : aiDifficulty.value === 'medium' ? 'Trung bình' : 'Khó'}`
+    })
+    
+    // Parse text response từ AI (có thể là JSON string)
+    let questions: any[] = []
+    if (data.text) {
+      try {
+        // Loại bỏ markdown code block nếu có
+        let jsonText = data.text.trim()
+        if (jsonText.startsWith('```json')) {
+          jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+        } else if (jsonText.startsWith('```')) {
+          jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '')
+        }
+        const parsed = JSON.parse(jsonText)
+        questions = parsed.questions || []
+      } catch (parseErr) {
+        console.error('Parse AI response error:', parseErr, data.text)
+      }
+    } else if (data.questions) {
+      questions = data.questions
+    }
+    
+    // Map AI response to our format
+    const generatedQuestions: ExerciseQuestion[] = questions.map((q: any) => {
+      // Xử lý correct_indices hoặc correct_answer
+      let correctIdx = 0
+      if (q.correct_indices && q.correct_indices.length > 0) {
+        correctIdx = q.correct_indices[0]
+      } else if (typeof q.correct_index === 'number') {
+        correctIdx = q.correct_index
+      }
+      
+      return {
+        type: 'mcq',
+        prompt: q.text || q.prompt || '',
+        points: q.score || 1,
+        choices: (q.choices || q.options || []).map((c: any, idx: number) => ({
+          text: typeof c === 'string' ? c : c.text,
+          is_correct: idx === correctIdx
+        })),
+        accepted_answers: '',
+        matching_pairs: []
+      }
+    })
+    
+    if (generatedQuestions.length > 0) {
+      // Nếu câu hỏi đầu tiên trống thì thay thế, không thì thêm mới
+      if (exerciseQuestions.value.length === 1 && !exerciseQuestions.value[0].prompt.trim()) {
+        exerciseQuestions.value = generatedQuestions
+      } else {
+        // Lọc bỏ các câu hỏi trống trước khi thêm
+        exerciseQuestions.value = exerciseQuestions.value.filter(q => q.prompt.trim())
+        exerciseQuestions.value.push(...generatedQuestions)
+      }
+      showAIGenerateModal.value = false
+      aiTopic.value = ''
+      showToast(`Đã tạo ${generatedQuestions.length} câu hỏi!`, 'success')
+    } else {
+      showToast('AI không tạo được câu hỏi. Vui lòng thử lại.', 'warning')
+    }
+  } catch (e: any) {
+    console.error('AI generate error:', e)
+    showToast('Không thể tạo câu hỏi: ' + (e.response?.data?.detail || e.message), 'error')
+  } finally {
+    aiGenerating.value = false
+  }
+}
 
 const submitting = ref(false)
 
@@ -910,6 +1390,7 @@ function cancelAddLesson() {
   newLessonContentType.value = 'video'
   newLessonDocumentFile.value = null
   newLessonTextContent.value = ''
+  resetExerciseQuestions() // Reset câu hỏi bài tập
   if (newLessonVideoFileInput.value) {
     newLessonVideoFileInput.value.value = ''
   }
@@ -952,6 +1433,7 @@ function addLesson() {
       video_file?: File;
       document_file?: File;
       text_content?: string;
+      questions?: ExerciseQuestion[];
       editing?: boolean 
     } = {
       title: newLessonTitle.value.trim(),
@@ -969,6 +1451,8 @@ function addLesson() {
       lesson.document_file = newLessonDocumentFile.value
     } else if (newLessonContentType.value === 'text' && newLessonTextContent.value.trim()) {
       lesson.text_content = newLessonTextContent.value.trim()
+    } else if (newLessonContentType.value === 'exercise' && exerciseQuestions.value.length > 0) {
+      lesson.questions = [...exerciseQuestions.value]
     }
     
     module.lessons.push(lesson)
@@ -980,6 +1464,7 @@ function addLesson() {
     newLessonVideoType.value = 'url'
     newLessonDocumentFile.value = null
     newLessonTextContent.value = ''
+    resetExerciseQuestions() // Reset câu hỏi bài tập
     // Giữ nguyên content type để tiện thêm tiếp cùng loại
     if (newLessonVideoFileInput.value) {
       newLessonVideoFileInput.value.value = ''

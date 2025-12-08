@@ -119,8 +119,14 @@
               >0</div>
               <div class="text-xs sm:text-sm text-gray-600">Bài học</div>
             </div>
-            <div>
-              <div class="text-xl sm:text-2xl md:text-3xl font-bold text-pink-600">4.9⭐</div>
+            <div class="counter-item">
+              <div
+                class="text-xl sm:text-2xl md:text-3xl font-bold text-pink-600"
+                data-target="4.9"
+                data-suffix="⭐"
+                data-animated="false"
+                data-decimal="true"
+              >0</div>
               <div class="text-xs sm:text-sm text-gray-600">Đánh giá</div>
             </div>
           </div>
@@ -295,12 +301,14 @@
             <li
               v-for="(benefit, index) in interactiveBenefits"
               :key="benefit"
-              class="flex items-start space-x-2 sm:space-x-3 opacity-0 -translate-x-8 transition-all duration-600"
-              :class="{ 'opacity-100 translate-x-0': interactiveVisible }"
-              :style="{ transitionDelay: `${index * 100}ms` }"
+              class="flex items-start space-x-2 sm:space-x-3 opacity-0 -translate-x-12 -translate-y-4 transition-all duration-700 ease-out"
+              :class="{ 'opacity-100 translate-x-0 translate-y-0': interactiveVisible }"
+              :style="{ transitionDelay: `${300 + index * 150}ms` }"
             >
               <div
-                class="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs sm:text-sm mt-0.5 sm:mt-1"
+                class="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs sm:text-sm mt-0.5 sm:mt-1 transform transition-transform duration-500"
+                :class="{ 'scale-100': interactiveVisible, 'scale-0': !interactiveVisible }"
+                :style="{ transitionDelay: `${400 + index * 150}ms` }"
               >
                 ✓
               </div>
@@ -1086,18 +1094,28 @@ const handleScroll = () => {
 }
 
 const animateCounter = (el) => {
-  const target = parseInt(el.getAttribute('data-target'))
+  const isDecimal = el.getAttribute('data-decimal') === 'true'
+  const target = isDecimal ? parseFloat(el.getAttribute('data-target')) : parseInt(el.getAttribute('data-target'))
   const suffix = el.getAttribute('data-suffix') || ''
-  const increment = Math.max(1, target / 100)
+  // Số thập phân chạy chậm hơn (100 bước thay vì 50) để kết thúc cùng lúc với số lớn
+  const increment = isDecimal ? target / 100 : Math.max(1, target / 100)
   let current = 0
 
   const updateCounter = () => {
     current += increment
     if (current < target) {
-      el.textContent = `${Math.ceil(current).toLocaleString()}${suffix}`
+      if (isDecimal) {
+        el.textContent = `${current.toFixed(1)}${suffix}`
+      } else {
+        el.textContent = `${Math.ceil(current).toLocaleString()}${suffix}`
+      }
       requestAnimationFrame(updateCounter)
     } else {
-      el.textContent = `${target.toLocaleString()}${suffix}`
+      if (isDecimal) {
+        el.textContent = `${target.toFixed(1)}${suffix}`
+      } else {
+        el.textContent = `${target.toLocaleString()}${suffix}`
+      }
     }
   }
 

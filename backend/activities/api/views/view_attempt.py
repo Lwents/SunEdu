@@ -112,7 +112,80 @@ class FinalizeAttemptView(APIView):
         except ValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Gửi thông báo gợi ý cải thiện nếu có câu sai
+        self._send_improvement_notification(request.user, summary)
+
         return Response(summary, status=status.HTTP_200_OK)
+    
+    def _send_improvement_notification(self, user, summary):
+        """Gửi thông báo gợi ý cải thiện dựa trên câu trả lời sai"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            score = summary.get('score', 0)
+            total = summary.get('total_score', 100)
+            percent = (score / total * 100) if total > 0 else 0
+            
+            # Chỉ gửi thông báo nếu điểm < 80%
+            if percent >= 80:
+                return
+            
+            # Lấy các câu sai
+            wrong_answers = []
+            answers = summary.get('answers', [])
+            for ans in answers:
+                if not ans.get('is_correct', True):
+                    wrong_answers.append({
+                        'question': ans.get('question_text', ''),
+                        'student_answer': ans.get('student_answer', ''),
+                        'correct_answer': ans.get('correct_answer', ''),
+                    })
+            
+            if not wrong_answers:
+                return
+            
+            # Gọi AI để tạo gợi ý cải thiện
+            from ai_personalization.ai_tutor import ai_tutor
+            
+            # Lấy thông tin học sinh
+            student_grade = 1
+            if hasattr(user, 'profile'):
+                student_grade = getattr(user.profile, 'grade', 1) or 1
+            
+            # Tạo prompt cho AI
+            wrong_topics = [w['question'][:50] for w in wrong_answers[:3]]
+            
+            ai_suggestion = ai_tutor.generate_improvement_suggestion(
+                wrong_answers=wrong_answers[:3],
+                score_percent=percent,
+                student_grade=student_grade
+            )
+            
+            if not ai_suggestion.get('success'):
+                return
+            
+            # Tạo thông báo
+            from activities.models import Notification
+            
+            suggestion_text = ai_suggestion.get('suggestion', '')
+            if suggestion_text:
+                Notification.objects.create(
+                    user=user,
+                    title='💡 Bé Mặt Trời gợi ý cho con',
+                    message=suggestion_text,
+                    type='info',
+                    category='ai_improvement',
+                    metadata={
+                        'score_percent': percent,
+                        'wrong_count': len(wrong_answers),
+                        'exercise_id': summary.get('exercise_id'),
+                    }
+                )
+                logger.info(f"Sent improvement notification to user {user.id}")
+                
+        except Exception as e:
+            logger.error(f"Error sending improvement notification: {e}")
 
 
 class AttemptSummaryView(APIView):

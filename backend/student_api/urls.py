@@ -36,6 +36,18 @@ from student_api.views.ai_learning_view import (
     AIAssessmentView,
     AIAssessmentResultView,
 )
+from ai_personalization.api.tutor_views import (
+    AITutorChatView,
+    AITutorHintView,
+    AITutorExplainView,
+    AITutorEncourageView,
+    AITutorClearHistoryView,
+    AITutorAnalyzeView,
+    AITutorPracticeView,
+    AITutorDailyReportView,
+    AITutorWeaknessNotificationView,
+)
+from ai_personalization.api.tts_views import TextToSpeechView
 from gamification.api.views import (
     StudentGameListView,
     StudentGameDetailView,
@@ -95,6 +107,18 @@ urlpatterns = [
     path('ai/learning-analyzer/', AILearningAnalyzerView.as_view(), name='ai-learning-analyzer'),
     path('ai/assessment/', AIAssessmentView.as_view(), name='ai-assessment'),
     path('ai/assessment/result/', AIAssessmentResultView.as_view(), name='ai-assessment-result'),
+    
+    # AI Tutor
+    path('ai/tutor/chat/', AITutorChatView.as_view(), name='ai-tutor-chat'),
+    path('ai/tutor/hint/', AITutorHintView.as_view(), name='ai-tutor-hint'),
+    path('ai/tutor/explain/', AITutorExplainView.as_view(), name='ai-tutor-explain'),
+    path('ai/tutor/encourage/', AITutorEncourageView.as_view(), name='ai-tutor-encourage'),
+    path('ai/tutor/history/', AITutorClearHistoryView.as_view(), name='ai-tutor-history'),
+    path('ai/tutor/analyze/', AITutorAnalyzeView.as_view(), name='ai-tutor-analyze'),
+    path('ai/tutor/practice/', AITutorPracticeView.as_view(), name='ai-tutor-practice'),
+    path('ai/tutor/daily-report/', AITutorDailyReportView.as_view(), name='ai-tutor-daily-report'),
+    path('ai/tutor/notify-weakness/', AITutorWeaknessNotificationView.as_view(), name='ai-tutor-notify-weakness'),
+    path('ai/tts/', TextToSpeechView.as_view(), name='ai-tts'),
     
     # Games
     path('games/', StudentGameListView.as_view(), name='game-list'),
