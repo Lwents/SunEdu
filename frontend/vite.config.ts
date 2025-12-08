@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
   server:
     mode === 'development'
       ? {
-          port: 5173,
+          // Use any free port instead of sticking to 5173
+          port: 0,
           host: '0.0.0.0',
-          strictPort: true,
           proxy: {
             '/api': {
               target: 'https://api.smartedu.click',

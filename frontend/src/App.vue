@@ -35,9 +35,16 @@ const idleControl = useIdleLogout({
   timeout: 15 * 60 * 1000, // 15 phút không tương tác
   warningTime: 5 * 60 * 1000, // cảnh báo trước 5 phút
   onWarn(remaining) {
-    uiStore.openIdleWarning(remaining, () => {
-      localStorage.setItem('app-last-activity', String(Date.now()))
-    })
+    if (authStore.isAuthenticated) {
+      uiStore.openIdleWarning(remaining, () => {
+        localStorage.setItem('app-last-activity', String(Date.now()))
+      })
+    } else {
+      uiStore.closeIdleWarning()
+    }
+  },
+  onActive() {
+    uiStore.closeIdleWarning()
   },
   async onLogout() {
     uiStore.closeIdleWarning()

@@ -3,8 +3,10 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 type Options = {
     timeout?: number // ms
     warningTime?: number // ms before logout to show warning
+    autoStart?: boolean // start tracking immediately on mount (default: false)
     onLogout: () => void
     onWarn?: (remainingMs: number) => void
+    onActive?: () => void // called when activity is detected (useful to hide warning)
 }
 
 const STORAGE_KEY = 'app-last-activity'
@@ -12,13 +14,25 @@ const STORAGE_KEY = 'app-last-activity'
 export function useIdleLogout(opts: Options) {
     const timeout = opts.timeout ?? 10 * 60 * 1000 // default 10 minutes
     const warningTime = opts.warningTime ?? 60 * 1000 // default 1 minute
+    const autoStart = opts.autoStart ?? false
     const isWarning = ref(false)
     const remaining = ref<number>(timeout)
 
+    let started = false
     let idleTimer: ReturnType<typeof setTimeout> | null = null
     let warnTimer: ReturnType<typeof setTimeout> | null = null
+    const visibilityHandler = () => {
+        if (!started) return
+        if (!document.hidden) updateLastActivity(true)
+    }
 
-    function updateLastActivity() {
+    function updateLastActivity(force = false) {
+        if (!started && !force) return
+        // Any activity should clear warning state immediately
+        if (isWarning.value) {
+            isWarning.value = false
+            opts.onActive?.()
+        }
         const now = Date.now()
         try {
             localStorage.setItem(STORAGE_KEY, String(now))
@@ -29,6 +43,7 @@ export function useIdleLogout(opts: Options) {
     }
 
     function handleStorageEvent(e: StorageEvent) {
+        if (!started) return
         if (e.key === STORAGE_KEY) {
             resetTimers()
         }
@@ -47,6 +62,7 @@ export function useIdleLogout(opts: Options) {
     }
 
     function resetTimers() {
+        if (!started) return
         clearTimers()
         const last = Number(localStorage.getItem(STORAGE_KEY) || Date.now())
         const elapsed = Date.now() - last
@@ -80,9 +96,7 @@ export function useIdleLogout(opts: Options) {
     function addListeners() {
         const events = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll']
         events.forEach((ev) => window.addEventListener(ev, onActivity, { passive: true }))
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) updateLastActivity()
-        })
+        document.addEventListener('visibilitychange', visibilityHandler)
         window.addEventListener('storage', handleStorageEvent)
     }
 
@@ -90,33 +104,45 @@ export function useIdleLogout(opts: Options) {
         const events = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll']
         events.forEach((ev) => window.removeEventListener(ev, onActivity))
         window.removeEventListener('storage', handleStorageEvent)
-        document.removeEventListener('visibilitychange', () => { })
+        document.removeEventListener('visibilitychange', visibilityHandler)
         clearTimers()
     }
 
-    onMounted(() => {
-        // init last activity if missing
-        if (!localStorage.getItem(STORAGE_KEY)) {
-            localStorage.setItem(STORAGE_KEY, String(Date.now()))
+    function start() {
+        if (started) {
+            updateLastActivity(true)
+            return
         }
+        started = true
         addListeners()
-        resetTimers()
+        updateLastActivity(true)
+    }
+
+    function stop() {
+        if (!started) {
+            clearTimers()
+            return
+        }
+        started = false
+        removeListeners()
+    }
+
+    onMounted(() => {
+        if (autoStart) {
+            start()
+        }
     })
 
     onBeforeUnmount(() => {
-        removeListeners()
+        stop()
     })
 
     // Expose manual controls
     return {
         isWarning,
         remaining,
-        reset: updateLastActivity,
-        stop: removeListeners,
-        start: () => {
-            if (!localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, String(Date.now()))
-            addListeners()
-            resetTimers()
-        },
+        reset: () => updateLastActivity(true),
+        stop,
+        start,
     }
 }

@@ -1,4 +1,5 @@
 from typing import Any, Dict
+from django.conf import settings
 from django.http import HttpResponse
 from rest_framework import status, permissions, generics
 from rest_framework.views import APIView
@@ -38,6 +39,9 @@ from activities.services import (
 )
 from activities.services import ServiceError, NotFoundError, ValidationError, PermissionDenied
 from activities.api.permissions import IsAdminOrReadOnly
+import os
+import time
+import requests
 
 # Models used for permission checks or lookups (optional)
 from django.apps import apps
@@ -157,3 +161,119 @@ class ExerciseDetailView(APIView):
         except NotFoundError:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GenerateQuestionsAIView(APIView):
+    """
+    POST /api/activities/ai/generate-questions/
+    Body: {title, level, description, count, hint, model}
+    Calls Gemini from backend using GEMINI_API_KEY env.
+    """
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
+
+    def post(self, request: Request):
+        # Ưu tiên ENV, fallback về settings; không nhúng khóa mặc định
+        api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", "")
+        if not api_key:
+            return Response({"detail": "Missing GEMINI_API_KEY on server"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        title = request.data.get("title", "")
+        level = request.data.get("level", "")
+        description = request.data.get("description", "")
+        count = int(request.data.get("count") or 5)
+        hint = request.data.get("hint", "")
+        model = request.data.get("model") or os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
+
+        count = max(1, min(count, 10))
+
+        prompt = (
+            f"Bạn là trợ lý tạo đề thi tiểu học. Hãy tạo {count} câu hỏi trắc nghiệm, phù hợp trình độ \"{level}\".\n"
+            f"Tiêu đề bài kiểm tra: {title}.\n"
+            f"Mô tả: {description or 'Không có'}.\n"
+            f"Yêu cầu thêm từ giáo viên: {hint or 'Không có'}.\n\n"
+            "QUY TẮC BẮT BUỘC:\n"
+            "- CHỈ tạo câu hỏi loại 'single' (trắc nghiệm 1 đáp án đúng) hoặc 'boolean' (đúng/sai).\n"
+            "- Mỗi câu hỏi 'single' phải có 3-4 choices và correct_indices chứa index đáp án đúng.\n"
+            "- Câu hỏi 'boolean' có correct_answer là true hoặc false.\n\n"
+            "Trả về JSON thuần (KHÔNG có markdown code block):\n"
+            "{\n"
+            '  "questions": [\n'
+            '    {"type": "single", "text": "Câu hỏi?", "score": 1, "choices": ["A", "B", "C", "D"], "correct_indices": [0]},\n'
+            '    {"type": "boolean", "text": "Đúng hay sai?", "score": 1, "correct_answer": true}\n'
+            "  ]\n"
+            "}\n"
+        )
+
+        # Chỉ sử dụng model được chỉ định (gemini-2.5-flash)
+        models_to_try = [model]
+        
+        # Retry với exponential backoff cho lỗi 429
+        max_retries_per_model = 2
+        base_delay = 2  # seconds
+        resp = None
+        last_error = None
+        used_model = model
+        
+        for current_model in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={api_key}"
+            
+            for attempt in range(max_retries_per_model):
+                try:
+                    resp = requests.post(
+                        url,
+                        json={
+                            "contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {"maxOutputTokens": 2048},
+                        },
+                        timeout=30,
+                    )
+                    
+                    # Nếu thành công, lưu model đã dùng
+                    if resp.status_code == 200:
+                        used_model = current_model
+                        break
+                    
+                    # Nếu không phải 429, thoát khỏi vòng lặp retry
+                    if resp.status_code != 429:
+                        break
+                        
+                    # Nếu là 429 và còn retry, đợi rồi thử lại
+                    if attempt < max_retries_per_model - 1:
+                        delay = base_delay * (2 ** attempt)  # 2s, 4s
+                        time.sleep(delay)
+                        
+                except Exception as exc:
+                    last_error = exc
+                    if attempt < max_retries_per_model - 1:
+                        delay = base_delay * (2 ** attempt)
+                        time.sleep(delay)
+            
+            # Nếu thành công hoặc lỗi khác 429, thoát
+            if resp is not None and resp.status_code != 429:
+                used_model = current_model
+                break
+            
+            # Nếu vẫn 429, thử model tiếp theo sau khi đợi
+            if resp is not None and resp.status_code == 429:
+                time.sleep(base_delay)
+        
+        if resp is None:
+            return Response({"detail": f"Lỗi gọi AI: {last_error}"}, status=status.HTTP_502_BAD_GATEWAY)
+
+        if resp.status_code == 429:
+            return Response({"detail": "AI đang quá tải hoặc hết quota (429). Đã thử nhiều models nhưng vẫn bị giới hạn. Vui lòng đợi 1 phút rồi thử lại."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        if resp.status_code >= 400:
+            return Response({"detail": f"AI trả về lỗi {resp.status_code}", "raw": resp.text}, status=resp.status_code)
+
+        data = resp.json()
+        text = ""
+        try:
+            text = data.get("candidates", [])[0].get("content", {}).get("parts", [])[0].get("text", "")
+        except Exception:
+            text = ""
+
+        return Response({
+            "model": used_model,
+            "text": text,
+            "raw": data,
+        })

@@ -1,3 +1,7 @@
+import os
+import time
+import requests as http_requests
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -464,3 +468,341 @@ class StudentLessonQuestionReportView(APIView):
             )
 
         return Response({"detail": "Đã gửi báo cáo"}, status=status.HTTP_201_CREATED)
+
+
+class StudentLessonQuestionAIAnswerView(APIView):
+    """
+    POST /api/student/lesson-questions/<question_id>/ai-answer/
+    Gọi AI để trả lời câu hỏi của học sinh dựa trên nội dung bài học.
+    """
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def post(self, request, question_id):
+        try:
+            question = get_object_or_404(LessonQuestion, id=question_id)
+            lesson = question.lesson
+        except Exception as e:
+            return Response({"detail": f"Không tìm thấy câu hỏi: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Lấy API key
+        api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", "")
+        if not api_key:
+            return Response({"detail": "AI chưa được cấu hình"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        # Lấy context từ bài học
+        lesson_context = self._get_lesson_context(lesson)
+        
+        # Lấy lịch sử hội thoại (câu hỏi gốc + các replies)
+        conversation_history = self._get_conversation_history(question)
+        
+        # Tạo prompt với lịch sử hội thoại
+        prompt = self._build_prompt(question.content, lesson_context, lesson, conversation_history)
+        
+        # Gọi Gemini API với retry
+        model = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
+        ai_response = self._call_gemini_api(api_key, model, prompt)
+        
+        if ai_response.get("error"):
+            return Response({"detail": ai_response["error"]}, status=status.HTTP_502_BAD_GATEWAY)
+        
+        ai_text = ai_response.get("text", "")
+        if not ai_text:
+            return Response({"detail": "AI không thể trả lời câu hỏi này"}, status=status.HTTP_502_BAD_GATEWAY)
+        
+        # Tạo reply từ AI (sử dụng system user hoặc teacher)
+        User = get_user_model()
+        ai_user = User.objects.filter(username="AI_Assistant").first()
+        if not ai_user:
+            # Tạo AI user nếu chưa có
+            try:
+                ai_user = User.objects.create_user(
+                    username="AI_Assistant",
+                    email="ai@sunedu.local",
+                    password=None,  # No password - cannot login
+                    is_active=False,  # Không cho phép đăng nhập
+                    role="admin",  # Role để phân biệt
+                )
+            except Exception as e:
+                # Nếu không tạo được user, sử dụng giáo viên của khóa học
+                course = question.lesson.module.course if question.lesson.module else None
+                ai_user = getattr(course, "owner", None)
+                if not ai_user:
+                    return Response({"detail": f"Không thể tạo AI user: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Tạo reply
+        try:
+            reply = LessonQuestionReply.objects.create(
+                question=question,
+                user=ai_user,
+                content=ai_text,
+                is_teacher=False,  # Đánh dấu là AI, không phải giáo viên
+            )
+        except Exception as e:
+            return Response({"detail": f"Không thể lưu câu trả lời AI: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Refresh và trả về
+        try:
+            question.refresh_from_db()
+            return Response({
+                "item": serialize_question(question, user=request.user, request=request),
+                "ai_reply": {
+                    "id": str(reply.id),
+                    "content": ai_text,
+                    "model": ai_response.get("model", model),
+                }
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            # Vẫn trả về thành công nếu chỉ lỗi serialize
+            return Response({
+                "ai_reply": {
+                    "id": str(reply.id),
+                    "content": ai_text,
+                    "model": ai_response.get("model", model),
+                }
+            }, status=status.HTTP_201_CREATED)
+    
+    def _get_lesson_context(self, lesson):
+        """Lấy nội dung bài học để làm context cho AI"""
+        context_parts = []
+        
+        # Lấy thông tin khóa học
+        try:
+            if lesson.module and lesson.module.course:
+                course = lesson.module.course
+                context_parts.append(f"Khóa học: {course.title}")
+                if course.description:
+                    context_parts.append(f"Mô tả khóa học: {course.description[:300]}")
+        except Exception:
+            pass
+        
+        # Tiêu đề và giới thiệu
+        context_parts.append(f"Tiêu đề bài học: {lesson.title}")
+        if lesson.introduction:
+            context_parts.append(f"Giới thiệu bài học: {lesson.introduction[:500]}")
+        
+        # Nội dung text trực tiếp từ lesson
+        if lesson.text_content:
+            context_parts.append(f"Nội dung chính:\n{lesson.text_content[:2000]}")
+        
+        # Lấy nội dung từ ContentBlock (chi tiết hơn)
+        try:
+            latest_version = lesson.versions.filter(status='published').order_by('-version').first()
+            if not latest_version:
+                latest_version = lesson.versions.order_by('-version').first()
+            
+            if latest_version:
+                # Lấy content blocks từ database
+                content_blocks = latest_version.content_blocks.order_by('position')
+                
+                lesson_content = []
+                for block in content_blocks[:15]:  # Giới hạn 15 blocks
+                    payload = block.payload or {}
+                    
+                    if block.type == 'text':
+                        # Block text - nội dung chính
+                        text = payload.get('text', '') or payload.get('content', '')
+                        if text:
+                            lesson_content.append(text[:800])
+                    
+                    elif block.type == 'introduction':
+                        # Block giới thiệu
+                        intro_text = payload.get('text', '') or payload.get('content', '')
+                        if intro_text:
+                            lesson_content.append(f"[Giới thiệu] {intro_text[:500]}")
+                    
+                    elif block.type == 'quiz':
+                        # Block quiz - câu hỏi trong bài
+                        quiz_text = payload.get('question', '') or payload.get('text', '')
+                        if quiz_text:
+                            lesson_content.append(f"[Câu hỏi trong bài] {quiz_text[:300]}")
+                    
+                    elif block.type == 'video':
+                        # Video - lấy transcript nếu có
+                        transcript = payload.get('transcript', '') or payload.get('captions', '') or payload.get('tts_text', '')
+                        if transcript:
+                            lesson_content.append(f"[Nội dung video] {transcript[:1000]}")
+                
+                if lesson_content:
+                    context_parts.append("NỘI DUNG BÀI HỌC CHI TIẾT:\n" + "\n\n".join(lesson_content))
+                
+                # Cũng kiểm tra content JSON nếu có
+                if latest_version.content and isinstance(latest_version.content, dict):
+                    json_content = latest_version.content
+                    
+                    # Lấy text từ các key phổ biến
+                    for key in ['content', 'text', 'body', 'description', 'summary']:
+                        if key in json_content and json_content[key]:
+                            val = json_content[key]
+                            if isinstance(val, str) and len(val) > 20:
+                                context_parts.append(f"[{key}] {val[:500]}")
+                    
+                    # Lấy từ content_blocks trong JSON
+                    json_blocks = json_content.get('content_blocks', []) or json_content.get('blocks', [])
+                    for jblock in json_blocks[:10]:
+                        if isinstance(jblock, dict):
+                            jtext = jblock.get('text', '') or jblock.get('content', '') or jblock.get('body', '')
+                            if jtext and len(jtext) > 20:
+                                context_parts.append(jtext[:400])
+        except Exception as e:
+            # Log lỗi nhưng không fail
+            pass
+        
+        # Giới hạn tổng độ dài context
+        full_context = "\n\n".join(context_parts)
+        return full_context[:8000]  # Tăng lên 8000 ký tự để có nhiều context hơn
+    
+    def _get_conversation_history(self, question):
+        """Lấy lịch sử hội thoại từ câu hỏi và các replies"""
+        history = []
+        
+        # Câu hỏi gốc
+        history.append(f"Học sinh: {question.content}")
+        
+        # Các replies theo thứ tự thời gian
+        replies = question.replies.order_by('created_at')
+        for reply in replies:
+            if reply.user and reply.user.username == "AI_Assistant":
+                history.append(f"AI: {reply.content[:500]}")  # Giới hạn độ dài
+            else:
+                history.append(f"Học sinh: {reply.content[:300]}")
+        
+        return "\n".join(history[-10:])  # Chỉ lấy 10 tin nhắn gần nhất
+    
+    def _build_prompt(self, question_content, lesson_context, lesson, conversation_history=""):
+        """Tạo prompt cho AI"""
+        # Nếu có lịch sử hội thoại, sử dụng prompt khác
+        if conversation_history and len(conversation_history) > 50:
+            return f"""Bạn là trợ lý học tập AI của SunEdu, đang hỗ trợ học sinh tiểu học học bài "{lesson.title}".
+
+THÔNG TIN BÀI HỌC:
+{lesson_context}
+
+LỊCH SỬ HỘI THOẠI:
+{conversation_history}
+
+YÊU CẦU:
+1. Tiếp tục cuộc hội thoại một cách tự nhiên.
+2. Trả lời câu hỏi/tin nhắn MỚI NHẤT của học sinh.
+3. Sử dụng ngôn ngữ đơn giản, thân thiện, phù hợp với học sinh tiểu học.
+4. Nếu học sinh hỏi về nội dung bài học, hãy trả lời dựa trên thông tin bài học.
+5. Trả lời ngắn gọn, dễ hiểu (tối đa 200 từ).
+6. Luôn khuyến khích và động viên học sinh.
+
+Trả lời bằng tiếng Việt:"""
+        
+        # Prompt cho câu hỏi đầu tiên
+        return f"""Bạn là trợ lý học tập AI của SunEdu, hỗ trợ học sinh tiểu học học bài "{lesson.title}".
+
+THÔNG TIN BÀI HỌC:
+{lesson_context}
+
+TIN NHẮN CỦA HỌC SINH:
+"{question_content}"
+
+YÊU CẦU QUAN TRỌNG:
+1. Nếu học sinh chỉ chào (hi, hello, xin chào...), hãy chào lại và TÓM TẮT NGẮN GỌN nội dung bài học, sau đó gợi ý 2-3 câu hỏi học sinh có thể hỏi về bài học.
+2. Nếu học sinh hỏi về nội dung bài học, hãy trả lời dựa trên thông tin bài học ở trên.
+3. Sử dụng ngôn ngữ đơn giản, thân thiện, phù hợp với học sinh tiểu học.
+4. Nếu câu hỏi không liên quan đến bài học, hãy nhẹ nhàng hướng dẫn học sinh quay lại nội dung bài.
+5. Trả lời ngắn gọn, dễ hiểu (tối đa 200 từ).
+6. Nếu không có đủ thông tin để trả lời, hãy gợi ý học sinh hỏi giáo viên.
+7. Luôn khuyến khích và động viên học sinh.
+
+Trả lời bằng tiếng Việt:"""
+
+    def _call_gemini_api(self, api_key, model, prompt):
+        """Gọi Gemini API với retry"""
+        # Chỉ sử dụng model được chỉ định (gemini-2.5-flash)
+        models_to_try = [model]
+        
+        max_retries = 2
+        base_delay = 2
+        last_error = None
+        used_model = model
+        
+        for current_model in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={api_key}"
+            
+            for attempt in range(max_retries):
+                try:
+                    resp = http_requests.post(
+                        url,
+                        json={
+                            "contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {"maxOutputTokens": 1024},
+                        },
+                        timeout=30,
+                    )
+                    
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        text = ""
+                        
+                        # Kiểm tra candidates
+                        candidates = data.get("candidates", [])
+                        if not candidates:
+                            # Không có candidates - kiểm tra lý do
+                            block_reason = data.get("promptFeedback", {}).get("blockReason", "")
+                            if block_reason:
+                                last_error = f"Nội dung bị chặn: {block_reason}"
+                            else:
+                                last_error = "AI không trả về kết quả"
+                            break
+                        
+                        # Parse text từ candidates
+                        try:
+                            candidate = candidates[0]
+                            content = candidate.get("content", {})
+                            parts = content.get("parts", [])
+                            if parts and len(parts) > 0:
+                                text = parts[0].get("text", "")
+                            
+                            # Kiểm tra finish reason
+                            finish_reason = candidate.get("finishReason", "")
+                            if finish_reason == "SAFETY":
+                                last_error = "Nội dung bị chặn bởi bộ lọc an toàn"
+                                break
+                        except (IndexError, KeyError, TypeError) as e:
+                            last_error = f"Lỗi parse: {str(e)}"
+                            break
+                        
+                        if text and text.strip():
+                            return {"text": text.strip(), "model": current_model}
+                        else:
+                            last_error = "AI trả về nội dung rỗng"
+                            break
+                    
+                    if resp.status_code == 429:
+                        last_error = "AI đang quá tải, vui lòng thử lại sau"
+                        if attempt < max_retries - 1:
+                            time.sleep(base_delay * (2 ** attempt))
+                        continue
+                    
+                    if resp.status_code == 404:
+                        # Model không tồn tại
+                        try:
+                            error_data = resp.json()
+                            error_msg = error_data.get("error", {}).get("message", "Model không tồn tại")
+                        except:
+                            error_msg = "Model không tồn tại"
+                        last_error = f"Model {current_model}: {error_msg}"
+                        break
+                    
+                    # Các lỗi khác
+                    try:
+                        error_data = resp.json()
+                        error_msg = error_data.get("error", {}).get("message", f"Lỗi {resp.status_code}")
+                    except:
+                        error_msg = f"Lỗi API {resp.status_code}"
+                    last_error = error_msg
+                    break
+                        
+                except Exception as e:
+                    last_error = str(e)
+                    if attempt < max_retries - 1:
+                        time.sleep(base_delay * (2 ** attempt))
+            
+            # Try next model
+            time.sleep(base_delay)
+        
+        return {"error": last_error or "AI không phản hồi"}

@@ -1,9 +1,10 @@
 from django.urls import path, re_path
 from rest_framework_simplejwt.views import TokenRefreshView  # For token refresh endpoint
-from dj_rest_auth.views import LoginView, LogoutView
+from dj_rest_auth.views import LogoutView
 
 from custom_account.api.views.auth_view import (
     RegisterView,
+    CustomLoginView,
     AdminLoginAsUserView,
     AdminRefreshUserAccessView,
     AdminLogoutUserView,
@@ -25,7 +26,7 @@ from custom_account.api.views.profile_view import UserProfileView, AdminProfileL
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="account-register"),
-    path('login/', LoginView.as_view(), name='account_login'),
+    path('login/', CustomLoginView.as_view(), name='account_login'),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path("user/", CurrentUserDetailView.as_view(), name="current-user"),

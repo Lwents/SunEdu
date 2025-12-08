@@ -1,6 +1,7 @@
 from .exercise_view import (
     ExerciseListCreateView,
-    ExerciseDetailView
+    ExerciseDetailView,
+    GenerateQuestionsAIView,
 )
 from .question_and_choice_view import (
     ExerciseQuestionCreateView,
@@ -25,6 +26,7 @@ from .view_for_instructor_and_admin import (
 __all__ = [
     'ExerciseListCreateView',
     'ExerciseDetailView',
+    'GenerateQuestionsAIView',
     'ExerciseQuestionCreateView',
     'QuestionDeleteView',
     'QuestionChoiceCreateView',
@@ -39,4 +41,3 @@ __all__ = [
     'ExerciseAttemptsListView',
     'ExportResultsView',
 ]
-

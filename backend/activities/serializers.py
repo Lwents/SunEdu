@@ -51,7 +51,12 @@ class ChoiceModelSerializer(serializers.ModelSerializer):
         cid = str(data.get("id") or uuid.uuid4())
         # In nested creation 'question' may be pk; in updates it might be instance
         question_val = data.get("question")
-        question_id = str(question_val) if question_val is not None else (str(self.instance.question.id) if self.instance else None)
+        # Ensure we always use the PK even when DRF gives us a model instance
+        question_id = None
+        if question_val is not None:
+            question_id = str(getattr(question_val, "id", question_val))
+        elif self.instance:
+            question_id = str(self.instance.question.id)
         return ChoiceDomain(
             id=cid,
             question_id=str(question_id),
@@ -86,7 +91,11 @@ class QuestionModelSerializer(serializers.ModelSerializer):
         data = self.validated_data
         qid = str(data.get("id") or uuid.uuid4())
         exercise_val = data.get("exercise")
-        exercise_id = str(exercise_val) if exercise_val is not None else (str(self.instance.exercise.id) if self.instance else None)
+        exercise_id = None
+        if exercise_val is not None:
+            exercise_id = str(getattr(exercise_val, "id", exercise_val))
+        elif self.instance:
+            exercise_id = str(self.instance.exercise.id)
         prompt = data["prompt"]
         meta = data.get("meta", {}) or {}
         choices_raw = self.validated_data.get("choices", [])
@@ -140,7 +149,12 @@ class ExerciseModelSerializer(serializers.ModelSerializer):
         data = self.validated_data
         eid = str(data.get("id") or (self.instance.id if self.instance else uuid.uuid4()))
         lesson_val = data.get("lesson")
-        lesson_id = str(lesson_val) if lesson_val is not None else (str(self.instance.lesson.id) if self.instance and hasattr(self.instance, 'lesson') and self.instance.lesson else None)
+        lesson_id = None
+        if lesson_val is not None:
+            # lesson_val may be a Lesson instance; use its PK instead of __str__()
+            lesson_id = str(getattr(lesson_val, "id", lesson_val))
+        elif self.instance and hasattr(self.instance, 'lesson') and self.instance.lesson:
+            lesson_id = str(self.instance.lesson.id)
         title = data.get("title") or (self.instance.title if self.instance else "")
         # Get type from data, or fallback to instance type, or default to 'mcq'
         typ = data.get("type") or (self.instance.type if self.instance else "mcq")

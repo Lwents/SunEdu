@@ -11,7 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 
 from admin_api.permissions import IsAdmin
 from payments.models import Payment
-from content.models import Course, Enrollment, LessonProgress
+from content.models import Course, Enrollment, LessonProgress, Subject
+from activities.models import TeacherFeedback
 from custom_account.models import UserModel
 from progress.models import UserProgress, UserLessonProgress
 
@@ -354,14 +355,17 @@ class AdminContentReportView(APIView):
         if report_type == 'kpis':
             total_published = Course.objects.filter(published=True).count()
             total_enrollments = Enrollment.objects.count()
-            # Rating placeholder - need rating model
+            avg_rating = (
+                TeacherFeedback.objects.filter(course__published=True).aggregate(avg=Avg('rating'))['avg']
+                or 0
+            )
             return Response({
                 'totalPublished': total_published,
                 'totalEnrollments': total_enrollments,
-                'avgRating': 4.3  # Placeholder - need rating model
+                'avgRating': round(float(avg_rating), 1)
             }, status=status.HTTP_200_OK)
         elif report_type == 'views-by-subject':
-            # Get enrollments by subject (using as views)
+            # Only count published courses; show title + subject hint, include zero views
             subject_map = {
                 'math': 'Toán',
                 'vietnamese': 'Tiếng Việt',
@@ -369,48 +373,39 @@ class AdminContentReportView(APIView):
                 'science': 'Khoa học',
                 'history': 'Lịch sử'
             }
-            
-            subjects = {}
-            enrollments = Enrollment.objects.select_related('course__subject')
-            for enrollment in enrollments:
-                if enrollment.course and enrollment.course.subject:
-                    subject_slug = enrollment.course.subject.slug
-                    if subject_slug not in subjects:
-                        subjects[subject_slug] = 0
-                    subjects[subject_slug] += 1
-            
+
+            courses = Course.objects.filter(published=True).annotate(views=Count('enrollments', distinct=True))
             result = []
-            for subject_slug, count in subjects.items():
-                subject_name = subject_map.get(subject_slug, subject_slug)
-                result.append({
-                    'subject': subject_name,
-                    'views': count
-                })
+            for course in courses:
+                subject_label = subject_map.get(
+                    getattr(course.subject, 'slug', None),
+                    getattr(course.subject, 'title', None) or 'Khác'
+                )
+                label = course.title or subject_label
+                if subject_label and subject_label not in (label or ''):
+                    label = f"{label} ({subject_label})"
+                result.append({'subject': label, 'views': course.views or 0})
+
             return Response(result, status=status.HTTP_200_OK)
         elif report_type == 'top':
-            # Get top courses by enrollments
+            # Get top courses by enrollments (only published), views = real enrollments, rating = avg feedback
             top_courses = Course.objects.filter(published=True).annotate(
-                enrollments_count=Count('enrollments', distinct=True)
+                enrollments_count=Count('enrollments', distinct=True),
+                avg_rating=Avg('feedbacks__rating'),
             ).order_by('-enrollments_count')[:10]
             
             result = []
             for course in top_courses:
-                # Use enrollments as views (placeholder)
-                views = course.enrollments_count * 3  # Estimate views as 3x enrollments
-                # Rating placeholder - need rating model
-                rating = 4.3  # Placeholder
+                views = course.enrollments_count  # Use actual enrollments as views
+                rating = course.avg_rating or 0.0
                 
                 result.append({
                     'courseId': str(course.id),
                     'title': course.title,
                     'views': views,
                     'enrollments': course.enrollments_count,
-                    'rating': round(rating, 1)
+                    'rating': round(float(rating), 1)
                 })
             return Response(result, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid report type'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-

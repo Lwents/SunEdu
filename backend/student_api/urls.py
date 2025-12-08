@@ -24,6 +24,7 @@ from student_api.views import (
     StudentLessonQuestionReactionView,
     StudentLessonQuestionQuestionReactionView,
     StudentLessonQuestionReportView,
+    StudentLessonQuestionAIAnswerView,
 )
 from student_api.views.notifications_view import (
     StudentNotificationsView,
@@ -49,11 +50,12 @@ urlpatterns = [
     path('lesson-questions/<uuid:pk>/reply/', StudentLessonQuestionReplyView.as_view(), name='lesson-question-reply'),
     # Allow both pk and explicit question_id for reaction endpoint
     path('lesson-questions/<uuid:pk>/react/', StudentLessonQuestionQuestionReactionView.as_view(), name='lesson-question-question-reaction'),
+    # AI answer - phải đặt trước route detail để không bị match sai
+    path('lesson-questions/<uuid:question_id>/ai-answer/', StudentLessonQuestionAIAnswerView.as_view(), name='lesson-question-ai-answer'),
     path('lesson-questions/<uuid:pk>/', StudentLessonQuestionView.as_view(), name='lesson-question-detail'),
     path('lesson-question-replies/<uuid:reply_id>/react/', StudentLessonQuestionReactionView.as_view(), name='lesson-question-reaction'),
     path('lesson-question-replies/<uuid:reply_id>/', StudentLessonQuestionReplyView.as_view(), name='lesson-question-reply-detail'),
     path('lesson-question-report/', StudentLessonQuestionReportView.as_view(), name='lesson-question-report'),
-    path('lesson-questions/', StudentLessonQuestionView.as_view(), name='lesson-question'),
     
     # Exams
     path('exams/', StudentExamsListView.as_view(), name='exams-list'),

@@ -76,9 +76,17 @@
       </div>
 
       <el-table :data="items" v-loading="loading" height="560" @row-dblclick="goDetail">
-        <el-table-column label="" width="72">
+        <el-table-column label="" width="90">
           <template #default="{ row }">
-            <img :src="row.thumbnail" class="h-10 w-16 rounded object-cover" />
+            <div class="thumb-box">
+              <img
+                :src="row.thumbnail || placeholderThumb"
+                class="thumb-img"
+                alt="Course thumbnail"
+                @error="(e: any) => { e.target.src = placeholderThumb }"
+              />
+              <div v-if="!row.thumbnail" class="thumb-badge">Không có ảnh</div>
+            </div>
           </template>
         </el-table-column>
 
@@ -320,15 +328,15 @@ async function publish(row: CourseSummary) {
 async function unpublish(row: CourseSummary) {
   const confirmed = await showConfirm({
     title: 'Xác nhận',
-    message: `Gỡ xuất bản khoá “${row.title}”?`,
+    message: `Xoá khoá học “${row.title}”?`,
   })
   if (!confirmed) return
   try {
-  await courseService.unpublish(row.id)
-    showToast('Đã gỡ khoá học', 'info')
+  await courseService.delete(row.id, true)
+    showToast('Đã xoá khoá học', 'info')
   fetch()
   } catch (error: any) {
-    showToast(error?.message || 'Không thể gỡ khoá học', 'error')
+    showToast(error?.message || 'Không thể xoá khoá học', 'error')
   }
 }
 async function archive(row: CourseSummary) {
@@ -360,4 +368,39 @@ onMounted(async () => {
   teachers.value = await courseService.listTeachers()
   fetch()
 })
+
+const placeholderThumb =
+  'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"90\" viewBox=\"0 0 160 90\"><rect width=\"160\" height=\"90\" fill=\"%23f3f4f6\" rx=\"8\"/><path d=\"M52 56l14-18 12 14 8-10 20 24H52z\" fill=\"%23d1d5db\"/><circle cx=\"65\" cy=\"38\" r=\"6\" fill=\"%23d1d5db\"/><text x=\"80\" y=\"82\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"12\" fill=\"%239ca3af\">No image</text></svg>'
 </script>
+
+<style scoped>
+.thumb-box {
+  position: relative;
+  width: 72px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumb-badge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  text-align: center;
+  line-height: 1.2;
+}
+</style>

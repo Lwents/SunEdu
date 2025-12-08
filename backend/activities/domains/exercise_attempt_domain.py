@@ -205,6 +205,7 @@ class ExerciseAttemptDomain:
                 "answer": ans.answer if ans else None,
                 "answer_score": ans.score if ans else 0.0,  # Student's answer score
                 "correct": ans.correct if ans else False,
+                "meta": q.meta or {},
             }
             # Add choices for single/multi choice questions (don't include is_correct for students)
             qtype = q.meta.get('type', 'single')

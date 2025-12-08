@@ -119,12 +119,33 @@ async function reload() {
 onMounted(reload)
 
 const barOption = computed(() => ({
-  tooltip: {},
-  grid: { left: 40, right: 16, top: 24, bottom: 40 },
-  xAxis: { type: 'category', data: subjectViews.value.map((x) => x.subject) },
-  yAxis: { type: 'value' },
+  tooltip: {
+    trigger: 'item',
+    formatter: ({ name, value }: any) => `<strong>${name}</strong><br/>Lượt xem: ${value}`,
+  },
+  grid: { left: 48, right: 16, top: 32, bottom: 64 },
+  xAxis: {
+    type: 'category',
+    data: subjectViews.value.map((x) => x.subject),
+    axisLabel: { rotate: subjectViews.value.length > 4 ? 20 : 0 },
+  },
+  yAxis: { type: 'value', minInterval: 1 },
   series: [
-    { name: 'Views', type: 'bar', data: subjectViews.value.map((x) => x.views), xAxisIndex: 0 },
+    {
+      name: 'Lượt xem',
+      type: 'bar',
+      data: subjectViews.value.map((x) => x.views),
+      xAxisIndex: 0,
+      barMinHeight: 6,
+      itemStyle: {
+        borderRadius: [6, 6, 0, 0],
+        color: '#5a6ff0',
+      },
+      emphasis: {
+        itemStyle: { color: '#3d52c6' },
+      },
+      barMaxWidth: 42,
+    },
   ],
 }))
 </script>

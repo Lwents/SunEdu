@@ -389,7 +389,6 @@ const contentTypeOptions = [
   { value: 'text', label: 'Văn bản', icon: '📝' },
   { value: 'exercise', label: 'Bài tập', icon: '✏️' },
   { value: 'document', label: 'Tài liệu Word', icon: '📑' },
-  { value: 'lesson', label: 'Bài học (cơ bản)', icon: '📚' },
 ]
 
 function getContentTypeLabel(type: string): string {
@@ -399,7 +398,6 @@ function getContentTypeLabel(type: string): string {
     text: '📝 Văn bản',
     exercise: '✏️ Bài tập',
     document: '📑 Word',
-    lesson: '📚 Bài học',
     exploration: '🔍 Khám phá',
   }
   return labels[type] || type

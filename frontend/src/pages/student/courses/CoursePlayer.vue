@@ -311,9 +311,11 @@
                 <button
                   type="button"
                   class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
-                  @click="openExercise(exercise.id)"
+                  :disabled="lessonProgress?.exercise_completed"
+                  :class="lessonProgress?.exercise_completed ? 'opacity-60 cursor-not-allowed' : ''"
+                  @click="!lessonProgress?.exercise_completed && openExercise(exercise.id)"
                 >
-                  {{ lessonProgress?.exercise_completed ? 'Xem lại bài tập' : 'Làm bài tập' }}
+                  {{ lessonProgress?.exercise_completed ? 'Đã nộp' : 'Làm bài tập' }}
                 </button>
               </div>
             </div>
@@ -481,14 +483,18 @@
 
     <!-- Nút hỏi đáp nổi -->
     <button
-      v-if="!lessonLocked"
-      class="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
+      v-if="qaLessonId"
+      class="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-bold shadow-lg shadow-orange-200 transition"
+      :class="lessonLocked
+        ? 'bg-slate-300 text-white cursor-not-allowed'
+        : 'bg-orange-500 text-white hover:bg-orange-600'"
+      :disabled="lessonLocked"
       @click="toggleQA(true)"
     >
       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-3 8a9 9 0 110-18 9 9 0 010 18z" />
       </svg>
-      Hỏi đáp
+      <span>{{ lessonLocked ? 'Hỏi đáp bị khoá' : 'Hỏi đáp' }}</span>
     </button>
 
     <!-- Drawer hỏi đáp -->
@@ -691,6 +697,17 @@
                       </svg>
                       Phản hồi
                     </button>
+                    <button
+                      class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:from-purple-600 hover:to-indigo-600 hover:shadow-md hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="askingAI[q.id]"
+                      @click="askAI(q.id)"
+                    >
+                      <span v-if="askingAI[q.id]" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                      <svg v-else class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      {{ askingAI[q.id] ? 'Đang hỏi...' : 'Hỏi AI' }}
+                    </button>
                   </div>
 
                   <!-- Replies -->
@@ -707,11 +724,13 @@
                             class="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm ring-2 ring-white transition-all group-hover/reply:ring-blue-200"
                             :class="rep.is_teacher 
                               ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
-                              : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700'"
+                              : (rep.user === 'AI_Assistant' ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white' : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700')"
                           >
+                            <!-- AI Avatar -->
+                            <span v-if="rep.user === 'AI_Assistant'" class="text-sm">🤖</span>
                             <!-- Avatar Image -->
                             <img
-                              v-if="!avatarErrors[`r-${rep.id}`]"
+                              v-else-if="!avatarErrors[`r-${rep.id}`]"
                               :src="avatarUrlForReply(rep)"
                               :alt="rep.is_teacher ? 'Giáo viên' : (rep.user || 'Học sinh')"
                               class="absolute inset-0 h-full w-full object-cover"
@@ -720,13 +739,18 @@
                             />
                             <!-- Fallback Initials -->
                             <span 
-                              v-if="avatarErrors[`r-${rep.id}`]"
+                              v-else-if="avatarErrors[`r-${rep.id}`]"
                               class="text-xs font-bold"
                             >
                               {{ rep.is_teacher ? 'GV' : getInitials(rep.user) || 'HS' }}
                             </span>
                           </div>
-                          <div v-if="rep.is_teacher" class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white shadow-sm">
+                          <div v-if="rep.user === 'AI_Assistant'" class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 ring-2 ring-white shadow-sm">
+                            <svg class="h-2.5 w-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                          </div>
+                          <div v-else-if="rep.is_teacher" class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white shadow-sm">
                             <svg class="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
@@ -742,10 +766,11 @@
                         <div class="flex-1 min-w-0">
                           <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
-                              <span class="text-xs font-bold" :class="rep.is_teacher ? 'text-blue-700' : 'text-slate-700'">
-                                {{ rep.is_teacher ? '👨‍🏫 Giáo viên' : rep.user || 'Học sinh' }}
+                              <span class="text-xs font-bold" :class="rep.is_teacher ? 'text-blue-700' : (rep.user === 'AI_Assistant' ? 'text-purple-700' : 'text-slate-700')">
+                                {{ rep.is_teacher ? '👨‍🏫 Giáo viên' : (rep.user === 'AI_Assistant' ? '🤖 Trợ lý AI' : rep.user || 'Học sinh') }}
                               </span>
-                              <span v-if="rep.is_owner" class="rounded-full bg-orange-100 px-1.5 py-0.5 text-xs font-semibold text-orange-700">Bạn</span>
+                              <span v-if="rep.user === 'AI_Assistant'" class="rounded-full bg-gradient-to-r from-purple-100 to-indigo-100 px-1.5 py-0.5 text-xs font-semibold text-purple-700">AI</span>
+                              <span v-else-if="rep.is_owner" class="rounded-full bg-orange-100 px-1.5 py-0.5 text-xs font-semibold text-orange-700">Bạn</span>
                         </div>
                         <div class="flex items-center gap-2">
                           <span class="text-xs text-slate-400">{{ formatDateTimeShort(rep.created_at) }}</span>
@@ -810,10 +835,58 @@
                               <span class="text-sm">❤️</span>
                               <span>{{ rep.reactions_count || 0 }}</span>
                         </button>
+                            <!-- Nút chat tiếp với AI -->
+                            <button 
+                              v-if="rep.user === 'AI_Assistant'" 
+                              class="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 px-2.5 py-1 text-xs font-semibold text-white transition-all hover:from-purple-600 hover:to-indigo-600 hover:scale-105 active:scale-95"
+                              @click="toggleAIChatBox(q.id, rep.id)"
+                            >
+                              <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                              Chat tiếp
+                            </button>
                             <button v-if="rep.is_owner" class="text-xs font-semibold text-sky-600 hover:underline" @click="startEditReply(rep)">Sửa</button>
                             <button v-if="rep.is_owner" class="text-xs font-semibold text-rose-600 hover:underline" @click="deleteReply(rep.id, q.id)">Xóa</button>
                             <button class="text-xs font-semibold text-amber-600 hover:underline" @click="openReport(null, rep.id)">Báo cáo</button>
                           </div>
+                          
+                          <!-- AI Chat Box -->
+                          <transition name="slide-down">
+                            <div v-if="aiChatBox[`${q.id}-${rep.id}`]" class="mt-3 space-y-2 rounded-xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-3">
+                              <div class="flex items-center gap-2 text-xs font-semibold text-purple-700">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                Hỏi thêm AI
+                              </div>
+                              <textarea
+                                v-model="aiChatDrafts[`${q.id}-${rep.id}`]"
+                                rows="2"
+                                class="w-full rounded-lg border-2 border-purple-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-100"
+                                placeholder="Nhập câu hỏi tiếp theo cho AI..."
+                              ></textarea>
+                              <div class="flex justify-end gap-2">
+                                <button
+                                  class="rounded-lg border-2 border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
+                                  @click="toggleAIChatBox(q.id, rep.id)"
+                                >
+                                  Hủy
+                                </button>
+                                <button
+                                  class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 px-4 py-1.5 text-xs font-bold text-white shadow-md transition-all hover:from-purple-600 hover:to-indigo-600 hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  :disabled="askingAI[q.id] || !(aiChatDrafts[`${q.id}-${rep.id}`]?.trim())"
+                                  @click="continueAIChat(q.id, rep.id)"
+                                >
+                                  <span v-if="askingAI[q.id]" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                                  <svg v-else class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                  </svg>
+                                  {{ askingAI[q.id] ? 'Đang hỏi...' : 'Gửi' }}
+                                </button>
+                              </div>
+                            </div>
+                          </transition>
                         </div>
                       </div>
                       </div>
@@ -897,6 +970,124 @@
         </div>
       </div>
     </transition>
+
+    <!-- Modal làm bài tập -->
+    <transition name="fade">
+      <div
+        v-if="exercisePlayer.open"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6"
+        @click.self="exercisePlayer.open = false"
+      >
+        <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Bài tập</p>
+              <h3 class="text-xl font-bold text-gray-900">{{ exercisePlayer.exercise?.title || 'Bài tập' }}</h3>
+            </div>
+            <button class="text-sm text-slate-500 hover:text-slate-700" @click="exercisePlayer.open = false">Đóng</button>
+          </div>
+
+          <div v-if="exercisePlayer.loading" class="py-10 text-center text-slate-500">Đang tải câu hỏi...</div>
+
+          <div v-else>
+            <div v-for="(q, idx) in exercisePlayer.questions" :key="q.id" class="mb-4 rounded-xl border border-slate-200 p-4">
+              <div class="mb-2 flex items-start justify-between gap-2">
+                <span class="rounded bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700">Câu {{ idx + 1 }}</span>
+                <span class="text-xs font-medium text-slate-500">{{ q.type }}</span>
+              </div>
+              <p class="mb-3 text-sm font-semibold text-gray-900">{{ q.prompt }}</p>
+
+              <!-- MCQ -->
+              <div v-if="q.type === 'mcq'" class="space-y-2">
+                <label
+                  v-for="choice in q.choices"
+                  :key="choice.id"
+                  class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
+                >
+                  <input
+                    v-if="q.meta?.multiple"
+                    type="checkbox"
+                    :value="choice.id"
+                    class="h-4 w-4 text-cyan-600"
+                    v-model="exercisePlayer.answers[q.id]"
+                    :disabled="exercisePlayer.submitted"
+                  />
+                  <input
+                    v-else
+                    type="radio"
+                    :name="`q-${q.id}`"
+                    :value="choice.id"
+                    class="h-4 w-4 text-cyan-600"
+                    v-model="exercisePlayer.answers[q.id]"
+                    :disabled="exercisePlayer.submitted"
+                  />
+                  <span>{{ choice.text }}</span>
+                </label>
+              </div>
+
+              <!-- Short answer -->
+              <div v-else-if="q.type === 'short_answer'">
+                <textarea
+                  v-model="exercisePlayer.answers[q.id]"
+                  rows="3"
+                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                  placeholder="Nhập câu trả lời..."
+                  :disabled="exercisePlayer.submitted"
+                ></textarea>
+              </div>
+
+              <!-- Matching -->
+              <div v-else-if="q.type === 'matching'" class="space-y-2">
+                <div
+                  v-for="pair in buildMatchingOptions(q)"
+                  :key="pair.leftId"
+                  class="flex items-center gap-2"
+                >
+                  <span class="w-1/2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">{{ pair.leftText }}</span>
+                  <select
+                    class="w-1/2 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    :value="exercisePlayer.answers[q.id]?.[pair.leftId] || ''"
+                    :disabled="exercisePlayer.submitted"
+                    @change="handleAnswerChange(q, { ...(exercisePlayer.answers[q.id] || {}), [pair.leftId]: ($event.target as HTMLSelectElement).value })"
+                  >
+                    <option value="">Chọn vế phải</option>
+                    <option v-for="opt in pair.rights" :key="opt.rightId" :value="opt.rightId">
+                      {{ opt.rightText }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div v-else class="text-sm text-slate-500">Loại câu hỏi chưa hỗ trợ hiển thị.</div>
+            </div>
+
+            <div class="mt-6 flex items-center justify-between">
+              <div v-if="exercisePlayer.result" class="text-sm text-green-600">
+                Điểm: {{ exercisePlayer.result.score ?? 0 }}
+              </div>
+              <div class="flex gap-2">
+                <button
+                  class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  @click="exercisePlayer.open = false"
+                  :disabled="exercisePlayer.submitting"
+                >
+                  Hủy
+                </button>
+                <button
+                  class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700 disabled:opacity-50"
+                  @click="submitExercise"
+                  :disabled="exercisePlayer.submitting || exercisePlayer.submitted"
+                >
+                  <span v-if="exercisePlayer.submitted">Đã nộp</span>
+                  <span v-else-if="exercisePlayer.submitting">Đang nộp...</span>
+                  <span v-else>Nộp bài</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
   <div v-else class="grid min-h-screen place-items-center text-gray-600 dark:text-gray-400">Đang tải…</div>
 </template>
@@ -935,6 +1126,19 @@ const videoWatchedPercentage = ref<number>(0)
 const hasMarkedAsWatched = ref<boolean>(false)
 const WATCHED_THRESHOLD = 75 // Phải xem 75% video mới tính là đã xem
 const autoCompletedLessons = new Set<string>()
+
+// Làm bài tập ngay trong trang xem bài học
+const exercisePlayer = reactive({
+  open: false,
+  loading: false,
+  submitting: false,
+  result: null as any,
+  submitted: false,
+  exercise: null as any,
+  attemptId: '' as string,
+  questions: [] as any[],
+  answers: {} as Record<string, any>
+})
 
 function normalizeRouteParam(param: any): string | number | undefined {
   if (Array.isArray(param)) return param[0]
@@ -1304,6 +1508,14 @@ const dash = computed(() => progressPct.value)
 
 const currentLesson = computed<UiLesson | null>(() => uiSections.value[cur.value.si]?.items[cur.value.li] || null);
 const currentLessonId = computed(() => currentLesson.value?.id || null)
+const qaLessonId = computed(() => {
+  return (
+    currentLessonId.value ||
+    currentLessonDetail.value?.id ||
+    normalizeRouteParam(route.params.lessonId) ||
+    null
+  )
+})
 const currentLessonTitle = computed(() => currentLesson.value?.title || '')
 
 const currentLessonIntro = computed(() => normalizeIntroduction(currentLessonDetail.value?.introduction))
@@ -1797,9 +2009,11 @@ async function loadLessonDetail(lessonId: string | number | null) {
     
     const activeLessonId = String(data.id || lessonId || '')
     
-    // Load exercises
+    // Load exercises (filter đúng bài học hiện tại)
     try {
-      const { data: exercisesData } = await api.get(`/activities/exercises/?lesson=${activeLessonId}`)
+      const { data: exercisesData } = await api.get('/activities/exercises/', {
+        params: { lesson_id: activeLessonId, published: true }
+      })
       currentLessonExercises.value = Array.isArray(exercisesData) ? exercisesData : exercisesData.results || []
     } catch (e) {
       currentLessonExercises.value = []
@@ -1834,13 +2048,16 @@ async function autoCompleteNonVideo() {
   }
   autoCompletedLessons.add(key)
   try {
-    await contentService.updateLessonProgress(key, { video_watched: true, completed: true })
+    const completedFlag = currentLessonExercises.value.length === 0
+    await contentService.updateLessonProgress(key, { video_watched: true, completed: completedFlag })
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
-      lessonProgress.value.completed = true
+      lessonProgress.value.completed = completedFlag
     }
     hasMarkedAsWatched.value = true
-    markDone(key)
+    if (completedFlag) {
+      markDone(key)
+    }
   } catch (error) {
     autoCompletedLessons.delete(key)
     console.error('Failed to auto-complete non-video lesson:', error)
@@ -1867,7 +2084,8 @@ async function goPrev(){
 async function goNext(){
   if (!nextLesson.value) return
   // Check if current lesson requires exercise completion
-  if (currentLessonDetail.value?.requires_exercise_completion && !lessonProgress.value?.exercise_completed) {
+  const mustFinishExercise = (currentLessonExercises.value.length > 0) || currentLessonDetail.value?.requires_exercise_completion
+  if (mustFinishExercise && !lessonProgress.value?.exercise_completed) {
     alert('Bạn cần hoàn thành bài tập trước khi tiếp tục!')
     return
   }
@@ -1916,15 +2134,18 @@ async function checkAndMarkVideoWatched(percentage: number) {
   
   hasMarkedAsWatched.value = true
   try {
+    const completedFlag = currentLessonExercises.value.length === 0 || lessonProgress.value?.exercise_completed
     await contentService.updateLessonProgress(currentLesson.value.id, {
       video_watched: true,
-      completed: true,
+      completed: completedFlag,
     })
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
-      lessonProgress.value.completed = true
+      lessonProgress.value.completed = completedFlag
     }
-    markDone(currentLesson.value.id)
+    if (completedFlag) {
+      markDone(currentLesson.value.id)
+    }
     console.log(`Video marked as watched at ${percentage.toFixed(1)}%`)
   } catch (e) {
     console.error('Error updating video watched:', e)
@@ -1959,19 +2180,22 @@ async function onVideoEnded() {
   
   // Cập nhật progress: video completed
   try {
+    const completedFlag = currentLessonExercises.value.length === 0 || lessonProgress.value?.exercise_completed
     const progressResponse = await contentService.updateLessonProgress(lessonId, { 
       video_watched: true,
-      completed: true
+      completed: completedFlag
     })
     console.log('Progress updated:', progressResponse)
     
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
-      lessonProgress.value.completed = true
+      lessonProgress.value.completed = completedFlag
     }
     
-    // Đánh dấu lesson đã hoàn thành trong local state NGAY LẬP TỨC
-    markDone(lessonId)
+    // Đánh dấu lesson đã hoàn thành trong local state NGAY LẬP TỨC (nếu đủ điều kiện)
+    if (completedFlag) {
+      markDone(lessonId)
+    }
     console.log('Lesson marked as done in local state. Current progress:', doneCount.value, '/', totalCount.value)
     
     // Reload course data để lấy progress mới từ backend và sync
@@ -1993,15 +2217,15 @@ async function onVideoEnded() {
         if (section.lessons && Array.isArray(section.lessons)) {
           totalLessonsFromBackend += section.lessons.length
           section.lessons.forEach((lesson: any) => {
-            // Check nhiều cách để đảm bảo nhận được completed status
+            const requiresExercise = lesson.requires_exercise_completion || lesson.content_type === 'exercise' || lesson.exerciseExists
+            const hasExerciseCompleted = lesson.exerciseCompleted || lesson.exercise_completed
+            // Only count as completed when exercise condition is satisfied
             const isCompleted = lesson.completed === true || 
                                lesson.completed === 'true' || 
                                lesson.completed === 1 ||
                                lesson.completed === '1' ||
-                               lesson.videoWatched === true ||
-                               lesson.videoWatched === 'true' ||
-                               (lesson.videoWatched && !lesson.requires_exercise_completion) ||
-                               (lesson.videoWatched && lesson.exerciseCompleted)
+                               (lesson.videoWatched === true || lesson.videoWatched === 'true') && (!requiresExercise || hasExerciseCompleted) ||
+                               (requiresExercise && hasExerciseCompleted)
             
             if (isCompleted) {
               doneSet.add(String(lesson.id))
@@ -2054,7 +2278,7 @@ const qaLoading = ref(false)
 const qaItems = ref<any[]>([])
 const questionText = ref('')
 const sendingQuestion = ref(false)
-const canSendQuestion = computed(() => !!questionText.value.trim() && !!currentLessonId.value)
+const canSendQuestion = computed(() => !!questionText.value.trim() && !!qaLessonId.value)
 const replyDrafts = reactive<Record<string, string>>({})
 const replying = reactive<Record<string, boolean>>({})
 const reacting = reactive<Record<string, boolean>>({})
@@ -2065,6 +2289,9 @@ const reporting = reactive<{ open: boolean; questionId?: string; replyId?: strin
 const questionMenu = reactive<Record<string, boolean>>({})
 const replyMenu = reactive<Record<string, boolean>>({})
 const avatarErrors = reactive<Record<string, boolean>>({})
+const askingAI = reactive<Record<string, boolean>>({})
+const aiChatBox = reactive<Record<string, boolean>>({})
+const aiChatDrafts = reactive<Record<string, string>>({})
 function normalizeAvatar(input: any) {
   if (!input) return ''
   const str = String(input).trim()
@@ -2094,8 +2321,13 @@ async function submitQuestion() {
   if (!canSendQuestion.value || sendingQuestion.value) return
   sendingQuestion.value = true
   try {
+    const lessonId = qaLessonId.value
+    if (!lessonId) {
+      showToast('Không xác định được bài học để gửi hỏi đáp', 'error')
+      return
+    }
     await api.post('/student/lesson-questions/', {
-      lesson_id: currentLessonId.value,
+      lesson_id: lessonId,
       content: questionText.value.trim(),
     })
     showToast('Đã gửi câu hỏi tới giáo viên!', 'success')
@@ -2146,11 +2378,15 @@ function handleAvatarLoad(key: string) {
 }
 
 async function loadQuestions() {
-  if (!currentLessonId.value) return
+  const lessonId = qaLessonId.value
+  if (!lessonId) {
+    showToast('Không xác định được bài học để tải hỏi đáp', 'error')
+    return
+  }
   qaLoading.value = true
   try {
     const { data } = await api.get('/student/lesson-questions/', {
-      params: { lesson_id: currentLessonId.value },
+      params: { lesson_id: lessonId },
     })
     const userId = auth.user?.id ? String(auth.user.id) : null
     const items = (data?.items || []).map((q: any) => {
@@ -2304,6 +2540,69 @@ async function deleteQuestion(id: string) {
   }
 }
 
+async function askAI(questionId: string) {
+  if (askingAI[questionId]) return
+  askingAI[questionId] = true
+  try {
+    // Tăng timeout vì AI có thể mất thời gian để phản hồi
+    const { data } = await api.post(`/student/lesson-questions/${questionId}/ai-answer/`, {}, { timeout: 60000 })
+    showToast('AI đã trả lời câu hỏi của bạn!', 'success')
+    await loadQuestions()
+  } catch (e: any) {
+    console.error('AI answer error:', e)
+    let msg = 'AI không thể trả lời lúc này'
+    if (e?.code === 'ECONNABORTED' || e?.message?.includes('timeout')) {
+      msg = 'AI đang xử lý quá lâu, vui lòng thử lại sau'
+    } else if (e?.response?.data?.detail) {
+      msg = e.response.data.detail
+    } else if (e?.message) {
+      msg = e.message
+    }
+    showToast(msg, 'error')
+  } finally {
+    askingAI[questionId] = false
+  }
+}
+
+function toggleAIChatBox(questionId: string, replyId: string) {
+  const key = `${questionId}-${replyId}`
+  aiChatBox[key] = !aiChatBox[key]
+  if (aiChatBox[key] && !aiChatDrafts[key]) {
+    aiChatDrafts[key] = ''
+  }
+}
+
+async function continueAIChat(questionId: string, replyId: string) {
+  const key = `${questionId}-${replyId}`
+  const content = (aiChatDrafts[key] || '').trim()
+  if (!content || askingAI[questionId]) return
+  
+  askingAI[questionId] = true
+  try {
+    // Gửi câu hỏi mới như một reply, sau đó gọi AI trả lời
+    await api.post(`/student/lesson-questions/${questionId}/reply/`, { content })
+    
+    // Gọi AI trả lời câu hỏi mới
+    await api.post(`/student/lesson-questions/${questionId}/ai-answer/`, {}, { timeout: 60000 })
+    
+    aiChatDrafts[key] = ''
+    aiChatBox[key] = false
+    showToast('AI đã trả lời!', 'success')
+    await loadQuestions()
+  } catch (e: any) {
+    console.error('Continue AI chat error:', e)
+    let msg = 'AI không thể trả lời lúc này'
+    if (e?.response?.data?.detail) {
+      msg = e.response.data.detail
+    } else if (e?.message) {
+      msg = e.message
+    }
+    showToast(msg, 'error')
+  } finally {
+    askingAI[questionId] = false
+  }
+}
+
 function startEditReply(rep: any) {
   editingReply.id = rep.id
   editingReply.draft = rep.content
@@ -2363,9 +2662,126 @@ async function submitReport() {
   }
 }
 
-function openExercise(exerciseId: string | number) {
-  // TODO: Open exercise modal or navigate to exercise page
-  alert(`Mở bài tập ${exerciseId}. Tính năng này sẽ được implement sau.`)
+async function openExercise(exerciseId: string | number) {
+  if (lessonProgress.value?.exercise_completed) {
+    showToast('Bạn đã nộp bài tập này', 'info')
+    return
+  }
+  exercisePlayer.loading = true
+  exercisePlayer.open = true
+  exercisePlayer.exercise = currentLessonExercises.value.find((ex) => String(ex.id) === String(exerciseId)) || null
+  exercisePlayer.result = null
+  exercisePlayer.submitted = false
+  exercisePlayer.answers = {}
+  try {
+    const { data } = await api.post(`/activities/exercises/${exerciseId}/start/`)
+    exercisePlayer.attemptId = data.id || data.attempt_id
+    // Questions kèm meta
+    const qs = data.questions || []
+    exercisePlayer.questions = qs.map((q: any) => ({
+      ...q,
+      type: q.meta?.type || q.type || 'mcq',
+      choices: q.choices || [],
+      meta: q.meta || {},
+      pairs: q.pairs || []
+    }))
+    // Prefill answers nếu có
+    const existingAnswers = data.answers || {}
+    exercisePlayer.answers = { ...existingAnswers }
+    if (data.finished_at || data.status === 'finished') {
+      exercisePlayer.result = { score: data.score }
+      exercisePlayer.submitted = true
+    }
+  } catch (e: any) {
+    showToast(e?.response?.data?.detail || 'Không thể bắt đầu bài tập', 'error')
+    exercisePlayer.open = false
+  } finally {
+    exercisePlayer.loading = false
+  }
+}
+
+function handleAnswerChange(q: any, payload: any) {
+  exercisePlayer.answers = { ...exercisePlayer.answers, [q.id]: payload }
+}
+
+function buildMatchingOptions(q: any) {
+  const pairs = q.meta?.pairs || q.pairs || []
+  const correctPairs = q.meta?.correct_pairs || {}
+
+  // Build left/right ids: prefer existing ids from correct_pairs
+  let lefts: string[] = Object.keys(correctPairs)
+  if (lefts.length === 0 && pairs.length > 0) {
+    lefts = pairs.map((pair: any, idx: number) => `L${idx + 1}`)
+  }
+
+  return lefts.map((leftId: string, idx: number) => ({
+    leftId,
+    leftText: pairs[idx]?.left || leftId,
+    rights: pairs.map((p: any, i: number) => ({
+      rightId: `R${i + 1}`,
+      rightText: p.right || `R${i + 1}`
+    }))
+  }))
+}
+
+async function submitExercise() {
+  if (!exercisePlayer.attemptId) return
+  exercisePlayer.submitting = true
+  try {
+    // Gửi từng câu trả lời
+    for (const q of exercisePlayer.questions) {
+      const ans = exercisePlayer.answers[q.id]
+      let payload: any = null
+      if (q.type === 'mcq') {
+        const multiple = !!q.meta?.multiple
+        if (multiple) {
+          payload = { selected_choice_ids: Array.isArray(ans) ? ans : ans ? [ans] : [] }
+        } else {
+          payload = { selected_choice_id: ans }
+        }
+      } else if (q.type === 'short_answer') {
+        payload = { text: ans || '' }
+      } else if (q.type === 'matching') {
+        // ans dạng { [leftId]: rightId } hoặc array
+        let pairs: any[] = []
+        if (ans && typeof ans === 'object' && !Array.isArray(ans)) {
+          pairs = Object.entries(ans).map(([left_id, right_id]) => ({ left_id, right_id }))
+        } else if (Array.isArray(ans)) {
+          pairs = ans
+        }
+        payload = { pairs }
+      } else {
+        payload = ans
+      }
+      await api.post(`/activities/attempts/${exercisePlayer.attemptId}/answers/`, {
+        question_id: q.id,
+        answer: payload
+      })
+    }
+    // Chốt bài
+    const { data: summary } = await api.post(`/activities/attempts/${exercisePlayer.attemptId}/finalize/`)
+    exercisePlayer.result = summary
+    exercisePlayer.submitted = true
+    showToast('Đã nộp bài tập', 'success')
+    // Cập nhật progress bài học
+    if (currentLessonDetail.value?.id) {
+      await contentService.updateLessonProgress(currentLessonDetail.value.id, {
+        exercise_completed: true,
+        exercise_score: summary.score ?? 0,
+        completed: true
+      })
+      if (lessonProgress.value) {
+        lessonProgress.value.exercise_completed = true
+        lessonProgress.value.exercise_score = summary.score ?? 0
+        lessonProgress.value.completed = true
+      }
+      markDone(currentLessonDetail.value.id)
+    }
+  } catch (e: any) {
+    showToast(e?.response?.data?.detail || 'Không thể nộp bài tập', 'error')
+  } finally {
+    exercisePlayer.submitting = false
+  }
 }
 
 function toggle(i: number){ openIndex.value = openIndex.value === i ? -1 : i }
