@@ -517,7 +517,7 @@
             
             <div class="bg-amber-50 rounded-xl p-4 mb-6">
               <p class="text-sm text-amber-800">
-                ⏱️ Bài đánh giá gồm <strong>5-10 câu hỏi</strong>, mất khoảng <strong>5 phút</strong>.
+                ⏱️ Bài đánh giá gồm <strong>10-15 câu hỏi</strong>, mất khoảng <strong>10-15 phút</strong>.
                 Hãy trả lời thật lòng để AI đề xuất chính xác nhé!
               </p>
             </div>

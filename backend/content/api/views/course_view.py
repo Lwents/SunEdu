@@ -165,7 +165,17 @@ class CourseListCreateView(generics.ListCreateAPIView):
             return Response(CourseDetailReadSerializer.from_domain(created_domain), status=status.HTTP_201_CREATED)
         except Exception as e:
             import traceback
+            from content.services.exceptions import DomainValidationError
+            
             error_detail = str(e)
+            
+            # Nếu là lỗi validation (ví dụ: tên khóa học trùng), trả về 400
+            if isinstance(e, DomainValidationError):
+                return Response(
+                    {"detail": error_detail}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             traceback_str = traceback.format_exc()
             # Log error for debugging
             import logging

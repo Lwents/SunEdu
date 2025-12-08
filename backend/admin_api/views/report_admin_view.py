@@ -365,7 +365,7 @@ class AdminContentReportView(APIView):
                 'avgRating': round(float(avg_rating), 1)
             }, status=status.HTTP_200_OK)
         elif report_type == 'views-by-subject':
-            # Only count published courses; show title + subject hint, include zero views
+            # Gộp views theo môn học (subject) giống e-learning
             subject_map = {
                 'math': 'Toán',
                 'vietnamese': 'Tiếng Việt',
@@ -374,17 +374,21 @@ class AdminContentReportView(APIView):
                 'history': 'Lịch sử'
             }
 
-            courses = Course.objects.filter(published=True).annotate(views=Count('enrollments', distinct=True))
+            # Group by subject and sum enrollments
+            from django.db.models import Sum
+            subject_stats = (
+                Course.objects.filter(published=True)
+                .values('subject__slug', 'subject__title')
+                .annotate(total_views=Count('enrollments', distinct=True))
+                .order_by('-total_views')
+            )
+            
             result = []
-            for course in courses:
-                subject_label = subject_map.get(
-                    getattr(course.subject, 'slug', None),
-                    getattr(course.subject, 'title', None) or 'Khác'
-                )
-                label = course.title or subject_label
-                if subject_label and subject_label not in (label or ''):
-                    label = f"{label} ({subject_label})"
-                result.append({'subject': label, 'views': course.views or 0})
+            for stat in subject_stats:
+                subject_slug = stat.get('subject__slug')
+                subject_title = stat.get('subject__title')
+                label = subject_map.get(subject_slug, subject_title or 'Khác')
+                result.append({'subject': label, 'views': stat['total_views'] or 0})
 
             return Response(result, status=status.HTTP_200_OK)
         elif report_type == 'top':

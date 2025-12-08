@@ -1,6 +1,9 @@
 <template>
-  <div class="min-h-screen bg-slate-50 py-8">
-    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen bg-slate-50 py-8 relative overflow-hidden">
+    <!-- 🎆 Pháo hoa cho bảng xếp hạng -->
+    <RankingFireworks :active="showFireworks" :intensity="fireworkIntensity" />
+    
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 relative z-10">
       <header class="mb-6 flex flex-col gap-4 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-3xl font-bold text-slate-900">🏆 Bảng Xếp Hạng</h1>
@@ -230,6 +233,7 @@ import { examService } from '@/services/exam.service'
 import { getAvatarSrc } from '@/utils/avatar'
 import { useAuthStore } from '@/store/auth.store'
 import { useRoute } from 'vue-router'
+import RankingFireworks from '@/components/ui/RankingFireworks.vue'
 
 // --- TYPES ---
 type Exam = { id: number | string; title: string };
@@ -241,6 +245,15 @@ const exams = ref<Exam[]>([]);
 const examId = ref<Exam['id'] | undefined>();
 const route = useRoute()
 const auth = useAuthStore()
+
+// 🎆 Fireworks state
+const showFireworks = ref(false)
+const fireworkIntensity = computed<'low' | 'medium' | 'high'>(() => {
+  // Nếu user nằm trong top 3, pháo hoa mạnh hơn
+  if (me.value && me.value.rank <= 3) return 'high'
+  if (rows.value.length > 0) return 'medium'
+  return 'low'
+})
 
 const rows = ref<RankRow[]>([]);
 const limitedRows = computed(() => rows.value.slice(0, 100)); // Hiển thị tối đa 100 học viên
@@ -392,6 +405,16 @@ async function loadRanking(id: Exam['id']) {
       };
     } else {
       me.value = null;
+    }
+    // 🎆 Bật pháo hoa khi có dữ liệu ranking
+    if (rows.value.length > 0) {
+      setTimeout(() => {
+        showFireworks.value = true
+        // Tắt pháo hoa sau 8 giây
+        setTimeout(() => {
+          showFireworks.value = false
+        }, 8000)
+      }, 500)
     }
   } catch (e: any) {
     err.value = e?.message || String(e);

@@ -182,7 +182,8 @@ async function submit() {
       router.push({ path: '/teacher/courses' })
     }
   } catch (e: any) {
-    showToast(e?.message || 'Tạo khoá học thất bại.', 'error')
+    const errorMsg = e?.response?.data?.detail || e?.message || 'Tạo khoá học thất bại.'
+    showToast(errorMsg, 'error')
   } finally {
     submitting.value = false;
   }
