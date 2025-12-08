@@ -257,8 +257,8 @@
       <section class="mb-8">
         <div class="mb-6 flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-semibold text-slate-900">Luyện tập & Thi</h2>
-            <p class="mt-1 text-sm text-slate-600">Các đề thi và bài tập luyện tập</p>
+            <h2 class="text-xl font-semibold text-slate-900">Bài kiểm tra</h2>
+            <p class="mt-1 text-sm text-slate-600">Các bài kiểm tra dành cho bạn</p>
           </div>
           <button
             type="button"
@@ -277,11 +277,17 @@
             v-for="e in previewExams"
             :key="String(e.id)"
             class="overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+            :class="e.done ? 'opacity-60' : ''"
           >
             <div class="mb-4">
-              <h3 class="mb-3 text-lg font-semibold text-slate-900">
-                {{ e.title }}
-              </h3>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold text-slate-900">
+                  {{ e.title }}
+                </h3>
+                <span v-if="e.done" class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
+                  ✓ Đã làm
+                </span>
+              </div>
               <div class="flex flex-wrap items-center gap-3 text-sm text-slate-600">
                 <span class="flex items-center gap-1.5">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,10 +305,13 @@
             </div>
             <button
               type="button"
-              class="w-full rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              class="w-full rounded-lg px-5 py-2.5 text-sm font-semibold transition"
+              :class="e.done 
+                ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' 
+                : 'bg-slate-900 text-white hover:bg-slate-800'"
               @click="openExamDetail(e.id)"
             >
-              Bắt đầu làm bài
+              {{ e.done ? 'Xem kết quả' : 'Bắt đầu làm bài' }}
             </button>
           </div>
         </div>

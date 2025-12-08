@@ -168,26 +168,99 @@ def delete_user(user_id):
         user_to_delete.delete()
     
 
-def list_all_users_for_admin(role: Optional[str] = None, page: int = 1, page_size: int = 50) -> Dict[str, Any]:
+def list_all_users_for_admin(
+    role: Optional[str] = None, 
+    page: int = 1, 
+    page_size: int = 50,
+    q: Optional[str] = None,
+    status: Optional[str] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    sort_by: str = 'created_on',
+    sort_dir: str = 'descending'
+) -> Dict[str, Any]:
     """
     Gets all users as a list of UserDomain entities with pagination and filtering.
 
     This follows the style of 'register_user', where the service
     layer interacts with the Model but returns Domain Entities.
+    
+    Filters:
+    - q: Search by username, email (case-insensitive, partial match)
+    - role: Filter by role (admin, instructor, student)
+    - status: Filter by status (active, locked, banned)
+    - from_date/to_date: Filter by created_on date range
+    - sort_by/sort_dir: Sorting
     """
-    queryset = UserModel.objects.all().order_by('id')
+    from django.db.models import Q
+    from django.utils.dateparse import parse_date
+    
+    # Limit page_size to prevent excessive data load (searchUS_25, searchUS_29)
+    page_size = min(page_size, 100)
+    
+    # Use select_related/only to optimize query (searchUS_25)
+    queryset = UserModel.objects.only(
+        'id', 'username', 'email', 'role', 'is_staff', 'is_active', 
+        'phone', 'created_on', 'updated_on', 'last_login'
+    )
+    
+    # Search by q (username, email)
+    if q:
+        q = q.strip()
+        queryset = queryset.filter(
+            Q(username__icontains=q) | 
+            Q(email__icontains=q)
+        )
     
     # Filter by role if provided
     if role:
         # Map frontend role names to backend role names
+        # Database stores: 'student', 'instructor', 'admin'
         role_mapping = {
-            'instructor': 'teacher',
-            'teacher': 'teacher',
+            'instructor': 'instructor',
+            'teacher': 'instructor',
             'student': 'student',
             'admin': 'admin'
         }
         backend_role = role_mapping.get(role, role)
-        queryset = queryset.filter(role=backend_role)
+        if backend_role == 'admin':
+            queryset = queryset.filter(is_staff=True)
+        else:
+            queryset = queryset.filter(role=backend_role, is_staff=False)
+    
+    # Filter by status
+    if status:
+        if status == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status == 'locked':
+            queryset = queryset.filter(is_active=False)
+        elif status == 'banned':
+            # Assuming banned users have is_active=False (or add a separate field)
+            queryset = queryset.filter(is_active=False)
+    
+    # Filter by date range
+    if from_date:
+        parsed_from = parse_date(from_date)
+        if parsed_from:
+            queryset = queryset.filter(created_on__date__gte=parsed_from)
+    if to_date:
+        parsed_to = parse_date(to_date)
+        if parsed_to:
+            queryset = queryset.filter(created_on__date__lte=parsed_to)
+    
+    # Sorting
+    sort_field_mapping = {
+        'createdAt': 'created_on',
+        'created_on': 'created_on',
+        'lastLoginAt': 'last_login',
+        'last_login': 'last_login',
+        'username': 'username',
+        'email': 'email',
+    }
+    sort_field = sort_field_mapping.get(sort_by, 'created_on')
+    if sort_dir == 'descending':
+        sort_field = f'-{sort_field}'
+    queryset = queryset.order_by(sort_field)
     
     # Pagination
     total = queryset.count()

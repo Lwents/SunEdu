@@ -217,6 +217,13 @@ export const courseService = {
     return data
   },
 
+  // STUDENT DETAIL - Get course detail with student progress
+  async studentDetail(id: ID): Promise<CourseDetail> {
+    if (USE_MOCK) return buildMockDetail(id)
+    const { data } = await api.get(`/student/courses/${id}/`)
+    return data
+  },
+
   async myCourses(params: StudentMyCoursesFilters = {}): Promise<StudentMyCoursesResponse> {
     if (USE_MOCK) {
       return { base: [], supp: [], all: [] }

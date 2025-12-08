@@ -993,7 +993,15 @@
             <div v-for="(q, idx) in exercisePlayer.questions" :key="q.id" class="mb-4 rounded-xl border border-slate-200 p-4">
               <div class="mb-2 flex items-start justify-between gap-2">
                 <span class="rounded bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700">Câu {{ idx + 1 }}</span>
-                <span class="text-xs font-medium text-slate-500">{{ q.type }}</span>
+                <div class="flex items-center gap-2">
+                  <!-- Nút gợi ý AI -->
+                  <AIHintButton
+                    v-if="!exercisePlayer.submitted"
+                    :question-text="q.prompt"
+                    :choices="q.choices?.map((c: any) => c.text)"
+                  />
+                  <span class="text-xs font-medium text-slate-500">{{ q.type }}</span>
+                </div>
               </div>
               <p class="mb-3 text-sm font-semibold text-gray-900">{{ q.prompt }}</p>
 
@@ -1097,6 +1105,7 @@ import { computed, onMounted, onBeforeUnmount, reactive, ref, watchEffect, watch
 import { useRouter, useRoute } from 'vue-router'
 import { courseService, type CourseDetail } from '@/services/course.service'
 import { contentService } from '@/services/content.service'
+import AIHintButton from '@/components/ai/AIHintButton.vue'
 import api from '@/config/axios'
 import { showToast } from '@/utils/toast'
 import { getAvatarSrc } from '@/utils/avatar'

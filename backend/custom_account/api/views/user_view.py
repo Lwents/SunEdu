@@ -153,14 +153,42 @@ class AdminUserListView(RoleBasedOutputMixin, APIView):
         self.user_service = user_service 
 
     def get(self, request):
+        import html
+        import re
+        
         try:
             # Get query parameters
             role = request.query_params.get('role')
             page = int(request.query_params.get('page', 1))
             page_size = int(request.query_params.get('pageSize', request.query_params.get('page_size', 50)))
+            q = request.query_params.get('q')
+            status_filter = request.query_params.get('status')
+            from_date = request.query_params.get('from')
+            to_date = request.query_params.get('to')
+            sort_by = request.query_params.get('sortBy', 'createdAt')
+            sort_dir = request.query_params.get('sortDir', 'descending')
+            
+            # Sanitize search query to prevent XSS (searchUS_21)
+            if q:
+                q = html.escape(q)
+                # Remove potential SQL injection patterns (searchUS_20) - Django ORM handles this but extra safety
+                q = re.sub(r'(--|;|\/\*|\*\/)', '', q)
+            
+            # Log search action (searchUS_23)
+            logger.info(f"Admin user search: user={request.user.id}, query={q}, role={role}, status={status_filter}")
             
             # Service returns paginated result with DOMAIN ENTITIES
-            result = self.user_service.list_all_users_for_admin(role=role, page=page, page_size=page_size)
+            result = self.user_service.list_all_users_for_admin(
+                role=role, 
+                page=page, 
+                page_size=page_size,
+                q=q,
+                status=status_filter,
+                from_date=from_date,
+                to_date=to_date,
+                sort_by=sort_by,
+                sort_dir=sort_dir
+            )
             
             # Convert domain entities to dict for response
             users_data = []
@@ -393,4 +421,144 @@ class AdminMaintenanceView(APIView):
                 {"detail": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class AdminBulkChangeRoleView(APIView):
+    """
+    POST /api/account/admin/users/bulk/role/
+    Change role for multiple users at once.
+    """
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def post(self, request):
+        ids = request.data.get('ids', [])
+        role = request.data.get('role')
+        
+        if not ids:
+            return Response({'detail': 'Không có user nào được chọn'}, status=status.HTTP_400_BAD_REQUEST)
+        if not role:
+            return Response({'detail': 'Vui lòng chọn vai trò'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Map frontend role to backend
+        role_mapping = {'instructor': 'teacher', 'teacher': 'teacher', 'student': 'student', 'admin': 'admin'}
+        backend_role = role_mapping.get(role, role)
+        
+        try:
+            if backend_role == 'admin':
+                UserModel.objects.filter(id__in=ids).update(role='admin', is_staff=True)
+            else:
+                UserModel.objects.filter(id__in=ids).update(role=backend_role, is_staff=False)
+            
+            return Response({'detail': f'Đã cập nhật vai trò cho {len(ids)} người dùng'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AdminBulkLockView(APIView):
+    """
+    POST /api/account/admin/users/bulk/lock/
+    Lock multiple users at once.
+    """
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def post(self, request):
+        ids = request.data.get('ids', [])
+        
+        if not ids:
+            return Response({'detail': 'Không có user nào được chọn'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            updated = UserModel.objects.filter(id__in=ids).update(is_active=False)
+            return Response({'detail': f'Đã khóa {updated} tài khoản'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AdminBulkUnlockView(APIView):
+    """
+    POST /api/account/admin/users/bulk/unlock/
+    Unlock multiple users at once.
+    """
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def post(self, request):
+        ids = request.data.get('ids', [])
+        
+        if not ids:
+            return Response({'detail': 'Không có user nào được chọn'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            updated = UserModel.objects.filter(id__in=ids).update(is_active=True)
+            return Response({'detail': f'Đã mở khóa {updated} tài khoản'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AdminBulkBanView(APIView):
+    """
+    POST /api/account/admin/users/bulk/ban/
+    Ban multiple users permanently.
+    """
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def post(self, request):
+        ids = request.data.get('ids', [])
+        
+        if not ids:
+            return Response({'detail': 'Không có user nào được chọn'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Ban = set is_active=False (could add a separate 'banned' field if needed)
+            updated = UserModel.objects.filter(id__in=ids).update(is_active=False)
+            return Response({'detail': f'Đã cấm {updated} tài khoản'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AdminUserExportView(APIView):
+    """
+    GET /api/account/admin/users/export/
+    Export users to CSV.
+    """
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def get(self, request):
+        import csv
+        from django.http import HttpResponse
+        
+        # Get filter params
+        q = request.query_params.get('q')
+        role = request.query_params.get('role')
+        status_filter = request.query_params.get('status')
+        from_date = request.query_params.get('from')
+        to_date = request.query_params.get('to')
+        
+        # Reuse the service function
+        result = user_service.list_all_users_for_admin(
+            q=q, role=role, status=status_filter,
+            from_date=from_date, to_date=to_date,
+            page=1, page_size=10000  # Export all matching
+        )
+        
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="users.csv"'
+        response.write('\ufeff')  # BOM for Excel
+        
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Username', 'Email', 'Role', 'Status', 'Created At', 'Last Login'])
+        
+        for user in result['results']:
+            role_display = 'Admin' if user.is_staff else ('Giáo viên' if user.role == 'teacher' else 'Học sinh')
+            status_display = 'Hoạt động' if user.is_active else 'Đã khóa'
+            writer.writerow([
+                user.id,
+                user.username,
+                user.email,
+                role_display,
+                status_display,
+                getattr(user, 'created_on', ''),
+                getattr(user, 'last_login', ''),
+            ])
+        
+        return response
     

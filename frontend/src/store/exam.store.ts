@@ -17,10 +17,10 @@ export interface Exam {
 }
 
 // Helper to convert backend Level to ExamLevel
-function mapLevel(level: Level): ExamLevel {
+function mapLevel(level: Level | string): ExamLevel {
   // Map 'Khối 1-2' to 'basic', 'Khối 3-5' to 'advanced'
-  // Or you can use a different mapping logic
-  if (level === 'Khối 1' || level === 'Khối 2') {
+  const levelStr = String(level || '').toLowerCase()
+  if (levelStr.includes('1') || levelStr.includes('2') || levelStr === 'basic' || levelStr === 'cơ bản') {
     return 'basic'
   }
   return 'advanced'

@@ -234,6 +234,40 @@
         </div>
       </div>
 
+      <!-- AI Practice (Bài luyện tập AI) -->
+      <div v-if="!loading && showPracticeSection" class="mb-6 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 p-5 shadow-sm">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-2xl">📝</span>
+          <h3 class="text-lg font-bold text-purple-800">Bài luyện tập hôm nay</h3>
+          <span class="ml-auto">
+            <button
+              v-if="!showPractice"
+              @click="showPractice = true"
+              class="rounded-full bg-purple-500 px-4 py-1.5 text-xs font-bold text-white hover:bg-purple-600 transition-colors"
+            >
+              🚀 Bắt đầu
+            </button>
+            <button
+              v-else
+              @click="showPractice = false"
+              class="rounded-full bg-gray-200 px-4 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-300 transition-colors"
+            >
+              Thu gọn
+            </button>
+          </span>
+        </div>
+        <p v-if="!showPractice" class="text-sm text-purple-600 mb-3">
+          Bé Mặt Trời đã chuẩn bị bài tập phù hợp với con dựa trên kết quả học tập! 🌟
+        </p>
+        <AIPractice 
+          v-if="showPractice"
+          ref="practiceRef"
+          :auto-load="true"
+          @completed="onPracticeCompleted"
+          @exercise-answered="onExerciseAnswered"
+        />
+      </div>
+
       <!-- AI Achievements (Huy hiệu) -->
       <div v-if="!loading && aiAchievements.length" class="mb-6 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-5 shadow-sm">
         <div class="flex items-center gap-2 mb-4">
@@ -318,7 +352,6 @@
             <div class="mt-1 flex justify-between text-xs text-slate-500">
               <span>Bắt đầu</span>
               <span>{{ path.progress }}%</span>
-              <span>🏆 Hoàn thành</span>
             </div>
           </div>
 
@@ -358,12 +391,41 @@
               <span v-if="path.progress >= 100" class="rounded-full bg-purple-100 px-2 py-1 text-xs">🏆 Xuất sắc</span>
             </div>
             <div class="flex gap-2">
+              <!-- Đánh giá theo mức độ tiến độ -->
               <button
                 v-if="path.progress === 0"
                 class="rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 px-4 py-2 text-sm font-bold text-white hover:from-purple-600 hover:to-indigo-600 shadow-sm"
                 @click="startAssessment(path)"
               >
                 🎯 Đánh giá đầu vào
+              </button>
+              <button
+                v-else-if="path.progress > 0 && path.progress < 30"
+                class="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-bold text-white hover:from-amber-600 hover:to-orange-600 shadow-sm"
+                @click="startAssessment(path)"
+              >
+                📝 Kiểm tra cơ bản
+              </button>
+              <button
+                v-else-if="path.progress >= 30 && path.progress < 60"
+                class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-bold text-white hover:from-cyan-600 hover:to-blue-600 shadow-sm"
+                @click="startAssessment(path)"
+              >
+                📊 Đánh giá giữa kỳ
+              </button>
+              <button
+                v-else-if="path.progress >= 60 && path.progress < 90"
+                class="rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 px-4 py-2 text-sm font-bold text-white hover:from-emerald-600 hover:to-green-600 shadow-sm"
+                @click="startAssessment(path)"
+              >
+                🎓 Kiểm tra nâng cao
+              </button>
+              <button
+                v-else-if="path.progress >= 90"
+                class="rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-sm font-bold text-white hover:from-violet-600 hover:to-purple-600 shadow-sm"
+                @click="startAssessment(path)"
+              >
+                🏆 Đánh giá tổng kết
               </button>
               <button
                 class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -616,7 +678,7 @@
                 Đóng
               </button>
               <button
-                class="flex-1 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 px-4 py-3 text-sm font-bold text-white hover:from-cyan-600 hover:to-sky-600"
+                class="flex-1 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 px-4 py-3 text-sm font-bold text-white hover:from-purple-600 hover:to-indigo-600"
                 @click="startFromRecommendation"
               >
                 🚀 Bắt đầu học ngay!
@@ -627,21 +689,41 @@
         </div>
       </div>
     </Teleport>
+    
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { courseService } from '@/services/course.service'
 import { aiLearningService, type AISuggestion, type AIWeakness, type AIAchievement, type DailyGoal } from '@/services/ai-learning.service'
+import AIPractice from '@/components/ai/AIPractice.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const personalizedPaths = ref<any[]>([])
 const todayTasks = ref<any[]>([])
 const overall = ref({ courses: 0, completed: 0, total: 0, progress: 0 })
+
+// AI Practice
+const showPractice = ref(false)
+const showPracticeSection = ref(true)
+const practiceRef = ref<InstanceType<typeof AIPractice> | null>(null)
+
+function onPracticeCompleted(score: number) {
+  console.log('Practice completed with score:', score)
+  // Có thể cập nhật daily goal hoặc hiển thị thông báo
+  if (score >= 80) {
+    dailyGoal.value.completed++
+  }
+}
+
+function onExerciseAnswered(correct: boolean) {
+  console.log('Exercise answered:', correct ? 'correct' : 'incorrect')
+}
 
 // AI Data
 const aiSuggestions = ref<AISuggestion[]>([])
@@ -788,65 +870,34 @@ function formatDate(iso?: string) {
 async function loadPaths() {
   loading.value = true
   try {
-    // Load enrolled courses
-    const { items: courses } = await courseService.list({ page: 1, pageSize: 50, status: 'published' })
+    // Load enrolled courses với progress từ API
+    const myCoursesData = await courseService.myCourses()
+    const courses = myCoursesData.all || [...(myCoursesData.base || []), ...(myCoursesData.supp || [])]
     
-    // Calculate personalized paths based on student progress
-    personalizedPaths.value = await Promise.all(
-      (courses || []).map(async (course: any) => {
-        // Get course detail to calculate progress
-        try {
-          const courseDetail = await courseService.detail(course.id)
-          const sections = courseDetail.sections || []
-          const totalLessons = sections.reduce((sum: number, sec: any) => sum + (sec.lessons?.length || 0), 0)
-          const completedLessons = sections.reduce((sum: number, sec: any) => {
-            return sum + (sec.lessons?.filter((l: any) => (l as any).completed).length || 0)
-          }, 0)
-          
-          const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
-          
-          // Determine difficulty level based on progress
-          let difficulty = 'easy'
-          if (progress >= 80) difficulty = 'hard'
-          else if (progress >= 50) difficulty = 'medium'
-          
-          // Get next steps (lessons not completed)
-          const nextSteps: any[] = []
-          let foundCurrent = false
-          for (const section of sections) {
-            for (const lesson of (section.lessons || [])) {
-              const lessonAny = lesson as any
-              if (!lessonAny.completed) {
-                nextSteps.push({
-                  title: lesson.title,
-                  completed: false,
-                  current: !foundCurrent,
-                  lessonId: lesson.id,
-                })
-                if (!foundCurrent) foundCurrent = true
-                if (nextSteps.length >= 3) break // Show max 3 next steps
-              }
-            }
-            if (nextSteps.length >= 3) break
-          }
-          
-          return {
-            id: course.id,
-            courseId: course.id,
-            courseTitle: course.title,
-            progress,
-            completedSteps: completedLessons,
-            totalSteps: totalLessons,
-            difficulty,
-            createdAt: course.createdAt || new Date().toISOString(),
-            nextSteps,
-          }
-        } catch (e) {
-          console.error(`Error loading course ${course.id}:`, e)
-          return null
-        }
-      })
-    )
+    // Map courses to personalized paths - progress đã có sẵn từ API
+    personalizedPaths.value = courses.map((course: any) => {
+      const progress = course.progress || 0
+      const totalLessons = course.lessonsCount || 0
+      const completedLessons = Math.round((progress / 100) * totalLessons)
+      
+      // Determine difficulty level based on progress
+      let difficulty = 'easy'
+      if (progress >= 80) difficulty = 'hard'
+      else if (progress >= 50) difficulty = 'medium'
+      
+      return {
+        id: course.id,
+        courseId: course.id,
+        courseTitle: course.title,
+        progress,
+        completedSteps: completedLessons,
+        totalSteps: totalLessons,
+        difficulty,
+        createdAt: course.createdAt || new Date().toISOString(),
+        done: course.done || progress >= 100,
+        nextSteps: [], // Sẽ load riêng nếu cần
+      }
+    })
     
     // Filter out null values
     personalizedPaths.value = personalizedPaths.value.filter(p => p !== null)
@@ -864,20 +915,17 @@ async function loadPaths() {
       progress: totalSteps > 0 ? Math.round((completed / totalSteps) * 100) : 0,
     }
 
-    // Pick up to 3 upcoming steps for today
-    todayTasks.value = []
-    personalizedPaths.value.forEach((p) => {
-      (p.nextSteps || []).slice(0, 1).forEach((st: any, idx: number) => {
-        todayTasks.value.push({
-          key: `${p.id}-${st.lessonId || idx}`,
-          title: st.title,
-          course: p.courseTitle,
-          path: p,
-          step: st,
-        })
-      })
-    })
-    todayTasks.value = todayTasks.value.slice(0, 3)
+    // Pick up to 3 courses chưa hoàn thành for today
+    todayTasks.value = personalizedPaths.value
+      .filter((p) => p.progress < 100)
+      .slice(0, 3)
+      .map((p, idx) => ({
+        key: `${p.id}-${idx}`,
+        title: `Tiếp tục học ${p.courseTitle}`,
+        course: p.courseTitle,
+        path: p,
+        step: { lessonId: null },
+      }))
     
     // Load AI analysis
     await loadAIAnalysis()
@@ -891,6 +939,7 @@ async function loadPaths() {
 async function loadAIAnalysis() {
   try {
     const data = await aiLearningService.getAnalysis()
+    console.log('AI Analysis data:', data) // Debug
     if (data.suggestions) {
       aiSuggestions.value = data.suggestions
     }
@@ -901,6 +950,7 @@ async function loadAIAnalysis() {
       aiAchievements.value = data.achievements
     }
     if (data.daily_goal) {
+      console.log('Daily goal from API:', data.daily_goal) // Debug
       dailyGoal.value = data.daily_goal
       // Check if streak increased to show celebration
       checkStreakCelebration(data.daily_goal.streak || 0)
@@ -1036,6 +1086,13 @@ const canSubmitAssessment = computed(() => {
 
 onMounted(async () => {
   await loadPaths()
+})
+
+// Refresh khi quay lại trang (từ CoursePlayer) - dùng watch route
+watch(() => route.path, async (newPath) => {
+  if (newPath === '/student/learning-path' || newPath === '/student/learning_path') {
+    await loadPaths()
+  }
 })
 </script>
 

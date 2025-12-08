@@ -29,6 +29,7 @@ from admin_api.views.notifications_view import (
     AdminNotificationReadView,
     AdminNotificationReadAllView
 )
+from admin_api.views.ai_settings_view import AdminAISettingsView
 
 app_name = 'admin_api'
 
@@ -91,6 +92,9 @@ urlpatterns = [
     path('notifications/', AdminNotificationsView.as_view(), name='notifications'),
     path('notifications/<uuid:id>/read/', AdminNotificationReadView.as_view(), name='notification-read'),
     path('notifications/read-all/', AdminNotificationReadAllView.as_view(), name='notification-read-all'),
+    
+    # AI Settings (hidden)
+    path('system/ai-settings/', AdminAISettingsView.as_view(), name='ai-settings'),
 ]
 
 

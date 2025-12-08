@@ -145,21 +145,30 @@
         <div v-if="form.content_type === 'exercise'" class="mt-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="text-sm font-semibold text-gray-800">Danh sách câu hỏi</h3>
-            <button
-              type="button"
-              class="rounded-lg bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-cyan-700"
-              @click="addQuestion"
-            >
-              + Thêm câu hỏi
-            </button>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="rounded-lg border border-cyan-500 px-3 py-1.5 text-sm font-medium text-cyan-600 hover:bg-cyan-50"
+                @click="showAIGenerateModal = true"
+              >
+                🤖 AI tạo đề
+              </button>
+              <button
+                type="button"
+                class="rounded-lg bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-cyan-700"
+                @click="addQuestion"
+              >
+                + Thêm câu hỏi
+              </button>
+            </div>
           </div>
 
           <!-- Danh sách câu hỏi -->
           <div v-if="exerciseQuestions.length === 0" class="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center">
-            <p class="text-gray-500">Chưa có câu hỏi nào. Nhấn "+ Thêm câu hỏi" để bắt đầu.</p>
+            <p class="text-gray-500">Chưa có câu hỏi nào. Nhấn "+ Thêm câu hỏi" hoặc "AI tạo đề" để bắt đầu.</p>
           </div>
 
-          <div v-else class="space-y-4">
+          <div v-else class="max-h-[500px] overflow-y-auto space-y-4 pr-2">
             <div
               v-for="(question, qIdx) in exerciseQuestions"
               :key="qIdx"
@@ -360,6 +369,86 @@
       </div>
     </div>
   </div>
+
+  <!-- AI Generate Modal -->
+  <div v-if="showAIGenerateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">🤖 AI Tạo đề tự động</h3>
+        <button
+          type="button"
+          class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          @click="showAIGenerateModal = false"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Chủ đề / Nội dung *</label>
+          <textarea
+            v-model="aiTopic"
+            rows="3"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            placeholder="Ví dụ: Phép cộng trong phạm vi 100, Bảng cửu chương..."
+          ></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Số câu hỏi</label>
+            <select
+              v-model="aiQuestionCount"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            >
+              <option :value="3">3 câu</option>
+              <option :value="5">5 câu</option>
+              <option :value="10">10 câu</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Độ khó</label>
+            <select
+              v-model="aiDifficulty"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            >
+              <option value="easy">Dễ</option>
+              <option value="medium">Trung bình</option>
+              <option value="hard">Khó</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-cyan-200 bg-cyan-50 p-3">
+          <p class="text-xs text-cyan-700">
+            💡 AI sẽ tạo câu hỏi trắc nghiệm dựa trên chủ đề bạn nhập. 
+            Bạn có thể chỉnh sửa sau khi tạo.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          @click="showAIGenerateModal = false"
+        >
+          Hủy
+        </button>
+        <button
+          type="button"
+          class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
+          :disabled="!aiTopic.trim() || aiGenerating"
+          @click="generateQuestionsWithAI"
+        >
+          {{ aiGenerating ? '⏳ Đang tạo...' : '✨ Tạo câu hỏi' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -437,6 +526,93 @@ const exerciseSettings = ref({
   shuffle_choices: true
 })
 const existingExerciseId = ref<string | null>(null)
+
+// AI Generate Modal
+const showAIGenerateModal = ref(false)
+const aiGenerating = ref(false)
+const aiTopic = ref('')
+const aiQuestionCount = ref(5)
+const aiDifficulty = ref<'easy' | 'medium' | 'hard'>('medium')
+
+async function generateQuestionsWithAI() {
+  if (!aiTopic.value.trim()) {
+    showToast('Vui lòng nhập chủ đề', 'warning')
+    return
+  }
+  
+  aiGenerating.value = true
+  try {
+    const { data } = await http.post('/activities/ai/generate-questions/', {
+      title: aiTopic.value,
+      description: aiTopic.value,
+      count: aiQuestionCount.value,
+      level: `Lớp ${form.value.title}`,
+      hint: `Độ khó: ${aiDifficulty.value === 'easy' ? 'Dễ' : aiDifficulty.value === 'medium' ? 'Trung bình' : 'Khó'}`
+    })
+    
+    // Parse text response từ AI
+    let questions: any[] = []
+    if (data.text) {
+      try {
+        let jsonText = data.text.trim()
+        if (jsonText.startsWith('```json')) {
+          jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+        } else if (jsonText.startsWith('```')) {
+          jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '')
+        }
+        const parsed = JSON.parse(jsonText)
+        questions = parsed.questions || []
+      } catch (parseErr) {
+        console.error('Parse AI response error:', parseErr, data.text)
+      }
+    } else if (data.questions) {
+      questions = data.questions
+    }
+    
+    // Map AI response to our format
+    const generatedQuestions: ExerciseQuestion[] = questions.map((q: any) => {
+      let correctIdx = 0
+      if (q.correct_indices && q.correct_indices.length > 0) {
+        correctIdx = q.correct_indices[0]
+      } else if (typeof q.correct_index === 'number') {
+        correctIdx = q.correct_index
+      }
+      
+      return {
+        type: 'mcq' as const,
+        prompt: q.text || q.prompt || '',
+        points: q.score || 1,
+        choices: (q.choices || q.options || []).map((c: any, idx: number) => ({
+          text: typeof c === 'string' ? c : c.text,
+          is_correct: idx === correctIdx
+        })),
+        accepted_answers: '',
+        matching_pairs: []
+      }
+    })
+    
+    if (generatedQuestions.length > 0) {
+      // Nếu câu hỏi đầu tiên trống thì thay thế, không thì thêm mới
+      if (exerciseQuestions.value.length === 1 && !exerciseQuestions.value[0].prompt.trim()) {
+        exerciseQuestions.value = generatedQuestions
+      } else {
+        // Lọc bỏ các câu hỏi trống trước khi thêm
+        exerciseQuestions.value = exerciseQuestions.value.filter(q => q.prompt.trim())
+        exerciseQuestions.value.push(...generatedQuestions)
+      }
+      showAIGenerateModal.value = false
+      aiTopic.value = ''
+      showToast(`Đã tạo ${generatedQuestions.length} câu hỏi!`, 'success')
+    } else {
+      showToast('AI không tạo được câu hỏi. Vui lòng thử lại.', 'warning')
+    }
+  } catch (e: any) {
+    console.error('AI generate error:', e)
+    showToast('Không thể tạo câu hỏi: ' + (e.response?.data?.detail || e.message), 'error')
+  } finally {
+    aiGenerating.value = false
+  }
+}
 
 // Exercise helper functions
 function createDefaultQuestion(): ExerciseQuestion {

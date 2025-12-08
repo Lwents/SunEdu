@@ -20,6 +20,7 @@
         placeholder="Tìm theo tên / email / username"
         @clear="applyFilters"
         @keyup.enter="applyFilters"
+        @input="debouncedSearch"
         class="md:col-span-2 xl:col-span-2 w-full"
       >
         <template #prefix>🔎</template>
@@ -107,6 +108,16 @@
         @sort-change="onSortChange"
         :default-sort="defaultSort"
       >
+        <!-- Empty state (searchUS_19) -->
+        <template #empty>
+          <div class="flex flex-col items-center justify-center py-10 text-gray-500">
+            <svg class="h-12 w-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <p class="text-sm font-medium">Không có dữ liệu</p>
+            <p class="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc tạo người dùng mới</p>
+          </div>
+        </template>
         <el-table-column type="selection" width="44" />
 
         <el-table-column label="Người dùng" min-width="260">
@@ -267,12 +278,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { ref, reactive, onMounted, watch, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { userService } from '@/services/user.service'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
 import { getAvatarSrc } from '@/utils/avatar'
+
+// Debounce utility for performance (searchUS_26, searchUS_27)
+function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+  return (...args: Parameters<T>) => {
+    if (timeoutId) clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn(...args), delay)
+  }
+}
 
 type ID = string | number
 type Role = 'admin' | 'instructor' | 'student'
@@ -387,6 +407,21 @@ async function fetchList() {
     total.value = res.total
   } catch (error: any) {
     console.error('Error fetching user list:', error)
+    
+    // Handle 403 Forbidden - no permission (searchUS_22)
+    if (error?.response?.status === 403) {
+      showToast('Bạn không có quyền truy cập trang này', 'error')
+      router.push('/admin')
+      return
+    }
+    
+    // Handle 401 Unauthorized - session timeout (searchUS_24)
+    if (error?.response?.status === 401) {
+      showToast('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại', 'warning')
+      router.push('/login')
+      return
+    }
+    
     showToast(error?.message || 'Không tải được danh sách người dùng', 'error')
   } finally {
     loading.value = false
@@ -394,10 +429,17 @@ async function fetchList() {
 }
 
 function applyFilters() {
+  // Trim search query to handle leading/trailing spaces (searchUS_13)
+  query.q = query.q.trim()
   query.page = 1
   pushQuery()
   fetchList()
 }
+
+// Debounced search for performance - prevents excessive API calls (searchUS_26, searchUS_27)
+const debouncedSearch = debounce(() => {
+  applyFilters()
+}, 300)
 function resetFilters() {
   query.q = ''
   query.role = '' as any
@@ -414,6 +456,13 @@ function applyDateRange(val: [string, string] | null) {
     query.from = ''
     query.to = ''
   } else {
+    // Validate date range: from must be <= to (searchUS_12)
+    const fromDate = new Date(val[0])
+    const toDate = new Date(val[1])
+    if (fromDate > toDate) {
+      showToast('Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc', 'warning')
+      return
+    }
     query.from = val[0]
     query.to = val[1]
   }
