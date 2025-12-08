@@ -85,6 +85,7 @@ urlpatterns = [
     path('api/payments/', include('payments.urls')),
     path('api/content/', include('content.urls')),
     path('api/activities/', include('activities.urls')),
+    path('api/events/', include('events.api.urls')),
     # path('api/assignments/', include('assignments.urls')),  # Temporarily disabled - import errors
     path('api/admin/', include('admin_api.urls')),
     path('api/teacher/', include('teacher_api.urls')),

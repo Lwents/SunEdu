@@ -96,6 +96,9 @@ export interface AttemptResult {
   totalCount: number
   passed: boolean
   detail: Array<{ qid: ID; score: number; max: number }>
+  // Optional flags to control answer visibility
+  can_show_answers?: boolean
+  show_answers?: string
 }
 
 const USE_MOCK = false

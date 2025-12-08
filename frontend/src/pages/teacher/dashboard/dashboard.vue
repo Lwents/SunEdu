@@ -49,11 +49,34 @@
         <!-- Cột phải -->
         <div class="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader title="Sự kiện sắp tới" />
-            <div class="space-y-1.5 p-3 sm:p-4">
-              <UpcomingItem title="Kiểm tra giữa kỳ" time="11:24 AM" />
-              <UpcomingItem title="Thuyết trình dự án" time="09:24 AM" />
-              <UpcomingItem title="Phản biện thiết kế" time="03:00 PM" />
+            <div class="flex items-center justify-between border-b p-3 pb-2 sm:p-4 sm:pb-2">
+              <h2 class="text-sm font-semibold sm:text-base">Sự kiện sắp tới</h2>
+              <button
+                type="button"
+                class="rounded-lg bg-slate-900 px-2 py-1 text-xs font-medium text-white hover:bg-slate-800"
+                @click="showEventModal = true"
+              >
+                + Thêm
+              </button>
+            </div>
+            <div class="p-3 sm:p-4">
+              <div class="max-h-60 space-y-1.5 overflow-y-auto pr-1">
+                <template v-if="loadingEvents">
+                  <div class="py-4 text-center text-sm text-slate-500">Đang tải...</div>
+                </template>
+                <template v-else-if="upcomingEvents.length">
+                  <UpcomingItem
+                    v-for="e in upcomingEvents"
+                    :key="e.id"
+                    :title="e.name"
+                    :time="e.time || formatTime(e.start_date)"
+                    :type="e.type"
+                  />
+                </template>
+                <div v-else class="py-4 text-center text-sm text-slate-500">
+                  Chưa có sự kiện nào
+                </div>
+              </div>
             </div>
           </Card>
 
@@ -68,13 +91,90 @@
         </div>
       </div>
     </main>
+
+    <!-- Event Modal -->
+    <Teleport to="body">
+      <div 
+        v-if="showEventModal" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        @click.self="showEventModal = false"
+      >
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+          <h3 class="mb-4 text-lg font-bold">Tạo sự kiện mới</h3>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium">Tên sự kiện *</label>
+              <input
+                v-model="eventForm.name"
+                type="text"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                placeholder="VD: Kiểm tra giữa kỳ"
+              />
+            </div>
+            
+            <div>
+              <label class="mb-1 block text-sm font-medium">Mô tả</label>
+              <textarea
+                v-model="eventForm.description"
+                rows="2"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                placeholder="Mô tả ngắn về sự kiện..."
+              ></textarea>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="mb-1 block text-sm font-medium">Ngày *</label>
+                <input
+                  v-model="eventForm.start_date"
+                  type="date"
+                  class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-sm font-medium">Giờ</label>
+                <input
+                  v-model="eventForm.start_time"
+                  type="time"
+                  class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <!-- Loại sự kiện: bỏ chọn, mặc định 'other' -->
+            <input type="hidden" v-model="eventForm.type" />
+          </div>
+          
+          <div class="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50"
+              @click="showEventModal = false"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              :disabled="savingEvent"
+              @click="createEvent"
+            >
+              {{ savingEvent ? 'Đang tạo...' : 'Tạo sự kiện' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="tsx">
-import { computed, defineComponent, type PropType, ref, onMounted } from 'vue'
+import { computed, defineComponent, type PropType, ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { courseService, type CourseStatus, type CourseSummary } from '@/services/course.service'
+import { eventService, type EventItem } from '@/services/event.service'
+import { showToast } from '@/utils/toast'
 
 type Status = CourseStatus
 type TeacherCourse = {
@@ -89,6 +189,78 @@ type TeacherCourse = {
 const loading = ref(true)
 const source = ref<TeacherCourse[]>([])
 const totals = ref({ courses: 0, students: 0, assignments: 0 })
+
+// Events state
+const loadingEvents = ref(true)
+const upcomingEvents = ref<EventItem[]>([])
+const showEventModal = ref(false)
+const savingEvent = ref(false)
+const eventForm = reactive({
+  name: '',
+  description: '',
+  start_date: '',
+  start_time: '',
+  type: 'other',
+})
+
+async function loadEvents() {
+  try {
+    loadingEvents.value = true
+    upcomingEvents.value = await eventService.getUpcoming()
+  } catch (e) {
+    console.error('Error loading events:', e)
+  } finally {
+    loadingEvents.value = false
+  }
+}
+
+function formatTime(dateStr: string): string {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+}
+
+async function createEvent() {
+  if (!eventForm.name.trim()) {
+    showToast('Vui lòng nhập tên sự kiện', 'error')
+    return
+  }
+  if (!eventForm.start_date) {
+    showToast('Vui lòng chọn ngày bắt đầu', 'error')
+    return
+  }
+  
+  savingEvent.value = true
+  try {
+    const startDateTime = eventForm.start_time 
+      ? `${eventForm.start_date}T${eventForm.start_time}:00`
+      : `${eventForm.start_date}T09:00:00`
+    
+    await eventService.create({
+      name: eventForm.name,
+      description: eventForm.description,
+      start_date: startDateTime,
+      type: eventForm.type,
+    })
+    
+    showToast('Tạo sự kiện thành công!', 'success')
+    showEventModal.value = false
+    resetEventForm()
+    await loadEvents()
+  } catch (e: any) {
+    showToast(e?.response?.data?.detail || 'Không thể tạo sự kiện', 'error')
+  } finally {
+    savingEvent.value = false
+  }
+}
+
+function resetEventForm() {
+  eventForm.name = ''
+  eventForm.description = ''
+  eventForm.start_date = ''
+  eventForm.start_time = ''
+  eventForm.type = 'other'
+}
 
 async function loadCourses() {
   try {
@@ -156,7 +328,7 @@ async function computeTotals() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadCourses(), computeTotals()])
+  await Promise.all([loadCourses(), computeTotals(), loadEvents()])
 })
 
 type Pt = { x: number; y: number }

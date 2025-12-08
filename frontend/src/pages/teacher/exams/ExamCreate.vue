@@ -123,7 +123,7 @@
               ></textarea>
             </div>
 
-            <div class="md:col-span-2 flex gap-4">
+            <div class="md:col-span-2 flex flex-wrap gap-4">
               <label class="flex items-center gap-2">
                 <input
                   v-model="form.shuffleQuestions"
@@ -140,6 +140,28 @@
                 />
                 <span class="text-sm">Xáo trộn thứ tự đáp án</span>
               </label>
+            </div>
+            
+            <div class="md:col-span-2">
+              <label class="mb-1 block text-sm font-medium">Hiển thị đáp án</label>
+              <select
+                v-model="form.showAnswers"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30"
+              >
+                <option value="always">Luôn hiển thị sau khi nộp bài</option>
+                <option value="after_duration">Chỉ hiển thị sau khi hết thời gian làm bài</option>
+                <option value="after_end">Chỉ hiển thị sau khi hết hạn bài thi</option>
+                <option value="never">Không hiển thị đáp án</option>
+              </select>
+              <p class="mt-1 text-xs text-slate-500">
+                {{ form.showAnswers === 'after_duration' 
+                  ? `Học sinh sẽ xem được đáp án sau ${durationMin} phút kể từ khi bắt đầu làm bài`
+                  : form.showAnswers === 'after_end'
+                  ? 'Học sinh sẽ xem được đáp án sau thời gian kết thúc bài thi'
+                  : form.showAnswers === 'never'
+                  ? 'Học sinh sẽ không bao giờ xem được đáp án'
+                  : 'Học sinh sẽ xem được đáp án ngay sau khi nộp bài' }}
+              </p>
             </div>
           </div>
         </div>
@@ -499,7 +521,7 @@ const aiCount = ref(5)
 const aiDialogOpen = ref(false)
 const aiHint = ref('')
 
-const form = reactive<Partial<ExamDetail>>({
+const form = reactive<Partial<ExamDetail> & { showAnswers?: string }>({
   title: '',
   level: 'Khối 1' as Level,
   durationSec: 1800,
@@ -509,6 +531,7 @@ const form = reactive<Partial<ExamDetail>>({
   description: '',
   shuffleQuestions: true,
   shuffleChoices: true,
+  showAnswers: 'always',
   questions: [],
   scheduledAt: undefined,
   endAt: undefined,

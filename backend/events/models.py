@@ -5,21 +5,43 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 class PlatformEvent(models.Model):
+    EVENT_TYPES = [
+        ('exam', 'Kiểm tra'),
+        ('quiz', 'Quiz'),
+        ('challenge', 'Thử thách'),
+        ('webinar', 'Webinar'),
+        ('meeting', 'Họp'),
+        ('deadline', 'Hạn nộp'),
+        ('other', 'Khác'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
-    description = models.TextField()
+    description = models.TextField(blank=True, default='')
     start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    type = models.CharField(
-        max_length=32,
-        choices=[('quiz', ('Quiz')), ('challenge', ('Challenge')), ('webinar', ('Webinar'))]
-    )
+    end_date = models.DateTimeField(null=True, blank=True)
+    type = models.CharField(max_length=32, choices=EVENT_TYPES, default='other')
     config = models.JSONField(default=dict)  # e.g., {'questions': 15, 'duration': 3600}
     status = models.CharField(
         max_length=32,
         default='upcoming',
-        choices=[('upcoming', ('Upcoming')), ('ongoing', ('Ongoing')), ('ended', ('Ended'))]
+        choices=[('upcoming', ('Upcoming')), ('ongoing', ('Ongoing')), ('ended', ('Ended')), ('cancelled', ('Cancelled'))]
     )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='created_events',
+        null=True, blank=True
+    )
+    course = models.ForeignKey(
+        'content.Course',
+        on_delete=models.CASCADE,
+        related_name='events',
+        null=True, blank=True
+    )
+    notify_students = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = ('Platform Event')

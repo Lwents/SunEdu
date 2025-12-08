@@ -192,10 +192,11 @@ class StudentLessonQuestionView(APIView):
         student = request.user
         q = LessonQuestion.objects.create(lesson=lesson, student=student, content=content)
 
+        course_title = course.title if course else "Khóa học"
         Notification.objects.create(
             user=teacher,
-            title=f"Học sinh hỏi về bài {lesson.title}",
-            message=content,
+            title=f"Học sinh hỏi về bài: {lesson.title}",
+            message=f"[{course_title}] {content}",
             type="info",
             category="lesson_question",
             metadata={
@@ -205,7 +206,7 @@ class StudentLessonQuestionView(APIView):
                 "student_id": str(student.id),
                 "student": student.username,
                 "lesson_title": lesson.title,
-                "course_title": course.title if course else "",
+                "course_title": course_title,
             },
         )
 
@@ -264,16 +265,20 @@ class StudentLessonQuestionReplyView(APIView):
         course = question.lesson.module.course if question.lesson.module else None
         teacher = getattr(course, "owner", None)
         if teacher:
+            course_title = course.title if course else "Khóa học"
+            lesson_title = question.lesson.title
             Notification.objects.create(
                 user=teacher,
-                title=f"Học sinh trả lời thảo luận: {question.lesson.title}",
-                message=content,
+                title=f"Học sinh trả lời thảo luận: {lesson_title}",
+                message=f"[{course_title}] {content}",
                 type="info",
                 category="lesson_question_reply",
                 metadata={
                     "lesson_question_id": str(question.id),
                     "lesson_id": str(question.lesson_id),
                     "course_id": str(course.id) if course else None,
+                    "course_title": course_title,
+                    "lesson_title": lesson_title,
                     "student_id": str(request.user.id),
                     "student": request.user.username,
                 },
@@ -498,12 +503,12 @@ class StudentLessonQuestionAIAnswerView(APIView):
         # Tạo prompt với lịch sử hội thoại
         prompt = self._build_prompt(question.content, lesson_context, lesson, conversation_history)
         
-        # Gọi DeepSeek API trước, fallback sang Gemini nếu lỗi
+        # Gọi Gemini API trước (ổn định hơn), fallback sang DeepSeek nếu lỗi
         model = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
-        ai_response = self._call_deepseek_api(prompt)
+        ai_response = self._call_gemini_api(api_key, model, prompt)
         if ai_response.get("error"):
-            # DeepSeek lỗi -> thử Gemini
-            ai_response = self._call_gemini_api(api_key, model, prompt)
+            # Gemini lỗi -> thử DeepSeek
+            ai_response = self._call_deepseek_api(prompt)
         
         if ai_response.get("error"):
             return Response({"detail": ai_response["error"]}, status=status.HTTP_502_BAD_GATEWAY)
@@ -511,6 +516,9 @@ class StudentLessonQuestionAIAnswerView(APIView):
         ai_text = ai_response.get("text", "")
         if not ai_text:
             return Response({"detail": "AI không thể trả lời câu hỏi này"}, status=status.HTTP_502_BAD_GATEWAY)
+        
+        # Loại bỏ markdown formatting (**, ##, etc.) để dễ đọc cho học sinh
+        ai_text = self._clean_markdown(ai_text)
         
         # Tạo reply từ AI (sử dụng system user hoặc teacher)
         User = get_user_model()
@@ -683,15 +691,18 @@ THÔNG TIN BÀI HỌC:
 LỊCH SỬ HỘI THOẠI:
 {conversation_history}
 
-YÊU CẦU:
+YÊU CẦU QUAN TRỌNG:
 1. Tiếp tục cuộc hội thoại một cách tự nhiên.
 2. Trả lời câu hỏi/tin nhắn MỚI NHẤT của học sinh.
-3. Sử dụng ngôn ngữ đơn giản, thân thiện, phù hợp với học sinh tiểu học.
+3. Sử dụng ngôn ngữ RẤT ĐƠN GIẢN, thân thiện, phù hợp với học sinh tiểu học (6-11 tuổi).
 4. Nếu học sinh hỏi về nội dung bài học, hãy trả lời dựa trên thông tin bài học.
 5. Trả lời ngắn gọn, dễ hiểu (tối đa 200 từ).
 6. Luôn khuyến khích và động viên học sinh.
+7. KHÔNG sử dụng markdown (**, ##, *, -, etc.). Chỉ dùng văn bản thuần túy.
+8. Dùng emoji phù hợp để sinh động hơn (🌟, 👍, 📚, etc.).
+9. Gọi học sinh là "con" hoặc "em".
 
-Trả lời bằng tiếng Việt:"""
+Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
         
         # Prompt cho câu hỏi đầu tiên
         return f"""Bạn là trợ lý học tập AI của SunEdu, hỗ trợ học sinh tiểu học học bài "{lesson.title}".
@@ -703,16 +714,52 @@ TIN NHẮN CỦA HỌC SINH:
 "{question_content}"
 
 YÊU CẦU QUAN TRỌNG:
-1. Nếu học sinh chỉ chào (hi, hello, xin chào...), hãy chào lại và TÓM TẮT NGẮN GỌN nội dung bài học, sau đó gợi ý 2-3 câu hỏi học sinh có thể hỏi về bài học.
+1. Nếu học sinh chỉ chào (hi, hello, xin chào...), hãy chào lại thân thiện và TÓM TẮT NGẮN GỌN nội dung bài học, sau đó gợi ý 2-3 câu hỏi học sinh có thể hỏi.
 2. Nếu học sinh hỏi về nội dung bài học, hãy trả lời dựa trên thông tin bài học ở trên.
-3. Sử dụng ngôn ngữ đơn giản, thân thiện, phù hợp với học sinh tiểu học.
+3. Sử dụng ngôn ngữ RẤT ĐƠN GIẢN, thân thiện, phù hợp với học sinh tiểu học (6-11 tuổi).
 4. Nếu câu hỏi không liên quan đến bài học, hãy nhẹ nhàng hướng dẫn học sinh quay lại nội dung bài.
 5. Trả lời ngắn gọn, dễ hiểu (tối đa 200 từ).
 6. Nếu không có đủ thông tin để trả lời, hãy gợi ý học sinh hỏi giáo viên.
 7. Luôn khuyến khích và động viên học sinh.
+8. KHÔNG sử dụng markdown (**, ##, *, -, etc.). Chỉ dùng văn bản thuần túy.
+9. Dùng emoji phù hợp để sinh động hơn (🌟, 👍, 📚, ✨, etc.).
+10. Gọi học sinh là "con" hoặc "em".
 
-Trả lời bằng tiếng Việt:"""
+Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
 
+    def _clean_markdown(self, text):
+        """Loại bỏ markdown formatting để dễ đọc cho học sinh tiểu học"""
+        import re
+        
+        # Loại bỏ bold (**text** hoặc __text__)
+        text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+        text = re.sub(r'__(.+?)__', r'\1', text)
+        
+        # Loại bỏ italic (*text* hoặc _text_)
+        text = re.sub(r'\*(.+?)\*', r'\1', text)
+        text = re.sub(r'_(.+?)_', r'\1', text)
+        
+        # Loại bỏ headers (# ## ### etc.)
+        text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
+        
+        # Loại bỏ bullet points (- hoặc *)
+        text = re.sub(r'^\s*[-*]\s+', '• ', text, flags=re.MULTILINE)
+        
+        # Loại bỏ numbered lists với format "1." thành "1)"
+        text = re.sub(r'^(\d+)\.\s+', r'\1) ', text, flags=re.MULTILINE)
+        
+        # Loại bỏ code blocks
+        text = re.sub(r'```[\s\S]*?```', '', text)
+        text = re.sub(r'`(.+?)`', r'\1', text)
+        
+        # Loại bỏ links [text](url)
+        text = re.sub(r'\[(.+?)\]\(.+?\)', r'\1', text)
+        
+        # Loại bỏ multiple newlines
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        
+        return text.strip()
+    
     def _call_gemini_api(self, api_key, model, prompt):
         """Gọi Gemini API, fallback sang DeepSeek nếu lỗi"""
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"

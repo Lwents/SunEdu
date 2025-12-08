@@ -217,6 +217,7 @@ const menu = [
   { path: '/teacher/courses', label: 'Khóa học' },
   { path: '/teacher/students', label: 'Học viên' },
   { path: '/teacher/exams', label: 'Bài kiểm tra' },
+  { path: '/teacher/games', label: 'Trò chơi' },
   { path: '/teacher/reports', label: 'Báo cáo' },
   { path: '/teacher/lesson-qa', label: 'Hỏi đáp' },
 ]

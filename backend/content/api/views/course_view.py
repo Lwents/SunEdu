@@ -1,5 +1,6 @@
 from typing import Any, Dict
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, status, permissions
@@ -73,6 +74,15 @@ class CourseListCreateView(generics.ListCreateAPIView):
             user_role = getattr(self.request.user, 'role', None) if self.request.user.is_authenticated else None
             if user_role != 'student' or self.request.user.is_staff:
                 qs = qs.filter(published=(published.lower() == "true"))
+        
+        # Search by title/description
+        q = self.request.query_params.get("q") or self.request.query_params.get("search")
+        if q:
+            qs = qs.filter(
+                Q(title__icontains=q) |
+                Q(description__icontains=q) |
+                Q(introduction__icontains=q)
+            )
         
         # Annotate enrollments count for performance
         from django.db.models import Count

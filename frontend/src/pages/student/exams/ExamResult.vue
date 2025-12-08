@@ -19,9 +19,31 @@
       <p class="message">{{ resultStatus.message }}</p>
 
       <div class="actions">
-        <button class="btn ghost" @click="toggleReview">
+        <button 
+          v-if="canShowAnswers" 
+          class="btn ghost" 
+          @click="toggleReview"
+        >
           {{ showReview ? 'Ẩn đáp án' : 'Xem lại đáp án' }}
         </button>
+        <span 
+          v-else-if="showAnswersSetting === 'after_duration'" 
+          class="text-sm text-slate-500"
+        >
+          Đáp án sẽ được hiển thị sau khi hết thời gian làm bài
+        </span>
+        <span 
+          v-else-if="showAnswersSetting === 'after_end'" 
+          class="text-sm text-slate-500"
+        >
+          Đáp án sẽ được hiển thị sau khi hết hạn bài thi
+        </span>
+        <span 
+          v-else-if="showAnswersSetting === 'never'" 
+          class="text-sm text-slate-500"
+        >
+          Giáo viên không cho phép xem đáp án
+        </span>
         <router-link
           class="btn primary"
           :to="{ name: 'student-exams-ranking', query: { examId: route.params.id } }"
@@ -33,7 +55,7 @@
     </div>
 
     <Transition name="fade">
-      <div v-if="showReview" class="review-section">
+      <div v-if="showReview && canShowAnswers" class="review-section">
         <div class="review-header">
           <h2>Chi tiết bài làm</h2>
           <p>Hiển thị {{ paginatedAnswers.length }} câu hỏi trên trang {{ currentPage }}</p>
@@ -97,6 +119,8 @@ const userAnswers = ref<any[]>([])
 const loading = ref(true)
 const route = useRoute()
 const auth = useAuthStore()
+const canShowAnswers = ref(true)
+const showAnswersSetting = ref('always')
 const userKey = computed(() => {
   const u = auth.user
   return String(u?.id ?? u?.email ?? u?.name ?? 'guest')
@@ -278,6 +302,10 @@ async function loadAttemptData() {
     totalScore.value = data.totalScore || 0
     maxScore.value = data.maxScore || data.totalCount || 0
     
+    // Get show_answers settings
+    canShowAnswers.value = data.can_show_answers !== false
+    showAnswersSetting.value = data.show_answers || 'always'
+    
     // Map questions to display format
     const questions = data.questions || []
     userAnswers.value = questions.map((q: any, index: number) => {
@@ -288,7 +316,7 @@ async function loadAttemptData() {
         originalIndex: index,
         questionText: q.prompt || q.text || `Câu hỏi ${index + 1}`,
         userAnswer: formatAnswerForDisplay(userAnswer, q),
-        correctAnswer: correctAnswer,
+        correctAnswer: canShowAnswers.value ? correctAnswer : '***',
         correct: q.correct || false,
         score: q.answer_score || q.score || 0,
         maxScore: q.points || q.maxScore || 0,
