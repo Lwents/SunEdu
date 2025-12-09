@@ -1097,7 +1097,9 @@
       </div>
     </transition>
   </div>
-  <div v-else class="grid min-h-screen place-items-center text-gray-600 dark:text-gray-400">Đang tải…</div>
+  <div v-else class="grid min-h-screen place-items-center">
+    <LoadingSpinner size="120" />
+  </div>
   
   <!-- 🎉 Celebration khi hoàn thành khóa học -->
   <CourseCompletionCelebration
@@ -1114,6 +1116,7 @@ import { courseService, type CourseDetail } from '@/services/course.service'
 import { contentService } from '@/services/content.service'
 import AIHintButton from '@/components/ai/AIHintButton.vue'
 import CourseCompletionCelebration from '@/components/ui/CourseCompletionCelebration.vue'
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import api from '@/config/axios'
 import { showToast } from '@/utils/toast'
 import { getAvatarSrc } from '@/utils/avatar'
