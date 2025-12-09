@@ -595,6 +595,10 @@ class StudentLessonQuestionAIAnswerView(APIView):
         if lesson.text_content:
             context_parts.append(f"Nội dung chính:\n{lesson.text_content[:2000]}")
         
+        # Ưu tiên lấy video_transcript từ field nếu có
+        if lesson.video_transcript:
+            context_parts.append(f"[Nội dung video] {lesson.video_transcript[:2000]}")
+        
         # Lấy nội dung từ ContentBlock (chi tiết hơn)
         try:
             latest_version = lesson.versions.filter(status='published').order_by('-version').first()

@@ -220,6 +220,8 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
             instance.text_content = updates['text_content']
         if 'requires_exercise_completion' in updates:
             instance.requires_exercise_completion = updates['requires_exercise_completion']
+        if 'video_transcript' in updates:
+            instance.video_transcript = updates['video_transcript']
         instance.save()
         
         # Also update via service for domain logic (convert dict to UpdateLessonDomain)
@@ -271,3 +273,62 @@ class LessonPublishView(APIView):
             return Response(LessonSerializer.from_domain(updated))
         except Exception as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LessonTranscribeView(APIView):
+    """
+    POST /api/lessons/{id}/transcribe/
+    Tự động tạo transcript từ video của bài học
+    """
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+
+    def post(self, request, lesson_id: str):
+        try:
+            lesson = models.Lesson.objects.get(id=lesson_id)
+            
+            # Kiểm tra có video không
+            video_url = lesson.video_url
+            video_file = lesson.video_file
+            
+            if not video_url and not video_file:
+                return Response(
+                    {"detail": "Bài học không có video"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Import transcriber
+            from content.services.video_transcriber import video_transcriber
+            
+            # Transcribe
+            if video_file:
+                from django.conf import settings
+                video_path = str(settings.MEDIA_ROOT / str(video_file))
+                transcript = video_transcriber.transcribe_video(video_path=video_path)
+            else:
+                transcript = video_transcriber.transcribe_video(video_url=video_url)
+            
+            if not transcript:
+                return Response(
+                    {"detail": "Không thể tạo transcript. Kiểm tra OPENAI_API_KEY hoặc định dạng video."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # Lưu transcript
+            lesson.video_transcript = transcript
+            lesson.save(update_fields=['video_transcript'])
+            
+            return Response({
+                "success": True,
+                "message": "Đã tạo transcript thành công",
+                "transcript": transcript[:500] + "..." if len(transcript) > 500 else transcript,
+                "full_length": len(transcript)
+            })
+            
+        except models.Lesson.DoesNotExist:
+            return Response({"detail": "Không tìm thấy bài học"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as exc:
+            import traceback
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Transcribe error: {exc}\n{traceback.format_exc()}")
+            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

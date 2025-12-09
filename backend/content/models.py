@@ -102,6 +102,7 @@ class Lesson(models.Model):
     text_content = models.TextField(blank=True, null=True, help_text="Nội dung văn bản")
     introduction = models.TextField(blank=True, null=True, help_text="Giới thiệu bài học (hiển thị trước video)")
     requires_exercise_completion = models.BooleanField(default=False, help_text="Yêu cầu hoàn thành bài tập trước khi tiếp tục")
+    video_transcript = models.TextField(blank=True, null=True, help_text="Nội dung lời thoại/phụ đề video để AI hiểu ngữ cảnh")
 
     class Meta:
         verbose_name = ('Lesson')

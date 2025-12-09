@@ -37,8 +37,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     liblcms2-2 \
     libtiff6 \
     libwebp7 \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && apt-get clean \
+    && pip install --no-cache-dir yt-dlp
 
 # Copy installed packages from builder
 COPY --from=builder /install /usr/local
