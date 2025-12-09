@@ -106,6 +106,8 @@ class LessonDomain:
             result['text_content'] = self.text_content
         if hasattr(self, 'requires_exercise_completion'):
             result['requires_exercise_completion'] = self.requires_exercise_completion
+        if hasattr(self, 'video_transcript'):
+            result['video_transcript'] = self.video_transcript
         return result
 
     @classmethod
@@ -124,6 +126,8 @@ class LessonDomain:
             l.text_content = model.text_content
         if hasattr(model, 'requires_exercise_completion'):
             l.requires_exercise_completion = model.requires_exercise_completion
+        if hasattr(model, 'video_transcript'):
+            l.video_transcript = model.video_transcript
         # Load versions - kiểm tra cả prefetched và related
         if hasattr(model, "versions_prefetched") and model.versions_prefetched:
             for v_m in model.versions_prefetched:

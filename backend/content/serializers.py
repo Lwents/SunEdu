@@ -319,11 +319,12 @@ class LessonSerializer(serializers.ModelSerializer):
     document_file = serializers.FileField(required=False, allow_null=True, help_text="File tài liệu (PDF, DOCX)")
     text_content = serializers.CharField(allow_blank=True, required=False, allow_null=True, help_text="Nội dung văn bản")
     requires_exercise_completion = serializers.BooleanField(default=False, help_text="Yêu cầu hoàn thành bài tập trước khi tiếp tục")
+    video_transcript = serializers.CharField(allow_blank=True, required=False, allow_null=True, help_text="Nội dung lời thoại video")
     versions = LessonVersionSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.Lesson
-        fields = ["id", "module", "title", "position", "content_type", "published", "introduction", "video_url", "video_file", "document_file", "text_content", "requires_exercise_completion", "versions"]
+        fields = ["id", "module", "title", "position", "content_type", "published", "introduction", "video_url", "video_file", "document_file", "text_content", "requires_exercise_completion", "video_transcript", "versions"]
         read_only_fields = ["id", "versions"]
 
     def to_domain(self) -> LessonDomain:

@@ -611,7 +611,10 @@ class AITutorVideoQuestionView(APIView):
                 lesson = Lesson.objects.select_related('module__course').get(id=lesson_id)
                 lesson_title = lesson.title
                 if lesson.module and lesson.module.course:
-                    course_title = lesson.module.course.title
+                    course = lesson.module.course
+                    course_title = course.title
+                    if course.description:
+                        lesson_context += f"Mô tả khóa học: {course.description[:300]}\n"
                 
                 # Lấy nội dung bài học
                 if lesson.introduction:
@@ -619,16 +622,60 @@ class AITutorVideoQuestionView(APIView):
                 if lesson.text_content:
                     lesson_context += f"Nội dung: {lesson.text_content[:1000]}\n"
                 
-                # Lấy transcript từ content_blocks nếu có
+                # Ưu tiên lấy video_transcript từ field nếu có
+                if lesson.video_transcript:
+                    lesson_context += f"[Nội dung video] {lesson.video_transcript[:2000]}\n"
+                
+                # Lấy nội dung chi tiết từ content_blocks (giống phần bình luận)
                 try:
                     latest_version = lesson.versions.filter(status='published').order_by('-version').first()
+                    if not latest_version:
+                        latest_version = lesson.versions.order_by('-version').first()
+                    
                     if latest_version:
-                        for block in latest_version.content_blocks.filter(type='video'):
+                        content_blocks = latest_version.content_blocks.order_by('position')
+                        
+                        for block in content_blocks[:15]:
                             payload = block.payload or {}
-                            transcript = payload.get('transcript', '') or payload.get('tts_text', '')
-                            if transcript:
-                                lesson_context += f"Nội dung video: {transcript[:1500]}\n"
-                                break
+                            
+                            if block.type == 'text':
+                                text = payload.get('text', '') or payload.get('content', '')
+                                if text:
+                                    lesson_context += f"{text[:800]}\n"
+                            
+                            elif block.type == 'introduction':
+                                intro_text = payload.get('text', '') or payload.get('content', '')
+                                if intro_text:
+                                    lesson_context += f"[Giới thiệu] {intro_text[:500]}\n"
+                            
+                            elif block.type == 'video':
+                                transcript = payload.get('transcript', '') or payload.get('captions', '') or payload.get('tts_text', '')
+                                if transcript:
+                                    lesson_context += f"[Nội dung video] {transcript[:1500]}\n"
+                            
+                            elif block.type == 'quiz':
+                                quiz_text = payload.get('question', '') or payload.get('text', '')
+                                if quiz_text:
+                                    lesson_context += f"[Câu hỏi] {quiz_text[:300]}\n"
+                        
+                        # Lấy thêm từ content JSON nếu có
+                        if latest_version.content and isinstance(latest_version.content, dict):
+                            json_content = latest_version.content
+                            
+                            # Lấy text từ các key phổ biến
+                            for key in ['content', 'text', 'body', 'description', 'summary']:
+                                if key in json_content and json_content[key]:
+                                    val = json_content[key]
+                                    if isinstance(val, str) and len(val) > 20:
+                                        lesson_context += f"{val[:500]}\n"
+                            
+                            # Lấy từ content_blocks trong JSON
+                            json_blocks = json_content.get('content_blocks', []) or json_content.get('blocks', [])
+                            for jblock in json_blocks[:10]:
+                                if isinstance(jblock, dict):
+                                    jtext = jblock.get('text', '') or jblock.get('content', '') or jblock.get('body', '')
+                                    if jtext and len(jtext) > 20:
+                                        lesson_context += f"{jtext[:400]}\n"
                 except Exception:
                     pass
             except Lesson.DoesNotExist:
