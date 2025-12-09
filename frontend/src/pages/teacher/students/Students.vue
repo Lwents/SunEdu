@@ -70,7 +70,7 @@
       </div>
 
       <!-- Loading -->
-      <LoadingSpinner v-if="loading" size="96" wrapperClass="py-16" />
+      <div v-if="loading" class="py-16 text-center text-slate-500">Đang tải…</div>
 
       <!-- List -->
       <div v-else class="grid grid-cols-1 gap-3">
@@ -260,7 +260,6 @@ import { useRouter } from 'vue-router'
 import { teacherService, type TeacherStudent } from '@/services/teacher.service'
 import { courseService } from '@/services/course.service'
 import { getAvatarSrc } from '@/utils/avatar'
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 
 const router = useRouter()
 

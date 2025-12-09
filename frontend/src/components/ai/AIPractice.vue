@@ -5,7 +5,7 @@
       <div class="flex items-start gap-3">
         <div class="text-3xl">🎯</div>
         <div class="flex-1">
-          <h3 class="font-bold text-purple-800 mb-1">Bé Mặt Trời phân tích</h3>
+          <h3 class="font-bold text-purple-800 mb-1">AI phân tích</h3>
           <p class="text-sm text-gray-600">{{ analysis.encouragement }}</p>
           
           <!-- Điểm yếu cần cải thiện -->
@@ -40,7 +40,7 @@
       <div class="text-6xl mb-4">📝</div>
       <h3 class="text-lg font-bold text-gray-800 mb-2">Bài luyện tập hôm nay</h3>
       <p class="text-sm text-gray-500 mb-4">
-        Bé Mặt Trời sẽ tạo bài tập phù hợp với con!
+        AI sẽ tạo bài tập phù hợp với bạn!
       </p>
       <button
         @click="generateExercises"

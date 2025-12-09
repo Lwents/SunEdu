@@ -46,6 +46,7 @@ from ai_personalization.api.tutor_views import (
     AITutorPracticeView,
     AITutorDailyReportView,
     AITutorWeaknessNotificationView,
+    AITutorVideoQuestionView,
 )
 from ai_personalization.api.tts_views import TextToSpeechView
 from gamification.api.views import (
@@ -118,6 +119,7 @@ urlpatterns = [
     path('ai/tutor/practice/', AITutorPracticeView.as_view(), name='ai-tutor-practice'),
     path('ai/tutor/daily-report/', AITutorDailyReportView.as_view(), name='ai-tutor-daily-report'),
     path('ai/tutor/notify-weakness/', AITutorWeaknessNotificationView.as_view(), name='ai-tutor-notify-weakness'),
+    path('ai/tutor/video-question/', AITutorVideoQuestionView.as_view(), name='ai-tutor-video-question'),
     path('ai/tts/', TextToSpeechView.as_view(), name='ai-tts'),
     
     # Games

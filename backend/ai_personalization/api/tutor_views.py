@@ -61,7 +61,7 @@ class AITutorChatView(APIView):
             logger.error(f"AI Tutor chat error: {e}")
             result = {
                 'success': True,
-                'message': f"Xin chào! 🌟 Mặt Trời đang học cách trả lời tốt hơn. Con hỏi gì vậy?",
+                'message': f"Xin chào! 🌟 Mình đang học cách trả lời tốt hơn. Bạn hỏi gì vậy?",
                 'provider': 'fallback'
             }
         
@@ -265,7 +265,6 @@ class AITutorAnalyzeView(APIView):
     
     def get(self, request):
         from activities.models import ExerciseAttempt
-        from courses.models import Enrollment
         
         user = request.user
         
@@ -348,8 +347,8 @@ class AITutorAnalyzeView(APIView):
                     topics = [w.get('topic', '') for w in high_severity[:3]]
                     Notification.objects.create(
                         user=user,
-                        title='📚 Bé Mặt Trời nhắc nhở',
-                        message=f'Con cần ôn lại: {", ".join(topics)}. Hãy vào Lộ trình học tập để luyện tập nhé! 🌟',
+                        title='📚 AI nhắc nhở',
+                        message=f'Bạn cần ôn lại: {", ".join(topics)}. Hãy vào Lộ trình học tập để luyện tập nhé! 🌟',
                         type='warning',
                         category='ai_weakness',
                         metadata={
@@ -541,8 +540,8 @@ class AITutorWeaknessNotificationView(APIView):
         try:
             notification = Notification.objects.create(
                 user=user,
-                title='📚 Bé Mặt Trời nhắc nhở',
-                message=f'Con cần ôn lại: {topics_str}. Hãy vào Lộ trình học tập để luyện tập nhé! 🌟',
+                title='📚 AI nhắc nhở',
+                message=f'Bạn cần ôn lại: {topics_str}. Hãy vào Lộ trình học tập để luyện tập nhé! 🌟',
                 type='info',
                 category='ai_tutor',
                 metadata={
@@ -562,3 +561,160 @@ class AITutorWeaknessNotificationView(APIView):
                 'success': False,
                 'error': str(e)
             })
+
+
+class AITutorVideoQuestionView(APIView):
+    """
+    POST /api/student/ai/tutor/video-question/
+    
+    Hỏi AI về đoạn video đang xem tại timestamp cụ thể
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        from content.models import Lesson
+        
+        lesson_id = request.data.get('lesson_id')
+        question = request.data.get('question', '').strip()
+        timestamp = request.data.get('timestamp', 0)  # Giây
+        video_title = request.data.get('video_title', '')
+        
+        if not question:
+            return Response(
+                {'error': 'Câu hỏi không được để trống'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if len(question) > 1000:
+            return Response(
+                {'error': 'Câu hỏi quá dài (tối đa 1000 ký tự)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get student grade from profile
+        student_grade = 1
+        if hasattr(request.user, 'profile'):
+            student_grade = getattr(request.user.profile, 'grade', 1) or 1
+        
+        # Format timestamp thành MM:SS
+        minutes = int(timestamp) // 60
+        seconds = int(timestamp) % 60
+        timestamp_str = f"{minutes:02d}:{seconds:02d}"
+        
+        # Lấy context từ lesson nếu có
+        lesson_context = ""
+        lesson_title = ""
+        course_title = ""
+        
+        if lesson_id:
+            try:
+                lesson = Lesson.objects.select_related('module__course').get(id=lesson_id)
+                lesson_title = lesson.title
+                if lesson.module and lesson.module.course:
+                    course_title = lesson.module.course.title
+                
+                # Lấy nội dung bài học
+                if lesson.introduction:
+                    lesson_context += f"Giới thiệu bài học: {lesson.introduction[:500]}\n"
+                if lesson.text_content:
+                    lesson_context += f"Nội dung: {lesson.text_content[:1000]}\n"
+                
+                # Lấy transcript từ content_blocks nếu có
+                try:
+                    latest_version = lesson.versions.filter(status='published').order_by('-version').first()
+                    if latest_version:
+                        for block in latest_version.content_blocks.filter(type='video'):
+                            payload = block.payload or {}
+                            transcript = payload.get('transcript', '') or payload.get('tts_text', '')
+                            if transcript:
+                                lesson_context += f"Nội dung video: {transcript[:1500]}\n"
+                                break
+                except Exception:
+                    pass
+            except Lesson.DoesNotExist:
+                pass
+        
+        # Build context cho AI
+        context = {
+            'lesson_title': lesson_title or video_title,
+            'course_title': course_title,
+            'video_timestamp': timestamp_str,
+            'lesson_content': lesson_context[:2000] if lesson_context else None,
+        }
+        
+        # Build prompt đặc biệt cho câu hỏi về video
+        video_prompt = f"""Bạn là trợ lý học tập AI của SmartEdu.
+
+Học sinh đang xem video bài học "{lesson_title or video_title}" tại thời điểm {timestamp_str}.
+
+Câu hỏi: "{question}"
+
+{f'Khóa học: {course_title}' if course_title else ''}
+{f'Thông tin bài học:\n{lesson_context[:2000]}' if lesson_context else ''}
+
+YÊU CẦU TRẢ LỜI:
+1. Trả lời vừa đủ (3-5 câu), dễ hiểu
+2. Ngôn ngữ đơn giản, phù hợp học sinh lớp {student_grade}
+3. Thêm 1-2 emoji 🌟
+4. Xưng "mình", gọi học sinh là "bạn" hoặc "em"
+5. Nếu không biết nội dung cụ thể trong video, thành thật nói và gợi ý học sinh xem lại hoặc hỏi giáo viên
+
+Trả lời:"""
+
+        # Get conversation history from cache
+        cache_key = f"ai_video_chat:{request.user.id}:{lesson_id or 'default'}"
+        conversation_history = cache.get(cache_key, [])
+        
+        # Call AI Tutor
+        try:
+            result = ai_tutor.chat(
+                user_message=video_prompt,
+                context=context,
+                conversation_history=conversation_history,
+                student_grade=student_grade
+            )
+        except Exception as e:
+            logger.error(f"AI Video Question error: {e}")
+            result = {
+                'success': True,
+                'message': f"Xin lỗi, AI đang bận! 🌟 Bạn đang hỏi về đoạn video tại {timestamp_str}. Hãy thử lại sau nhé!",
+                'provider': 'fallback'
+            }
+        
+        if result['success']:
+            # Update conversation history
+            conversation_history.append({
+                'role': 'user', 
+                'content': f"[Tại {timestamp_str}] {question}"
+            })
+            conversation_history.append({
+                'role': 'assistant', 
+                'content': result['message']
+            })
+            
+            # Keep only last 10 messages for video context
+            conversation_history = conversation_history[-10:]
+            cache.set(cache_key, conversation_history, 1800)  # 30 minutes
+            
+            # Log event
+            try:
+                LearningEvent.objects.create(
+                    user=request.user,
+                    event_type='ai_video_question',
+                    detail={
+                        'lesson_id': str(lesson_id) if lesson_id else None,
+                        'timestamp': timestamp,
+                        'timestamp_str': timestamp_str,
+                        'question_length': len(question),
+                        'provider': result.get('provider')
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Failed to log AI video question event: {e}")
+        
+        return Response({
+            'success': result['success'],
+            'message': result['message'],
+            'timestamp': timestamp_str,
+            'lesson_id': str(lesson_id) if lesson_id else None
+        })
