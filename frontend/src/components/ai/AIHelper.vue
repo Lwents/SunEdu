@@ -1,5 +1,5 @@
 <template>
-  <!-- Nhân vật Mặt Trời - góc phải màn hình -->
+  <!-- AI Helper - góc phải màn hình -->
   <div class="ai-helper-container">
     <!-- Mascot -->
     <div 
@@ -111,9 +111,9 @@ const celebrationText = ref('')
 
 // Messages
 const welcomeMessages = [
-  'Chào con! Mặt Trời sẽ giúp con học bài nhé! 🌟',
-  'Xin chào! Cần gì cứ gọi Mặt Trời nhé! ☀️',
-  'Chào con yêu! Học vui vẻ nha! 🌈',
+  'Chào bạn! Mình sẽ giúp bạn học bài nhé! 🌟',
+  'Xin chào! Cần gì cứ hỏi mình nhé! ☀️',
+  'Chào bạn! Học vui vẻ nha! 🌈',
 ]
 
 const correctMessages = [
@@ -131,7 +131,7 @@ const wrongMessages = [
 
 const encourageMessages = [
   'Con đang làm tốt lắm! Tiếp tục nhé! 💪',
-  'Mặt Trời tin con làm được! ☀️',
+  'Mình tin bạn làm được! ☀️',
   'Cố gắng lên nào! 🌟',
 ]
 
@@ -226,7 +226,7 @@ async function getHint() {
       }
     }
   } catch (error) {
-    showMessage('Mặt Trời đang nghĩ... Thử lại sau nhé! 🤔', true)
+    showMessage('AI đang nghĩ... Thử lại sau nhé! 🤔', true)
   } finally {
     loadingHint.value = false
   }

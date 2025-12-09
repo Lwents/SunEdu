@@ -17,36 +17,37 @@ from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 # System prompts cho AI Tutor
-TUTOR_SYSTEM_PROMPT = """Bạn là "Bé Mặt Trời" - một trợ lý học tập thân thiện cho trẻ tiểu học Việt Nam (6-11 tuổi).
+TUTOR_SYSTEM_PROMPT = """Bạn là trợ lý học tập AI của SmartEdu - nền tảng học tập thông minh cho học sinh Việt Nam.
 
 NGUYÊN TẮC QUAN TRỌNG:
-1. Luôn dùng ngôn ngữ đơn giản, dễ hiểu với trẻ nhỏ
+1. Luôn dùng ngôn ngữ đơn giản, dễ hiểu
 2. Thêm emoji để tạo sự vui vẻ 🌟 ✨ 🎉
 3. KHÔNG BAO GIỜ cho đáp án trực tiếp - chỉ gợi ý từng bước
-4. Động viên và khen ngợi khi trẻ cố gắng
-5. Nếu trẻ sai, nhẹ nhàng hướng dẫn cách nghĩ đúng
-6. Giữ câu trả lời ngắn gọn (tối đa 3-4 câu)
+4. Động viên và khen ngợi khi học sinh cố gắng
+5. Nếu học sinh sai, nhẹ nhàng hướng dẫn cách nghĩ đúng
+6. Trả lời đủ ý, rõ ràng (có thể 6-8 câu nếu cần), vẫn giữ văn phong đơn giản
 7. Dùng ví dụ gần gũi với cuộc sống hàng ngày
 
 PHONG CÁCH:
-- Xưng hô: "con" với trẻ, "Mặt Trời" với bản thân
+- Xưng hô: "bạn" hoặc "em" với học sinh
+- Tuyệt đối không tự xưng "Mặt Trời"/"mặt trời" hay bất kỳ biệt danh nào; chỉ xưng "mình", "tớ" hoặc "AI"
 - Giọng điệu: Vui vẻ, ấm áp, khích lệ
-- Khi trẻ đúng: Khen ngợi nhiệt tình
-- Khi trẻ sai: "Gần đúng rồi! Để Mặt Trời gợi ý nhé..."
+- Khi học sinh đúng: Khen ngợi nhiệt tình
+- Khi học sinh sai: "Gần đúng rồi! Để mình gợi ý nhé..."
 """
 
-HINT_SYSTEM_PROMPT = """Bạn là trợ lý học tập cho trẻ tiểu học. Nhiệm vụ: Đưa ra GỢI Ý để trẻ tự tìm đáp án.
+HINT_SYSTEM_PROMPT = """Bạn là trợ lý học tập AI của SmartEdu. Nhiệm vụ: Đưa ra GỢI Ý để học sinh tự tìm đáp án.
 
 QUY TẮC GỢI Ý:
 1. KHÔNG BAO GIỜ nói đáp án trực tiếp
 2. Gợi ý theo từng bước nhỏ (scaffolding)
-3. Dùng câu hỏi dẫn dắt: "Con thử nghĩ xem...", "Nếu... thì sao?"
+3. Dùng câu hỏi dẫn dắt: "Bạn thử nghĩ xem...", "Nếu... thì sao?"
 4. Cho ví dụ tương tự đơn giản hơn
 5. Nhắc lại kiến thức cần dùng
 
 VÍ DỤ:
 - Câu hỏi: "5 + 7 = ?"
-- Gợi ý tốt: "Con đếm thêm 7 từ số 5 nhé! 5... rồi thêm 1 là 6, thêm 1 nữa là 7..."
+- Gợi ý tốt: "Bạn đếm thêm 7 từ số 5 nhé! 5... rồi thêm 1 là 6, thêm 1 nữa là 7..."
 - Gợi ý xấu: "Đáp án là 12" (KHÔNG ĐƯỢC!)
 """
 
@@ -94,11 +95,11 @@ class AITutorEngine:
         
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 500,
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 800,
+                }
             }
-        }
         
         response = requests.post(url, json=payload, timeout=30)
         
@@ -129,14 +130,14 @@ class AITutorEngine:
         headers = {
             "Authorization": f"Bearer {self.openrouter_api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://sunedu.local",
-            "X-Title": "SunEdu AI Tutor",
+            "HTTP-Referer": "https://smartedu.local",
+            "X-Title": "SmartEdu AI Tutor",
         }
         
         payload = {
             "model": model,
             "messages": messages,
-            "max_tokens": 500,
+            "max_tokens": 800,
             "temperature": 0.7,
         }
         
@@ -333,7 +334,7 @@ Yêu cầu:
             logger.error(f"AI Explain error: {str(e)}")
             return {
                 'success': False,
-                'explanation': f"Mặt Trời đang bận một chút! Con hỏi lại sau nhé! 🌟",
+                'explanation': f"AI đang bận một chút! Bạn hỏi lại sau nhé! 🌟",
                 'error': str(e)
             }
     
@@ -361,7 +362,7 @@ Yêu cầu:
             'incorrect': [
                 f"Gần đúng rồi {student_name}! 💪 Thử lại nhé!",
                 f"Không sao! Sai là để học mà! 🌈 Cố lên!",
-                f"Mặt Trời tin {student_name} làm được! Thử lần nữa nào! ✨",
+                f"Mình tin {student_name} làm được! Thử lần nữa nào! ✨",
             ],
             'streak': [
                 f"🔥 {student_name} đang có streak tuyệt vời!",
@@ -372,8 +373,8 @@ Yêu cầu:
                 f"Chúc mừng {student_name}! 🎉 Bài học xong rồi!",
             ],
             'struggling': [
-                f"Từ từ thôi {student_name}! 🌟 Mặt Trời ở đây giúp con!",
-                f"Bài này hơi khó nhỉ? 🤔 Để Mặt Trời gợi ý nhé!",
+                f"Từ từ thôi {student_name}! 🌟 Mình ở đây giúp bạn!",
+                f"Bài này hơi khó nhỉ? 🤔 Để mình gợi ý nhé!",
             ]
         }
         
@@ -450,7 +451,7 @@ NHỚ: KHÔNG được nói đáp án "{correct_answer}" trực tiếp!
     
     def _get_fallback_response(self, user_message: str) -> str:
         """Fallback response when AI is unavailable"""
-        return "Mặt Trời đang bận một chút! 🌟 Con thử hỏi lại sau nhé, hoặc nhấn nút Gợi ý để được giúp đỡ!"
+        return "AI đang bận một chút! 🌟 Bạn thử hỏi lại sau nhé, hoặc nhấn nút Gợi ý để được giúp đỡ!"
     
     def _get_fallback_hint(self, hint_level: int) -> str:
         """Fallback hint when AI is unavailable"""
@@ -685,7 +686,7 @@ Dùng ngôn ngữ thân thiện, có emoji, phù hợp trẻ {5 + student_grade}
 CHỈ trả về tin nhắn, không có gì khác."""
 
         messages = [
-            {"role": "system", "content": "Bạn là Bé Mặt Trời - trợ lý học tập thân thiện cho trẻ tiểu học Việt Nam."},
+            {"role": "system", "content": "Bạn là trợ lý học tập AI của SmartEdu - thân thiện với học sinh Việt Nam."},
             {"role": "user", "content": prompt}
         ]
         
@@ -707,7 +708,7 @@ CHỈ trả về tin nhắn, không có gì khác."""
         except Exception as e:
             logger.error(f"Generate improvement suggestion error: {e}")
             # Fallback message
-            fallback = f"Con đạt {score_percent:.0f}% rồi! 🌟 Có vài câu chưa đúng, con ôn lại nhé. Mặt Trời tin con sẽ làm tốt hơn! 💪"
+            fallback = f"Bạn đạt {score_percent:.0f}% rồi! 🌟 Có vài câu chưa đúng, ôn lại nhé. Mình tin bạn sẽ làm tốt hơn! 💪"
             return {
                 'success': True,
                 'suggestion': fallback,

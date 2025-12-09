@@ -172,7 +172,7 @@ class FinalizeAttemptView(APIView):
             if suggestion_text:
                 Notification.objects.create(
                     user=user,
-                    title='💡 Bé Mặt Trời gợi ý cho con',
+                    title='💡 AI gợi ý cho bạn',
                     message=suggestion_text,
                     type='info',
                     category='ai_improvement',

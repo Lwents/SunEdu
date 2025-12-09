@@ -683,7 +683,7 @@ class StudentLessonQuestionAIAnswerView(APIView):
         """Tạo prompt cho AI"""
         # Nếu có lịch sử hội thoại, sử dụng prompt khác
         if conversation_history and len(conversation_history) > 50:
-            return f"""Bạn là trợ lý học tập AI của SunEdu, đang hỗ trợ học sinh tiểu học học bài "{lesson.title}".
+            return f"""Bạn là trợ lý học tập AI của SmartEdu, đang hỗ trợ học sinh học bài "{lesson.title}".
 
 THÔNG TIN BÀI HỌC:
 {lesson_context}
@@ -700,12 +700,12 @@ YÊU CẦU QUAN TRỌNG:
 6. Luôn khuyến khích và động viên học sinh.
 7. KHÔNG sử dụng markdown (**, ##, *, -, etc.). Chỉ dùng văn bản thuần túy.
 8. Dùng emoji phù hợp để sinh động hơn (🌟, 👍, 📚, etc.).
-9. Gọi học sinh là "con" hoặc "em".
+9. Gọi học sinh là "bạn" hoặc "em".
 
 Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
         
         # Prompt cho câu hỏi đầu tiên
-        return f"""Bạn là trợ lý học tập AI của SunEdu, hỗ trợ học sinh tiểu học học bài "{lesson.title}".
+        return f"""Bạn là trợ lý học tập AI của SmartEdu, hỗ trợ học sinh học bài "{lesson.title}".
 
 THÔNG TIN BÀI HỌC:
 {lesson_context}
@@ -723,7 +723,7 @@ YÊU CẦU QUAN TRỌNG:
 7. Luôn khuyến khích và động viên học sinh.
 8. KHÔNG sử dụng markdown (**, ##, *, -, etc.). Chỉ dùng văn bản thuần túy.
 9. Dùng emoji phù hợp để sinh động hơn (🌟, 👍, 📚, ✨, etc.).
-10. Gọi học sinh là "con" hoặc "em".
+10. Gọi học sinh là "bạn" hoặc "em".
 
 Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
 
@@ -769,7 +769,7 @@ Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
                 url,
                 json={
                     "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"maxOutputTokens": 1024},
+                    "generationConfig": {"maxOutputTokens": 1500},
                 },
                 timeout=60,
             )
@@ -815,8 +815,8 @@ Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
         headers = {
             "Authorization": f"Bearer {deepseek_api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://sunedu.local",
-            "X-Title": "SunEdu AI Assistant",
+            "HTTP-Referer": "https://smartedu.local",
+            "X-Title": "SmartEdu AI Assistant",
         }
         
         try:
@@ -826,7 +826,7 @@ Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
                 json={
                     "model": deepseek_model,
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1024,
+                    "max_tokens": 1500,
                 },
                 timeout=60,
             )

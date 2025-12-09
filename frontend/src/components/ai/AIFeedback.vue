@@ -38,7 +38,7 @@
     <Transition name="slide">
       <div v-if="currentHint" class="hint-card">
         <div class="hint-header">
-          <span class="hint-label">🌟 Gợi ý từ Mặt Trời</span>
+          <span class="hint-label">🌟 Gợi ý từ AI</span>
         </div>
         <p class="hint-text">{{ currentHint }}</p>
         
@@ -169,7 +169,7 @@ async function requestHint() {
       canGetMoreHints.value = response.can_get_more_hints
       emit('hint-received', response.hint)
     } else {
-      currentHint.value = 'Mặt Trời đang bận, thử lại sau nhé! 🌟'
+      currentHint.value = 'AI đang bận, thử lại sau nhé! 🌟'
     }
   } catch {
     currentHint.value = 'Đọc lại đề bài thật kỹ nhé con! 📖'

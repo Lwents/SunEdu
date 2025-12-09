@@ -257,7 +257,7 @@
           </span>
         </div>
         <p v-if="!showPractice" class="text-sm text-purple-600 mb-3">
-          Bé Mặt Trời đã chuẩn bị bài tập phù hợp với con dựa trên kết quả học tập! 🌟
+          SmartEdu AI đã chuẩn bị bài tập phù hợp với bạn dựa trên kết quả học tập! 🌟
         </p>
         <AIPractice 
           v-if="showPractice"

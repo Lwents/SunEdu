@@ -121,7 +121,7 @@ async function requestHint(studentAnswer?: string) {
     }
   } catch (error) {
     console.error('Hint error:', error)
-    currentHint.value = '💡 Gợi ý: Con đọc lại đề bài thật kỹ nhé! Mặt Trời tin con làm được! 🌟'
+    currentHint.value = '💡 Gợi ý: Bạn đọc lại đề bài thật kỹ nhé! Mình tin bạn làm được! 🌟'
     showHint.value = true
   } finally {
     loading.value = false

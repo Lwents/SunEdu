@@ -270,25 +270,38 @@
                 @timeupdate="onVideoTimeUpdate"
               ></video>
             </template>
-            <div class="space-y-1 px-6 py-5">
-              <p class="student-section-title text-xs text-gray-600 dark:text-gray-400">
-                {{ currentLesson ? 'Bài học hiện tại' : 'Video khóa học' }}
-              </p>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {{ currentLesson?.title || course.title }}
-              </h2>
-              <div class="mt-2">
-                <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                  <span v-if="currentLessonKind === 'video'">🎬</span>
-                  <span v-else-if="currentLessonKind === 'quiz'">✏️</span>
-                  <span v-else-if="currentLessonKind === 'pdf'">📄</span>
-                  <span v-else-if="currentLessonKind === 'doc'">📑</span>
-                  <span v-else-if="currentLessonKind === 'text'">📝</span>
-                  <span v-else-if="currentLessonKind === 'image'">🖼️</span>
-                  <span v-else>📚</span>
-                  {{ lessonKindLabel(currentLessonKind) }}
-                </span>
+            <div class="flex items-start justify-between gap-4 px-6 py-5">
+              <div class="space-y-1">
+                <p class="student-section-title text-xs text-gray-600 dark:text-gray-400">
+                  {{ currentLesson ? 'Bài học hiện tại' : 'Video khóa học' }}
+                </p>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {{ currentLesson?.title || course.title }}
+                </h2>
+                <div class="mt-2">
+                  <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                    <span v-if="currentLessonKind === 'video'">🎬</span>
+                    <span v-else-if="currentLessonKind === 'quiz'">✏️</span>
+                    <span v-else-if="currentLessonKind === 'pdf'">📄</span>
+                    <span v-else-if="currentLessonKind === 'doc'">📑</span>
+                    <span v-else-if="currentLessonKind === 'text'">📝</span>
+                    <span v-else-if="currentLessonKind === 'image'">🖼️</span>
+                    <span v-else>📚</span>
+                    {{ lessonKindLabel(currentLessonKind) }}
+                  </span>
+                </div>
               </div>
+              <!-- Nút Hỏi AI về video - bên phải -->
+              <button
+                v-if="currentLessonKind === 'video'"
+                class="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-200 transition hover:from-purple-600 hover:to-indigo-700 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+                @click="openAIVideoModal"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Hỏi AI
+              </button>
             </div>
           </div>
           <!-- Chỉ hiển thị thông báo này khi thực sự là video nhưng thiếu video URL -->
@@ -1091,6 +1104,138 @@
                   <span v-else>Nộp bài</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Modal Hỏi AI về Video -->
+    <transition name="fade">
+      <div
+        v-if="aiVideoModalOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 py-6"
+        @click.self="closeAIVideoModal"
+      >
+        <div class="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
+                  <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wider text-purple-200">HỎI AI VỀ VIDEO</p>
+                  <h3 class="text-lg font-bold text-white">Tại {{ formatTimestamp(aiVideoTimestamp) }}</h3>
+                </div>
+              </div>
+              <button
+                class="flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-all hover:bg-white/20 hover:text-white"
+                @click="closeAIVideoModal"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Conversation -->
+          <div class="max-h-[400px] overflow-y-auto px-6 py-4 space-y-4">
+            <!-- Empty state -->
+            <div v-if="aiVideoConversation.length === 0" class="text-center py-8">
+              <div class="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-purple-100">
+                <svg class="h-8 w-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p class="mt-4 text-sm font-semibold text-slate-600">Hỏi AI về đoạn video này!</p>
+              <p class="mt-1 text-xs text-slate-400">Bạn đang xem tại {{ formatTimestamp(aiVideoTimestamp) }}</p>
+            </div>
+
+            <!-- Messages -->
+            <div v-for="(msg, idx) in aiVideoConversation" :key="idx" class="flex gap-3" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+              <!-- AI Avatar - Mặt Trời -->
+              <div v-if="msg.role === 'ai'" class="flex-shrink-0">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg shadow-orange-200">
+                  <span class="text-xl">☀️</span>
+                </div>
+              </div>
+              
+              <!-- Message bubble -->
+              <div 
+                class="max-w-[80%] rounded-2xl px-4 py-3"
+                :class="msg.role === 'user' 
+                  ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white' 
+                  : 'bg-slate-100 text-slate-800'"
+              >
+                <p v-if="msg.timestamp && msg.role === 'user'" class="text-xs mb-1" :class="msg.role === 'user' ? 'text-purple-200' : 'text-slate-500'">
+                  Tại {{ msg.timestamp }}
+                </p>
+                <p class="text-sm whitespace-pre-line">{{ msg.content }}</p>
+              </div>
+
+              <!-- User Avatar -->
+              <div v-if="msg.role === 'user'" class="flex-shrink-0">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-600 text-sm font-bold">
+                  {{ auth.user?.name?.charAt(0) || 'HS' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Loading -->
+            <div v-if="aiVideoAsking" class="flex gap-3 justify-start">
+              <div class="flex-shrink-0">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg shadow-orange-200 animate-pulse">
+                  <span class="text-xl">☀️</span>
+                </div>
+              </div>
+              <div class="bg-slate-100 rounded-2xl px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="h-2 w-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 0ms"></div>
+                  <div class="h-2 w-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 150ms"></div>
+                  <div class="h-2 w-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 300ms"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input -->
+          <div class="border-t border-slate-200 px-6 py-4">
+            <div class="flex gap-3">
+              <input
+                v-model="aiVideoQuestion"
+                type="text"
+                class="flex-1 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-purple-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-purple-100"
+                placeholder="Hỏi về đoạn video này..."
+                @keyup.enter="submitAIVideoQuestion"
+                :disabled="aiVideoAsking"
+              />
+              <button
+                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-purple-200 transition-all hover:from-purple-600 hover:to-indigo-700 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="!aiVideoQuestion.trim() || aiVideoAsking"
+                @click="submitAIVideoQuestion"
+              >
+                <span v-if="aiVideoAsking" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <p class="text-xs text-slate-400">
+                Đang xem: {{ currentLesson?.title || 'Video' }}
+              </p>
+              <button
+                v-if="aiVideoConversation.length > 0"
+                class="text-xs text-slate-500 hover:text-slate-700 transition"
+                @click="clearAIVideoConversation"
+              >
+                Xóa hội thoại
+              </button>
             </div>
           </div>
         </div>
@@ -2338,6 +2483,104 @@ const avatarErrors = reactive<Record<string, boolean>>({})
 const askingAI = reactive<Record<string, boolean>>({})
 const aiChatBox = reactive<Record<string, boolean>>({})
 const aiChatDrafts = reactive<Record<string, string>>({})
+
+// AI Video Question - Hỏi AI về đoạn video đang xem
+const aiVideoModalOpen = ref(false)
+const aiVideoQuestion = ref('')
+const aiVideoAsking = ref(false)
+const aiVideoResponse = ref('')
+const aiVideoTimestamp = ref(0)
+const aiVideoConversation = ref<Array<{ role: 'user' | 'ai'; content: string; timestamp?: string }>>([])
+
+function getCurrentVideoTimestamp(): number {
+  // Lấy timestamp từ video HTML5
+  if (videoRef.value && videoRef.value.currentTime) {
+    return Math.floor(videoRef.value.currentTime)
+  }
+  // Lấy timestamp từ YouTube player
+  if (youtubePlayer.value && youtubePlayer.value.getCurrentTime) {
+    try {
+      return Math.floor(youtubePlayer.value.getCurrentTime())
+    } catch {
+      return 0
+    }
+  }
+  return 0
+}
+
+function formatTimestamp(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
+function openAIVideoModal() {
+  aiVideoTimestamp.value = getCurrentVideoTimestamp()
+  aiVideoModalOpen.value = true
+  aiVideoQuestion.value = ''
+  aiVideoResponse.value = ''
+}
+
+function closeAIVideoModal() {
+  aiVideoModalOpen.value = false
+}
+
+async function submitAIVideoQuestion() {
+  if (!aiVideoQuestion.value.trim() || aiVideoAsking.value) return
+  
+  const question = aiVideoQuestion.value.trim()
+  const timestamp = aiVideoTimestamp.value
+  const timestampStr = formatTimestamp(timestamp)
+  
+  // Thêm câu hỏi vào conversation
+  aiVideoConversation.value.push({
+    role: 'user',
+    content: question,
+    timestamp: timestampStr
+  })
+  
+  aiVideoAsking.value = true
+  aiVideoQuestion.value = ''
+  
+  try {
+    const { data } = await api.post('/student/ai/tutor/video-question/', {
+      lesson_id: currentLesson.value?.id,
+      question: question,
+      timestamp: timestamp,
+      video_title: currentLesson.value?.title || course.value?.title || ''
+    }, { timeout: 60000 })
+    
+    if (data.success && data.message) {
+      aiVideoResponse.value = data.message
+      aiVideoConversation.value.push({
+        role: 'ai',
+        content: data.message,
+        timestamp: timestampStr
+      })
+    } else {
+      aiVideoResponse.value = 'AI không thể trả lời câu hỏi này. Hãy thử lại nhé! 🌟'
+      aiVideoConversation.value.push({
+        role: 'ai',
+        content: aiVideoResponse.value
+      })
+    }
+  } catch (e: any) {
+    console.error('AI Video Question error:', e)
+    aiVideoResponse.value = 'Có lỗi xảy ra. Hãy thử lại sau nhé! 🌟'
+    aiVideoConversation.value.push({
+      role: 'ai',
+      content: aiVideoResponse.value
+    })
+  } finally {
+    aiVideoAsking.value = false
+  }
+}
+
+function clearAIVideoConversation() {
+  aiVideoConversation.value = []
+  aiVideoResponse.value = ''
+}
+
 function normalizeAvatar(input: any) {
   if (!input) return ''
   const str = String(input).trim()
