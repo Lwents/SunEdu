@@ -62,7 +62,12 @@ class LessonProgressView(APIView):
                 progress.completed = True
                 progress.completed_at = timezone.now()
         
-        progress.save()
+        # Đảm bảo last_accessed_at được cập nhật (dù auto_now=True, vẫn set rõ ràng)
+        progress.last_accessed_at = timezone.now()
+        progress.save(update_fields=[
+            'video_watched', 'exercise_completed', 'exercise_score',
+            'completed', 'completed_at', 'last_accessed_at'
+        ])
         
         return Response({
             'completed': progress.completed,

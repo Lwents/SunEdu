@@ -414,25 +414,30 @@ class AILearningAnalyzerView(APIView):
         """Lấy mục tiêu học tập hàng ngày"""
         today = timezone.now().date()
         
-        # Đếm bài học đã học hôm nay (video_watched hoặc completed)
-        # Ưu tiên completed, nhưng cũng tính video_watched để khuyến khích học sinh
+        # Đếm bài học đã hoàn thành hôm nay
+        # Kiểm tra cả completed_at (ngày hoàn thành) và last_accessed_at (ngày truy cập)
         completed_today = LessonProgress.objects.filter(
-            student=user,
-            last_accessed_at__date=today
+            student=user
         ).filter(
             Q(completed=True) | Q(video_watched=True)
-        ).count()
+        ).filter(
+            # Hoàn thành hôm nay HOẶC truy cập hôm nay (với completed/video_watched = True)
+            Q(completed_at__date=today) | Q(last_accessed_at__date=today)
+        ).distinct().count()
         
         # Tính streak (số ngày liên tiếp có hoạt động học)
         streak = 0
         check_date = today
         while streak < 365:  # Giới hạn tối đa 365 ngày
+            # Kiểm tra cả completed_at và last_accessed_at
             has_progress = LessonProgress.objects.filter(
-                student=user,
-                last_accessed_at__date=check_date
+                student=user
             ).filter(
                 Q(completed=True) | Q(video_watched=True)
+            ).filter(
+                Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
             ).exists()
+            
             if has_progress:
                 streak += 1
                 check_date -= timedelta(days=1)
@@ -537,43 +542,93 @@ class AIAssessmentView(APIView):
         })
     
     def _generate_assessment_questions(self, course, use_ai=True):
-        """Tạo câu hỏi đánh giá dựa trên nội dung khóa học - có thể dùng AI"""
+        """Tạo 10-15 câu hỏi đánh giá dựa trên NỘI DUNG THỰC TẾ của khóa học"""
+        import random
+        from content.models import LessonVersion, ContentBlock
+        
         modules = Module.objects.filter(course=course).prefetch_related('lessons')
         
-        # Thu thập thông tin bài học
-        lesson_titles = []
-        for module in modules[:3]:
-            for lesson in module.lessons.all()[:2]:
-                lesson_titles.append({
+        # Thu thập thông tin và NỘI DUNG bài học
+        lesson_data = []
+        for module in modules:
+            for lesson in module.lessons.all():
+                # Lấy nội dung text từ lesson
+                content_text = ""
+                
+                # 1. Lấy từ text_content và introduction
+                if lesson.text_content:
+                    content_text += lesson.text_content + "\n"
+                if lesson.introduction:
+                    content_text += lesson.introduction + "\n"
+                
+                # 2. Lấy từ ContentBlock (version mới nhất)
+                try:
+                    latest_version = lesson.versions.filter(status='published').first()
+                    if not latest_version:
+                        latest_version = lesson.versions.first()
+                    
+                    if latest_version:
+                        # Lấy text từ content blocks
+                        blocks = ContentBlock.objects.filter(lesson_version=latest_version)
+                        for block in blocks:
+                            if block.type == 'text' and block.payload.get('text'):
+                                content_text += block.payload['text'] + "\n"
+                            elif block.type == 'introduction' and block.payload.get('text'):
+                                content_text += block.payload['text'] + "\n"
+                except Exception:
+                    pass
+                
+                lesson_data.append({
                     "title": lesson.title,
                     "module": module.title,
                     "lesson_id": str(lesson.id),
+                    "content": content_text[:1500],  # Giới hạn để không quá dài
                 })
         
-        if not lesson_titles:
+        if not lesson_data:
             return []
         
-        # Thử dùng AI để tạo câu hỏi thông minh hơn
+        # Số câu hỏi: ngẫu nhiên 10-15
+        num_questions = random.randint(10, 15)
+        
+        # Thử dùng AI để tạo câu hỏi thông minh dựa trên nội dung thực tế
         if use_ai:
             try:
-                prompt = f"""Bạn là AI tạo câu hỏi đánh giá đầu vào cho học sinh tiểu học.
-Khóa học: {course.title}
-Các bài học: {', '.join([l['title'] for l in lesson_titles])}
+                # Tạo tóm tắt nội dung cho AI
+                content_summary = ""
+                for i, lesson in enumerate(lesson_data[:8]):  # Lấy tối đa 8 bài
+                    content_summary += f"\n--- Bài {i+1}: {lesson['title']} ---\n"
+                    if lesson['content']:
+                        content_summary += lesson['content'][:500] + "\n"
+                    else:
+                        content_summary += f"(Bài học về {lesson['title']})\n"
+                
+                prompt = f"""Bạn là AI tạo câu hỏi đánh giá đầu vào cho học sinh tiểu học Việt Nam.
 
-Hãy tạo {len(lesson_titles)} câu hỏi trắc nghiệm để đánh giá kiến thức ban đầu của học sinh.
-Mỗi câu hỏi có 4 lựa chọn từ dễ đến khó.
+KHÓA HỌC: {course.title}
+
+NỘI DUNG CÁC BÀI HỌC:
+{content_summary}
+
+YÊU CẦU:
+1. Tạo CHÍNH XÁC {num_questions} câu hỏi trắc nghiệm
+2. Câu hỏi phải DỰA TRÊN NỘI DUNG THỰC TẾ của các bài học ở trên
+3. Mỗi câu có 4 lựa chọn, 1 đáp án đúng
+4. Độ khó từ dễ đến trung bình (phù hợp tiểu học)
+5. Câu hỏi đa dạng: kiến thức, hiểu biết, áp dụng
 
 Trả về JSON array với format:
 [
   {{
-    "text": "Câu hỏi...",
-    "choices": ["Lựa chọn 1", "Lựa chọn 2", "Lựa chọn 3", "Lựa chọn 4"]
+    "text": "Câu hỏi liên quan đến nội dung bài học...",
+    "choices": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"],
+    "correct_index": 0
   }}
 ]
 
-Chỉ trả về JSON, không giải thích."""
+CHỈ TRẢ VỀ JSON, KHÔNG GIẢI THÍCH."""
                 
-                result = AIAPIClient.call_ai(prompt, max_tokens=1000)
+                result = AIAPIClient.call_ai(prompt, max_tokens=3000)
                 if not result.get("error") and result.get("text"):
                     # Parse JSON từ response
                     text = result["text"].strip()
@@ -584,42 +639,49 @@ Chỉ trả về JSON, không giải thích."""
                         json_str = text[start:end]
                         ai_questions = json.loads(json_str)
                         
-                        # Map với lesson_id
+                        # Map câu hỏi với lesson
                         questions = []
-                        for i, q in enumerate(ai_questions[:len(lesson_titles)]):
+                        for i, q in enumerate(ai_questions[:num_questions]):
+                            # Phân bổ câu hỏi cho các bài học
+                            lesson_idx = i % len(lesson_data)
                             questions.append({
                                 "id": i + 1,
                                 "type": "single",
                                 "text": q.get("text", ""),
                                 "choices": q.get("choices", []),
-                                "module": lesson_titles[i]["module"],
-                                "lesson_id": lesson_titles[i]["lesson_id"],
+                                "correct_index": q.get("correct_index", 0),
+                                "module": lesson_data[lesson_idx]["module"],
+                                "lesson_id": lesson_data[lesson_idx]["lesson_id"],
                                 "ai_generated": True,
                             })
-                        if questions:
+                        if len(questions) >= 10:
                             return questions
             except Exception as e:
                 logger.error(f"AI assessment generation failed: {e}")
         
-        # Fallback: câu hỏi mặc định
+        # Fallback: câu hỏi mặc định (vẫn tạo 10-15 câu)
         questions = []
-        for i, lesson in enumerate(lesson_titles):
+        fallback_templates = [
+            ("Bạn đã biết gì về {title}?", ["Chưa biết gì", "Biết một chút", "Biết khá nhiều", "Đã thành thạo"]),
+            ("Mức độ tự tin của bạn với {title}?", ["Không tự tin", "Hơi tự tin", "Khá tự tin", "Rất tự tin"]),
+            ("Bạn đã từng học về {title} chưa?", ["Chưa bao giờ", "Đã nghe qua", "Đã học sơ", "Đã học kỹ"]),
+        ]
+        
+        for i in range(num_questions):
+            lesson = lesson_data[i % len(lesson_data)]
+            template = fallback_templates[i % len(fallback_templates)]
             questions.append({
                 "id": i + 1,
                 "type": "single",
-                "text": f"Bạn đã biết gì về {lesson['title']}?",
-                "choices": [
-                    "Chưa biết gì",
-                    "Biết một chút",
-                    "Biết khá nhiều",
-                    "Đã thành thạo"
-                ],
+                "text": template[0].format(title=lesson['title']),
+                "choices": template[1],
+                "correct_index": None,  # Không có đáp án đúng cho self-assessment
                 "module": lesson["module"],
                 "lesson_id": lesson["lesson_id"],
                 "ai_generated": False,
             })
         
-        return questions[:10]
+        return questions
 
 
 class AIAssessmentResultView(APIView):
@@ -649,24 +711,39 @@ class AIAssessmentResultView(APIView):
     
     def _analyze_assessment(self, course, answers, use_ai=True):
         """Phân tích kết quả đánh giá và đề xuất lộ trình - có thể dùng AI"""
-        # Tính điểm trung bình (0-3 cho mỗi câu)
-        total_score = 0
+        # Tính điểm theo thang 10
+        # Mỗi câu trả lời đúng (correct_index match) = 1 điểm
+        # Điểm = (số câu đúng / tổng số câu) * 10
+        correct_count = 0
+        total_questions = len(answers) if answers else 0
+        
         for answer in answers:
+            # Nếu có correct_index trong câu hỏi, so sánh với choice
+            correct_index = answer.get('correct_index')
             choice = answer.get('choice', 0)
-            total_score += choice
+            
+            if correct_index is not None:
+                # Câu hỏi có đáp án đúng - kiểm tra đúng/sai
+                if choice == correct_index:
+                    correct_count += 1
+            else:
+                # Câu hỏi self-assessment (không có đáp án đúng)
+                # Dùng choice làm điểm tự đánh giá (0-3 -> quy đổi)
+                correct_count += choice / 3  # Normalize về 0-1
         
-        avg_score = total_score / len(answers) if answers else 0
+        # Tính điểm trên thang 10
+        score_10 = round((correct_count / total_questions) * 10, 1) if total_questions > 0 else 0
         
-        # Xác định level
-        if avg_score < 1:
+        # Xác định level dựa trên thang điểm 10
+        if score_10 < 4:
             level = "beginner"
             level_text = "Người mới bắt đầu"
             start_from = 1
-        elif avg_score < 2:
+        elif score_10 < 6:
             level = "elementary"
             level_text = "Cơ bản"
             start_from = 2
-        elif avg_score < 2.5:
+        elif score_10 < 8:
             level = "intermediate"
             level_text = "Trung bình"
             start_from = 3
@@ -705,7 +782,7 @@ Dựa trên kết quả đánh giá đầu vào, hãy đưa ra lời khuyên ng�
 
 Khóa học: {course.title}
 Trình độ: {level_text}
-Điểm đánh giá: {round(avg_score, 1)}/3
+Điểm đánh giá: {score_10}/10
 Các bài học: {', '.join([l['title'] for l in all_lessons[:5]])}
 
 Yêu cầu:
@@ -735,15 +812,15 @@ Chỉ trả về lời khuyên, không giải thích."""
         return {
             "level": level,
             "level_text": level_text,
-            "score": round(avg_score, 1),
-            "max_score": 3,
+            "score": score_10,
+            "max_score": 10,
             "recommendation": recommendation,
             "start_from_lesson": start_from,
             "suggested_lessons": suggested_lessons,
             "personalized_path": {
-                "skip_intro": avg_score >= 1.5,
-                "focus_practice": avg_score >= 2,
-                "challenge_mode": avg_score >= 2.5,
+                "skip_intro": score_10 >= 5,
+                "focus_practice": score_10 >= 7,
+                "challenge_mode": score_10 >= 8.5,
             },
             "ai_powered": use_ai,
         }

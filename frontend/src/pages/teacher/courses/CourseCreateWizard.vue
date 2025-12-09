@@ -1572,7 +1572,8 @@ async function submit() {
     showToast('Đã tạo khóa học thành công!', 'success')
     router.push({ name: 'teacher-course-content', params: { id: courseId } })
   } catch (e: any) {
-    showToast(e?.message || 'Tạo khóa học thất bại', 'error')
+    const errorMsg = e?.response?.data?.detail || e?.message || 'Tạo khóa học thất bại'
+    showToast(errorMsg, 'error')
   } finally {
     submitting.value = false
   }

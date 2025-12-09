@@ -1,6 +1,6 @@
 <template>
   <div class="student-shell" v-if="course">
-    <div class="student-container max-w-6xl">
+    <div class="student-container max-w-[1600px] px-4 lg:px-8">
       <div
         class="mb-4 flex flex-col gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400 sm:flex-row sm:items-center sm:justify-between"
       >
@@ -14,7 +14,7 @@
         <span class="text-center sm:text-right">{{ course.sections?.length || 0 }} chương</span>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(320px,1fr)]">
         <div class="order-1 space-y-4">
           <!-- Locked Lesson Warning -->
           <div v-if="lessonLocked" class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
@@ -224,13 +224,13 @@
           </div>
 
           <!-- Video Player - CHỈ hiển thị khi là video -->
-          <div v-if="!lessonLocked && currentLessonKind === 'video' && hasVideo" class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-lg shadow-slate-200">
+          <div v-if="!lessonLocked && currentLessonKind === 'video' && hasVideo" class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900/5 shadow-xl shadow-slate-300/50">
             <!-- Video từ YouTube -->
             <iframe
               v-if="lessonVideoUrl && isYouTubeUrl(lessonVideoUrl)"
               ref="youtubeIframeRef"
               :src="getYouTubeEmbedUrl(lessonVideoUrl)"
-              class="aspect-video w-full rounded-3xl"
+              class="aspect-video w-full min-h-[400px] lg:min-h-[500px] rounded-3xl"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen
@@ -240,7 +240,7 @@
             <video
               v-else-if="lessonVideoUrl || lessonVideoFile"
               ref="videoRef"
-              class="aspect-video w-full rounded-3xl bg-black object-contain"
+              class="aspect-video w-full min-h-[400px] lg:min-h-[500px] rounded-3xl bg-black object-contain"
               :src="lessonVideoSrc"
               controls
               playsinline
@@ -253,7 +253,7 @@
                 v-if="course.video_url && isYouTubeUrl(course.video_url)"
                 ref="youtubeIframeRef"
                 :src="getYouTubeEmbedUrl(course.video_url)"
-                class="aspect-video w-full rounded-3xl"
+                class="aspect-video w-full min-h-[400px] lg:min-h-[500px] rounded-3xl"
                 frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowfullscreen
@@ -262,7 +262,7 @@
               <video
                 v-else
                 ref="videoRef"
-                class="aspect-video w-full rounded-3xl bg-black object-contain"
+                class="aspect-video w-full min-h-[400px] lg:min-h-[500px] rounded-3xl bg-black object-contain"
                 :src="currentSrc"
                 controls
                 playsinline
@@ -1098,6 +1098,13 @@
     </transition>
   </div>
   <div v-else class="grid min-h-screen place-items-center text-gray-600 dark:text-gray-400">Đang tải…</div>
+  
+  <!-- 🎉 Celebration khi hoàn thành khóa học -->
+  <CourseCompletionCelebration
+    :show="showCelebration"
+    :course-title="course?.title || 'Khóa học'"
+    @close="showCelebration = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -1106,6 +1113,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { courseService, type CourseDetail } from '@/services/course.service'
 import { contentService } from '@/services/content.service'
 import AIHintButton from '@/components/ai/AIHintButton.vue'
+import CourseCompletionCelebration from '@/components/ui/CourseCompletionCelebration.vue'
 import api from '@/config/axios'
 import { showToast } from '@/utils/toast'
 import { getAvatarSrc } from '@/utils/avatar'
@@ -1135,6 +1143,25 @@ const videoWatchedPercentage = ref<number>(0)
 const hasMarkedAsWatched = ref<boolean>(false)
 const WATCHED_THRESHOLD = 75 // Phải xem 75% video mới tính là đã xem
 const autoCompletedLessons = new Set<string>()
+
+function isTodayLocal(dateInput?: string | Date | null): boolean {
+  if (!dateInput) return false
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput)
+  if (Number.isNaN(date.getTime())) return false
+  const now = new Date()
+  return date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+}
+
+function hasProgressToday(progress?: any): boolean {
+  if (!progress) return false
+  return isTodayLocal(progress.last_accessed_at) || isTodayLocal(progress.completed_at)
+}
+
+// Celebration state
+const showCelebration = ref(false)
+const hasShownCelebration = ref(false)
 
 // Làm bài tập ngay trong trang xem bài học
 const exercisePlayer = reactive({
@@ -2011,10 +2038,10 @@ async function loadLessonDetail(lessonId: string | number | null) {
     currentLessonDetail.value = data
     lessonProgress.value = data.progress || null
     
-    // Nếu đã được đánh dấu là watched từ backend, set flag
-    if (lessonProgress.value?.video_watched) {
-      hasMarkedAsWatched.value = true
-    }
+    // Nếu đã được đánh dấu là watched từ backend và đã ghi nhận hôm nay, giữ nguyên flag.
+    // Ngược lại, cho phép cập nhật lại để log hoạt động hôm nay (phục vụ streak/daily goal).
+    const progressTouchedToday = hasProgressToday(lessonProgress.value)
+    hasMarkedAsWatched.value = !!lessonProgress.value?.video_watched && progressTouchedToday
     
     const activeLessonId = String(data.id || lessonId || '')
     
@@ -2052,6 +2079,13 @@ async function autoCompleteNonVideo() {
     return
   }
   const key = String(lessonId)
+  const progressTouchedToday = hasProgressToday(lessonProgress.value)
+  if (progressTouchedToday) {
+    // Đã ghi nhận hoạt động hôm nay cho bài này, không cần gọi API thêm
+    hasMarkedAsWatched.value = !!lessonProgress.value?.video_watched
+    autoCompletedLessons.add(key)
+    return
+  }
   if (autoCompletedLessons.has(key)) {
     return
   }
@@ -2062,6 +2096,7 @@ async function autoCompleteNonVideo() {
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
       lessonProgress.value.completed = completedFlag
+      lessonProgress.value.last_accessed_at = new Date().toISOString()
     }
     hasMarkedAsWatched.value = true
     if (completedFlag) {
@@ -2151,6 +2186,7 @@ async function checkAndMarkVideoWatched(percentage: number) {
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
       lessonProgress.value.completed = completedFlag
+      lessonProgress.value.last_accessed_at = new Date().toISOString()
     }
     if (completedFlag) {
       markDone(currentLesson.value.id)
@@ -2199,6 +2235,7 @@ async function onVideoEnded() {
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
       lessonProgress.value.completed = completedFlag
+      lessonProgress.value.last_accessed_at = new Date().toISOString()
     }
     
     // Đánh dấu lesson đã hoàn thành trong local state NGAY LẬP TỨC (nếu đủ điều kiện)
@@ -2818,6 +2855,14 @@ function markDone(id?: string|number|null){
       // Force reactivity update
       doneSetTrigger.value++
       console.log('UI rebuilt after markDone. Progress:', doneCount.value, '/', totalCount.value, '=', progressPct.value + '%')
+      
+      // 🎉 Kiểm tra hoàn thành 100% và hiển thị celebration
+      if (progressPct.value >= 100 && !hasShownCelebration.value) {
+        hasShownCelebration.value = true
+        setTimeout(() => {
+          showCelebration.value = true
+        }, 500) // Delay nhẹ để animation mượt hơn
+      }
     })
   } else {
     console.log('markDone: Lesson', idStr, 'already in doneSet')

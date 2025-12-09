@@ -17,6 +17,12 @@ class CourseService:
     @transaction.atomic
     def create_course(self, input_data: CreateCourseDomain) -> CourseDomain:
         input_data.validate()
+        
+        # Kiểm tra tên khóa học đã tồn tại chưa
+        if Course.objects.filter(title__iexact=input_data.title.strip()).exists():
+            from content.services.exceptions import DomainValidationError
+            raise DomainValidationError(f"Tên khóa học '{input_data.title}' đã tồn tại. Vui lòng chọn tên khác.")
+        
         subject = None
         if input_data.subject_id:
             subject = Subject.objects.filter(id=input_data.subject_id).first()
