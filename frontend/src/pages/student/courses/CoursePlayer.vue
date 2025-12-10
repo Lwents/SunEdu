@@ -373,15 +373,32 @@
             <div
               v-for="(sec, si) in uiSections"
               :key="sec.id"
-              class="rounded-2xl border border-slate-100 bg-white shadow-sm shadow-slate-100"
+              :class="[
+                'rounded-2xl border shadow-sm shadow-slate-100',
+                sec.locked 
+                  ? 'border-slate-200 bg-slate-50 opacity-75' 
+                  : 'border-slate-100 bg-white'
+              ]"
             >
               <button
                 type="button"
-                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100"
+                :class="[
+                  'flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-semibold',
+                  sec.locked 
+                    ? 'text-slate-400 cursor-not-allowed' 
+                    : 'text-gray-900 dark:text-gray-100'
+                ]"
                 @click="toggle(si)"
               >
-                <span class="flex-1 text-sm">{{ si + 1 }}. {{ sec.title }}</span>
-                <span class="text-xs text-gray-600 dark:text-gray-400">{{ sec.items.length }}</span>
+                <span class="flex-1 text-sm flex items-center gap-2">
+                  {{ si + 1 }}. {{ sec.title }}
+                  <svg v-if="sec.locked" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </span>
+                <span :class="sec.locked ? 'text-xs text-slate-400' : 'text-xs text-gray-600 dark:text-gray-400'">
+                  {{ sec.items.length }}
+                </span>
                 <svg
                   class="h-4 w-4 text-gray-600 dark:text-gray-400 transition"
                   :class="{ 'rotate-180': openIndex === si }"
@@ -406,10 +423,15 @@
                     v-for="(it, li) in sec.items"
                     :key="it.id"
                     :class="[
-                      'flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm transition',
+                      'flex items-center justify-between gap-3 px-4 py-3 text-sm transition',
+                      it.locked 
+                        ? 'cursor-not-allowed bg-slate-50 text-slate-400 opacity-60'
+                        : 'cursor-pointer',
                       String(it.id) === String(currentLesson?.id)
                         ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 ring-1 ring-cyan-100'
-                        : 'bg-white text-gray-900 dark:text-gray-100 hover:bg-slate-50',
+                        : it.locked 
+                          ? 'bg-slate-50 text-slate-400'
+                          : 'bg-white text-gray-900 dark:text-gray-100 hover:bg-slate-50',
                       lessonState(it) === 'next' ? 'ring-1 ring-cyan-50' : '',
                       it.done ? 'font-semibold' : '',
                     ]"
@@ -422,7 +444,10 @@
                           lessonStateClass(lessonState(it))
                         ]"
                       >
-                        <svg v-if="lessonState(it) === 'done'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg v-if="lessonState(it) === 'locked'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <svg v-else-if="lessonState(it) === 'done'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M20 6L9 17l-5-5" />
                         </svg>
                         <svg v-else-if="lessonKind(it) === 'video'" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -447,7 +472,9 @@
                       </span>
                       <div class="flex flex-col">
                         <span class="text-sm font-semibold leading-tight">{{ li + 1 }}. {{ it.title }}</span>
-                        <span class="text-xs text-gray-500">{{ lessonStateLabel(lessonState(it)) }}</span>
+                        <span :class="it.locked ? 'text-xs text-slate-400' : 'text-xs text-gray-500'">
+                          {{ it.locked ? (it.lockedReason || 'Đã khóa') : lessonStateLabel(lessonState(it)) }}
+                        </span>
                         <span class="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                           <span v-if="lessonKind(it) === 'video'">🎬</span>
                           <span v-else-if="lessonKind(it) === 'quiz'">✏️</span>
@@ -1286,7 +1313,7 @@ const lessonLocked = ref(false)
 const unlockReason = ref<string>('')
 const videoWatchedPercentage = ref<number>(0)
 const hasMarkedAsWatched = ref<boolean>(false)
-const WATCHED_THRESHOLD = 75 // Phải xem 75% video mới tính là đã xem
+const WATCHED_THRESHOLD = 80 // Phải xem 80% video mới tính là đã xem
 const autoCompletedLessons = new Set<string>()
 
 function isTodayLocal(dateInput?: string | Date | null): boolean {
@@ -1407,14 +1434,17 @@ type UiLesson = {
   type?: string
   done?: boolean
   kind: LessonKind
+  locked?: boolean
+  lockedReason?: string
 }
-type UiSection = { id: string|number; title: string; items: UiLesson[] }
+type UiSection = { id: string|number; title: string; items: UiLesson[]; locked?: boolean }
 const uiSections = ref<UiSection[]>([])
-type LessonState = LessonKind | 'done' | 'current' | 'next'
+type LessonState = LessonKind | 'done' | 'current' | 'next' | 'locked'
 const lessonStateLabels: Record<LessonState, string> = {
   done: 'Đã hoàn thành',
   current: 'Đang học',
   next: 'Bài tiếp theo',
+  locked: 'Đã khóa',
   video: 'Video bài giảng',
   text: 'Nội dung văn bản',
   image: 'Hình ảnh',
@@ -1425,6 +1455,7 @@ const lessonStateLabels: Record<LessonState, string> = {
 }
 const lessonStateColors: Record<LessonState, string> = {
   done: 'bg-emerald-100 text-emerald-600',
+  locked: 'bg-slate-200 text-slate-500',
   current: 'bg-cyan-600 text-white',
   next: 'bg-cyan-100 text-cyan-600',
   video: 'bg-cyan-50 text-cyan-600',
@@ -1644,18 +1675,53 @@ function resolveLessonKind(lesson: any, introOverride?: LessonIntroMeta | null):
 
 function buildUiSections() {
   if (!course.value) { uiSections.value = []; return }
-  uiSections.value = (course.value.sections || []).map(s => ({
-    id: s.id,
-    title: s.title,
-    items: (s.lessons || []).map(l => ({
-      id: l.id,
-      title: l.title,
-      durationMinutes: l.durationMinutes,
-      type: l.type,
-      done: doneSet.has(String(l.id)),
-      kind: resolveLessonKind(l)
-    }))
-  }))
+  
+  const sections = course.value.sections || []
+  uiSections.value = sections.map((s, si) => {
+    // Check if previous module is completed
+    let moduleLocked = false
+    if (si > 0) {
+      const prevSection = sections[si - 1]
+      const prevLessons = prevSection.lessons || []
+      const prevCompleted = prevLessons.filter(l => doneSet.has(String(l.id))).length
+      moduleLocked = prevCompleted < prevLessons.length
+    }
+    
+    return {
+      id: s.id,
+      title: s.title,
+      locked: moduleLocked,
+      items: (s.lessons || []).map((l, li) => {
+        // Check if lesson is locked
+        let lessonLocked = false
+        let lockedReason = ''
+        
+        // Check module lock
+        if (moduleLocked) {
+          lessonLocked = true
+          lockedReason = `Hoàn thành ${sections[si - 1].title} trước`
+        } else if (li > 0) {
+          // Check previous lesson in same module
+          const prevLesson = s.lessons[li - 1]
+          if (!doneSet.has(String(prevLesson.id))) {
+            lessonLocked = true
+            lockedReason = `Hoàn thành bài trước: ${prevLesson.title}`
+          }
+        }
+        
+        return {
+          id: l.id,
+          title: l.title,
+          durationMinutes: l.durationMinutes,
+          type: l.type,
+          done: doneSet.has(String(l.id)),
+          kind: resolveLessonKind(l),
+          locked: lessonLocked,
+          lockedReason
+        }
+      })
+    }
+  })
 }
 
 function rebuildAndKeepCursor(preferredId: any) {
@@ -2120,6 +2186,7 @@ function formatDuration(min?: number){
 
 function lessonState(lesson: UiLesson): LessonState {
   const idStr = String(lesson.id)
+  if (lesson.locked) return 'locked'
   if (lesson.done) return 'done'
   if (String(currentLesson.value?.id || '') === idStr) return 'current'
   if (nextLesson.value && String(nextLesson.value.id) === idStr) return 'next'
@@ -2254,9 +2321,18 @@ async function autoCompleteNonVideo() {
 }
 
 async function goToLesson(si: number, li: number){
+  const lesson = uiSections.value[si]?.items[li]
+  if (!lesson) return
+  
+  // Check if lesson is locked
+  if (lesson.locked) {
+    showToast(lesson.lockedReason || 'Bài học này đã bị khóa. Bạn cần hoàn thành các bài học trước đó.', 'warning')
+    return
+  }
+  
   cur.value = { si, li }
   openIndex.value = si
-  const id = uiSections.value[si]?.items[li]?.id
+  const id = lesson.id
   if (id != null) {
     await loadLessonDetail(id)
     router.replace({ params: { ...route.params, lessonId: String(id) } })
@@ -2314,7 +2390,7 @@ function onVideoTimeUpdate() {
 }
 
 async function checkAndMarkVideoWatched(percentage: number) {
-  // Chỉ đánh dấu một lần khi đạt 75%
+  // Chỉ đánh dấu một lần khi đạt 80%
   if (hasMarkedAsWatched.value || percentage < WATCHED_THRESHOLD) {
     return
   }
@@ -2322,20 +2398,59 @@ async function checkAndMarkVideoWatched(percentage: number) {
   if (!currentLesson.value?.id) return
   
   hasMarkedAsWatched.value = true
+  const lessonId = String(currentLesson.value.id)
+  
   try {
     const completedFlag = currentLessonExercises.value.length === 0 || lessonProgress.value?.exercise_completed
     await contentService.updateLessonProgress(currentLesson.value.id, {
       video_watched: true,
       completed: completedFlag,
     })
+    
+    // Cập nhật local state
     if (lessonProgress.value) {
       lessonProgress.value.video_watched = true
       lessonProgress.value.completed = completedFlag
       lessonProgress.value.last_accessed_at = new Date().toISOString()
     }
+    
+    // Mark done và reload course data để cập nhật UI ngay
     if (completedFlag) {
-      markDone(currentLesson.value.id)
+      markDone(lessonId)
+      
+      // Reload course data để cập nhật UI ngay lập tức (không cần F5)
+      try {
+        const cid = courseId.value
+        if (cid) {
+          const { data } = await api.get(`/student/courses/${cid}/`, {
+            params: { _t: Date.now() }
+          })
+          
+          if (data && data.sections) {
+            course.value = data
+            
+            // Sync doneSet từ backend để đảm bảo consistency
+            doneSet.clear()
+            data.sections.forEach((sec: any) => {
+              sec.lessons?.forEach((l: any) => {
+                if (l.completed) {
+                  doneSet.add(String(l.id))
+                }
+              })
+            })
+            doneSetTrigger.value++
+            
+            // Rebuild UI sections với data mới
+            await nextTick()
+            rebuildAndKeepCursor(lessonId)
+          }
+        }
+      } catch (reloadError) {
+        console.error('Error reloading course data:', reloadError)
+        // Vẫn tiếp tục dù reload fail
+      }
     }
+    
     console.log(`Video marked as watched at ${percentage.toFixed(1)}%`)
   } catch (e) {
     console.error('Error updating video watched:', e)
@@ -2363,7 +2478,7 @@ async function onVideoEnded() {
     youtubeProgressInterval = null
   }
   
-  // Đảm bảo video được đánh dấu là đã xem (nếu chưa đạt 75% thì đánh dấu luôn khi kết thúc)
+  // Đảm bảo video được đánh dấu là đã xem (nếu chưa đạt 80% thì đánh dấu luôn khi kết thúc)
   if (!hasMarkedAsWatched.value) {
     await checkAndMarkVideoWatched(100) // 100% khi video kết thúc
   }
@@ -3092,7 +3207,8 @@ function markDone(id?: string|number|null){
     // Force reactivity trigger
     doneSetTrigger.value++
     console.log('markDone: Added lesson', idStr, 'to doneSet. New size:', doneSet.size, 'total:', totalCount.value)
-    // Rebuild UI để cập nhật trạng thái 'done' cho các bài học
+    // Rebuild UI để cập nhật trạng thái 'done' và unlock các bài học tiếp theo
+    rebuildAndKeepCursor(idStr)
     nextTick(() => {
       rebuildAndKeepCursor(idStr)
       // Force reactivity update

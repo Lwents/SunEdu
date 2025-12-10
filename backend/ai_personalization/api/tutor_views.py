@@ -442,7 +442,8 @@ class AITutorDailyReportView(APIView):
         from datetime import timedelta
         
         user = request.user
-        today = timezone.now().date()
+        # Sử dụng localdate() để đảm bảo đúng timezone local (Asia/Ho_Chi_Minh)
+        today = timezone.localdate()
         
         # Get student info
         student_name = "con"

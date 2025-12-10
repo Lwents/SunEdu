@@ -136,9 +136,9 @@ class AILearningAnalyzerView(APIView):
             user = request.user
             
             # Lấy các khóa học đã đăng ký
+            # Note: content.Enrollment model không có field 'status', chỉ có student và course
             enrollments = Enrollment.objects.filter(
-                student=user,
-                status='active'
+                student=user
             ).select_related('course')
             
             if not enrollments.exists():
@@ -324,9 +324,9 @@ class AILearningAnalyzerView(APIView):
             })
         
         # 3. Bài tập chưa làm
+        # Note: content.Enrollment không có field status
         pending_exercises = Exercise.objects.filter(
-            lesson__module__course__enrollments__student=user,
-            lesson__module__course__enrollments__status='active'
+            lesson__module__course__enrollments__student=user
         ).exclude(
             attempts__student=user,
             attempts__finished_at__isnull=False
@@ -412,7 +412,9 @@ class AILearningAnalyzerView(APIView):
     
     def _get_daily_goal(self, user):
         """Lấy mục tiêu học tập hàng ngày"""
-        today = timezone.now().date()
+        # SỬ DỤNG localdate() để lấy ngày theo timezone local (Asia/Ho_Chi_Minh)
+        # thay vì timezone.now().date() trả về ngày UTC
+        today = timezone.localdate()
         
         # Đếm bài học đã hoàn thành hôm nay
         # Kiểm tra cả completed_at (ngày hoàn thành) và last_accessed_at (ngày truy cập)
