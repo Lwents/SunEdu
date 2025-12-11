@@ -103,9 +103,9 @@ jobs:
             sudo lsof -ti:5432 | xargs -r sudo kill -9 || true
             sleep 2
             docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
-            docker image prune -f 2>/dev/null || true
-            echo "Building..."
-            docker compose -f "$COMPOSE_FILE" build --no-cache
+            # Giữ cache để rút ngắn thời gian build; chỉ rebuild khi file thay đổi
+            echo "Building (using cache)..."
+            DOCKER_BUILDKIT=1 docker compose -f "$COMPOSE_FILE" build
             echo "Starting services..."
             docker compose -f "$COMPOSE_FILE" up -d
             echo "Waiting for services..."
