@@ -364,7 +364,7 @@ MESSAGE: [nội dung động viên]"""
                     # Fallback nếu AI không hoạt động
                     raise Exception("AI response failed")
         
-    except Exception as e:
+            except Exception as e:
                 logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
                 # Fallback messages
                 if days_missed == 1:
