@@ -584,7 +584,8 @@ Trả về JSON array:
 CHỈ trả về JSON array, không có text khác."""
         else:
             # Tạo bài tập từ topics chung
-        prompt = f"""Tạo {num_exercises} câu hỏi trắc nghiệm cho học sinh lớp {student_grade} về các chủ đề: {', '.join(topics)}
+            prompt = (
+                f"""Tạo {num_exercises} câu hỏi trắc nghiệm cho học sinh lớp {student_grade} về các chủ đề: {', '.join(topics)}
 
 Yêu cầu:
 - Mỗi câu có 4 đáp án A, B, C, D
@@ -605,6 +606,7 @@ Trả về JSON array:
 ]
 
 CHỈ trả về JSON array, không có text khác."""
+            )
 
         messages = [
             {"role": "system", "content": f"Bạn là giáo viên tiểu học tạo bài tập cho học sinh lớp {student_grade}. Trả lời bằng JSON."},
