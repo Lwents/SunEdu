@@ -16,6 +16,7 @@ from activities.services import (
     exercise_stats,
 )
 from activities.services import NotFoundError, ValidationError, PermissionDenied
+from content.models import Enrollment
 
 
 class StudentExamsListView(APIView):
@@ -26,29 +27,78 @@ class StudentExamsListView(APIView):
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request):
-        """Get list of exams"""
+        """Get list of exams - chỉ hiển thị cho học sinh đã mua khóa học cùng lớp"""
         student = request.user
         
         # Get query parameters
         level = request.query_params.get('level', '').strip()  # 'Khối 1–2' or 'Khối 3–5'
         q = request.query_params.get('q', '').strip()
         
-        # Get all exercises
-        exercises = Exercise.objects.all()
+        # Lấy danh sách grade của các khóa học đã mua
+        enrolled_courses = Enrollment.objects.filter(
+            student=student
+        ).select_related('course').values_list('course__grade', flat=True)
         
-        # Apply filters
+        # Normalize grade: "Lớp 1" -> "1", "1" -> "1"
+        def normalize_grade(grade_str):
+            if not grade_str:
+                return None
+            grade_str = str(grade_str).strip()
+            # Nếu có "Lớp" hoặc "lớp", extract số
+            if 'lớp' in grade_str.lower():
+                import re
+                match = re.search(r'\d+', grade_str)
+                if match:
+                    return match.group()
+            return grade_str
+        
+        enrolled_grades = set([normalize_grade(g) for g in enrolled_courses if g])  # Loại bỏ None/empty
+        
+        # Nếu chưa mua khóa học nào, không hiển thị bài kiểm tra nào
+        if not enrolled_grades:
+            return Response([], status=status.HTTP_200_OK)
+        
+        # Get all exercises (có thể có lesson hoặc không)
+        # Chỉ lấy exercise độc lập (không gắn với lesson) hoặc exercise có lesson
+        exercises = Exercise.objects.filter(
+            published=True
+        ).select_related('lesson__module__course')
+        
+        # Loại bỏ exercise gắn với lesson (chỉ giữ exercise độc lập)
+        # Vì exercise gắn với lesson sẽ được làm trong lesson, không phải bài kiểm tra độc lập
+        exercises = exercises.filter(lesson__isnull=True)
+        
+        # Apply search filter
         if q:
             exercises = exercises.filter(title__icontains=q)
         
-        # Note: Exercise model doesn't have grade/level field directly
-        # This would need to be added to the model or stored in metadata
-        
         exams_data = []
         for exercise in exercises:
+            # Lấy grade từ exercise.grade field hoặc từ lesson nếu có
+            exercise_grade = None
+            
+            # Ưu tiên 1: Lấy từ field grade của exercise (nếu có)
+            if exercise.grade:
+                exercise_grade = exercise.grade
+            
+            # Ưu tiên 2: Nếu exercise có lesson, lấy grade từ course
+            elif exercise.lesson and exercise.lesson.module and exercise.lesson.module.course:
+                exercise_grade = exercise.lesson.module.course.grade
+            
+            # Nếu không có grade, bỏ qua (chỉ hiển thị cho người đã mua khóa học)
+            if not exercise_grade:
+                continue
+            
+            # Normalize exercise grade để so sánh
+            normalized_exercise_grade = normalize_grade(exercise_grade)
+            
+            # Chỉ hiển thị exercise có grade match với grade của course đã mua
+            if normalized_exercise_grade not in enrolled_grades:
+                continue
+            
             # Get settings if exists
             duration_sec = 1800  # Default 30 minutes
             pass_score = 12  # Default
-            grade = 'Khối 1–2'  # Default (Exercise model doesn't have grade field)
             
             try:
                 if hasattr(exercise, 'settings') and exercise.settings:
@@ -57,21 +107,35 @@ class StudentExamsListView(APIView):
             except:
                 pass
             
-            # Filter by level if specified (Note: Exercise doesn't have grade, so skip filter for now)
-            # if level and grade != level:
-            #     continue
+            # Map grade to level format (nếu cần)
+            # Grade có thể là "1", "2", "3", "4", "5" hoặc "Lớp 1", "Lớp 2", etc.
+            level_display = exercise_grade
+            if exercise_grade.isdigit():
+                grade_num = int(exercise_grade)
+                if grade_num <= 2:
+                    level_display = 'Khối 1–2'
+                elif grade_num <= 5:
+                    level_display = 'Khối 3–5'
+            
+            # Filter by level if specified
+            if level:
+                if level == 'Khối 1–2' and level_display != 'Khối 1–2':
+                    continue
+                elif level == 'Khối 3–5' and level_display != 'Khối 3–5':
+                    continue
             
             questions_count = Question.objects.filter(exercise=exercise).count()
             
             exams_data.append({
                 'id': str(exercise.id),
                 'title': exercise.title,
-                'level': grade,
+                'level': level_display,
+                'grade': exercise_grade,  # Thêm grade gốc
                 'durationSec': duration_sec,
                 'passScore': pass_score,
                 'questionsCount': questions_count,
-                'status': 'published',  # All exercises are considered published for students
-                'updatedAt': None,  # Exercise model doesn't have updated_at
+                'status': 'published',
+                'updatedAt': None,
             })
         
         return Response(exams_data, status=status.HTTP_200_OK)

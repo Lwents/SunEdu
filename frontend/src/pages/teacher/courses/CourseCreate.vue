@@ -35,7 +35,7 @@
           <span class="label-text">Mức độ</span>
           <select v-model="f.level" class="input-field">
             <option value="basic">Cơ bản</option>
-            <option value="advanced">Mở rộng</option>
+            <option value="advanced">Nâng cao</option>
           </select>
         </label>
         

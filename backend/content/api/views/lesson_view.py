@@ -35,6 +35,53 @@ from content.services.exploration_service import (
 lesson_service = LessonService()
 
 
+def _auto_transcribe_if_needed(lesson_model):
+    """
+    Tự động tạo transcript cho lesson nếu có video nhưng chưa có transcript.
+    Chạy trong background (async) để không block response.
+    """
+    # Kiểm tra có video không
+    has_video = bool(lesson_model.video_url or lesson_model.video_file)
+    
+    # Kiểm tra đã có transcript chưa
+    has_transcript = bool(lesson_model.video_transcript and lesson_model.video_transcript.strip())
+    
+    if has_video and not has_transcript:
+        # Tự động transcribe trong background
+        import threading
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        def transcribe_in_background():
+            try:
+                from content.services.video_transcriber import video_transcriber
+                
+                # Refresh lesson từ DB để đảm bảo có dữ liệu mới nhất
+                lesson_model.refresh_from_db()
+                
+                # Transcribe
+                if lesson_model.video_file:
+                    from django.conf import settings
+                    video_path = str(settings.MEDIA_ROOT / str(lesson_model.video_file))
+                    transcript = video_transcriber.transcribe_video(video_path=video_path)
+                elif lesson_model.video_url:
+                    transcript = video_transcriber.transcribe_video(video_url=lesson_model.video_url)
+                else:
+                    return
+                
+                # Lưu transcript nếu có
+                if transcript:
+                    lesson_model.video_transcript = transcript
+                    lesson_model.save(update_fields=['video_transcript'])
+                    logger.info(f"Auto-transcribed lesson {lesson_model.id}: {len(transcript)} characters")
+            except Exception as e:
+                logger.warning(f"Auto-transcribe failed for lesson {lesson_model.id}: {e}")
+        
+        # Chạy trong thread riêng để không block response
+        thread = threading.Thread(target=transcribe_in_background, daemon=True)
+        thread.start()
+
+
 def _ensure_published_version(lesson_model, author_id=None):
     """
     Make sure a lesson has at least one published version so course publish rule can pass.
@@ -136,6 +183,9 @@ class LessonListCreateView(generics.ListCreateAPIView):
             # Vẫn trả về lesson đã tạo được, chỉ cảnh báo
             lesson_model = Lesson.objects.prefetch_related('versions').get(id=created_domain.id)
         
+        # Tự động tạo transcript nếu có video nhưng chưa có transcript
+        _auto_transcribe_if_needed(lesson_model)
+        
         # Return with new fields
         from content.domains.lesson_domain import LessonDomain
         lesson_domain = LessonDomain.from_model(lesson_model)
@@ -235,6 +285,10 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
         if not updated_domain:
             return Response({"detail": "Cannot update lesson"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Tự động tạo transcript nếu có video nhưng chưa có transcript
+        # (không chỉ khi video thay đổi, mà cả khi update lesson đã có video nhưng chưa có transcript)
+        _auto_transcribe_if_needed(instance)
+        
         # Return updated model data
         from content.domains.lesson_domain import LessonDomain
         lesson_domain = LessonDomain.from_model(instance)
@@ -309,7 +363,7 @@ class LessonTranscribeView(APIView):
             
             if not transcript:
                 return Response(
-                    {"detail": "Không thể tạo transcript. Kiểm tra OPENAI_API_KEY hoặc định dạng video."},
+                    {"detail": "Không thể tạo transcript. Kiểm tra GEMINI_API_KEY hoặc định dạng video. Đối với YouTube, hệ thống sẽ tự động lấy phụ đề nếu có."},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             

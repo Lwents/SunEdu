@@ -96,8 +96,8 @@ class AITutorEngine:
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 800,
+                    "temperature": 0.8,  # Tăng từ 0.7 lên 0.8 để AI sáng tạo hơn trong việc nhận diện bài hát
+                    "maxOutputTokens": 1000,  # Tăng từ 800 lên 1000 để có thể trả lời chi tiết hơn
                 }
             }
         
@@ -528,22 +528,63 @@ CHỈ trả về JSON, không có text khác."""
         self,
         weaknesses: List[Dict],
         student_grade: int = 1,
-        num_exercises: int = 5
+        num_exercises: int = 5,
+        wrong_questions: List[Dict] = None
     ) -> Dict[str, Any]:
         """
-        Tạo bài luyện tập dựa trên điểm yếu
+        Tạo bài luyện tập dựa trên điểm yếu và câu hỏi sai cụ thể
         
         Args:
             weaknesses: Danh sách điểm yếu từ analyze_weaknesses
             student_grade: Lớp học sinh
             num_exercises: Số bài tập cần tạo
+            wrong_questions: Danh sách câu hỏi học sinh làm sai (tùy chọn)
         """
         if not weaknesses:
             return {'success': False, 'exercises': [], 'error': 'No weaknesses provided'}
         
         topics = [w.get('topic', '') for w in weaknesses[:3]]  # Top 3 điểm yếu
         
-        prompt = f"""Tạo {num_exercises} câu hỏi trắc nghiệm cho học sinh lớp {student_grade} về các chủ đề: {', '.join(topics)}
+        # Nếu có wrong_questions, tạo bài tập dựa trên câu sai
+        if wrong_questions and len(wrong_questions) > 0:
+            wrong_questions_text = ""
+            for i, wq in enumerate(wrong_questions[:10], 1):  # Lấy tối đa 10 câu sai
+                wrong_questions_text += f"\n{i}. Câu hỏi: {wq.get('question_text', '')}\n"
+                wrong_questions_text += f"   Học sinh trả lời: {wq.get('student_answer', '')}\n"
+                wrong_questions_text += f"   Đáp án đúng: {wq.get('correct_answer', '')}\n"
+            
+            prompt = f"""Bạn là giáo viên tiểu học. Học sinh lớp {student_grade} đã làm sai các câu hỏi sau:
+
+{wrong_questions_text}
+
+YÊU CẦU:
+1. Phân tích những câu sai này để hiểu học sinh đang gặp khó khăn ở đâu
+2. Tạo {num_exercises} câu hỏi TRẮC NGHIỆM MỚI (không trùng với câu hỏi trên) để giúp học sinh cải thiện điểm yếu
+3. Các câu hỏi mới phải:
+   - Cùng chủ đề/nội dung với câu sai
+   - Độ khó tương đương hoặc dễ hơn một chút
+   - Giúp học sinh hiểu rõ hơn về phần kiến thức này
+   - Mỗi câu có 4 đáp án A, B, C, D
+   - Câu hỏi ngắn gọn, dễ hiểu cho học sinh lớp {student_grade}
+   - Có giải thích ngắn cho đáp án đúng
+
+Trả về JSON array:
+[
+    {{
+        "question": "Câu hỏi mới",
+        "topic": "Chủ đề",
+        "choices": ["A. ...", "B. ...", "C. ...", "D. ..."],
+        "correct_answer": "A",
+        "explanation": "Giải thích ngắn tại sao đáp án này đúng",
+        "difficulty": "easy/medium/hard",
+        "related_wrong_question": "Câu hỏi liên quan đến câu sai số X"
+    }}
+]
+
+CHỈ trả về JSON array, không có text khác."""
+        else:
+            # Tạo bài tập từ topics chung
+            prompt = f"""Tạo {num_exercises} câu hỏi trắc nghiệm cho học sinh lớp {student_grade} về các chủ đề: {', '.join(topics)}
 
 Yêu cầu:
 - Mỗi câu có 4 đáp án A, B, C, D

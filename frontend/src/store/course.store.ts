@@ -19,7 +19,7 @@ function makeMockPool(total = 240): ExamSummary[] {
     const level: ExamLevel = i % 2 ? 'basic' : 'advanced'
     pool.push({
       id: i,
-      title: `${level === 'basic' ? 'Ôn tập cơ bản' : 'Đề mở rộng'} #${i}`,
+      title: `${level === 'basic' ? 'Ôn tập cơ bản' : 'Đề nâng cao'} #${i}`,
       level,
       durationSec: 20 * 60 + (i % 5) * 60,
       passCount: 12 + (i % 5),

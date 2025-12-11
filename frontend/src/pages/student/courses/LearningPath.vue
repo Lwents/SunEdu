@@ -170,38 +170,78 @@
               {{ i <= dailyGoal.streak ? '🔥' : '○' }}
             </span>
           </div>
+          
+          <!-- Restore Streak Button -->
+          <div v-if="dailyGoal.streak === 0 && dailyGoal.streak_restoration?.can_restore" class="mt-4 relative z-10">
+            <button
+              @click="restoreStreak"
+              :disabled="restoringStreak"
+              class="w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-orange-600 hover:to-amber-600 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="restoringStreak" class="inline-flex items-center gap-2">
+                <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                Đang khôi phục...
+              </span>
+              <span v-else class="inline-flex items-center gap-2">
+                🔄 Khôi phục streak ({{ dailyGoal.streak_restoration?.remaining || 0 }}/2 lượt còn lại)
+              </span>
+            </button>
+            <p class="mt-1 text-xs text-orange-500 text-center">
+              Bạn có thể khôi phục streak tối đa 2 lần/tháng
+            </p>
+          </div>
+          <div v-else-if="dailyGoal.streak === 0 && dailyGoal.streak_restoration && !dailyGoal.streak_restoration.can_restore" class="mt-4 relative z-10">
+            <p class="text-xs text-orange-500 text-center">
+              Đã hết lượt khôi phục trong tháng này ({{ dailyGoal.streak_restoration.count_this_month || 0 }}/2)
+            </p>
+          </div>
         </div>
       </div>
       
-      <!-- Streak Celebration Modal -->
+      <!-- Streak Celebration Modal - Hiệu ứng lửa cháy như thật -->
       <Teleport to="body">
-        <div v-if="showStreakCelebration" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70" @click="closeStreakCelebration">
-          <!-- Fire explosion background -->
-          <div class="fire-explosion">
-            <div v-for="i in 50" :key="i" class="explosion-particle" :style="{ 
-              '--angle': `${(i * 7.2)}deg`, 
-              '--distance': `${150 + Math.random() * 200}px`,
-              '--delay': `${Math.random() * 0.3}s`,
-              '--size': `${20 + Math.random() * 30}px`
-            }"></div>
+        <Transition name="streak-fade">
+          <div v-if="showStreakCelebration" class="streak-overlay" @click="closeStreakCelebration">
+            <!-- Realistic Fire Effect -->
+            <div class="realistic-fire-container">
+              <!-- Fire base glow -->
+              <div class="fire-base-glow"></div>
+              
+              <!-- Main fire -->
+              <div class="realistic-fire">
+                <div class="fire-flame flame-main"></div>
+                <div class="fire-flame flame-left"></div>
+                <div class="fire-flame flame-right"></div>
+                <div class="fire-flame flame-center"></div>
+                <div class="fire-flame flame-inner"></div>
+              </div>
+              
+              <!-- Sparks -->
+              <div class="fire-sparks">
+                <div v-for="i in 15" :key="'sp-'+i" class="spark" :style="{ '--i': i }"></div>
+              </div>
+              
+              <!-- Heat distortion -->
+              <div class="heat-wave"></div>
+            </div>
+            
+            <!-- Content -->
+            <div class="streak-modal-content" @click.stop>
+              <h2 class="streak-title-text">🔥 Streak!</h2>
+              
+              <div class="streak-number-display">
+                <span class="streak-num">{{ celebratedStreak }}</span>
+                <span class="streak-label">ngày liên tiếp</span>
+              </div>
+              
+              <p class="streak-msg">{{ getStreakMessage(celebratedStreak) }}</p>
+              
+              <button class="streak-btn" @click="closeStreakCelebration">
+                Tiếp tục học →
+              </button>
+            </div>
           </div>
-          
-          <!-- Celebration content -->
-          <div class="relative z-10 text-center animate-bounce-in" @click.stop>
-            <div class="text-8xl mb-4 fire-icon-large">🔥</div>
-            <h2 class="text-4xl font-extrabold text-white mb-2">Streak!</h2>
-            <p class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 mb-4">
-              {{ dailyGoal.streak }} ngày
-            </p>
-            <p class="text-xl text-orange-200 mb-6">Tuyệt vời! Tiếp tục phát huy nhé! 🌟</p>
-            <button 
-              class="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform"
-              @click="closeStreakCelebration"
-            >
-              Tiếp tục học
-            </button>
-          </div>
-        </div>
+        </Transition>
       </Teleport>
 
       <!-- AI Weaknesses (Điểm yếu cần cải thiện) -->
@@ -217,19 +257,40 @@
           <div
             v-for="(weakness, idx) in aiWeaknesses.slice(0, 4)"
             :key="idx"
-            class="flex items-center gap-3 rounded-xl bg-white p-4 border border-red-100 shadow-sm hover:shadow-md transition-all cursor-pointer"
-            @click="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
+            class="rounded-xl bg-white p-4 border border-red-100 shadow-sm"
           >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl">
-              📖
+            <div 
+              class="flex items-center gap-3 mb-3 cursor-pointer"
+              @click="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
+            >
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl">
+                📖
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-slate-900 truncate">{{ weakness.topic }}</p>
+                <p class="text-xs text-slate-500">Điểm: {{ weakness.score }}% · {{ weakness.course }}</p>
+                <p v-if="weakness.wrong_questions_count" class="text-xs text-red-600 mt-1">
+                  {{ weakness.wrong_questions_count }} câu sai
+                </p>
+              </div>
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-slate-900 truncate">{{ weakness.topic }}</p>
-              <p class="text-xs text-slate-500">Điểm: {{ weakness.score }}% · {{ weakness.course }}</p>
+            <div class="flex gap-2">
+              <button
+                v-if="weakness.can_retry !== false"
+                @click.stop="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
+                class="flex-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition-colors"
+              >
+                Ôn lại
+              </button>
+              <button
+                v-if="weakness.wrong_questions && weakness.wrong_questions.length > 0"
+                @click.stop="createImprovementExercise(weakness)"
+                :disabled="creatingExercise"
+                class="flex-1 rounded-lg bg-purple-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ creatingExercise ? 'Đang tạo...' : '📝 Làm bài cải thiện' }}
+              </button>
             </div>
-            <span class="shrink-0 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white">
-              Ôn lại
-            </span>
           </div>
         </div>
       </div>
@@ -466,7 +527,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-5">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-extrabold text-slate-900">Khối 3–5 (Nâng cao)</h2>
-            <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">Mở rộng</span>
+            <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">Nâng cao</span>
           </div>
           <p class="mt-2 text-slate-700">Hệ thống hoá & luyện thi: Toán, TV, Anh + Khoa học/Lịch sử.</p>
           <ol class="mt-3 space-y-1 text-sm text-slate-700 list-decimal list-inside">
@@ -698,7 +759,10 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { courseService } from '@/services/course.service'
 import { aiLearningService, type AISuggestion, type AIWeakness, type AIAchievement, type DailyGoal } from '@/services/ai-learning.service'
+import { aiTutorService } from '@/services/ai-tutor.service'
 import AIPractice from '@/components/ai/AIPractice.vue'
+import http from '@/config/axios'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const route = useRoute()
@@ -732,20 +796,127 @@ const aiAchievements = ref<AIAchievement[]>([])
 const dailyGoal = ref<DailyGoal>({ target: 2, completed: 0, streak: 0 })
 const serverAiMessage = ref('')
 
-// Streak Celebration
+// Streak Celebration - Lưu vào localStorage để chỉ hiện 1 lần khi streak tăng
 const showStreakCelebration = ref(false)
-const previousStreak = ref(0)
+const celebratedStreak = ref(0) // Streak đang celebrate (để hiển thị trong modal)
+const STREAK_STORAGE_KEY = 'smartedu_last_celebrated_streak'
+const restoringStreak = ref(false)
+const creatingExercise = ref(false) // Trạng thái đang tạo bài tập cải thiện
+
+function getLastCelebratedStreak(): { streak: number; date: string } | null {
+  try {
+    const stored = localStorage.getItem(STREAK_STORAGE_KEY)
+    if (stored) {
+      return JSON.parse(stored)
+    }
+  } catch (e) {
+    console.error('Error reading streak from localStorage:', e)
+  }
+  return null
+}
+
+function saveLastCelebratedStreak(streak: number) {
+  try {
+    const today = new Date().toDateString()
+    localStorage.setItem(STREAK_STORAGE_KEY, JSON.stringify({ streak, date: today }))
+  } catch (e) {
+    console.error('Error saving streak to localStorage:', e)
+  }
+}
 
 function checkStreakCelebration(newStreak: number) {
-  // Show celebration when streak increases
-  if (newStreak > previousStreak.value && newStreak > 0) {
+  if (newStreak <= 0) return
+  
+  const stored = getLastCelebratedStreak()
+  const today = new Date().toDateString()
+  
+  // Hiện celebration nếu:
+  // 1. Chưa bao giờ celebrate (stored = null)
+  // 2. Ngày mới và streak > 0 (reset mỗi ngày)
+  // 3. Streak tăng trong cùng ngày
+  const shouldCelebrate = 
+    !stored || 
+    stored.date !== today || 
+    newStreak > stored.streak
+  
+  if (shouldCelebrate) {
+    celebratedStreak.value = newStreak
     showStreakCelebration.value = true
+    saveLastCelebratedStreak(newStreak)
   }
-  previousStreak.value = newStreak
 }
 
 function closeStreakCelebration() {
   showStreakCelebration.value = false
+}
+
+// Expose để test trong console: window.testStreakCelebration()
+if (typeof window !== 'undefined') {
+  (window as any).testStreakCelebration = () => {
+    localStorage.removeItem(STREAK_STORAGE_KEY)
+    celebratedStreak.value = dailyGoal.value.streak || 1
+    showStreakCelebration.value = true
+  }
+}
+
+function getStreakMessage(streak: number): string {
+  if (streak >= 30) return '🏆 Huyền thoại! Một tháng học liên tục!'
+  if (streak >= 14) return '🌟 Siêu sao! 2 tuần không nghỉ!'
+  if (streak >= 7) return '💪 Tuyệt vời! Cả tuần kiên trì!'
+  if (streak >= 3) return '🔥 Đang cháy! Giữ vững nhịp độ nhé!'
+  return '✨ Khởi đầu tốt! Tiếp tục phát huy!'
+}
+
+async function restoreStreak() {
+  if (restoringStreak.value) return
+  
+  restoringStreak.value = true
+  try {
+    const { data } = await http.post('/student/ai/learning/restore-streak/')
+    
+    if (data.success) {
+      showToast(`🎉 ${data.message}`, 'success')
+      // Reload AI analysis để cập nhật streak
+      await loadAIAnalysis()
+    } else {
+      showToast(data.error || 'Không thể khôi phục streak', 'error')
+    }
+  } catch (e: any) {
+    console.error('Restore streak error:', e)
+    const errorMsg = e?.response?.data?.error || e?.response?.data?.detail || 'Không thể khôi phục streak'
+    showToast(errorMsg, 'error')
+  } finally {
+    restoringStreak.value = false
+  }
+}
+
+// Particle styles for animation
+function getSparkStyle(index: number) {
+  const angle = (index * 12) + Math.random() * 10
+  const distance = 100 + Math.random() * 150
+  const delay = Math.random() * 0.5
+  const duration = 1 + Math.random() * 0.5
+  const size = 4 + Math.random() * 4
+  return {
+    '--angle': `${angle}deg`,
+    '--distance': `${distance}px`,
+    '--delay': `${delay}s`,
+    '--duration': `${duration}s`,
+    '--size': `${size}px`,
+  }
+}
+
+function getEmberStyle(index: number) {
+  const x = -50 + Math.random() * 100
+  const delay = Math.random() * 2
+  const duration = 2 + Math.random() * 2
+  const size = 6 + Math.random() * 8
+  return {
+    '--x': `${x}px`,
+    '--delay': `${delay}s`,
+    '--duration': `${duration}s`,
+    '--size': `${size}px`,
+  }
 }
 
 // Assessment Modal
@@ -936,10 +1107,54 @@ async function loadPaths() {
   }
 }
 
+async function createImprovementExercise(weakness: AIWeakness) {
+  if (creatingExercise.value) return
+  
+  creatingExercise.value = true
+  try {
+    // Lấy wrong_questions từ weakness
+    const wrongQuestions = weakness.wrong_questions || []
+    
+    if (wrongQuestions.length === 0) {
+      showToast('Không có câu hỏi sai để tạo bài tập cải thiện', 'warning')
+      return
+    }
+    
+    // Gọi API để tạo bài tập từ câu sai
+    const response = await aiTutorService.generatePractice(
+      [{ topic: weakness.topic, subject: weakness.course }],
+      15, // 15 câu
+      wrongQuestions // Truyền câu hỏi sai
+    )
+    
+    if (response.success && response.exercises && response.exercises.length > 0) {
+      // Lưu bài tập vào localStorage hoặc state để hiển thị
+      // Có thể mở modal hoặc chuyển đến trang làm bài
+      showToast(`Đã tạo ${response.exercises.length} câu hỏi cải thiện!`, 'success')
+      
+      // TODO: Hiển thị bài tập cho học sinh làm
+      // Có thể mở modal hoặc chuyển đến trang làm bài tập
+      console.log('Practice exercises:', response.exercises)
+      
+      // Có thể sử dụng component AIPractice để hiển thị
+      if (practiceRef.value) {
+        showPractice.value = true
+        // Có thể truyền exercises vào component
+      }
+    } else {
+      showToast('Không thể tạo bài tập cải thiện. Vui lòng thử lại sau!', 'error')
+    }
+  } catch (e: any) {
+    console.error('Create improvement exercise error:', e)
+    showToast(e?.response?.data?.error || 'Có lỗi xảy ra khi tạo bài tập', 'error')
+  } finally {
+    creatingExercise.value = false
+  }
+}
+
 async function loadAIAnalysis() {
   try {
     const data = await aiLearningService.getAnalysis()
-    console.log('AI Analysis data:', data) // Debug
     if (data.suggestions) {
       aiSuggestions.value = data.suggestions
     }
@@ -950,7 +1165,6 @@ async function loadAIAnalysis() {
       aiAchievements.value = data.achievements
     }
     if (data.daily_goal) {
-      console.log('Daily goal from API:', data.daily_goal) // Debug
       dailyGoal.value = data.daily_goal
       // Check if streak increased to show celebration
       checkStreakCelebration(data.daily_goal.streak || 0)
@@ -1097,26 +1311,16 @@ watch(() => route.path, async (newPath) => {
 </script>
 
 <style scoped>
-/* Fire icon animation */
+/* Fire icon animation in streak card */
 .fire-icon {
   display: inline-block;
   animation: fireWobble 0.3s ease-in-out infinite alternate;
   filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.8));
 }
 
-.fire-icon-large {
-  animation: firePulse 0.5s ease-in-out infinite alternate;
-  filter: drop-shadow(0 0 30px rgba(251, 146, 60, 1)) drop-shadow(0 0 60px rgba(239, 68, 68, 0.8));
-}
-
 @keyframes fireWobble {
   0% { transform: scale(1) rotate(-5deg); }
   100% { transform: scale(1.15) rotate(5deg); }
-}
-
-@keyframes firePulse {
-  0% { transform: scale(1); filter: drop-shadow(0 0 30px rgba(251, 146, 60, 1)); }
-  100% { transform: scale(1.1); filter: drop-shadow(0 0 50px rgba(239, 68, 68, 1)); }
 }
 
 /* Fire particles in streak card */
@@ -1141,17 +1345,9 @@ watch(() => route.path, async (newPath) => {
 }
 
 @keyframes fireRise {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 0.6;
-  }
-  100% {
-    transform: translateY(-100px) scale(0.3);
-    opacity: 0;
-  }
+  0% { transform: translateY(0) scale(1); opacity: 0.8; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(-100px) scale(0.3); opacity: 0; }
 }
 
 /* Fire day glow */
@@ -1165,53 +1361,388 @@ watch(() => route.path, async (newPath) => {
   100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
 }
 
-/* Fire explosion for celebration */
-.fire-explosion {
-  position: absolute;
+/* ============ REALISTIC FIRE CELEBRATION ============ */
+
+.streak-fade-enter-active { animation: fadeIn 0.4s ease-out; }
+.streak-fade-leave-active { animation: fadeOut 0.3s ease-in; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* Overlay */
+.streak-overlay {
+  position: fixed;
   inset: 0;
+  z-index: 100;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: 
+    radial-gradient(ellipse at center bottom, rgba(80, 30, 0, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at center, #0a0500 0%, #000000 100%);
+  overflow: hidden;
+}
+
+/* ===== REALISTIC FIRE - TO VÀ ĐẸP ===== */
+.realistic-fire-container {
+  position: relative;
+  width: 320px;
+  height: 380px;
+  margin-bottom: 0;
+}
+
+/* Base glow on ground - ánh sáng phản chiếu */
+.fire-base-glow {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 350px;
+  height: 100px;
+  background: radial-gradient(ellipse, 
+    rgba(255, 120, 0, 0.8) 0%, 
+    rgba(255, 80, 0, 0.5) 30%, 
+    rgba(255, 50, 0, 0.2) 60%, 
+    transparent 80%
+  );
+  filter: blur(20px);
+  animation: baseGlow 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes baseGlow {
+  0% { opacity: 0.7; transform: translateX(-50%) scaleX(0.95); }
+  100% { opacity: 1; transform: translateX(-50%) scaleX(1.05); }
+}
+
+/* Main fire container */
+.realistic-fire {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 300px;
+}
+
+/* Individual flames - rõ nét hơn */
+.fire-flame {
+  position: absolute;
+  bottom: 0;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+/* Main large flame - ngọn lửa chính TO */
+.flame-main {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 280px;
+  background: linear-gradient(to top, 
+    #cc2200 0%,
+    #ff3300 10%, 
+    #ff5500 25%, 
+    #ff7700 40%, 
+    #ff9900 55%, 
+    #ffbb00 70%, 
+    #ffdd00 85%,
+    #ffff44 95%,
+    transparent 100%
+  );
+  filter: blur(1px);
+  animation: flameMain 0.15s ease-in-out infinite alternate;
+  box-shadow: 
+    0 0 60px 30px rgba(255, 100, 0, 0.5),
+    0 0 100px 60px rgba(255, 50, 0, 0.3),
+    0 0 140px 90px rgba(255, 30, 0, 0.2);
+}
+
+@keyframes flameMain {
+  0% { 
+    height: 270px; 
+    width: 135px;
+    transform: translateX(-50%) skewX(-3deg);
+  }
+  100% { 
+    height: 290px; 
+    width: 145px;
+    transform: translateX(-50%) skewX(3deg);
+  }
+}
+
+/* Left flame - ngọn lửa trái */
+.flame-left {
+  left: -10px;
+  width: 90px;
+  height: 200px;
+  background: linear-gradient(to top, 
+    #dd2200 0%,
+    #ff4400 20%, 
+    #ff6600 45%, 
+    #ff8800 70%, 
+    #ffaa00 90%,
+    transparent 100%
+  );
+  filter: blur(1px);
+  animation: flameLeft 0.2s ease-in-out infinite alternate;
+  box-shadow: 0 0 40px 15px rgba(255, 80, 0, 0.4);
+}
+
+@keyframes flameLeft {
+  0% { 
+    height: 190px;
+    transform: skewX(8deg) rotate(-8deg);
+  }
+  100% { 
+    height: 210px;
+    transform: skewX(-4deg) rotate(4deg);
+  }
+}
+
+/* Right flame - ngọn lửa phải */
+.flame-right {
+  right: -10px;
+  width: 90px;
+  height: 200px;
+  background: linear-gradient(to top, 
+    #dd2200 0%,
+    #ff4400 20%, 
+    #ff6600 45%, 
+    #ff8800 70%, 
+    #ffaa00 90%,
+    transparent 100%
+  );
+  filter: blur(1px);
+  animation: flameRight 0.18s ease-in-out infinite alternate;
+  box-shadow: 0 0 40px 15px rgba(255, 80, 0, 0.4);
+}
+
+@keyframes flameRight {
+  0% { 
+    height: 195px;
+    transform: skewX(-8deg) rotate(8deg);
+  }
+  100% { 
+    height: 215px;
+    transform: skewX(4deg) rotate(-4deg);
+  }
+}
+
+/* Center bright flame - lõi sáng */
+.flame-center {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 220px;
+  background: linear-gradient(to top, 
+    #ff5500 0%, 
+    #ff8800 20%, 
+    #ffaa00 40%, 
+    #ffcc00 60%, 
+    #ffee00 80%,
+    #ffff88 95%,
+    transparent 100%
+  );
+  animation: flameCenter 0.12s ease-in-out infinite alternate;
+  filter: blur(2px);
+  box-shadow: 0 0 30px 10px rgba(255, 200, 0, 0.5);
+}
+
+@keyframes flameCenter {
+  0% { height: 210px; opacity: 0.9; }
+  100% { height: 230px; opacity: 1; }
+}
+
+/* Inner hottest part - phần nóng nhất */
+.flame-inner {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 10px;
+  width: 50px;
+  height: 150px;
+  background: linear-gradient(to top, 
+    #ffbb00 0%, 
+    #ffdd00 30%, 
+    #ffff00 60%,
+    #ffffaa 85%,
+    #ffffff 95%,
+    transparent 100%
+  );
+  animation: flameInner 0.1s ease-in-out infinite alternate;
+  filter: blur(3px);
+  box-shadow: 0 0 40px 15px rgba(255, 255, 200, 0.6);
+}
+
+@keyframes flameInner {
+  0% { height: 140px; }
+  100% { height: 160px; }
+}
+
+/* Sparks - tia lửa bay lên */
+.fire-sparks {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 250px;
   pointer-events: none;
 }
 
-.explosion-particle {
+.spark {
   position: absolute;
-  width: var(--size, 24px);
-  height: var(--size, 24px);
-  background: radial-gradient(circle, #fbbf24 0%, #f97316 40%, #ef4444 70%, transparent 100%);
+  width: 6px;
+  height: 6px;
+  background: radial-gradient(circle, #fff 0%, #ffdd00 50%, #ff8800 100%);
   border-radius: 50%;
-  animation: explode 1.5s ease-out infinite;
-  animation-delay: var(--delay, 0s);
+  box-shadow: 0 0 10px 4px rgba(255, 200, 0, 0.9);
+  animation: sparkFly 1.5s ease-out infinite;
+  animation-delay: calc(var(--i) * 0.1s);
+  left: calc(15% + var(--i) * 5%);
 }
 
-@keyframes explode {
+@keyframes sparkFly {
   0% {
-    transform: rotate(var(--angle, 0deg)) translateX(0) scale(1);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
   100% {
-    transform: rotate(var(--angle, 0deg)) translateX(var(--distance, 200px)) scale(0.2);
+    transform: translateY(-300px) translateX(calc((var(--i) - 7) * 25px)) scale(0);
     opacity: 0;
   }
 }
 
-/* Bounce in animation */
-.animate-bounce-in {
-  animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+/* Heat distortion wave - bỏ */
+.heat-wave {
+  display: none;
 }
 
-@keyframes bounceIn {
-  0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
+/* ===== CONTENT ===== */
+.streak-modal-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  margin-top: -60px;
+  animation: contentSlideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes contentSlideUp {
+  0% { transform: translateY(50px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.streak-title-text {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 
+    0 0 20px rgba(255, 150, 0, 1),
+    0 0 40px rgba(255, 100, 0, 0.8),
+    0 0 60px rgba(255, 50, 0, 0.6),
+    0 0 80px rgba(255, 30, 0, 0.4);
+  margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+  animation: titlePulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes titlePulse {
+  0% { 
+    text-shadow: 0 0 20px rgba(255, 150, 0, 1), 0 0 40px rgba(255, 100, 0, 0.8); 
     transform: scale(1);
-    opacity: 1;
   }
+  100% { 
+    text-shadow: 0 0 30px rgba(255, 200, 0, 1), 0 0 60px rgba(255, 120, 0, 1), 0 0 100px rgba(255, 80, 0, 0.8); 
+    transform: scale(1.02);
+  }
+}
+
+.streak-number-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.streak-num {
+  font-size: 9rem;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(180deg, 
+    #ffffff 0%, 
+    #fff8e0 20%,
+    #ffdd00 40%, 
+    #ffaa00 60%, 
+    #ff6600 80%, 
+    #ff3300 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(255, 150, 0, 0.8)) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+  animation: numBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+@keyframes numBounce {
+  0% { transform: scale(0) rotate(-10deg); }
+  60% { transform: scale(1.3) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.streak-label {
+  font-size: 1.5rem;
+  color: rgba(255, 220, 180, 1);
+  font-weight: 700;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.streak-msg {
+  font-size: 1.25rem;
+  color: rgba(255, 230, 200, 1);
+  margin-bottom: 2rem;
+  font-weight: 500;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  animation: msgFade 0.5s ease-out 0.5s both;
+}
+
+@keyframes msgFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.streak-btn {
+  padding: 1.25rem 3rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #ff7700 0%, #ff5500 50%, #dd3300 100%);
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  box-shadow: 
+    0 6px 20px rgba(255, 100, 0, 0.6),
+    0 0 40px rgba(255, 100, 0, 0.4),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  animation: btnAppear 0.5s ease-out 0.6s both;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@keyframes btnAppear {
+  from { opacity: 0; transform: translateY(30px) scale(0.8); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.streak-btn:hover {
+  transform: scale(1.08) translateY(-3px);
+  box-shadow: 
+    0 10px 35px rgba(255, 100, 0, 0.7),
+    0 0 60px rgba(255, 100, 0, 0.5);
+}
+
+.streak-btn:active {
+  transform: scale(0.98);
 }
 </style>

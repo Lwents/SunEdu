@@ -7,7 +7,13 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.cache import cache
 from .models import LearningEvent, UserSkillMastery, ContentSkill
-from .tasks import update_mastery_async, regenerate_recommendations
+# Import tasks only if they exist (for backward compatibility)
+try:
+    from .tasks import update_mastery_async, regenerate_recommendations
+except ImportError:
+    # Tasks may not exist in all versions
+    update_mastery_async = None
+    regenerate_recommendations = None
 import logging
 
 logger = logging.getLogger(__name__)
@@ -44,13 +50,16 @@ def process_learning_event(sender, instance, created, **kwargs):
         attempts = instance.detail.get('attempts', 1)
         
         # Queue async task for heavy computation
-        update_mastery_async.delay(
-            user_id=str(instance.user.id),
-            skills=skills,
-            correct=correct,
-            time_spent=time_spent,
-            attempts=attempts
-        )
+        if update_mastery_async:
+            update_mastery_async.delay(
+                user_id=str(instance.user.id),
+                skills=skills,
+                correct=correct,
+                time_spent=time_spent,
+                attempts=attempts
+            )
+        else:
+            logger.warning("update_mastery_async task not available")
         
         # Invalidate user's recommendation cache
         cache_key = f"recommendations:{instance.user.id}"
@@ -77,11 +86,14 @@ def on_mastery_update(sender, instance, created, **kwargs):
     if hasattr(instance, '_old_mastery'):
         delta = abs(instance.mastery - instance._old_mastery)
         if delta > 0.2:  # 20% change threshold
-            regenerate_recommendations.delay(
-                user_id=str(instance.user.id),
-                trigger_skill=instance.skill
-            )
-            logger.info(f"Queued recommendation regen for {instance.user.id}")
+            if regenerate_recommendations:
+                regenerate_recommendations.delay(
+                    user_id=str(instance.user.id),
+                    trigger_skill=instance.skill
+                )
+                logger.info(f"Queued recommendation regen for {instance.user.id}")
+            else:
+                logger.warning("regenerate_recommendations task not available")
 
 
 # Store old mastery value for comparison

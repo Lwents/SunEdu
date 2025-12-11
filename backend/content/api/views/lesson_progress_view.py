@@ -80,27 +80,56 @@ class LessonProgressView(APIView):
 class LessonUnlockCheckView(APIView):
     """
     GET /api/lessons/{lesson_id}/unlock-check/ - Check if lesson can be unlocked
+    Logic: 
+    1. Tất cả bài học trong module trước phải hoàn thành
+    2. Bài học trước trong cùng module phải hoàn thành
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, lesson_id):
-        """Check if lesson can be unlocked (previous lesson completed)"""
+        """Check if lesson can be unlocked"""
         lesson = get_object_or_404(models.Lesson, id=lesson_id)
-        
-        # Get previous lesson in same module
-        previous_lesson = models.Lesson.objects.filter(
-            module=lesson.module,
-            position__lt=lesson.position
-        ).order_by('-position').first()
+        student = request.user
         
         can_unlock = True
         reason = None
         
+        # 1. Check module trước (chương trước) - phải hoàn thành HẾT
+        current_module = lesson.module
+        previous_module = models.Module.objects.filter(
+            course=current_module.course,
+            position__lt=current_module.position
+        ).order_by('-position').first()
+        
+        if previous_module:
+            # Đếm số bài học đã hoàn thành trong module trước
+            total_lessons_in_prev = models.Lesson.objects.filter(
+                module=previous_module,
+                published=True
+            ).count()
+            
+            completed_lessons_in_prev = models.LessonProgress.objects.filter(
+                lesson__module=previous_module,
+                student=student,
+                completed=True
+            ).count()
+            
+            if total_lessons_in_prev > 0 and completed_lessons_in_prev < total_lessons_in_prev:
+                can_unlock = False
+                reason = f"Bạn cần hoàn thành tất cả bài học trong {previous_module.title} trước khi xem {current_module.title}"
+        
+        # 2. Check bài học trước trong cùng module
+        if can_unlock:
+            previous_lesson = models.Lesson.objects.filter(
+                module=lesson.module,
+                position__lt=lesson.position,
+                published=True
+            ).order_by('-position').first()
+        
         if previous_lesson:
-            # Check if previous lesson is completed
             prev_progress = models.LessonProgress.objects.filter(
                 lesson=previous_lesson,
-                student=request.user
+                    student=student
             ).first()
             
             if not prev_progress or not prev_progress.completed:
@@ -110,7 +139,7 @@ class LessonUnlockCheckView(APIView):
         return Response({
             'can_unlock': can_unlock,
             'reason': reason,
-            'previous_lesson_id': str(previous_lesson.id) if previous_lesson else None
+            'previous_lesson_id': str(previous_lesson.id) if 'previous_lesson' in locals() and previous_lesson else None
         })
 
 

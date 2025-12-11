@@ -186,6 +186,42 @@ class Notification(models.Model):
         return f"{self.title} - {self.user}"
 
 
+class NotificationLog(models.Model):
+    """
+    Track các notification đã gửi để tránh spam
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notification_logs')
+    notification_type = models.CharField(
+        max_length=64,
+        choices=[
+            ('streak_warning', 'Streak Warning'),
+            ('comeback_1day', 'Come Back 1 Day'),
+            ('comeback_3days', 'Come Back 3 Days'),
+            ('comeback_7days', 'Come Back 7 Days'),
+            ('comeback_email_1day', 'Come Back Email 1 Day'),
+            ('comeback_email_3days', 'Come Back Email 3 Days'),
+            ('comeback_email_7days', 'Come Back Email 7 Days'),
+        ]
+    )
+    sent_at = models.DateTimeField(auto_now_add=True)
+    sent_date = models.DateField(db_index=True)  # Ngày gửi (theo timezone local)
+    metadata = models.JSONField(default=dict, blank=True)  # e.g., {'streak': 5, 'days_missed': 3}
+    
+    class Meta:
+        verbose_name = ('Notification Log')
+        verbose_name_plural = ('Notification Logs')
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['user', 'notification_type', 'sent_date']),
+            models.Index(fields=['user', '-sent_at']),
+        ]
+        unique_together = [('user', 'notification_type', 'sent_date')]  # Mỗi loại notification chỉ gửi 1 lần/ngày
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.notification_type} - {self.sent_date}"
+
+
 class LessonQuestion(models.Model):
     """
     Câu hỏi của học sinh về một bài học. Giáo viên sẽ trả lời.

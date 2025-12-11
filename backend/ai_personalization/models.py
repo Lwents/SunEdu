@@ -701,3 +701,50 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"Profile: {self.user.username}"
 
+
+class StreakRestoration(models.Model):
+    """
+    Track streak restorations - cho phép khôi phục streak tối đa 2 lần/tháng
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='streak_restorations',
+        db_index=True
+    )
+    restored_at = models.DateTimeField(default=timezone.now, db_index=True)
+    month_year = models.CharField(
+        max_length=7,
+        help_text="Format: YYYY-MM (e.g., 2025-12)",
+        db_index=True
+    )
+    restored_streak_value = models.IntegerField(
+        default=0,
+        help_text="Giá trị streak đã được khôi phục"
+    )
+    
+    class Meta:
+        verbose_name = 'Streak Restoration'
+        verbose_name_plural = 'Streak Restorations'
+        ordering = ['-restored_at']
+        indexes = [
+            models.Index(fields=['user', 'month_year']),
+            models.Index(fields=['user', '-restored_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.month_year} - {self.restored_at.date()}"
+    
+    @classmethod
+    def get_restoration_count_this_month(cls, user):
+        """Đếm số lần đã khôi phục trong tháng hiện tại"""
+        today = timezone.localdate()
+        month_year = today.strftime('%Y-%m')
+        return cls.objects.filter(user=user, month_year=month_year).count()
+    
+    @classmethod
+    def can_restore(cls, user):
+        """Kiểm tra xem user có thể khôi phục streak không (tối đa 2 lần/tháng)"""
+        return cls.get_restoration_count_this_month(user) < 2
+

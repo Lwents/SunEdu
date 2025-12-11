@@ -177,6 +177,8 @@ class StudentLessonQuestionView(APIView):
     def post(self, request):
         content = (request.data.get("content") or "").strip()
         lesson_id = request.data.get("lesson_id")
+        # Kiểm tra xem có phải là tương tác với AI không (không gửi thông báo cho giáo viên)
+        is_ai_interaction = request.data.get("is_ai_interaction", False)
 
         if not lesson_id:
             return Response({"detail": "lesson_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -192,23 +194,25 @@ class StudentLessonQuestionView(APIView):
         student = request.user
         q = LessonQuestion.objects.create(lesson=lesson, student=student, content=content)
 
-        course_title = course.title if course else "Khóa học"
-        Notification.objects.create(
-            user=teacher,
-            title=f"Học sinh hỏi về bài: {lesson.title}",
-            message=f"[{course_title}] {content}",
-            type="info",
-            category="lesson_question",
-            metadata={
-                "lesson_question_id": str(q.id),
-                "lesson_id": str(lesson.id),
-                "course_id": str(course.id) if course else None,
-                "student_id": str(student.id),
-                "student": student.username,
-                "lesson_title": lesson.title,
-                "course_title": course_title,
-            },
-        )
+        # Chỉ gửi thông báo cho giáo viên nếu KHÔNG phải là tương tác với AI
+        if not is_ai_interaction:
+            course_title = course.title if course else "Khóa học"
+            Notification.objects.create(
+                user=teacher,
+                title=f"Học sinh hỏi về bài: {lesson.title}",
+                message=f"[{course_title}] {content}",
+                type="info",
+                category="lesson_question",
+                metadata={
+                    "lesson_question_id": str(q.id),
+                    "lesson_id": str(lesson.id),
+                    "course_id": str(course.id) if course else None,
+                    "student_id": str(student.id),
+                    "student": student.username,
+                    "lesson_title": lesson.title,
+                    "course_title": course_title,
+                },
+            )
 
         return Response({"item": serialize_question(q, user=request.user, request=request)}, status=status.HTTP_201_CREATED)
 
@@ -251,6 +255,9 @@ class StudentLessonQuestionReplyView(APIView):
     def post(self, request, pk):
         question = get_object_or_404(LessonQuestion, id=pk)
         content = (request.data.get("content") or "").strip()
+        # Kiểm tra xem có phải là tương tác với AI không (không gửi thông báo cho giáo viên)
+        is_ai_interaction = request.data.get("is_ai_interaction", False)
+        
         if not content:
             return Response({"detail": "Nội dung không được để trống"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -261,28 +268,29 @@ class StudentLessonQuestionReplyView(APIView):
             is_teacher=False,
         )
 
-        # Notify teacher if available
-        course = question.lesson.module.course if question.lesson.module else None
-        teacher = getattr(course, "owner", None)
-        if teacher:
-            course_title = course.title if course else "Khóa học"
-            lesson_title = question.lesson.title
-            Notification.objects.create(
-                user=teacher,
-                title=f"Học sinh trả lời thảo luận: {lesson_title}",
-                message=f"[{course_title}] {content}",
-                type="info",
-                category="lesson_question_reply",
-                metadata={
-                    "lesson_question_id": str(question.id),
-                    "lesson_id": str(question.lesson_id),
-                    "course_id": str(course.id) if course else None,
-                    "course_title": course_title,
-                    "lesson_title": lesson_title,
-                    "student_id": str(request.user.id),
-                    "student": request.user.username,
-                },
-            )
+        # Chỉ gửi thông báo cho giáo viên nếu KHÔNG phải là tương tác với AI
+        if not is_ai_interaction:
+            course = question.lesson.module.course if question.lesson.module else None
+            teacher = getattr(course, "owner", None)
+            if teacher:
+                course_title = course.title if course else "Khóa học"
+                lesson_title = question.lesson.title
+                Notification.objects.create(
+                    user=teacher,
+                    title=f"Học sinh trả lời thảo luận: {lesson_title}",
+                    message=f"[{course_title}] {content}",
+                    type="info",
+                    category="lesson_question_reply",
+                    metadata={
+                        "lesson_question_id": str(question.id),
+                        "lesson_id": str(question.lesson_id),
+                        "course_id": str(course.id) if course else None,
+                        "course_title": course_title,
+                        "lesson_title": lesson_title,
+                        "student_id": str(request.user.id),
+                        "student": request.user.username,
+                    },
+                )
 
         question.refresh_from_db()
         return Response({"item": serialize_question(question, user=request.user, request=request)}, status=status.HTTP_201_CREATED)
@@ -575,6 +583,7 @@ class StudentLessonQuestionAIAnswerView(APIView):
     def _get_lesson_context(self, lesson):
         """Lấy nội dung bài học để làm context cho AI"""
         context_parts = []
+        song_info = ""  # Thông tin về bài hát nếu có
         
         # Lấy thông tin khóa học
         try:
@@ -590,14 +599,34 @@ class StudentLessonQuestionAIAnswerView(APIView):
         context_parts.append(f"Tiêu đề bài học: {lesson.title}")
         if lesson.introduction:
             context_parts.append(f"Giới thiệu bài học: {lesson.introduction[:500]}")
+            # Kiểm tra xem introduction có chứa thông tin về bài hát không
+            intro_lower = lesson.introduction.lower()
+            if any(keyword in intro_lower for keyword in ['bài hát', 'ca sĩ', 'nhạc sĩ', 'sáng tác', 'remix', 'cover']):
+                song_info += f"Thông tin bài hát từ giới thiệu: {lesson.introduction[:500]}\n"
         
         # Nội dung text trực tiếp từ lesson
         if lesson.text_content:
             context_parts.append(f"Nội dung chính:\n{lesson.text_content[:2000]}")
+            # Kiểm tra xem text_content có chứa thông tin về bài hát không
+            text_lower = lesson.text_content.lower()
+            if any(keyword in text_lower for keyword in ['bài hát', 'ca sĩ', 'nhạc sĩ', 'sáng tác', 'remix', 'cover']):
+                song_info += f"Thông tin bài hát từ nội dung: {lesson.text_content[:500]}\n"
         
         # Ưu tiên lấy video_transcript từ field nếu có
         if lesson.video_transcript:
-            context_parts.append(f"[Nội dung video] {lesson.video_transcript[:2000]}")
+            # Tăng độ dài transcript để có nhiều context hơn
+            context_parts.append(f"[Nội dung video/Lời bài hát] {lesson.video_transcript[:4000]}")
+        
+        # Thêm thông tin về bài hát nếu có
+        if song_info:
+            context_parts.insert(1, f"THÔNG TIN VỀ BÀI HÁT:\n{song_info}")
+        
+        # Kiểm tra title có chứa thông tin về bài hát không
+        title_lower = lesson.title.lower()
+        if any(keyword in title_lower for keyword in ['remix', 'cover', 'bài hát', 'nhạc']):
+            if not song_info:
+                song_info = f"Tiêu đề bài học có thể liên quan đến bài hát: {lesson.title}\n"
+                context_parts.insert(1, f"THÔNG TIN VỀ BÀI HÁT:\n{song_info}")
         
         # Lấy nội dung từ ContentBlock (chi tiết hơn)
         try:
@@ -632,10 +661,10 @@ class StudentLessonQuestionAIAnswerView(APIView):
                             lesson_content.append(f"[Câu hỏi trong bài] {quiz_text[:300]}")
                     
                     elif block.type == 'video':
-                        # Video - lấy transcript nếu có
+                        # Video - lấy transcript nếu có (tăng độ dài để có nhiều context hơn)
                         transcript = payload.get('transcript', '') or payload.get('captions', '') or payload.get('tts_text', '')
                         if transcript:
-                            lesson_content.append(f"[Nội dung video] {transcript[:1000]}")
+                            lesson_content.append(f"[Nội dung video/Lời bài hát] {transcript[:2000]}")
                 
                 if lesson_content:
                     context_parts.append("NỘI DUNG BÀI HỌC CHI TIẾT:\n" + "\n\n".join(lesson_content))
@@ -662,9 +691,9 @@ class StudentLessonQuestionAIAnswerView(APIView):
             # Log lỗi nhưng không fail
             pass
         
-        # Giới hạn tổng độ dài context
+        # Giới hạn tổng độ dài context (tăng lên để có nhiều context hơn)
         full_context = "\n\n".join(context_parts)
-        return full_context[:8000]  # Tăng lên 8000 ký tự để có nhiều context hơn
+        return full_context[:10000]  # Tăng từ 8000 lên 10000 ký tự để có nhiều context hơn
     
     def _get_conversation_history(self, question):
         """Lấy lịch sử hội thoại từ câu hỏi và các replies"""
@@ -695,16 +724,35 @@ THÔNG TIN BÀI HỌC:
 LỊCH SỬ HỘI THOẠI:
 {conversation_history}
 
-YÊU CẦU QUAN TRỌNG:
-1. Tiếp tục cuộc hội thoại một cách tự nhiên.
-2. Trả lời câu hỏi/tin nhắn MỚI NHẤT của học sinh.
-3. Sử dụng ngôn ngữ RẤT ĐƠN GIẢN, thân thiện, phù hợp với học sinh tiểu học (6-11 tuổi).
-4. Nếu học sinh hỏi về nội dung bài học, hãy trả lời dựa trên thông tin bài học.
-5. Trả lời ngắn gọn, dễ hiểu (tối đa 200 từ).
-6. Luôn khuyến khích và động viên học sinh.
-7. KHÔNG sử dụng markdown (**, ##, *, -, etc.). Chỉ dùng văn bản thuần túy.
-8. Dùng emoji phù hợp để sinh động hơn (🌟, 👍, 📚, etc.).
-9. Gọi học sinh là "bạn" hoặc "em".
+YÊU CẦU TRẢ LỜI (QUAN TRỌNG - PHẢI TUÂN THỦ):
+1. TRẢ LỜI TRỰC TIẾP, KHÔNG HỎI LẠI HỌC SINH
+   - KHÔNG được hỏi "em đang tò mò đúng không?", "em muốn biết gì?"
+   - TRẢ LỜI NGAY câu hỏi/tin nhắn MỚI NHẤT của học sinh
+   - BẮT ĐẦU trả lời NGAY, không có câu mở đầu dài dòng
+
+2. Nếu học sinh hỏi về nội dung bài học:
+   - Đọc kỹ THÔNG TIN BÀI HỌC ở trên
+   - Trả lời DỰA TRỰC TIẾP vào thông tin đó
+   - Trả lời CỤ THỂ, không chung chung
+
+3. Nếu học sinh hỏi về bài hát:
+   - Đọc kỹ phần "THÔNG TIN VỀ BÀI HÁT" nếu có
+   - Đọc kỹ phần "Nội dung video/Lời bài hát" để nhận biết bài hát
+   - Nếu nhận biết được: Trả lời NGAY "Bài hát này là [TÊN BÀI HÁT] của [TÊN CA SĨ]"
+   - Nếu không nhận biết được: Trả lời NGAY "Mình chưa nhận biết được bài hát này. Bạn có thể hỏi giáo viên nhé!"
+
+4. Format trả lời:
+   - Trả lời ngắn gọn (2-4 câu), đi thẳng vào vấn đề
+   - Ngôn ngữ RẤT ĐƠN GIẢN, thân thiện, phù hợp học sinh tiểu học (6-11 tuổi)
+   - Thêm 1 emoji phù hợp 🌟
+   - Xưng "mình", gọi học sinh là "bạn" hoặc "em"
+   - KHÔNG sử dụng markdown (**, ##, *, -, etc.). Chỉ dùng văn bản thuần túy.
+
+5. CẤM:
+   - Hỏi lại học sinh
+   - Trả lời chung chung, không cụ thể
+   - Lặp lại câu hỏi của học sinh
+   - Nói vòng vo, không đi vào trọng tâm
 
 Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
         
@@ -719,15 +767,21 @@ TIN NHẮN CỦA HỌC SINH:
 
 YÊU CẦU QUAN TRỌNG:
 1. Nếu học sinh chỉ chào (hi, hello, xin chào...), hãy chào lại thân thiện và TÓM TẮT NGẮN GỌN nội dung bài học, sau đó gợi ý 2-3 câu hỏi học sinh có thể hỏi.
-2. Nếu học sinh hỏi về nội dung bài học, hãy trả lời dựa trên thông tin bài học ở trên.
-3. Sử dụng ngôn ngữ RẤT ĐƠN GIẢN, thân thiện, phù hợp với học sinh tiểu học (6-11 tuổi).
-4. Nếu câu hỏi không liên quan đến bài học, hãy nhẹ nhàng hướng dẫn học sinh quay lại nội dung bài.
-5. Trả lời ngắn gọn, dễ hiểu (tối đa 200 từ).
-6. Nếu không có đủ thông tin để trả lời, hãy gợi ý học sinh hỏi giáo viên.
-7. Luôn khuyến khích và động viên học sinh.
-8. KHÔNG sử dụng markdown (**, ##, *, -, etc.). Chỉ dùng văn bản thuần túy.
-9. Dùng emoji phù hợp để sinh động hơn (🌟, 👍, 📚, ✨, etc.).
-10. Gọi học sinh là "bạn" hoặc "em".
+2. Nếu học sinh hỏi về nội dung bài học, hãy trả lời dựa trên thông tin bài học ở trên (đọc kỹ THÔNG TIN BÀI HỌC).
+3. Nếu học sinh hỏi về bài hát (tên bài hát, ca sĩ, nhạc sĩ...), hãy:
+   - Đọc kỹ phần "THÔNG TIN VỀ BÀI HÁT" nếu có
+   - Đọc kỹ phần "Nội dung video/Lời bài hát" để nhận biết bài hát
+   - Nếu nhận biết được, trả lời RÕ RÀNG: "Bài hát này là [TÊN BÀI HÁT] của [TÊN CA SĨ]"
+   - Nếu không nhận biết được, thành thật nói và gợi ý hỏi giáo viên
+4. Sử dụng ngôn ngữ RẤT ĐƠN GIẢN, thân thiện, phù hợp với học sinh tiểu học (6-11 tuổi).
+5. Nếu câu hỏi không liên quan đến bài học, hãy nhẹ nhàng hướng dẫn học sinh quay lại nội dung bài.
+6. Trả lời ngắn gọn, dễ hiểu (tối đa 200 từ).
+7. Nếu không có đủ thông tin để trả lời, hãy gợi ý học sinh hỏi giáo viên.
+8. Luôn khuyến khích và động viên học sinh.
+9. KHÔNG sử dụng markdown (**, ##, *, -, etc.). Chỉ dùng văn bản thuần túy.
+10. Dùng emoji phù hợp để sinh động hơn (🌟, 👍, 📚, ✨, etc.).
+11. Gọi học sinh là "bạn" hoặc "em".
+12. KHÔNG được trả lời chung chung - phải trả lời cụ thể dựa trên thông tin bài học.
 
 Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
 

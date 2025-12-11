@@ -136,11 +136,13 @@ export const aiTutorService = {
    */
   async generatePractice(
     weaknesses?: Weakness[],
-    numExercises?: number
+    numExercises?: number,
+    wrongQuestions?: any[]
   ): Promise<PracticeResponse> {
     const response = await api.post('/student/ai/tutor/practice/', {
       weaknesses,
-      num_exercises: numExercises || 5,
+      num_exercises: numExercises || 15,
+      wrong_questions: wrongQuestions || [],
     })
     return response.data
   },

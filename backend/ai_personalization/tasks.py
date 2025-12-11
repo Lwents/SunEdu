@@ -1,28 +1,3 @@
-# # ai_personalization/tasks.py
-
-# from celery import shared_task
-# from .models import LearningEvent
-# from .services import update_mastery
-
-# @shared_task
-# def process_event(event_id):
-#     try:
-#         ev = LearningEvent.objects.get(id=event_id)
-#     except LearningEvent.DoesNotExist:
-#         return
-#     # For submit events: update mastery
-#     if ev.event_type == 'submit':
-#         correct = ev.detail.get('correct', False)
-#         lesson = ev.lesson
-#         if lesson is None:
-#             return
-#         from .models import ContentSkill
-#         skills = ContentSkill.objects.filter(lesson=lesson)
-#         for s in skills:
-#             update_mastery(ev.user, s.skill, correct, alpha=0.2)
-#     # For complete, you may also schedule spaced repetition entries (not implemented here)
-
-
 # ai_personalization/tasks.py
 """
 Celery tasks for async processing of heavy AI computations.
@@ -37,260 +12,596 @@ import numpy as np
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
-
-@shared_task(bind=True, max_retries=3)
-def update_mastery_async(self, user_id: str, skills: List[str], correct: bool, time_spent: float, attempts: int):
-    """
-    Async task to update skill mastery after learning event.
-    
-    Args:
-        user_id: User UUID as string
-        skills: List of skill identifiers
-        correct: Whether the attempt was correct
-        time_spent: Time spent in seconds
-        attempts: Number of attempts
-    """
-    try:
-        from .models import UserSkillMastery
-        from .ai_engines import MasteryCalculator
-        
-        user = User.objects.get(id=user_id)
-        
-        for skill in skills:
-            MasteryCalculator.update_mastery_from_event(
-                user=user,
-                skill=skill,
-                correct=correct,
-                time_spent=time_spent,
-                attempts=attempts
-            )
-        
-        logger.info(f"Updated mastery for user {user_id}, skills: {skills}")
-        
-    except User.DoesNotExist:
-        logger.error(f"User {user_id} not found")
-    except Exception as e:
-        logger.error(f"Mastery update failed: {str(e)}")
-        # Retry with exponential backoff
-        raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
-
-
-@shared_task(bind=True)
-def regenerate_recommendations(self, user_id: str, trigger_skill: str = None):
-    """
-    Async task to regenerate recommendations after significant mastery change.
-    
-    Args:
-        user_id: User UUID as string
-        trigger_skill: Skill that triggered regeneration (optional)
-    """
-    try:
-        from .ai_engines import RecommendationEngine
-        from django.core.cache import cache
-        
-        user = User.objects.get(id=user_id)
-        
-        # Clear cache
-        cache_key = f"recommendations:{user_id}"
-        cache.delete(cache_key)
-        
-        # Generate new recommendations
-        engine = RecommendationEngine()
-        recommendations = engine.generate_recommendations(
-            student=user,
-            limit=10,
-            algorithm='hybrid'
-        )
-        
-        logger.info(
-            f"Regenerated {len(recommendations)} recommendations for user {user_id}"
-            f"{f' (triggered by {trigger_skill})' if trigger_skill else ''}"
-        )
-        
-    except User.DoesNotExist:
-        logger.error(f"User {user_id} not found")
-    except Exception as e:
-        logger.error(f"Recommendation regeneration failed: {str(e)}")
-
+# ... existing code ...
 
 @shared_task
-def train_mastery_prediction_model():
+def send_streak_warning_notifications():
     """
-    Periodic task to retrain the ML mastery prediction model.
-    Should be run daily or weekly depending on data volume.
+    Gửi cảnh báo streak sắp mất (2-3 tiếng trước 23:59)
+    Chạy mỗi giờ để kiểm tra và gửi cho các user cần cảnh báo
     """
-    try:
-        from .models import UserSkillMastery, LearningEvent
-        from .utils import extract_features_from_events
-        from sklearn.ensemble import RandomForestRegressor
-        from sklearn.model_selection import train_test_split
-        import pickle
-        import os
-        
-        logger.info("Starting mastery prediction model training...")
-        
-        # Collect training data
-        masteries = UserSkillMastery.objects.filter(
-            practice_count__gte=5  # Only include skills with sufficient data
-        ).select_related('user')
-        
-        training_data = []
-        for mastery in masteries:
-            # Get events for this user-skill pair
-            events = LearningEvent.objects.filter(
-                user=mastery.user,
-                lesson__content_skills__skill=mastery.skill
-            ).order_by('timestamp')
-            
-            if events.count() < 3:
+    from activities.models import Notification, NotificationLog
+    from content.models import LessonProgress
+    from django.db.models import Q
+    from datetime import timedelta
+    
+    # Lấy thời gian hiện tại theo timezone local
+    now = timezone.now()
+    local_now = timezone.localtime(now)
+    current_hour = local_now.hour
+    
+    # Chỉ chạy vào khoảng 21:00-22:00 (2-3 tiếng trước 23:59)
+    # Tạm thời comment để test (có thể bỏ comment khi deploy production)
+    # if current_hour < 21 or current_hour >= 23:
+    #     return
+    
+    today = timezone.localdate()
+    
+    # Lấy tất cả học sinh có enrollment
+    students = User.objects.filter(
+        role='student',
+        is_active=True
+    ).select_related('profile')
+    
+    sent_count = 0
+    
+    for student in students:
+        try:
+            # Kiểm tra notifications_enabled
+            profile = getattr(student, 'profile', None)
+            if not profile:
                 continue
             
-            # Calculate features
-            total_events = events.count()
-            correct_events = events.filter(detail__correct=True).count()
-            total_time = sum(e.detail.get('time_spent', 0) for e in events)
-            days_since_last = (timezone.now() - mastery.last_update).days
+            # Lấy setting từ metadata, mặc định True
+            notifications_enabled = profile.metadata.get('notifications_enabled', True)
+            if not notifications_enabled:
+                continue
             
-            training_data.append({
-                'practice_count': mastery.practice_count,
-                'correct_count': mastery.correct_count,
-                'time_spent': total_time,
-                'days_since_last': days_since_last,
-                'mastery': mastery.mastery
-            })
-        
-        if len(training_data) < 100:
-            logger.warning("Insufficient training data, skipping model training")
-            return
-        
-        # Prepare training data
-        X = np.array([
-            [d['practice_count'], d['correct_count'], d['time_spent'], d['days_since_last']]
-            for d in training_data
-        ])
-        y = np.array([d['mastery'] for d in training_data])
-        
-        # Split and train
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
-        model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
-        model.fit(X_train, y_train)
-        
-        # Evaluate
-        train_score = model.score(X_train, y_train)
-        test_score = model.score(X_test, y_test)
-        
-        logger.info(f"Model trained: R² train={train_score:.3f}, test={test_score:.3f}")
-        
-        # Save model
-        model_path = os.path.join('/tmp', 'mastery_prediction_model.pkl')
-        with open(model_path, 'wb') as f:
-            pickle.dump(model, f)
-        
-        logger.info(f"Model saved to {model_path}")
-        
-    except Exception as e:
-        logger.error(f"Model training failed: {str(e)}")
-
-
-@shared_task
-def batch_update_skill_decay():
-    """
-    Periodic task to apply HLR decay to all skill masteries.
-    Should be run daily.
-    """
-    try:
-        from .models import UserSkillMastery
-        from .utils import apply_hlr_decay
-        
-        logger.info("Starting batch skill decay update...")
-        
-        masteries = UserSkillMastery.objects.all()
-        updated_count = 0
-        
-        for mastery in masteries:
-            days_since = (timezone.now() - mastery.last_update).days
+            # Tính streak hiện tại
+            streak = 0
+            check_date = today
+            while streak < 365:
+                has_progress = LessonProgress.objects.filter(
+                    student=student
+                ).filter(
+                    Q(completed=True) | Q(video_watched=True)
+                ).filter(
+                    Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
+                ).exists()
+                
+                if has_progress:
+                    streak += 1
+                    check_date -= timedelta(days=1)
+                else:
+                    break
             
-            if days_since > 0:
-                # Apply decay
-                decayed_mastery = apply_hlr_decay(
-                    mastery.mastery,
-                    mastery.half_life_days,
-                    days_since
+            # Điều kiện: streak >= 2 và chưa đạt daily goal hôm nay
+            if streak < 2:
+                logger.debug(f"User {student.username}: streak {streak} < 2, skip")
+                continue
+            
+            # Kiểm tra xem đã đạt daily goal hôm nay chưa
+            completed_today = LessonProgress.objects.filter(
+                student=student
+            ).filter(
+                Q(completed=True) | Q(video_watched=True)
+            ).filter(
+                Q(completed_at__date=today) | Q(last_accessed_at__date=today)
+            ).distinct().count()
+            
+            target = 2  # Daily goal
+            if completed_today >= target:
+                logger.debug(f"User {student.username}: completed_today {completed_today} >= {target}, skip")
+                continue  # Đã đạt goal, không cần cảnh báo
+            
+            # Kiểm tra xem đã gửi STREAK_WARNING trong ngày chưa
+            already_sent = NotificationLog.objects.filter(
+                user=student,
+                notification_type='streak_warning',
+                sent_date=today
+            ).exists()
+            
+            if already_sent:
+                logger.debug(f"User {student.username}: already sent today, skip")
+                continue
+            
+            logger.info(f"User {student.username}: Eligible - streak={streak}, completed_today={completed_today}/{target}")
+            
+            # Tạo nội dung notification bằng AI
+            try:
+                from .ai_tutor import AITutorEngine
+                ai_tutor = AITutorEngine()
+                
+                # Lấy thông tin học sinh để cá nhân hóa
+                student_name = profile.display_name if profile else student.username
+                student_grade = profile.metadata.get('grade', 1) if profile else 1
+                
+                # Tạo prompt cho AI
+                ai_prompt = f"""Tạo một câu cảnh báo ngắn gọn (1-2 câu, tối đa 50 từ) để nhắc học sinh sắp mất streak.
+
+Thông tin:
+- Tên học sinh: {student_name}
+- Lớp: {student_grade}
+- Streak hiện tại: {streak} ngày
+- Đã hoàn thành hôm nay: {completed_today}/{target} bài
+
+Yêu cầu:
+- Ngôn ngữ đơn giản, phù hợp học sinh lớp {student_grade}
+- Khẩn trương nhưng vui vẻ, khích lệ
+- Thêm 1-2 emoji phù hợp (🔥, ⚡, 💪)
+- Không quá dài, đi thẳng vào vấn đề
+- Xưng "mình", gọi học sinh là "bạn" hoặc "em"
+
+Trả lời theo format:
+TITLE: [tiêu đề ngắn, có emoji]
+MESSAGE: [nội dung cảnh báo]"""
+                
+                ai_result = ai_tutor.chat(
+                    user_message=ai_prompt,
+                    context={},
+                    conversation_history=[],
+                    student_grade=student_grade
                 )
                 
-                # Only update if significant change (> 5%)
-                if abs(decayed_mastery - mastery.mastery) > 0.05:
-                    mastery.mastery = decayed_mastery
-                    mastery.save(update_fields=['mastery'])
-                    updated_count += 1
-        
-        logger.info(f"Updated decay for {updated_count} skill masteries")
-        
-    except Exception as e:
-        logger.error(f"Batch decay update failed: {str(e)}")
+                if ai_result.get('success') and ai_result.get('message'):
+                    ai_response = ai_result['message']
+                    # Parse response để lấy title và message
+                    lines = ai_response.split('\n')
+                    title = None
+                    message = None
+                    
+                    for line in lines:
+                        if line.strip().startswith('TITLE:'):
+                            title = line.replace('TITLE:', '').strip()
+                        elif line.strip().startswith('MESSAGE:'):
+                            message = line.replace('MESSAGE:', '').strip()
+                    
+                    # Fallback nếu không parse được
+                    if not title or not message:
+                        message = ai_response.strip()
+                        title = f'🔥 Cảnh báo: Sắp mất streak {streak} ngày!'
+                else:
+                    raise Exception("AI response failed")
+                    
+            except Exception as e:
+                logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
+                # Fallback messages
+                title = f'🔥 Cảnh báo: Sắp mất streak {streak} ngày!'
+                message = f'Bạn sắp mất chuỗi học {streak} ngày rồi! Vào học 1 bài nhanh để giữ streak nào 🔥'
+            
+            # Gửi notification
+            Notification.objects.create(
+                user=student,
+                title=title,
+                message=message,
+                type='warning',
+                category='streak_warning',
+                metadata={
+                    'streak': streak,
+                    'completed_today': completed_today,
+                    'target': target,
+                }
+            )
+            
+            # Log notification
+            NotificationLog.objects.create(
+                user=student,
+                notification_type='streak_warning',
+                sent_date=today,
+                metadata={'streak': streak}
+            )
+            
+            sent_count += 1
+            
+        except Exception as e:
+            logger.error(f"Error sending streak warning to {student.id}: {e}")
+    
+    logger.info(f"Sent {sent_count} streak warning notifications")
+    return sent_count
 
 
 @shared_task
-def generate_path_with_openai(user_id: str, course_id: str, context: dict):
+def send_comeback_reminders():
     """
-    Generate advanced learning path using OpenAI API (optional enhancement).
+    Gửi nhắc nhở quay lại sau khi bỏ dở (1, 3, 7 ngày)
+    Chạy mỗi ngày một lần
+    """
+    from activities.models import Notification, NotificationLog
+    from content.models import LessonProgress
+    from django.db.models import Q
+    from datetime import timedelta
     
-    Args:
-        user_id: User UUID
-        course_id: Course UUID
-        context: Dict with weak_skills, strong_skills, preferences
+    today = timezone.localdate()
+    reminder_days = [1, 3, 7]  # Các mốc ngày cần nhắc
+    
+    # Lấy tất cả học sinh có enrollment
+    students = User.objects.filter(
+        role='student',
+        is_active=True
+    ).select_related('profile')
+    
+    sent_count = 0
+    
+    for student in students:
+        try:
+            # Kiểm tra notifications_enabled
+            profile = getattr(student, 'profile', None)
+            if not profile:
+                continue
+            
+            notifications_enabled = profile.metadata.get('notifications_enabled', True)
+            if not notifications_enabled:
+                continue
+            
+            # Tìm ngày học gần nhất
+            last_progress = LessonProgress.objects.filter(
+                student=student
+            ).filter(
+                Q(completed=True) | Q(video_watched=True)
+            ).order_by('-completed_at', '-last_accessed_at').first()
+            
+            if not last_progress:
+                # Chưa học bao giờ - không gửi comeback reminder
+                continue
+            
+            # Lấy ngày học gần nhất
+            last_date = None
+            if last_progress.completed_at:
+                last_date = last_progress.completed_at.date()
+            elif last_progress.last_accessed_at:
+                last_date = last_progress.last_accessed_at.date()
+            
+            if not last_date:
+                continue
+            
+            # Tính số ngày đã bỏ dở
+            days_missed = (today - last_date).days
+            
+            if days_missed <= 0:
+                continue  # Đã học hôm nay hoặc tương lai
+            
+            # Kiểm tra xem có đạt goal trong X ngày gần nhất không
+            # (nếu có thì không gửi comeback reminder)
+            has_recent_progress = False
+            for i in range(min(days_missed, 7)):
+                check_date = today - timedelta(days=i)
+                has_progress = LessonProgress.objects.filter(
+                    student=student
+                ).filter(
+                    Q(completed=True) | Q(video_watched=True)
+                ).filter(
+                    Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
+                ).exists()
+                
+                if has_progress:
+                    has_recent_progress = True
+                    break
+            
+            if has_recent_progress:
+                continue  # Có hoạt động gần đây, không cần nhắc
+            
+            # Kiểm tra xem có phải mốc cần nhắc không
+            if days_missed not in reminder_days:
+                continue
+            
+            # Xác định notification type
+            notification_type = f'comeback_{days_missed}day'
+            if days_missed == 1:
+                notification_type = 'comeback_1day'
+            elif days_missed == 3:
+                notification_type = 'comeback_3days'
+            elif days_missed == 7:
+                notification_type = 'comeback_7days'
+            
+            # Kiểm tra xem đã gửi notification này chưa (mỗi mốc chỉ gửi 1 lần)
+            already_sent = NotificationLog.objects.filter(
+                user=student,
+                notification_type=notification_type
+            ).exists()
+            
+            if already_sent:
+                continue
+            
+            # Tạo nội dung notification bằng AI
+            try:
+                from .ai_tutor import AITutorEngine
+                ai_tutor = AITutorEngine()
+                
+                # Lấy thông tin học sinh để cá nhân hóa
+                student_name = profile.display_name or student.username
+                student_grade = profile.metadata.get('grade', 1) or 1
+                
+                # Tạo prompt cho AI
+                ai_prompt = f"""Tạo một câu động viên ngắn gọn (1-2 câu, tối đa 50 từ) để khuyến khích học sinh quay lại học tập.
+
+Thông tin:
+- Tên học sinh: {student_name}
+- Lớp: {student_grade}
+- Đã bỏ dở: {days_missed} ngày
+- Lần cuối học: {last_date}
+
+Yêu cầu:
+- Ngôn ngữ đơn giản, phù hợp học sinh lớp {student_grade}
+- Vui vẻ, ấm áp, khích lệ
+- Thêm 1-2 emoji phù hợp
+- Không quá dài, đi thẳng vào vấn đề
+- Xưng "mình", gọi học sinh là "bạn" hoặc "em"
+
+Trả lời theo format:
+TITLE: [tiêu đề ngắn, có emoji]
+MESSAGE: [nội dung động viên]"""
+                
+                ai_result = ai_tutor.chat(
+                    user_message=ai_prompt,
+                    context={},
+                    conversation_history=[],
+                    student_grade=student_grade
+                )
+                
+                if ai_result.get('success') and ai_result.get('message'):
+                    ai_response = ai_result['message']
+                    # Parse response để lấy title và message
+                    lines = ai_response.split('\n')
+                    title = None
+                    message = None
+                    
+                    for line in lines:
+                        if line.strip().startswith('TITLE:'):
+                            title = line.replace('TITLE:', '').strip()
+                        elif line.strip().startswith('MESSAGE:'):
+                            message = line.replace('MESSAGE:', '').strip()
+                    
+                    # Fallback nếu không parse được
+                    if not title or not message:
+                        # Dùng AI response làm message, tạo title mặc định
+                        message = ai_response.strip()
+                        if days_missed == 1:
+                            title = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
+                        elif days_missed == 3:
+                            title = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
+                        elif days_missed == 7:
+                            title = '🌟 Đã 1 tuần rồi, quay lại thôi!'
+                else:
+                    # Fallback nếu AI không hoạt động
+                    raise Exception("AI response failed")
+                    
+            except Exception as e:
+                logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
+                # Fallback messages
+                if days_missed == 1:
+                    title = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
+                    message = 'Hôm qua bạn bỏ lỡ bài học rồi, hôm nay quay lại nhé!'
+                elif days_missed == 3:
+                    title = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
+                    message = 'Đã 3 ngày rồi từ lần cuối bạn học. Thói quen nhỏ mỗi ngày sẽ tạo ra khác biệt lớn!'
+                elif days_missed == 7:
+                    title = '🌟 Đã 1 tuần rồi, quay lại thôi!'
+                    message = 'Đã 1 tuần rồi, quay lại làm một bài nhẹ nhàng để bắt đầu lại thôi 💪'
+                else:
+                    continue
+            
+            # Gửi notification
+            Notification.objects.create(
+                user=student,
+                title=title,
+                message=message,
+                type='info',
+                category='comeback_reminder',
+                metadata={
+                    'days_missed': days_missed,
+                    'last_learning_date': str(last_date),
+                }
+            )
+            
+            # Log notification
+            NotificationLog.objects.create(
+                user=student,
+                notification_type=notification_type,
+                sent_date=today,
+                metadata={'days_missed': days_missed, 'last_learning_date': str(last_date)}
+            )
+            
+            sent_count += 1
+            
+        except Exception as e:
+            logger.error(f"Error sending comeback reminder to {student.id}: {e}")
+    
+    logger.info(f"Sent {sent_count} comeback reminder notifications")
+    return sent_count
+
+
+@shared_task
+def send_comeback_emails():
     """
-    try:
-        from openai import OpenAI
-        from django.conf import settings
-        
-        if not hasattr(settings, 'OPENAI_API_KEY'):
-            logger.warning("OpenAI API key not configured, falling back to rule-based")
-            return
-        
-        user = User.objects.get(id=user_id)
-        
-        # Prepare prompt
-        prompt = f"""
-        Generate a personalized learning path for a primary school student.
-        
-        Student Profile:
-        - Weak skills: {', '.join(context.get('weak_skills', []))}
-        - Strong skills: {', '.join(context.get('strong_skills', []))}
-        - Learning style: {context.get('learning_style', 'mixed')}
-        - Difficulty preference: {context.get('difficulty_preference', 'adaptive')}
-        
-        Generate a sequence of 10 lessons that:
-        1. Addresses weak skills progressively
-        2. Respects prerequisite dependencies
-        3. Maintains engagement with varied difficulty
-        4. Builds on strong skills where appropriate
-        
-        Return JSON format: [{{"lesson_topic": "...", "skills": [...], "difficulty": "...", "rationale": "..."}}]
-        """
-        
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an expert education AI."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1000
-        )
-        
-        # Parse response and create path
-        ai_suggestions = response.choices[0].message.content
-        
-        logger.info(f"Generated OpenAI path for user {user_id}: {ai_suggestions}")
-        
-        # Store in metadata for review
-        from .models import LearningPath
-        LearningPath.objects.filter(student=user, course_id=course_id).update(
-            metadata={'ai_suggestions': ai_suggestions}
-        )
-        
-    except Exception as e:
-        logger.error(f"OpenAI path generation failed: {str(e)}")
+    Gửi email nhắc nhở quay lại (tương tự Come Back Reminder nhưng qua email)
+    Chỉ gửi khi user bật email_notifications_enabled
+    """
+    from activities.models import NotificationLog
+    from content.models import LessonProgress
+    from infrastructure.email_service import get_email_service
+    from django.db.models import Q
+    from datetime import timedelta
+    from django.conf import settings
+    
+    today = timezone.localdate()
+    reminder_days = [1, 3, 7]
+    
+    # Lấy tất cả học sinh
+    students = User.objects.filter(
+        role='student',
+        is_active=True
+    ).select_related('profile')
+    
+    email_service = get_email_service()
+    sent_count = 0
+    
+    for student in students:
+        try:
+            profile = getattr(student, 'profile', None)
+            if not profile:
+                continue
+            
+            # Kiểm tra email_notifications_enabled
+            email_notifications_enabled = profile.metadata.get('email_notifications_enabled', False)
+            if not email_notifications_enabled:
+                continue
+            
+            # Tìm ngày học gần nhất
+            last_progress = LessonProgress.objects.filter(
+                student=student
+            ).filter(
+                Q(completed=True) | Q(video_watched=True)
+            ).order_by('-completed_at', '-last_accessed_at').first()
+            
+            if not last_progress:
+                continue
+            
+            last_date = None
+            if last_progress.completed_at:
+                last_date = last_progress.completed_at.date()
+            elif last_progress.last_accessed_at:
+                last_date = last_progress.last_accessed_at.date()
+            
+            if not last_date:
+                continue
+            
+            days_missed = (today - last_date).days
+            
+            if days_missed <= 0 or days_missed not in reminder_days:
+                continue
+            
+            # Kiểm tra xem đã gửi email này chưa
+            notification_type = f'comeback_email_{days_missed}day'
+            already_sent = NotificationLog.objects.filter(
+                user=student,
+                notification_type=notification_type
+            ).exists()
+            
+            if already_sent:
+                continue
+            
+            # Tạo nội dung email bằng AI
+            try:
+                from .ai_tutor import AITutorEngine
+                ai_tutor = AITutorEngine()
+                
+                # Lấy thông tin học sinh để cá nhân hóa
+                student_name = profile.display_name or student.username
+                student_grade = profile.metadata.get('grade', 1) or 1
+                
+                # Tạo prompt cho AI
+                ai_prompt = f"""Tạo một email động viên ngắn gọn (2-3 câu, tối đa 80 từ) để khuyến khích học sinh quay lại học tập qua email.
+
+Thông tin:
+- Tên học sinh: {student_name}
+- Lớp: {student_grade}
+- Đã bỏ dở: {days_missed} ngày
+- Lần cuối học: {last_date}
+
+Yêu cầu:
+- Ngôn ngữ đơn giản, phù hợp học sinh lớp {student_grade}
+- Vui vẻ, ấm áp, khích lệ
+- Thêm 1-2 emoji phù hợp
+- Phù hợp với email (có thể dài hơn notification một chút)
+- Xưng "mình", gọi học sinh là "bạn" hoặc "em"
+
+Trả lời theo format:
+SUBJECT: [tiêu đề email ngắn, có emoji]
+BODY: [nội dung email động viên]"""
+                
+                ai_result = ai_tutor.chat(
+                    user_message=ai_prompt,
+                    context={},
+                    conversation_history=[],
+                    student_grade=student_grade
+                )
+                
+                if ai_result.get('success') and ai_result.get('message'):
+                    ai_response = ai_result['message']
+                    # Parse response để lấy subject và body
+                    lines = ai_response.split('\n')
+                    subject = None
+                    body_text = None
+                    
+                    for line in lines:
+                        if line.strip().startswith('SUBJECT:'):
+                            subject = line.replace('SUBJECT:', '').strip()
+                        elif line.strip().startswith('BODY:'):
+                            body_text = line.replace('BODY:', '').strip()
+                    
+                    # Fallback nếu không parse được
+                    if not subject or not body_text:
+                        body_text = ai_response.strip()
+                        if days_missed == 1:
+                            subject = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
+                        elif days_missed == 3:
+                            subject = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
+                        elif days_missed == 7:
+                            subject = '🌟 Đã 1 tuần rồi, quay lại thôi!'
+                else:
+                    raise Exception("AI response failed")
+                    
+            except Exception as e:
+                logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
+                # Fallback messages
+                if days_missed == 1:
+                    subject = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
+                    body_text = 'Hôm qua bạn bỏ lỡ bài học rồi, hôm nay quay lại nhé!'
+                elif days_missed == 3:
+                    subject = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
+                    body_text = 'Đã 3 ngày rồi từ lần cuối bạn học. Thói quen nhỏ mỗi ngày sẽ tạo ra khác biệt lớn!'
+                elif days_missed == 7:
+                    subject = '🌟 Đã 1 tuần rồi, quay lại thôi!'
+                    body_text = 'Đã 1 tuần rồi, quay lại làm một bài nhẹ nhàng để bắt đầu lại thôi 💪'
+                else:
+                    continue
+            
+            # Tạo HTML email với nút "Học ngay"
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+            learn_url = f"{frontend_url}/student/learning-path"
+            
+            html_body = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .button {{ display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin-top: 20px; }}
+                    .button:hover {{ background-color: #4338CA; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>{subject}</h2>
+                    <p>{body_text}</p>
+                    <a href="{learn_url}" class="button">Học ngay</a>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Gửi email
+            email_service.send(
+                to=student.email,
+                subject=subject,
+                body=body_text,
+                html_body=html_body
+            )
+            
+            # Log notification
+            NotificationLog.objects.create(
+                user=student,
+                notification_type=notification_type,
+                sent_date=today,
+                metadata={'days_missed': days_missed, 'last_learning_date': str(last_date)}
+            )
+            
+            sent_count += 1
+            
+        except Exception as e:
+            logger.error(f"Error sending comeback email to {student.id}: {e}")
+    
+    logger.info(f"Sent {sent_count} comeback reminder emails")
+    return sent_count
