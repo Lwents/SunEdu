@@ -420,7 +420,7 @@ def send_comeback_emails():
     from infrastructure.email_service import get_email_service
     from django.db.models import Q
     from datetime import timedelta
-        from django.conf import settings
+    from django.conf import settings
         
     today = timezone.localdate()
     reminder_days = [1, 3, 7]
