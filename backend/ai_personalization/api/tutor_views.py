@@ -791,7 +791,7 @@ class AITutorVideoQuestionView(APIView):
             time_label = "giờ:phút:giây"
         else:
             # Video ngắn hơn 1 giờ: format MM:SS
-        timestamp_str = f"{minutes:02d}:{seconds:02d}"
+            timestamp_str = f"{minutes:02d}:{seconds:02d}"
             time_label = "phút:giây"
         
         # Lấy context từ lesson nếu có
