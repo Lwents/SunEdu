@@ -261,18 +261,18 @@
           >
             <div 
               class="flex items-center gap-3 mb-3 cursor-pointer"
-              @click="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
-            >
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl">
-                📖
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-slate-900 truncate">{{ weakness.topic }}</p>
-                <p class="text-xs text-slate-500">Điểm: {{ weakness.score }}% · {{ weakness.course }}</p>
+            @click="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
+          >
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl">
+              📖
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-slate-900 truncate">{{ weakness.topic }}</p>
+              <p class="text-xs text-slate-500">Điểm: {{ weakness.score }}% · {{ weakness.course }}</p>
                 <p v-if="weakness.wrong_questions_count" class="text-xs text-red-600 mt-1">
                   {{ weakness.wrong_questions_count }} câu sai
                 </p>
-              </div>
+            </div>
             </div>
             <div class="flex gap-2">
               <button
@@ -280,7 +280,7 @@
                 @click.stop="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
                 class="flex-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition-colors"
               >
-                Ôn lại
+              Ôn lại
               </button>
               <button
                 v-if="weakness.wrong_questions && weakness.wrong_questions.length > 0"

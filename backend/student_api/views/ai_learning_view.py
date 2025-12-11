@@ -429,10 +429,10 @@ class AILearningAnalyzerView(APIView):
                 # Nhóm câu sai theo topic
                 if topic_key not in wrong_questions_by_topic:
                     wrong_questions_by_topic[topic_key] = {
-                        "topic": exercise.lesson.title,
-                        "course": exercise.lesson.module.course.title,
-                        "lesson_id": str(exercise.lesson.id),
-                        "course_id": str(exercise.lesson.module.course.id),
+                    "topic": exercise.lesson.title,
+                    "course": exercise.lesson.module.course.title,
+                    "lesson_id": str(exercise.lesson.id),
+                    "course_id": str(exercise.lesson.module.course.id),
                         "wrong_questions": [],
                         "min_score": float(attempt.score) if attempt.score else 0,
                     }
@@ -464,7 +464,7 @@ class AILearningAnalyzerView(APIView):
                 "can_retry": True,
                 "wrong_questions_count": len(wrong_questions),
                 "wrong_questions": wrong_questions,  # Gửi câu sai để AI tạo bài tập
-            })
+                })
         
         return weaknesses
     

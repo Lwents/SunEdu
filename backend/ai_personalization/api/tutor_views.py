@@ -791,7 +791,7 @@ class AITutorVideoQuestionView(APIView):
             time_label = "giờ:phút:giây"
         else:
             # Video ngắn hơn 1 giờ: format MM:SS
-            timestamp_str = f"{minutes:02d}:{seconds:02d}"
+        timestamp_str = f"{minutes:02d}:{seconds:02d}"
             time_label = "phút:giây"
         
         # Lấy context từ lesson nếu có
@@ -1077,7 +1077,7 @@ Trả lời (bắt đầu ngay, không có câu mở đầu):"""
             cache.delete(cache_key)
             conversation_history = []
         else:
-            conversation_history = cache.get(cache_key, [])
+        conversation_history = cache.get(cache_key, [])
         
         # Lọc conversation history - chỉ lấy những câu hỏi gần đây
         # Tránh dùng thông tin từ timestamp quá xa để tránh trả lời sai

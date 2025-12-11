@@ -193,7 +193,7 @@ MESSAGE: [nội dung cảnh báo]"""
             
             sent_count += 1
             
-        except Exception as e:
+    except Exception as e:
             logger.error(f"Error sending streak warning to {student.id}: {e}")
     
     logger.info(f"Sent {sent_count} streak warning notifications")
@@ -306,7 +306,7 @@ def send_comeback_reminders():
             try:
                 from .ai_tutor import AITutorEngine
                 ai_tutor = AITutorEngine()
-                
+        
                 # Lấy thông tin học sinh để cá nhân hóa
                 student_name = profile.display_name or student.username
                 student_grade = profile.metadata.get('grade', 1) or 1
@@ -350,7 +350,7 @@ MESSAGE: [nội dung động viên]"""
                             title = line.replace('TITLE:', '').strip()
                         elif line.strip().startswith('MESSAGE:'):
                             message = line.replace('MESSAGE:', '').strip()
-                    
+                
                     # Fallback nếu không parse được
                     if not title or not message:
                         # Dùng AI response làm message, tạo title mặc định
@@ -364,8 +364,8 @@ MESSAGE: [nội dung động viên]"""
                 else:
                     # Fallback nếu AI không hoạt động
                     raise Exception("AI response failed")
-                    
-            except Exception as e:
+        
+    except Exception as e:
                 logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
                 # Fallback messages
                 if days_missed == 1:
@@ -421,8 +421,8 @@ def send_comeback_emails():
     from infrastructure.email_service import get_email_service
     from django.db.models import Q
     from datetime import timedelta
-    from django.conf import settings
-    
+        from django.conf import settings
+        
     today = timezone.localdate()
     reminder_days = [1, 3, 7]
     
@@ -596,11 +596,11 @@ BODY: [nội dung email động viên]"""
                 notification_type=notification_type,
                 sent_date=today,
                 metadata={'days_missed': days_missed, 'last_learning_date': str(last_date)}
-            )
+        )
             
             sent_count += 1
-            
-        except Exception as e:
+        
+    except Exception as e:
             logger.error(f"Error sending comeback email to {student.id}: {e}")
     
     logger.info(f"Sent {sent_count} comeback reminder emails")
