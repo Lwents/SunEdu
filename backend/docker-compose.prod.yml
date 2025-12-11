@@ -119,7 +119,8 @@ services:
     command: celery -A backend beat -l info
     volumes:
       - /var/www/elearning/logs:/app/logs
-      - /var/www/elearning/celerybeat-schedule:/app/celerybeat-schedule
+      # Dùng named volume để tránh lỗi mount file/dir trên host
+      - celerybeat_data:/app/celerybeat-schedule
     depends_on:
       db:
         condition: service_healthy
@@ -149,6 +150,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  celerybeat_data:
 
 networks:
   backend-network:
