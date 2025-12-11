@@ -211,7 +211,7 @@ def send_comeback_reminders():
     from datetime import timedelta
     
     today = timezone.localdate()
-    reminder_days = [1, 3, 7]  # Các mốc ngày cần nhắc
+    reminder_days = [1, 2, 3, 4, 5, 7, 14, 21, 30]  # Các mốc ngày cần nhắc (1, 2, 3, 4, 5, 7, 14, 21, 30 ngày)
     
     # Lấy tất cả học sinh có enrollment
     students = User.objects.filter(
@@ -226,29 +226,32 @@ def send_comeback_reminders():
             # Kiểm tra notifications_enabled
             profile = getattr(student, 'profile', None)
             if not profile:
+                logger.debug(f"Student {student.id} has no profile, skipping")
                 continue
             
             notifications_enabled = profile.metadata.get('notifications_enabled', True)
             if not notifications_enabled:
+                logger.debug(f"Student {student.id} has notifications disabled, skipping")
                 continue
             
-            # Tìm ngày học gần nhất
+            # Tìm ngày học gần nhất - lấy theo last_accessed_at mới nhất
+            # Vì last_accessed_at phản ánh hoạt động gần nhất của học sinh
             last_progress = LessonProgress.objects.filter(
                 student=student
             ).filter(
                 Q(completed=True) | Q(video_watched=True)
-            ).order_by('-completed_at', '-last_accessed_at').first()
+            ).order_by('-last_accessed_at', '-completed_at').first()
             
             if not last_progress:
                 # Chưa học bao giờ - không gửi comeback reminder
                 continue
             
-            # Lấy ngày học gần nhất
+            # Lấy ngày học gần nhất từ last_accessed_at (phản ánh hoạt động gần nhất)
             last_date = None
-            if last_progress.completed_at:
-                last_date = last_progress.completed_at.date()
-            elif last_progress.last_accessed_at:
+            if last_progress.last_accessed_at:
                 last_date = last_progress.last_accessed_at.date()
+            elif last_progress.completed_at:
+                last_date = last_progress.completed_at.date()
             
             if not last_date:
                 continue
@@ -259,38 +262,15 @@ def send_comeback_reminders():
             if days_missed <= 0:
                 continue  # Đã học hôm nay hoặc tương lai
             
-            # Kiểm tra xem có đạt goal trong X ngày gần nhất không
-            # (nếu có thì không gửi comeback reminder)
-            has_recent_progress = False
-            for i in range(min(days_missed, 7)):
-                check_date = today - timedelta(days=i)
-                has_progress = LessonProgress.objects.filter(
-                    student=student
-                ).filter(
-                    Q(completed=True) | Q(video_watched=True)
-                ).filter(
-                    Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
-                ).exists()
-                
-                if has_progress:
-                    has_recent_progress = True
-                    break
-            
-            if has_recent_progress:
-                continue  # Có hoạt động gần đây, không cần nhắc
-            
             # Kiểm tra xem có phải mốc cần nhắc không
             if days_missed not in reminder_days:
+                logger.debug(f"Student {student.id}: days_missed={days_missed} not in reminder_days, skipping")
                 continue
+            
+            logger.info(f"Student {student.id}: Processing comeback reminder for {days_missed} days missed")
             
             # Xác định notification type
             notification_type = f'comeback_{days_missed}day'
-            if days_missed == 1:
-                notification_type = 'comeback_1day'
-            elif days_missed == 3:
-                notification_type = 'comeback_3days'
-            elif days_missed == 7:
-                notification_type = 'comeback_7days'
             
             # Kiểm tra xem đã gửi notification này chưa (mỗi mốc chỉ gửi 1 lần)
             already_sent = NotificationLog.objects.filter(
@@ -356,28 +336,62 @@ MESSAGE: [nội dung động viên]"""
                         message = ai_response.strip()
                         if days_missed == 1:
                             title = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
+                        elif days_missed == 2:
+                            title = '⏰ Đã 2 ngày rồi từ lần cuối bạn học'
                         elif days_missed == 3:
                             title = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
+                        elif days_missed == 4:
+                            title = '📖 Đã 4 ngày rồi, đừng bỏ cuộc nhé!'
+                        elif days_missed == 5:
+                            title = '🎯 Đã 5 ngày rồi, quay lại thôi!'
                         elif days_missed == 7:
                             title = '🌟 Đã 1 tuần rồi, quay lại thôi!'
+                        elif days_missed == 14:
+                            title = '📅 Đã 2 tuần rồi, đừng quên học tập nhé!'
+                        elif days_missed == 21:
+                            title = '⏳ Đã 3 tuần rồi, quay lại học thôi!'
+                        elif days_missed == 30:
+                            title = '🗓️ Đã 1 tháng rồi, quay lại học tập nhé!'
+                        else:
+                            title = f'📚 Đã {days_missed} ngày rồi từ lần cuối bạn học'
                 else:
                     # Fallback nếu AI không hoạt động
                     raise Exception("AI response failed")
         
             except Exception as e:
                 logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
-                # Fallback messages
+                # Fallback messages cho tất cả các mốc
                 if days_missed == 1:
                     title = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
                     message = 'Hôm qua bạn bỏ lỡ bài học rồi, hôm nay quay lại nhé!'
+                elif days_missed == 2:
+                    title = '⏰ Đã 2 ngày rồi từ lần cuối bạn học'
+                    message = 'Đã 2 ngày rồi từ lần cuối bạn học. Hãy quay lại để tiếp tục hành trình học tập nhé!'
                 elif days_missed == 3:
                     title = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
                     message = 'Đã 3 ngày rồi từ lần cuối bạn học. Thói quen nhỏ mỗi ngày sẽ tạo ra khác biệt lớn!'
+                elif days_missed == 4:
+                    title = '📖 Đã 4 ngày rồi, đừng bỏ cuộc nhé!'
+                    message = 'Đã 4 ngày rồi từ lần cuối bạn học. Hãy quay lại và tiếp tục hành trình học tập của mình!'
+                elif days_missed == 5:
+                    title = '🎯 Đã 5 ngày rồi, quay lại thôi!'
+                    message = 'Đã 5 ngày rồi từ lần cuối bạn học. Mỗi ngày học một chút sẽ giúp bạn tiến bộ đáng kể!'
                 elif days_missed == 7:
                     title = '🌟 Đã 1 tuần rồi, quay lại thôi!'
                     message = 'Đã 1 tuần rồi, quay lại làm một bài nhẹ nhàng để bắt đầu lại thôi 💪'
+                elif days_missed == 14:
+                    title = '📅 Đã 2 tuần rồi, đừng quên học tập nhé!'
+                    message = 'Đã 2 tuần rồi từ lần cuối bạn học. Hãy quay lại và tiếp tục hành trình học tập của mình!'
+                elif days_missed == 21:
+                    title = '⏳ Đã 3 tuần rồi, quay lại học thôi!'
+                    message = 'Đã 3 tuần rồi từ lần cuối bạn học. Hãy quay lại và bắt đầu lại hành trình học tập!'
+                elif days_missed == 30:
+                    title = '🗓️ Đã 1 tháng rồi, quay lại học tập nhé!'
+                    message = 'Đã 1 tháng rồi từ lần cuối bạn học. Hãy quay lại và tiếp tục hành trình học tập của mình!'
                 else:
-                    continue
+                    # Fallback cho các mốc khác
+                    title = f'📚 Đã {days_missed} ngày rồi từ lần cuối bạn học'
+                    message = f'Đã {days_missed} ngày rồi từ lần cuối bạn học. Hãy quay lại và tiếp tục hành trình học tập của mình!'
             
             # Gửi notification
             Notification.objects.create(
