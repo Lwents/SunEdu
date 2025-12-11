@@ -193,9 +193,6 @@ MESSAGE: [nội dung cảnh báo]"""
             
             sent_count += 1
             
-    except Exception as e:
-            logger.error(f"Error sending streak warning to {student.id}: {e}")
-    
     logger.info(f"Sent {sent_count} streak warning notifications")
     return sent_count
 
