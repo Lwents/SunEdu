@@ -467,9 +467,16 @@ async function loadExamAndStart() {
     loading.value = true
     const examId = route.params.id as string
     
-    // Check if we're already on result page (shouldn't happen, but safety check)
-    if (route.name === 'student-exam-result') {
-      router.push({ name: 'student-exams' })
+    // Check if we're trying to access result page (route name hoặc path có /result)
+    // Nếu đang ở result route, redirect ngay lập tức
+    if (route.name === 'student-exam-result' || route.path.includes('/result')) {
+      // Nếu có attemptId trong query, giữ nguyên và redirect
+      const attemptId = route.query.attemptId as string
+      router.replace({
+        name: 'student-exam-result',
+        params: { id: examId },
+        query: attemptId ? { attemptId } : {}
+      })
       return
     }
     
@@ -566,6 +573,18 @@ async function loadExamAndStart() {
 }
 
 onMounted(async () => {
+  // Kiểm tra ngay lập tức nếu đang ở result route - redirect ngay không load ExamDetail
+  if (route.name === 'student-exam-result' || route.path.includes('/result')) {
+    const examId = route.params.id as string
+    const attemptId = route.query.attemptId as string
+    router.replace({
+      name: 'student-exam-result',
+      params: { id: examId },
+      query: attemptId ? { attemptId } : {}
+    })
+    return
+  }
+  
   await loadExamAndStart()
   window.addEventListener('beforeunload', beforeUnload)
 })
