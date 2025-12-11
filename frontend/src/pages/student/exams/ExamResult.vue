@@ -147,7 +147,8 @@ const mockUserAnswers = [
 
 // Format answer để hiển thị
 function formatAnswerForDisplay(answer: any, question: any): string {
-  if (!answer && answer !== 0 && answer !== false) return 'Chưa trả lời'
+  // Kiểm tra null/undefined nhưng cho phép 0 và false
+  if (answer === null || answer === undefined) return 'Chưa trả lời'
   
   const qtype = question.type || 'single'
   
@@ -160,8 +161,13 @@ function formatAnswerForDisplay(answer: any, question: any): string {
       // Nếu là string trực tiếp (UUID)
       selectedId = answer
     } else if (typeof answer === 'object' && answer !== null) {
-      // Nếu là object
-      selectedId = answer.selected_choice_id || answer.choice_id || null
+      // Nếu là object - kiểm tra nhiều format khác nhau
+      selectedId = answer.selected_choice_id || answer.choice_id || answer.id || null
+      
+      // Nếu vẫn null, có thể là array với 1 phần tử
+      if (!selectedId && Array.isArray(answer)) {
+        selectedId = answer[0] || null
+      }
     }
     
     if (!selectedId) return 'Chưa trả lời'
@@ -170,10 +176,11 @@ function formatAnswerForDisplay(answer: any, question: any): string {
     const choice = question.choices?.find((c: any) => {
       const cid = String(c.id || c.choice_id || '')
       const sid = String(selectedId || '')
-      return cid === sid || cid.includes(sid) || sid.includes(cid)
+      // So sánh chính xác UUID
+      return cid === sid || cid.toLowerCase() === sid.toLowerCase()
     })
     
-    return choice?.text || choice?.label || selectedId
+    return choice?.text || choice?.label || String(selectedId)
   }
   
   if (qtype === 'multi') {
@@ -287,9 +294,27 @@ function getCorrectAnswer(question: any): string {
 
 // Load attempt data from API
 async function loadAttemptData() {
-  const attemptId = route.query.attemptId as string
+  let attemptId = route.query.attemptId as string
+  
+  // Fallback: Lấy attemptId từ localStorage nếu không có trong query
   if (!attemptId) {
-    console.warn('Không tìm thấy attemptId trong query string')
+    const examId = route.params.id as string
+    if (examId && userKey.value) {
+      try {
+        const savedAttemptId = localStorage.getItem(`exam_done_${examId}_${userKey.value}`)
+        if (savedAttemptId) {
+          attemptId = savedAttemptId
+          console.log('Lấy attemptId từ localStorage:', attemptId)
+        }
+      } catch (e) {
+        console.warn('Không thể đọc localStorage:', e)
+      }
+    }
+  }
+  
+  if (!attemptId) {
+    console.warn('Không tìm thấy attemptId trong query string hoặc localStorage')
+    showToast('Không tìm thấy thông tin bài làm. Vui lòng làm bài lại.', 'error')
     userAnswers.value = mockUserAnswers
     loading.value = false
     return
@@ -330,7 +355,17 @@ async function loadAttemptData() {
     }
   } catch (error: any) {
     console.error('Lỗi khi tải dữ liệu bài làm:', error)
-    showToast('Không thể tải dữ liệu bài làm: ' + (error.message || 'Lỗi không xác định'), 'error')
+    const errorMsg = error.response?.data?.detail || error.message || 'Lỗi không xác định'
+    
+    // Nếu là lỗi 404, có thể attempt không tồn tại hoặc không có quyền truy cập
+    if (error.response?.status === 404) {
+      showToast('Không tìm thấy bài làm. Có thể bạn chưa nộp bài hoặc bài làm đã bị xóa.', 'error')
+    } else if (error.response?.status === 403) {
+      showToast('Bạn không có quyền xem bài làm này.', 'error')
+    } else {
+      showToast('Không thể tải dữ liệu bài làm: ' + errorMsg, 'error')
+    }
+    
     userAnswers.value = mockUserAnswers
   } finally {
     loading.value = false
