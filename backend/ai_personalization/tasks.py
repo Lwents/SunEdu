@@ -437,7 +437,7 @@ def send_comeback_emails():
     from django.conf import settings
         
     today = timezone.localdate()
-    reminder_days = [1, 3, 7]
+    reminder_days = [1, 2, 3, 4, 5, 7, 14, 21, 30]  # Các mốc ngày cần nhắc (giống comeback reminders)
     
     # Lấy tất cả học sinh
     students = User.objects.filter(
@@ -445,6 +445,7 @@ def send_comeback_emails():
         is_active=True
     ).select_related('profile')
     
+    logger.info(f"Processing comeback emails for {students.count()} students")
     email_service = get_email_service()
     sent_count = 0
     
@@ -452,36 +453,46 @@ def send_comeback_emails():
         try:
             profile = getattr(student, 'profile', None)
             if not profile:
+                logger.debug(f"Student {student.id} has no profile, skipping")
                 continue
             
             # Kiểm tra email_notifications_enabled
             email_notifications_enabled = profile.metadata.get('email_notifications_enabled', False)
             if not email_notifications_enabled:
+                logger.debug(f"Student {student.id} has email notifications disabled, skipping")
                 continue
             
-            # Tìm ngày học gần nhất
+            # Tìm ngày học gần nhất - lấy theo last_accessed_at mới nhất (giống comeback reminders)
             last_progress = LessonProgress.objects.filter(
                 student=student
             ).filter(
                 Q(completed=True) | Q(video_watched=True)
-            ).order_by('-completed_at', '-last_accessed_at').first()
+            ).order_by('-last_accessed_at', '-completed_at').first()
             
             if not last_progress:
                 continue
             
+            # Lấy ngày học gần nhất từ last_accessed_at (phản ánh hoạt động gần nhất)
             last_date = None
-            if last_progress.completed_at:
-                last_date = last_progress.completed_at.date()
-            elif last_progress.last_accessed_at:
+            if last_progress.last_accessed_at:
                 last_date = last_progress.last_accessed_at.date()
+            elif last_progress.completed_at:
+                last_date = last_progress.completed_at.date()
             
             if not last_date:
                 continue
             
             days_missed = (today - last_date).days
             
-            if days_missed <= 0 or days_missed not in reminder_days:
+            if days_missed <= 0:
+                continue  # Đã học hôm nay hoặc tương lai
+            
+            # Kiểm tra xem có phải mốc cần nhắc không
+            if days_missed not in reminder_days:
+                logger.debug(f"Student {student.id}: days_missed={days_missed} not in reminder_days, skipping")
                 continue
+            
+            logger.info(f"Student {student.id}: Processing comeback email for {days_missed} days missed")
             
             # Kiểm tra xem đã gửi email này chưa
             notification_type = f'comeback_email_{days_missed}day'
@@ -547,27 +558,60 @@ BODY: [nội dung email động viên]"""
                         body_text = ai_response.strip()
                         if days_missed == 1:
                             subject = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
+                        elif days_missed == 2:
+                            subject = '⏰ Đã 2 ngày rồi từ lần cuối bạn học'
                         elif days_missed == 3:
                             subject = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
+                        elif days_missed == 4:
+                            subject = '📖 Đã 4 ngày rồi, đừng bỏ cuộc nhé!'
+                        elif days_missed == 5:
+                            subject = '🎯 Đã 5 ngày rồi, quay lại thôi!'
                         elif days_missed == 7:
                             subject = '🌟 Đã 1 tuần rồi, quay lại thôi!'
+                        elif days_missed == 14:
+                            subject = '📅 Đã 2 tuần rồi, đừng quên học tập nhé!'
+                        elif days_missed == 21:
+                            subject = '⏳ Đã 3 tuần rồi, quay lại học thôi!'
+                        elif days_missed == 30:
+                            subject = '🗓️ Đã 1 tháng rồi, quay lại học tập nhé!'
+                        else:
+                            subject = f'📚 Đã {days_missed} ngày rồi từ lần cuối bạn học'
                 else:
                     raise Exception("AI response failed")
                     
             except Exception as e:
                 logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
-                # Fallback messages
+                # Fallback messages cho tất cả các mốc
                 if days_missed == 1:
                     subject = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
                     body_text = 'Hôm qua bạn bỏ lỡ bài học rồi, hôm nay quay lại nhé!'
+                elif days_missed == 2:
+                    subject = '⏰ Đã 2 ngày rồi từ lần cuối bạn học'
+                    body_text = 'Đã 2 ngày rồi từ lần cuối bạn học. Hãy quay lại để tiếp tục hành trình học tập nhé!'
                 elif days_missed == 3:
                     subject = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
                     body_text = 'Đã 3 ngày rồi từ lần cuối bạn học. Thói quen nhỏ mỗi ngày sẽ tạo ra khác biệt lớn!'
+                elif days_missed == 4:
+                    subject = '📖 Đã 4 ngày rồi, đừng bỏ cuộc nhé!'
+                    body_text = 'Đã 4 ngày rồi từ lần cuối bạn học. Hãy quay lại và tiếp tục hành trình học tập của mình!'
+                elif days_missed == 5:
+                    subject = '🎯 Đã 5 ngày rồi, quay lại thôi!'
+                    body_text = 'Đã 5 ngày rồi từ lần cuối bạn học. Mỗi ngày học một chút sẽ giúp bạn tiến bộ đáng kể!'
                 elif days_missed == 7:
                     subject = '🌟 Đã 1 tuần rồi, quay lại thôi!'
                     body_text = 'Đã 1 tuần rồi, quay lại làm một bài nhẹ nhàng để bắt đầu lại thôi 💪'
+                elif days_missed == 14:
+                    subject = '📅 Đã 2 tuần rồi, đừng quên học tập nhé!'
+                    body_text = 'Đã 2 tuần rồi từ lần cuối bạn học. Hãy quay lại và tiếp tục hành trình học tập của mình!'
+                elif days_missed == 21:
+                    subject = '⏳ Đã 3 tuần rồi, quay lại học thôi!'
+                    body_text = 'Đã 3 tuần rồi từ lần cuối bạn học. Hãy quay lại và bắt đầu lại hành trình học tập!'
+                elif days_missed == 30:
+                    subject = '🗓️ Đã 1 tháng rồi, quay lại học tập nhé!'
+                    body_text = 'Đã 1 tháng rồi từ lần cuối bạn học. Hãy quay lại và tiếp tục hành trình học tập của mình!'
                 else:
-                    continue
+                    subject = f'📚 Đã {days_missed} ngày rồi từ lần cuối bạn học'
+                    body_text = f'Đã {days_missed} ngày rồi từ lần cuối bạn học. Hãy quay lại và tiếp tục hành trình học tập của mình!'
             
             # Tạo HTML email với nút "Học ngay"
             frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
