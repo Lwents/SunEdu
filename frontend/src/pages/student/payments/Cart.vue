@@ -2,7 +2,7 @@
   <div class="student-shell">
     <div class="student-container">
       <div class="mb-4">
-        <p class="student-section-title">Nạp tiền</p>
+        <p class="student-section-title">Thanh toán</p>
         <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">Giỏ hàng</h1>
       </div>
 
@@ -48,7 +48,7 @@
             :disabled="!items.length || total === 0"
             @click="goCheckout"
           >
-            Nạp tiền
+            Thanh toán
           </button>
         </div>
       </div>
@@ -64,9 +64,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { courseService } from '@/services/course.service'
+import { showToast } from '@/utils/toast'
+import { paymentService } from '@/services/payment.service'
 
 const router = useRouter()
 const route = useRoute()
@@ -124,14 +126,14 @@ async function addCourse(courseId: string | number) {
         }
         return
       } catch (e: any) {
-        alert(e?.message || 'Đăng ký khóa học thất bại')
+        showToast(e?.message || 'Đăng ký khóa học thất bại', 'error')
         return
       }
     }
     
     // Nếu đã có trong cart, không thêm lại
     if (items.find(i => String(i.id) === String(courseId))) {
-      alert('Khóa học đã có trong giỏ hàng')
+      showToast('Khóa học đã có trong giỏ hàng', 'warning')
       return
     }
     
@@ -143,7 +145,7 @@ async function addCourse(courseId: string | number) {
     })
     saveCart()
   } catch (e: any) {
-    alert(e?.message || 'Không thể thêm khóa học vào giỏ hàng')
+    showToast(e?.message || 'Không thể thêm khóa học vào giỏ hàng', 'error')
   }
 }
 
@@ -157,13 +159,78 @@ function remove(id: number | string) {
 
 function goCheckout() {
   if (total.value === 0) {
-    alert('Giỏ hàng trống hoặc tất cả khóa học đều miễn phí')
+    showToast('Giỏ hàng trống hoặc tất cả khóa học đều miễn phí', 'warning')
     return
   }
+  // Lưu cart items vào localStorage để enroll sau khi thanh toán thành công
+  localStorage.setItem('pending_cart_enroll', JSON.stringify(items.map(i => i.id)))
   router.push({
     name: 'student-payments-checkout',
-    query: { amount: String(total.value), plan: items[0]?.name || 'Nạp tiền' }
+    query: { amount: String(total.value), plan: items[0]?.name || 'Thanh toán khóa học' }
   })
+}
+
+// Enroll các course trong cart sau khi thanh toán thành công
+async function enrollCoursesFromCart() {
+  const pendingEnroll = localStorage.getItem('pending_cart_enroll')
+  if (!pendingEnroll) return
+  
+  try {
+    const courseIds = JSON.parse(pendingEnroll) as (string | number)[]
+    if (!Array.isArray(courseIds) || courseIds.length === 0) {
+      localStorage.removeItem('pending_cart_enroll')
+      return
+    }
+    
+    // Enroll từng course
+    const enrollPromises = courseIds.map(courseId => 
+      courseService.enroll(courseId).catch(err => {
+        console.error(`Failed to enroll course ${courseId}:`, err)
+        return { success: false, courseId }
+      })
+    )
+    
+    const results = await Promise.all(enrollPromises)
+    const successCount = results.filter(r => r?.success !== false).length
+    
+    // Xóa cart sau khi enroll thành công
+    if (successCount > 0) {
+      items.splice(0, items.length)
+      saveCart()
+      showToast(`Đã đăng ký ${successCount} khóa học vào "Khóa học của tôi"!`, 'success')
+    }
+    
+    // Xóa pending enroll
+    localStorage.removeItem('pending_cart_enroll')
+  } catch (e) {
+    console.error('Error enrolling courses from cart:', e)
+  }
+}
+
+// Kiểm tra thanh toán thành công từ query params
+function checkPaymentSuccess() {
+  const resultCode = route.query.resultCode
+  const hasPendingEnroll = localStorage.getItem('pending_cart_enroll')
+  
+  // Chỉ enroll nếu có pending enroll và thanh toán thành công
+  if (!hasPendingEnroll) return
+  
+  // Nếu thanh toán thành công (resultCode = '0' hoặc 'paid')
+  if (resultCode === '0' || route.query.status === 'paid') {
+    // Đợi một chút để payment được sync
+    setTimeout(() => {
+      enrollCoursesFromCart()
+    }, 1500)
+    
+    // Xóa query params sau khi xử lý
+    const cleanQuery = { ...route.query }
+    delete cleanQuery.resultCode
+    delete cleanQuery.status
+    delete cleanQuery.extraData
+    delete cleanQuery.orderId
+    delete cleanQuery.message
+    router.replace({ query: cleanQuery })
+  }
 }
 
 onMounted(() => {
@@ -174,6 +241,14 @@ onMounted(() => {
     addCourse(addId as string)
     // Xóa query param sau khi xử lý
     router.replace({ query: {} })
+  } else {
+    // Kiểm tra thanh toán thành công
+    checkPaymentSuccess()
   }
 })
+
+// Watch route changes để detect payment success
+watch(() => route.query, () => {
+  checkPaymentSuccess()
+}, { deep: true })
 </script>
