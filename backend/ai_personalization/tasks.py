@@ -192,10 +192,9 @@ MESSAGE: [nội dung cảnh báo]"""
             )
             
             sent_count += 1
-            
-    except Exception as e:
+        except Exception as e:
             logger.error(f"Error sending streak warning to {student.id}: {e}")
-    
+
     logger.info(f"Sent {sent_count} streak warning notifications")
     return sent_count
 
@@ -365,7 +364,7 @@ MESSAGE: [nội dung động viên]"""
                     # Fallback nếu AI không hoạt động
                     raise Exception("AI response failed")
         
-    except Exception as e:
+            except Exception as e:
                 logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
                 # Fallback messages
                 if days_missed == 1:
@@ -421,7 +420,7 @@ def send_comeback_emails():
     from infrastructure.email_service import get_email_service
     from django.db.models import Q
     from datetime import timedelta
-        from django.conf import settings
+    from django.conf import settings
         
     today = timezone.localdate()
     reminder_days = [1, 3, 7]
@@ -596,12 +595,12 @@ BODY: [nội dung email động viên]"""
                 notification_type=notification_type,
                 sent_date=today,
                 metadata={'days_missed': days_missed, 'last_learning_date': str(last_date)}
-        )
+            )
             
             sent_count += 1
-        
-    except Exception as e:
+
+        except Exception as e:
             logger.error(f"Error sending comeback email to {student.id}: {e}")
-    
+
     logger.info(f"Sent {sent_count} comeback reminder emails")
     return sent_count

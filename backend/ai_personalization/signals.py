@@ -7,11 +7,11 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.cache import cache
 from .models import LearningEvent, UserSkillMastery, ContentSkill
-# Import tasks only if they exist (for backward compatibility)
+# Import tasks only if chúng tồn tại (giữ tương thích ngược)
 try:
-from .tasks import update_mastery_async, regenerate_recommendations
+    from .tasks import update_mastery_async, regenerate_recommendations
 except ImportError:
-    # Tasks may not exist in all versions
+    # Nếu không có, đặt None để tránh lỗi import khi chạy migrations cũ
     update_mastery_async = None
     regenerate_recommendations = None
 import logging
@@ -51,13 +51,13 @@ def process_learning_event(sender, instance, created, **kwargs):
         
         # Queue async task for heavy computation
         if update_mastery_async:
-        update_mastery_async.delay(
-            user_id=str(instance.user.id),
-            skills=skills,
-            correct=correct,
-            time_spent=time_spent,
-            attempts=attempts
-        )
+            update_mastery_async.delay(
+                user_id=str(instance.user.id),
+                skills=skills,
+                correct=correct,
+                time_spent=time_spent,
+                attempts=attempts
+            )
         else:
             logger.warning("update_mastery_async task not available")
         
@@ -87,11 +87,11 @@ def on_mastery_update(sender, instance, created, **kwargs):
         delta = abs(instance.mastery - instance._old_mastery)
         if delta > 0.2:  # 20% change threshold
             if regenerate_recommendations:
-            regenerate_recommendations.delay(
-                user_id=str(instance.user.id),
-                trigger_skill=instance.skill
-            )
-            logger.info(f"Queued recommendation regen for {instance.user.id}")
+                regenerate_recommendations.delay(
+                    user_id=str(instance.user.id),
+                    trigger_skill=instance.skill
+                )
+                logger.info(f"Queued recommendation regen for {instance.user.id}")
             else:
                 logger.warning("regenerate_recommendations task not available")
 
