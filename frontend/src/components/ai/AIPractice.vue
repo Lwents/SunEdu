@@ -171,7 +171,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import { aiTutorService, type PracticeExercise, type Weakness } from '@/services/ai-tutor.service'
 
 const props = defineProps<{
@@ -195,6 +196,15 @@ const completed = ref(false)
 const analysis = ref<any>(null)
 const answers = ref<string[]>([]) // Lưu tất cả câu trả lời
 const startTime = ref(0) // Thời gian bắt đầu làm bài
+
+// Storage key cho localStorage
+import { useAuthStore } from '@/store/auth.store'
+const auth = useAuthStore()
+const storageKey = computed(() => {
+  const user = auth.user
+  const userKey = String(user?.id ?? user?.email ?? 'guest')
+  return `ai_practice_${userKey}`
+})
 
 // Computed
 const currentExercise = computed(() => exercises.value[currentIndex.value])
@@ -238,6 +248,12 @@ async function loadAnalysis(autoGenerate = false) {
 async function generateExercises() {
   generatingExercises.value = true
   try {
+    // Kiểm tra xem có tiến trình đã lưu không
+    if (restoreProgress()) {
+      generatingExercises.value = false
+      return // Đã khôi phục tiến trình, không cần tạo mới
+    }
+    
     const weaknesses = analysis.value?.weaknesses || []
     const response = await aiTutorService.generatePractice(weaknesses, 5)
     
@@ -250,6 +266,9 @@ async function generateExercises() {
       selectedAnswer.value = null
       answers.value = [] // Reset answers
       startTime.value = Date.now() // Ghi nhận thời gian bắt đầu
+      
+      // Lưu tiến trình mới
+      saveProgress()
     }
   } catch (error) {
     console.error('Generate exercises error:', error)
@@ -271,6 +290,9 @@ function selectAnswer(choice: string) {
     correctCount.value++
   }
   
+  // Lưu tiến trình vào localStorage
+  saveProgress()
+  
   emit('exercise-answered', isCorrect.value)
 }
 
@@ -279,6 +301,9 @@ async function nextQuestion() {
     currentIndex.value++
     answered.value = false
     selectedAnswer.value = null
+    
+    // Lưu tiến trình vào localStorage
+    saveProgress()
   } else {
     completed.value = true
     
@@ -296,6 +321,9 @@ async function nextQuestion() {
         score: score.value,
         time_spent: Math.floor((Date.now() - startTime.value) / 1000) // Thời gian làm bài (giây)
       })
+      
+      // Xóa tiến trình đã lưu sau khi submit thành công
+      clearProgress()
     } catch (error) {
       console.error('Error submitting practice:', error)
       // Không block UI nếu submit lỗi
@@ -313,6 +341,74 @@ function resetPractice() {
   selectedAnswer.value = null
   answers.value = []
   startTime.value = 0
+  clearProgress()
+}
+
+// Lưu tiến trình vào localStorage
+function saveProgress() {
+  try {
+    const progress = {
+      exercises: exercises.value,
+      currentIndex: currentIndex.value,
+      answers: answers.value,
+      correctCount: correctCount.value,
+      startTime: startTime.value,
+      completed: completed.value,
+      timestamp: Date.now()
+    }
+    localStorage.setItem(storageKey.value, JSON.stringify(progress))
+  } catch (e) {
+    console.warn('Cannot save practice progress:', e)
+  }
+}
+
+// Khôi phục tiến trình từ localStorage
+function restoreProgress(): boolean {
+  try {
+    const saved = localStorage.getItem(storageKey.value)
+    if (!saved) return false
+    
+    const progress = JSON.parse(saved)
+    
+    // Kiểm tra xem progress có còn hợp lệ không (không quá 24 giờ)
+    const maxAge = 24 * 60 * 60 * 1000 // 24 giờ
+    if (progress.timestamp && (Date.now() - progress.timestamp) > maxAge) {
+      clearProgress()
+      return false
+    }
+    
+    // Khôi phục nếu chưa hoàn thành
+    if (progress.exercises && progress.exercises.length > 0 && !progress.completed) {
+      exercises.value = progress.exercises
+      currentIndex.value = progress.currentIndex || 0
+      answers.value = progress.answers || []
+      correctCount.value = progress.correctCount || 0
+      startTime.value = progress.startTime || Date.now()
+      completed.value = false
+      
+      // Khôi phục trạng thái câu hỏi hiện tại
+      if (currentIndex.value < exercises.value.length) {
+        answered.value = !!answers.value[currentIndex.value]
+        selectedAnswer.value = answers.value[currentIndex.value] || null
+      }
+      
+      return true
+    }
+    
+    return false
+  } catch (e) {
+    console.warn('Cannot restore practice progress:', e)
+    return false
+  }
+}
+
+// Xóa tiến trình đã lưu
+function clearProgress() {
+  try {
+    localStorage.removeItem(storageKey.value)
+  } catch (e) {
+    console.warn('Cannot clear practice progress:', e)
+  }
 }
 
 function getChoiceClass(choice: string) {
