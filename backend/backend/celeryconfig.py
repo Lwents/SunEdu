@@ -37,4 +37,9 @@ app.conf.beat_schedule = {
         'task': 'ai_personalization.tasks.send_comeback_emails',
         'schedule': crontab(hour=10, minute=30),  # Daily at 10:30 AM
     },
+    # Auto Restore Streak & Award Badges - Chạy mỗi ngày lúc 0:05 (sau khi streak được tính lại)
+    'auto-restore-streak-badges': {
+        'task': 'ai_personalization.tasks.auto_restore_streak_and_award_badges',
+        'schedule': crontab(hour=0, minute=5),  # Daily at 00:05 AM
+    },
 }

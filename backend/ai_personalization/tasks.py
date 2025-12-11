@@ -15,6 +15,195 @@ User = get_user_model()
 # ... existing code ...
 
 @shared_task
+def auto_restore_streak_and_award_badges():
+    """
+    Tự động khôi phục streak khi mất và còn lượt khôi phục
+    Tạo badges khi streak mất và bắt đầu lại
+    Chạy mỗi ngày lúc 0:00 (sau khi streak được tính lại)
+    """
+    from custom_account.models import UserModel as User
+    from content.models import LessonProgress
+    from activities.models import ExerciseAttempt
+    from gamification.models import GameSession, Badge, UserBadge
+    from ai_personalization.models import StreakRestoration
+    from django.db.models import Q
+    from datetime import timedelta, datetime
+    
+    today = timezone.localdate()
+    yesterday = today - timedelta(days=1)
+    
+    # Lấy tất cả học sinh
+    students = User.objects.filter(role='student', is_active=True).select_related('profile')
+    
+    restored_count = 0
+    badge_count = 0
+    
+    for student in students:
+        try:
+            # Tính streak hiện tại
+            from activities.models import ExerciseAttempt
+            from gamification.models import GameSession
+            
+            streak = 0
+            check_date = today
+            while streak < 365:
+                has_lesson = LessonProgress.objects.filter(
+                    student=student
+                ).filter(
+                    Q(completed=True) | Q(video_watched=True)
+                ).filter(
+                    Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
+                ).exists()
+                
+                has_exercise = ExerciseAttempt.objects.filter(
+                    student=student,
+                    finished_at__date=check_date
+                ).exists()
+                
+                has_game = GameSession.objects.filter(
+                    player=student,
+                    completed=True,
+                    completed_at__date=check_date
+                ).exists()
+                
+                if has_lesson or has_exercise or has_game:
+                    streak += 1
+                    check_date -= timedelta(days=1)
+                else:
+                    break
+            
+            # Kiểm tra hôm qua có hoạt động không
+            yesterday_has_activity = (
+                LessonProgress.objects.filter(
+                    student=student
+                ).filter(
+                    Q(completed=True) | Q(video_watched=True)
+                ).filter(
+                    Q(completed_at__date=yesterday) | Q(last_accessed_at__date=yesterday)
+                ).exists() or
+                ExerciseAttempt.objects.filter(
+                    student=student,
+                    finished_at__date=yesterday
+                ).exists() or
+                GameSession.objects.filter(
+                    player=student,
+                    completed=True,
+                    completed_at__date=yesterday
+                ).exists()
+            )
+            
+            # Nếu streak = 0 và có thể khôi phục
+            was_restored = False
+            if streak == 0 and StreakRestoration.can_restore(student) and yesterday_has_activity:
+                # Tính streak trước khi mất (hôm qua)
+                previous_streak = 0
+                check_date = yesterday
+                while previous_streak < 365:
+                    has_lesson = LessonProgress.objects.filter(
+                        student=student
+                    ).filter(
+                        Q(completed=True) | Q(video_watched=True)
+                    ).filter(
+                        Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
+                    ).exists()
+                    
+                    has_exercise = ExerciseAttempt.objects.filter(
+                        student=student,
+                        finished_at__date=check_date
+                    ).exists()
+                    
+                    has_game = GameSession.objects.filter(
+                        player=student,
+                        completed=True,
+                        completed_at__date=check_date
+                    ).exists()
+                    
+                    if has_lesson or has_exercise or has_game:
+                        previous_streak += 1
+                        check_date -= timedelta(days=1)
+                    else:
+                        break
+                
+                # Nếu có streak để khôi phục (>= 1)
+                if previous_streak >= 1:
+                    # Tự động khôi phục
+                    month_year = today.strftime('%Y-%m')
+                    restoration = StreakRestoration.objects.create(
+                        user=student,
+                        month_year=month_year,
+                        restored_streak_value=previous_streak,
+                        restored_at=timezone.now()
+                    )
+                    
+                    # Tạo hoặc cập nhật LessonProgress để khôi phục streak
+                    last_progress = LessonProgress.objects.filter(
+                        student=student
+                    ).filter(
+                        Q(completed=True) | Q(video_watched=True)
+                    ).order_by('-last_accessed_at').first()
+                    
+                    if last_progress:
+                        yesterday_datetime = timezone.make_aware(
+                            datetime.combine(yesterday, datetime.min.time().replace(hour=12))
+                        )
+                        last_progress.last_accessed_at = yesterday_datetime
+                        if not last_progress.completed_at:
+                            last_progress.completed_at = yesterday_datetime
+                        last_progress.save(update_fields=['last_accessed_at', 'completed_at'])
+                    
+                    was_restored = True
+                    restored_count += 1
+                    logger.info(f"Auto-restored streak {previous_streak} for {student.username}")
+            
+            # Tạo badge khi streak mất (chỉ khi không được auto-restore)
+            if streak == 0 and yesterday_has_activity and not was_restored:
+                # Tạo badge "Streak mất" nếu chưa có
+                badge, created = Badge.objects.get_or_create(
+                    name='streak_lost',
+                    defaults={
+                        'description': 'Đã mất streak nhưng không sao, hãy bắt đầu lại!',
+                        'icon_url': '🔥',
+                        'criteria': {'type': 'streak_lost'}
+                    }
+                )
+                
+                if not UserBadge.objects.filter(user=student, badge=badge).exists():
+                    UserBadge.objects.create(
+                        user=student,
+                        badge=badge,
+                        metadata={'streak_lost_date': str(yesterday), 'auto_awarded': True}
+                    )
+                    badge_count += 1
+                    logger.info(f"Awarded 'streak_lost' badge to {student.username}")
+            
+            # Tạo badge khi bắt đầu streak mới (streak = 1 và hôm qua không có hoạt động)
+            if streak == 1 and not yesterday_has_activity:
+                badge, created = Badge.objects.get_or_create(
+                    name='streak_reborn',
+                    defaults={
+                        'description': 'Bắt đầu streak mới! Hãy giữ lửa!',
+                        'icon_url': '🌱',
+                        'criteria': {'type': 'streak_reborn'}
+                    }
+                )
+                
+                if not UserBadge.objects.filter(user=student, badge=badge).exists():
+                    UserBadge.objects.create(
+                        user=student,
+                        badge=badge,
+                        metadata={'streak_started_date': str(today), 'auto_awarded': True}
+                    )
+                    badge_count += 1
+                    logger.info(f"Awarded 'streak_reborn' badge to {student.username}")
+        
+        except Exception as e:
+            logger.error(f"Error processing auto-restore/badge for {student.id}: {e}")
+    
+    logger.info(f"Auto-restored {restored_count} streaks and awarded {badge_count} badges")
+    return {'restored': restored_count, 'badges': badge_count}
+
+
+@shared_task
 def send_streak_warning_notifications():
     """
     Gửi cảnh báo streak sắp mất (2-3 tiếng trước 23:59)
