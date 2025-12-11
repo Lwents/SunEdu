@@ -199,6 +199,7 @@ class StudentGameSessionView(APIView):
             session.time_spent = request.data.get('time_spent', 0)
             session.answers = request.data.get('answers', [])
             session.completed = True
+            # Đảm bảo completed_at được set đúng timezone để tính streak chính xác
             session.completed_at = timezone.now()
             session.save()
             

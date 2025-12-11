@@ -440,6 +440,92 @@ class AITutorPracticeView(APIView):
         return Response(result)
 
 
+class AITutorPracticeSubmitView(APIView):
+    """
+    POST /api/student/ai/tutor/practice/submit/
+    
+    Submit kết quả bài luyện tập AI và tạo ExerciseAttempt để tính vào streak/daily goal
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        from activities.models import Exercise, ExerciseAttempt, ExerciseAnswer, Question, Choice
+        from activities.services import start_attempt, finalize_attempt
+        from django.utils import timezone
+        
+        exercises_data = request.data.get('exercises', [])  # Danh sách câu hỏi đã làm
+        score = request.data.get('score', 0)  # Điểm số tổng (0-100)
+        time_spent = request.data.get('time_spent', 0)  # Thời gian làm bài (giây)
+        
+        if not exercises_data:
+            return Response(
+                {'error': 'Không có dữ liệu bài tập'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Tạo Exercise mới cho bài luyện tập AI (mỗi lần submit tạo Exercise mới)
+            # Sử dụng Exercise với title đặc biệt để phân biệt bài luyện tập AI
+            exercise_title = f"AI Practice - {request.user.username} - {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            exercise = Exercise.objects.create(
+                title=exercise_title,
+                type='mcq',
+                published=True,
+            )
+            
+            # Tạo ExerciseAttempt
+            attempt = ExerciseAttempt.objects.create(
+                exercise=exercise,
+                student=request.user,
+                score=score,
+                finished_at=timezone.now(),
+                metadata={
+                    'type': 'ai_practice',
+                    'time_spent': time_spent,
+                    'num_questions': len(exercises_data),
+                    'created_at': timezone.now().isoformat()
+                }
+            )
+            
+            # Tạo ExerciseAnswer cho mỗi câu hỏi (nếu cần)
+            # Lưu ý: Bài luyện tập AI có thể không có Question model, chỉ lưu metadata
+            for idx, ex_data in enumerate(exercises_data):
+                # Tạo Question tạm thời nếu chưa có
+                question_text = ex_data.get('question', '')
+                correct_answer = ex_data.get('correct_answer', '')
+                student_answer = ex_data.get('student_answer', '')
+                is_correct = ex_data.get('is_correct', False)
+                
+                if question_text:
+                    question, _ = Question.objects.get_or_create(
+                        exercise=exercise,
+                        prompt=question_text,
+                        defaults={'meta': {'type': 'ai_practice', 'index': idx}}
+                    )
+                    
+                    # Tạo ExerciseAnswer
+                    ExerciseAnswer.objects.create(
+                        attempt=attempt,
+                        question=question,
+                        answer={'text': student_answer, 'selected_choice': correct_answer},
+                        correct=is_correct
+                    )
+            
+            return Response({
+                'success': True,
+                'attempt_id': str(attempt.id),
+                'score': score,
+                'message': 'Đã lưu kết quả bài luyện tập!'
+            })
+        
+        except Exception as e:
+            logger.error(f"Error submitting AI practice: {e}")
+            return Response(
+                {'error': f'Lỗi khi lưu kết quả: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class AITutorDailyReportView(APIView):
     """
     GET /api/student/ai/tutor/daily-report/

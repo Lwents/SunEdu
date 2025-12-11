@@ -154,6 +154,23 @@ export const aiTutorService = {
     const response = await api.get('/student/ai/tutor/daily-report/')
     return response.data
   },
+
+  /**
+   * Submit kết quả bài luyện tập AI để tính vào streak/daily goal
+   */
+  async submitPractice(data: {
+    exercises: Array<{
+      question: string
+      correct_answer: string
+      student_answer: string
+      is_correct: boolean
+    }>
+    score: number
+    time_spent: number
+  }): Promise<{ success: boolean; attempt_id?: string; message?: string; error?: string }> {
+    const response = await api.post('/student/ai/tutor/practice/submit/', data)
+    return response.data
+  },
 }
 
 // Additional types

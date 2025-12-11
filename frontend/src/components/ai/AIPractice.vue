@@ -193,6 +193,8 @@ const answered = ref(false)
 const correctCount = ref(0)
 const completed = ref(false)
 const analysis = ref<any>(null)
+const answers = ref<string[]>([]) // Lưu tất cả câu trả lời
+const startTime = ref(0) // Thời gian bắt đầu làm bài
 
 // Computed
 const currentExercise = computed(() => exercises.value[currentIndex.value])
@@ -246,6 +248,8 @@ async function generateExercises() {
       completed.value = false
       answered.value = false
       selectedAnswer.value = null
+      answers.value = [] // Reset answers
+      startTime.value = Date.now() // Ghi nhận thời gian bắt đầu
     }
   } catch (error) {
     console.error('Generate exercises error:', error)
@@ -260,6 +264,9 @@ function selectAnswer(choice: string) {
   selectedAnswer.value = choice
   answered.value = true
   
+  // Lưu câu trả lời vào mảng answers
+  answers.value[currentIndex.value] = choice
+  
   if (isCorrect.value) {
     correctCount.value++
   }
@@ -267,13 +274,33 @@ function selectAnswer(choice: string) {
   emit('exercise-answered', isCorrect.value)
 }
 
-function nextQuestion() {
+async function nextQuestion() {
   if (currentIndex.value < exercises.value.length - 1) {
     currentIndex.value++
     answered.value = false
     selectedAnswer.value = null
   } else {
     completed.value = true
+    
+    // Submit kết quả bài luyện tập để tính vào streak/daily goal
+    try {
+      const exercisesData = exercises.value.map((ex, idx) => ({
+        question: ex.question,
+        correct_answer: ex.correct_answer,
+        student_answer: answers.value[idx] || '',
+        is_correct: answers.value[idx] === ex.correct_answer
+      }))
+      
+      await aiTutorService.submitPractice({
+        exercises: exercisesData,
+        score: score.value,
+        time_spent: Math.floor((Date.now() - startTime.value) / 1000) // Thời gian làm bài (giây)
+      })
+    } catch (error) {
+      console.error('Error submitting practice:', error)
+      // Không block UI nếu submit lỗi
+    }
+    
     emit('completed', score.value)
   }
 }
@@ -284,6 +311,8 @@ function resetPractice() {
   completed.value = false
   answered.value = false
   selectedAnswer.value = null
+  answers.value = []
+  startTime.value = 0
 }
 
 function getChoiceClass(choice: string) {
