@@ -39,7 +39,7 @@
             class="form-input"
             :class="{ 'border-red-300': errors.email }"
             @blur="validateEmail"
-            @input="errors.email = ''"
+            @input="() => { errors.email = '' }"
           />
         </div>
         <p v-if="errors.email" class="form-error">
@@ -283,6 +283,23 @@ function validateEmail() {
     errors.email = 'Vui lòng nhập email hoặc username'
     return false
   }
+  
+  const input = form.email.trim()
+  
+  // Kiểm tra nếu là email (có chứa @)
+  const isEmail = input.includes('@')
+  
+  if (!isEmail) {
+    // Nếu không phải email, kiểm tra username không được có ký tự đặc biệt
+    // Username chỉ được chứa: chữ cái (a-z, A-Z), số (0-9), dấu gạch dưới (_), dấu gạch ngang (-)
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/
+    
+    if (!usernameRegex.test(input)) {
+      errors.email = 'Tài khoản không được chứa ký tự đặc biệt'
+      return false
+    }
+  }
+  
   errors.email = ''
   return true
 }
