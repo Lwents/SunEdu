@@ -196,23 +196,23 @@ class StudentLessonQuestionView(APIView):
 
         # Chỉ gửi thông báo cho giáo viên nếu KHÔNG phải là tương tác với AI
         if not is_ai_interaction:
-        course_title = course.title if course else "Khóa học"
-        Notification.objects.create(
-            user=teacher,
-            title=f"Học sinh hỏi về bài: {lesson.title}",
-            message=f"[{course_title}] {content}",
-            type="info",
-            category="lesson_question",
-            metadata={
-                "lesson_question_id": str(q.id),
-                "lesson_id": str(lesson.id),
-                "course_id": str(course.id) if course else None,
-                "student_id": str(student.id),
-                "student": student.username,
-                "lesson_title": lesson.title,
-                "course_title": course_title,
-            },
-        )
+            course_title = course.title if course else "Khóa học"
+            Notification.objects.create(
+                user=teacher,
+                title=f"Học sinh hỏi về bài: {lesson.title}",
+                message=f"[{course_title}] {content}",
+                type="info",
+                category="lesson_question",
+                metadata={
+                    "lesson_question_id": str(q.id),
+                    "lesson_id": str(lesson.id),
+                    "course_id": str(course.id) if course else None,
+                    "student_id": str(student.id),
+                    "student": student.username,
+                    "lesson_title": lesson.title,
+                    "course_title": course_title,
+                },
+            )
 
         return Response({"item": serialize_question(q, user=request.user, request=request)}, status=status.HTTP_201_CREATED)
 
