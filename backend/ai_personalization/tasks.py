@@ -57,11 +57,14 @@ def send_streak_warning_notifications():
             if not notifications_enabled:
                 continue
             
-            # Tính streak hiện tại
+            # Tính streak hiện tại (bao gồm bài học, bài tập, bài kiểm tra, trò chơi)
+            from activities.models import ExerciseAttempt
+            from gamification.models import GameSession
+            
             streak = 0
             check_date = today
             while streak < 365:
-                has_progress = LessonProgress.objects.filter(
+                has_lesson = LessonProgress.objects.filter(
                     student=student
                 ).filter(
                     Q(completed=True) | Q(video_watched=True)
@@ -69,7 +72,18 @@ def send_streak_warning_notifications():
                     Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
                 ).exists()
                 
-                if has_progress:
+                has_exercise = ExerciseAttempt.objects.filter(
+                    student=student,
+                    finished_at__date=check_date
+                ).exists()
+                
+                has_game = GameSession.objects.filter(
+                    player=student,
+                    completed=True,
+                    completed_at__date=check_date
+                ).exists()
+                
+                if has_lesson or has_exercise or has_game:
                     streak += 1
                     check_date -= timedelta(days=1)
                 else:
@@ -80,14 +94,27 @@ def send_streak_warning_notifications():
                 logger.debug(f"User {student.username}: streak {streak} < 2, skip")
                 continue
             
-            # Kiểm tra xem đã đạt daily goal hôm nay chưa
-            completed_today = LessonProgress.objects.filter(
+            # Kiểm tra xem đã đạt daily goal hôm nay chưa (bao gồm bài học, bài tập, bài kiểm tra, trò chơi)
+            lessons_completed = LessonProgress.objects.filter(
                 student=student
             ).filter(
                 Q(completed=True) | Q(video_watched=True)
             ).filter(
                 Q(completed_at__date=today) | Q(last_accessed_at__date=today)
             ).distinct().count()
+            
+            exercises_completed = ExerciseAttempt.objects.filter(
+                student=student,
+                finished_at__date=today
+            ).distinct().count()
+            
+            games_completed = GameSession.objects.filter(
+                player=student,
+                completed=True,
+                completed_at__date=today
+            ).distinct().count()
+            
+            completed_today = lessons_completed + exercises_completed + games_completed
             
             target = 2  # Daily goal
             if completed_today >= target:

@@ -506,9 +506,13 @@ class AILearningAnalyzerView(APIView):
         # thay vì timezone.now().date() trả về ngày UTC
         today = timezone.localdate()
         
-        # Đếm bài học đã hoàn thành hôm nay
-        # Kiểm tra cả completed_at (ngày hoàn thành) và last_accessed_at (ngày truy cập)
-        completed_today = LessonProgress.objects.filter(
+        # Import các models cần thiết
+        from activities.models import ExerciseAttempt
+        from gamification.models import GameSession
+        
+        # Đếm các hoạt động đã hoàn thành hôm nay:
+        # 1. Bài học (LessonProgress)
+        lessons_completed = LessonProgress.objects.filter(
             student=user
         ).filter(
             Q(completed=True) | Q(video_watched=True)
@@ -517,12 +521,32 @@ class AILearningAnalyzerView(APIView):
             Q(completed_at__date=today) | Q(last_accessed_at__date=today)
         ).distinct().count()
         
+        # 2. Bài tập/Bài kiểm tra (ExerciseAttempt) - đã hoàn thành (finished_at không null)
+        exercises_completed = ExerciseAttempt.objects.filter(
+            student=user,
+            finished_at__date=today
+        ).distinct().count()
+        
+        # 3. Trò chơi (GameSession) - đã hoàn thành (completed = True)
+        games_completed = GameSession.objects.filter(
+            player=user,
+            completed=True,
+            completed_at__date=today
+        ).distinct().count()
+        
+        # Tổng số hoạt động đã hoàn thành hôm nay
+        completed_today = lessons_completed + exercises_completed + games_completed
+        
         # Tính streak (số ngày liên tiếp có hoạt động học)
+        # Streak được tính nếu có BẤT KỲ hoạt động nào trong ngày:
+        # - LessonProgress (completed/video_watched)
+        # - ExerciseAttempt (finished_at)
+        # - GameSession (completed = True)
         streak = 0
         check_date = today
         while streak < 365:  # Giới hạn tối đa 365 ngày
-            # Kiểm tra cả completed_at và last_accessed_at
-            has_progress = LessonProgress.objects.filter(
+            # Kiểm tra có hoạt động nào trong ngày không
+            has_lesson = LessonProgress.objects.filter(
                 student=user
             ).filter(
                 Q(completed=True) | Q(video_watched=True)
@@ -530,7 +554,19 @@ class AILearningAnalyzerView(APIView):
                 Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
             ).exists()
             
-            if has_progress:
+            has_exercise = ExerciseAttempt.objects.filter(
+                student=user,
+                finished_at__date=check_date
+            ).exists()
+            
+            has_game = GameSession.objects.filter(
+                player=user,
+                completed=True,
+                completed_at__date=check_date
+            ).exists()
+            
+            # Có bất kỳ hoạt động nào thì streak tiếp tục
+            if has_lesson or has_exercise or has_game:
                 streak += 1
                 check_date -= timedelta(days=1)
             else:
@@ -937,11 +973,14 @@ class StreakRestoreView(APIView):
     
     def _get_previous_streak(self, user, before_date):
         """Tính streak trước ngày bị mất"""
+        from activities.models import ExerciseAttempt
+        from gamification.models import GameSession
+        
         streak = 0
         check_date = before_date - timedelta(days=1)
         
         while streak < 365:
-            has_progress = LessonProgress.objects.filter(
+            has_lesson = LessonProgress.objects.filter(
                 student=user
             ).filter(
                 Q(completed=True) | Q(video_watched=True)
@@ -949,7 +988,18 @@ class StreakRestoreView(APIView):
                 Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
             ).exists()
             
-            if has_progress:
+            has_exercise = ExerciseAttempt.objects.filter(
+                student=user,
+                finished_at__date=check_date
+            ).exists()
+            
+            has_game = GameSession.objects.filter(
+                player=user,
+                completed=True,
+                completed_at__date=check_date
+            ).exists()
+            
+            if has_lesson or has_exercise or has_game:
                 streak += 1
                 check_date -= timedelta(days=1)
             else:
@@ -1033,9 +1083,13 @@ class StreakRestoreView(APIView):
     
     def _get_daily_goal(self, user):
         """Helper method để tính daily goal (copy từ AILearningAnalyzerView)"""
+        from activities.models import ExerciseAttempt
+        from gamification.models import GameSession
+        
         today = timezone.localdate()
         
-        completed_today = LessonProgress.objects.filter(
+        # Đếm các hoạt động đã hoàn thành hôm nay
+        lessons_completed = LessonProgress.objects.filter(
             student=user
         ).filter(
             Q(completed=True) | Q(video_watched=True)
@@ -1043,10 +1097,23 @@ class StreakRestoreView(APIView):
             Q(completed_at__date=today) | Q(last_accessed_at__date=today)
         ).distinct().count()
         
+        exercises_completed = ExerciseAttempt.objects.filter(
+            student=user,
+            finished_at__date=today
+        ).distinct().count()
+        
+        games_completed = GameSession.objects.filter(
+            player=user,
+            completed=True,
+            completed_at__date=today
+        ).distinct().count()
+        
+        completed_today = lessons_completed + exercises_completed + games_completed
+        
         streak = 0
         check_date = today
         while streak < 365:
-            has_progress = LessonProgress.objects.filter(
+            has_lesson = LessonProgress.objects.filter(
                 student=user
             ).filter(
                 Q(completed=True) | Q(video_watched=True)
@@ -1054,7 +1121,18 @@ class StreakRestoreView(APIView):
                 Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
             ).exists()
             
-            if has_progress:
+            has_exercise = ExerciseAttempt.objects.filter(
+                student=user,
+                finished_at__date=check_date
+            ).exists()
+            
+            has_game = GameSession.objects.filter(
+                player=user,
+                completed=True,
+                completed_at__date=check_date
+            ).exists()
+            
+            if has_lesson or has_exercise or has_game:
                 streak += 1
                 check_date -= timedelta(days=1)
             else:
