@@ -595,12 +595,12 @@ BODY: [nội dung email động viên]"""
                 notification_type=notification_type,
                 sent_date=today,
                 metadata={'days_missed': days_missed, 'last_learning_date': str(last_date)}
-        )
+            )
             
             sent_count += 1
-        
-    except Exception as e:
+
+        except Exception as e:
             logger.error(f"Error sending comeback email to {student.id}: {e}")
-    
+
     logger.info(f"Sent {sent_count} comeback reminder emails")
     return sent_count
