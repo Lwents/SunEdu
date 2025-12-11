@@ -27,6 +27,15 @@ export interface AIWeakness {
   suggestion: string
   lesson_id: string
   course_id: string
+  can_retry?: boolean  // Có thể làm lại được không (mặc định true nếu không có)
+  wrong_questions_count?: number  // Số câu hỏi sai
+  wrong_questions?: Array<{  // Danh sách câu hỏi sai
+    question_text: string
+    question_id: string
+    student_answer: string
+    correct_answer: string
+    topic: string
+  }>
 }
 
 export interface AIAchievement {
@@ -40,6 +49,12 @@ export interface DailyGoal {
   target: number
   completed: number
   streak: number
+  streak_restoration?: {
+    count_this_month: number
+    max_per_month: number
+    can_restore: boolean
+    remaining: number
+  }
 }
 
 export interface CourseProgress {

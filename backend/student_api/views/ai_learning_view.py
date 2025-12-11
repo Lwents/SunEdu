@@ -24,6 +24,7 @@ from django.utils import timezone
 from student_api.permissions import IsStudent
 from content.models import Lesson, Module, Course, Enrollment, LessonProgress
 from activities.models import ExerciseAttempt, Exercise
+from ai_personalization.models import StreakRestoration
 
 logger = logging.getLogger(__name__)
 
@@ -349,8 +350,9 @@ class AILearningAnalyzerView(APIView):
         return suggestions[:5]  # Giới hạn 5 gợi ý
     
     def _detect_weaknesses(self, user, enrollments):
-        """Phát hiện điểm yếu dựa trên điểm bài tập"""
+        """Phát hiện điểm yếu dựa trên điểm bài tập và phân tích câu hỏi sai cụ thể"""
         weaknesses = []
+        wrong_questions_by_topic = {}  # Nhóm câu sai theo topic để tạo bài tập
         
         # Lấy các bài tập có điểm thấp
         low_score_attempts = ExerciseAttempt.objects.filter(
@@ -362,19 +364,107 @@ class AILearningAnalyzerView(APIView):
             'exercise__lesson', 
             'exercise__lesson__module',
             'exercise__lesson__module__course'
-        ).order_by('score')[:5]
+        ).prefetch_related(
+            'exercise__settings',
+            'answers__question',
+            'answers__question__choices'
+        ).order_by('score')[:10]  # Lấy nhiều hơn để filter
         
         for attempt in low_score_attempts:
             exercise = attempt.exercise
-            if exercise and exercise.lesson and exercise.lesson.module:
-                weaknesses.append({
-                    "topic": exercise.lesson.title,
-                    "course": exercise.lesson.module.course.title,
-                    "score": float(attempt.score) if attempt.score else 0,
-                    "suggestion": f"Cần ôn lại bài {exercise.lesson.title}",
-                    "lesson_id": str(exercise.lesson.id),
-                    "course_id": str(exercise.lesson.module.course.id),
-                })
+            if not exercise or not exercise.lesson or not exercise.lesson.module:
+                continue
+            
+            # Kiểm tra xem bài tập có thể làm lại được không
+            # Đếm số lần attempt của học sinh cho bài tập này
+            from activities.models import ExerciseAttempt
+            student_attempt_count = ExerciseAttempt.objects.filter(
+                student=user,
+                exercise=exercise,
+                finished_at__isnull=False
+            ).count()
+            
+            # Lấy exercise domain để kiểm tra can_attempt
+            try:
+                from activities.domains.exercise_domain import ExerciseDomain
+                exercise_domain = ExerciseDomain.from_model(exercise)
+                
+                # Kiểm tra xem có thể làm lại được không
+                can_retry = exercise_domain.can_attempt(student_attempt_count)
+            except Exception:
+                # Nếu không lấy được domain, giả định có thể làm lại (fallback)
+                can_retry = True
+            
+            # Phân tích câu hỏi sai từ attempt này
+            wrong_questions = []
+            if can_retry:
+                from activities.models import ExerciseAnswer
+                answers = ExerciseAnswer.objects.filter(
+                    attempt=attempt,
+                    correct=False  # Chỉ lấy câu sai
+                ).select_related('question')
+                
+                for answer in answers:
+                    question = answer.question
+                    if question:
+                        # Lấy đáp án đúng
+                        correct_choice = question.choices.filter(is_correct=True).first()
+                        correct_answer_text = correct_choice.text if correct_choice else "N/A"
+                        
+                        # Lấy đáp án học sinh chọn
+                        student_answer_text = answer.text_answer or answer.choice_answer or "Không trả lời"
+                        
+                        wrong_questions.append({
+                            "question_text": question.text[:200],  # Giới hạn độ dài
+                            "question_id": str(question.id),
+                            "student_answer": student_answer_text[:100],
+                            "correct_answer": correct_answer_text[:100],
+                            "topic": exercise.lesson.title,
+                        })
+            
+            # Chỉ thêm vào weaknesses nếu có thể làm lại được
+            if can_retry:
+                topic_key = exercise.lesson.title
+                
+                # Nhóm câu sai theo topic
+                if topic_key not in wrong_questions_by_topic:
+                    wrong_questions_by_topic[topic_key] = {
+                        "topic": exercise.lesson.title,
+                        "course": exercise.lesson.module.course.title,
+                        "lesson_id": str(exercise.lesson.id),
+                        "course_id": str(exercise.lesson.module.course.id),
+                        "wrong_questions": [],
+                        "min_score": float(attempt.score) if attempt.score else 0,
+                    }
+                
+                # Thêm câu sai vào topic
+                wrong_questions_by_topic[topic_key]["wrong_questions"].extend(wrong_questions)
+                
+                # Cập nhật điểm thấp nhất
+                current_score = float(attempt.score) if attempt.score else 0
+                if current_score < wrong_questions_by_topic[topic_key]["min_score"]:
+                    wrong_questions_by_topic[topic_key]["min_score"] = current_score
+            
+            # Giới hạn số lượng weaknesses
+            if len(wrong_questions_by_topic) >= 5:
+                break
+        
+        # Chuyển đổi sang format weaknesses
+        for topic_data in wrong_questions_by_topic.values():
+            # Lấy top 5 câu sai để tạo bài tập
+            wrong_questions = topic_data["wrong_questions"][:5]
+            
+            weaknesses.append({
+                "topic": topic_data["topic"],
+                "course": topic_data["course"],
+                "score": topic_data["min_score"],
+                "suggestion": f"Cần ôn lại bài {topic_data['topic']}",
+                "lesson_id": topic_data["lesson_id"],
+                "course_id": topic_data["course_id"],
+                "can_retry": True,
+                "wrong_questions_count": len(wrong_questions),
+                "wrong_questions": wrong_questions,  # Gửi câu sai để AI tạo bài tập
+            })
         
         return weaknesses
     
@@ -446,10 +536,20 @@ class AILearningAnalyzerView(APIView):
             else:
                 break
         
+        # Lấy thông tin restoration
+        restoration_count = StreakRestoration.get_restoration_count_this_month(user)
+        can_restore = StreakRestoration.can_restore(user)
+        
         return {
             "target": 2,  # Mục tiêu 2 bài/ngày
             "completed": completed_today,
             "streak": streak,
+            "streak_restoration": {
+                "count_this_month": restoration_count,
+                "max_per_month": 2,
+                "can_restore": can_restore and streak == 0,  # Chỉ cho phép restore khi streak = 0
+                "remaining": max(0, 2 - restoration_count)
+            }
         }
     
     def _generate_ai_message(self, analysis, daily_goal, weaknesses=None, use_ai=True):
@@ -825,4 +925,143 @@ Chỉ trả về lời khuyên, không giải thích."""
                 "challenge_mode": score_10 >= 8.5,
             },
             "ai_powered": use_ai,
+        }
+
+
+class StreakRestoreView(APIView):
+    """
+    POST /api/student/ai/learning/restore-streak/
+    Khôi phục streak bị mất - tối đa 2 lần/tháng
+    """
+    permission_classes = [IsAuthenticated, IsStudent]
+    
+    def _get_previous_streak(self, user, before_date):
+        """Tính streak trước ngày bị mất"""
+        streak = 0
+        check_date = before_date - timedelta(days=1)
+        
+        while streak < 365:
+            has_progress = LessonProgress.objects.filter(
+                student=user
+            ).filter(
+                Q(completed=True) | Q(video_watched=True)
+            ).filter(
+                Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
+            ).exists()
+            
+            if has_progress:
+                streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+        
+        return streak
+    
+    def post(self, request):
+        user = request.user
+        today = timezone.localdate()
+        
+        # Kiểm tra streak hiện tại
+        current_streak = self._get_daily_goal(user)['streak']
+        
+        if current_streak > 0:
+            return Response(
+                {'error': 'Streak hiện tại vẫn còn, không cần khôi phục'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Kiểm tra số lần đã khôi phục trong tháng
+        if not StreakRestoration.can_restore(user):
+            restoration_count = StreakRestoration.get_restoration_count_this_month(user)
+            return Response(
+                {
+                    'error': f'Đã hết lượt khôi phục trong tháng này ({restoration_count}/2)',
+                    'restoration_count': restoration_count,
+                    'max_per_month': 2
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Tính streak trước khi mất (ngày hôm qua)
+        yesterday = today - timedelta(days=1)
+        previous_streak = self._get_previous_streak(user, today)
+        
+        if previous_streak == 0:
+            return Response(
+                {'error': 'Không có streak để khôi phục'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Tạo record khôi phục
+        month_year = today.strftime('%Y-%m')
+        restoration = StreakRestoration.objects.create(
+            user=user,
+            month_year=month_year,
+            restored_streak_value=previous_streak,
+            restored_at=timezone.now()
+        )
+        
+        # Tạo hoặc cập nhật LessonProgress record cho ngày hôm qua để "khôi phục" streak
+        # Tìm lesson progress gần nhất (có completed hoặc video_watched)
+        last_progress = LessonProgress.objects.filter(
+            student=user
+        ).filter(
+            Q(completed=True) | Q(video_watched=True)
+        ).order_by('-last_accessed_at').first()
+        
+        if last_progress:
+            # Cập nhật last_accessed_at và completed_at của progress gần nhất thành hôm qua
+            # để streak được tính lại đúng
+            yesterday_datetime = timezone.make_aware(
+                datetime.combine(yesterday, datetime.min.time().replace(hour=12))  # 12:00 PM
+            )
+            last_progress.last_accessed_at = yesterday_datetime
+            # Đảm bảo có completed_at hoặc completed/video_watched để streak được tính
+            if not last_progress.completed_at:
+                last_progress.completed_at = yesterday_datetime
+            last_progress.save(update_fields=['last_accessed_at', 'completed_at'])
+        
+        restoration_count = StreakRestoration.get_restoration_count_this_month(user)
+        
+        return Response({
+            'success': True,
+            'message': f'Đã khôi phục streak {previous_streak} ngày!',
+            'restored_streak': previous_streak,
+            'restoration_count': restoration_count,
+            'remaining_restorations': 2 - restoration_count
+        })
+    
+    def _get_daily_goal(self, user):
+        """Helper method để tính daily goal (copy từ AILearningAnalyzerView)"""
+        today = timezone.localdate()
+        
+        completed_today = LessonProgress.objects.filter(
+            student=user
+        ).filter(
+            Q(completed=True) | Q(video_watched=True)
+        ).filter(
+            Q(completed_at__date=today) | Q(last_accessed_at__date=today)
+        ).distinct().count()
+        
+        streak = 0
+        check_date = today
+        while streak < 365:
+            has_progress = LessonProgress.objects.filter(
+                student=user
+            ).filter(
+                Q(completed=True) | Q(video_watched=True)
+            ).filter(
+                Q(completed_at__date=check_date) | Q(last_accessed_at__date=check_date)
+            ).exists()
+            
+            if has_progress:
+                streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+        
+        return {
+            "target": 2,
+            "completed": completed_today,
+            "streak": streak,
         }

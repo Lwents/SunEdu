@@ -125,16 +125,16 @@ class LessonUnlockCheckView(APIView):
                 position__lt=lesson.position,
                 published=True
             ).order_by('-position').first()
-            
-            if previous_lesson:
-                prev_progress = models.LessonProgress.objects.filter(
-                    lesson=previous_lesson,
+        
+        if previous_lesson:
+            prev_progress = models.LessonProgress.objects.filter(
+                lesson=previous_lesson,
                     student=student
-                ).first()
-                
-                if not prev_progress or not prev_progress.completed:
-                    can_unlock = False
-                    reason = f"Bạn cần hoàn thành bài học trước: {previous_lesson.title}"
+            ).first()
+            
+            if not prev_progress or not prev_progress.completed:
+                can_unlock = False
+                reason = f"Bạn cần hoàn thành bài học trước: {previous_lesson.title}"
         
         return Response({
             'can_unlock': can_unlock,

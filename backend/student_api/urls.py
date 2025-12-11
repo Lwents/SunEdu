@@ -35,6 +35,7 @@ from student_api.views.ai_learning_view import (
     AILearningAnalyzerView,
     AIAssessmentView,
     AIAssessmentResultView,
+    StreakRestoreView,
 )
 from ai_personalization.api.tutor_views import (
     AITutorChatView,
@@ -108,6 +109,7 @@ urlpatterns = [
     path('ai/learning-analyzer/', AILearningAnalyzerView.as_view(), name='ai-learning-analyzer'),
     path('ai/assessment/', AIAssessmentView.as_view(), name='ai-assessment'),
     path('ai/assessment/result/', AIAssessmentResultView.as_view(), name='ai-assessment-result'),
+    path('ai/learning/restore-streak/', StreakRestoreView.as_view(), name='restore-streak'),
     
     # AI Tutor
     path('ai/tutor/chat/', AITutorChatView.as_view(), name='ai-tutor-chat'),

@@ -80,6 +80,72 @@ services:
       retries: 3
       start_period: 40s
 
+  celery_worker:
+    build: .
+    restart: always
+    command: celery -A backend worker -l info
+    volumes:
+      - /var/www/elearning/logs:/app/logs
+      - /var/www/elearning/mediafiles:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      web:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    networks:
+      - backend-network
+
+  celery_beat:
+    build: .
+    restart: always
+    command: celery -A backend beat -l info
+    volumes:
+      - /var/www/elearning/logs:/app/logs
+      - /var/www/elearning/celerybeat-schedule:/app/celerybeat-schedule
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      web:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    networks:
+      - backend-network
+
 volumes:
   postgres_data:
   redis_data:

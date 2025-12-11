@@ -170,6 +170,31 @@
               {{ i <= dailyGoal.streak ? '🔥' : '○' }}
             </span>
           </div>
+          
+          <!-- Restore Streak Button -->
+          <div v-if="dailyGoal.streak === 0 && dailyGoal.streak_restoration?.can_restore" class="mt-4 relative z-10">
+            <button
+              @click="restoreStreak"
+              :disabled="restoringStreak"
+              class="w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-orange-600 hover:to-amber-600 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="restoringStreak" class="inline-flex items-center gap-2">
+                <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                Đang khôi phục...
+              </span>
+              <span v-else class="inline-flex items-center gap-2">
+                🔄 Khôi phục streak ({{ dailyGoal.streak_restoration?.remaining || 0 }}/2 lượt còn lại)
+              </span>
+            </button>
+            <p class="mt-1 text-xs text-orange-500 text-center">
+              Bạn có thể khôi phục streak tối đa 2 lần/tháng
+            </p>
+          </div>
+          <div v-else-if="dailyGoal.streak === 0 && dailyGoal.streak_restoration && !dailyGoal.streak_restoration.can_restore" class="mt-4 relative z-10">
+            <p class="text-xs text-orange-500 text-center">
+              Đã hết lượt khôi phục trong tháng này ({{ dailyGoal.streak_restoration.count_this_month || 0 }}/2)
+            </p>
+          </div>
         </div>
       </div>
       
@@ -232,19 +257,40 @@
           <div
             v-for="(weakness, idx) in aiWeaknesses.slice(0, 4)"
             :key="idx"
-            class="flex items-center gap-3 rounded-xl bg-white p-4 border border-red-100 shadow-sm hover:shadow-md transition-all cursor-pointer"
-            @click="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
+            class="rounded-xl bg-white p-4 border border-red-100 shadow-sm"
           >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl">
-              📖
+            <div 
+              class="flex items-center gap-3 mb-3 cursor-pointer"
+              @click="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
+            >
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl">
+                📖
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-slate-900 truncate">{{ weakness.topic }}</p>
+                <p class="text-xs text-slate-500">Điểm: {{ weakness.score }}% · {{ weakness.course }}</p>
+                <p v-if="weakness.wrong_questions_count" class="text-xs text-red-600 mt-1">
+                  {{ weakness.wrong_questions_count }} câu sai
+                </p>
+              </div>
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-slate-900 truncate">{{ weakness.topic }}</p>
-              <p class="text-xs text-slate-500">Điểm: {{ weakness.score }}% · {{ weakness.course }}</p>
+            <div class="flex gap-2">
+              <button
+                v-if="weakness.can_retry !== false"
+                @click.stop="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
+                class="flex-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition-colors"
+              >
+                Ôn lại
+              </button>
+              <button
+                v-if="weakness.wrong_questions && weakness.wrong_questions.length > 0"
+                @click.stop="createImprovementExercise(weakness)"
+                :disabled="creatingExercise"
+                class="flex-1 rounded-lg bg-purple-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ creatingExercise ? 'Đang tạo...' : '📝 Làm bài cải thiện' }}
+              </button>
             </div>
-            <span class="shrink-0 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white">
-              Ôn lại
-            </span>
           </div>
         </div>
       </div>
@@ -481,7 +527,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-5">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-extrabold text-slate-900">Khối 3–5 (Nâng cao)</h2>
-            <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">Mở rộng</span>
+            <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">Nâng cao</span>
           </div>
           <p class="mt-2 text-slate-700">Hệ thống hoá & luyện thi: Toán, TV, Anh + Khoa học/Lịch sử.</p>
           <ol class="mt-3 space-y-1 text-sm text-slate-700 list-decimal list-inside">
@@ -713,7 +759,10 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { courseService } from '@/services/course.service'
 import { aiLearningService, type AISuggestion, type AIWeakness, type AIAchievement, type DailyGoal } from '@/services/ai-learning.service'
+import { aiTutorService } from '@/services/ai-tutor.service'
 import AIPractice from '@/components/ai/AIPractice.vue'
+import http from '@/config/axios'
+import { showToast } from '@/utils/toast'
 
 const router = useRouter()
 const route = useRoute()
@@ -751,6 +800,8 @@ const serverAiMessage = ref('')
 const showStreakCelebration = ref(false)
 const celebratedStreak = ref(0) // Streak đang celebrate (để hiển thị trong modal)
 const STREAK_STORAGE_KEY = 'smartedu_last_celebrated_streak'
+const restoringStreak = ref(false)
+const creatingExercise = ref(false) // Trạng thái đang tạo bài tập cải thiện
 
 function getLastCelebratedStreak(): { streak: number; date: string } | null {
   try {
@@ -814,6 +865,29 @@ function getStreakMessage(streak: number): string {
   if (streak >= 7) return '💪 Tuyệt vời! Cả tuần kiên trì!'
   if (streak >= 3) return '🔥 Đang cháy! Giữ vững nhịp độ nhé!'
   return '✨ Khởi đầu tốt! Tiếp tục phát huy!'
+}
+
+async function restoreStreak() {
+  if (restoringStreak.value) return
+  
+  restoringStreak.value = true
+  try {
+    const { data } = await http.post('/student/ai/learning/restore-streak/')
+    
+    if (data.success) {
+      showToast(`🎉 ${data.message}`, 'success')
+      // Reload AI analysis để cập nhật streak
+      await loadAIAnalysis()
+    } else {
+      showToast(data.error || 'Không thể khôi phục streak', 'error')
+    }
+  } catch (e: any) {
+    console.error('Restore streak error:', e)
+    const errorMsg = e?.response?.data?.error || e?.response?.data?.detail || 'Không thể khôi phục streak'
+    showToast(errorMsg, 'error')
+  } finally {
+    restoringStreak.value = false
+  }
 }
 
 // Particle styles for animation
@@ -1030,6 +1104,51 @@ async function loadPaths() {
     console.error('Load paths error:', e)
   } finally {
     loading.value = false
+  }
+}
+
+async function createImprovementExercise(weakness: AIWeakness) {
+  if (creatingExercise.value) return
+  
+  creatingExercise.value = true
+  try {
+    // Lấy wrong_questions từ weakness
+    const wrongQuestions = weakness.wrong_questions || []
+    
+    if (wrongQuestions.length === 0) {
+      showToast('Không có câu hỏi sai để tạo bài tập cải thiện', 'warning')
+      return
+    }
+    
+    // Gọi API để tạo bài tập từ câu sai
+    const response = await aiTutorService.generatePractice(
+      [{ topic: weakness.topic, subject: weakness.course }],
+      15, // 15 câu
+      wrongQuestions // Truyền câu hỏi sai
+    )
+    
+    if (response.success && response.exercises && response.exercises.length > 0) {
+      // Lưu bài tập vào localStorage hoặc state để hiển thị
+      // Có thể mở modal hoặc chuyển đến trang làm bài
+      showToast(`Đã tạo ${response.exercises.length} câu hỏi cải thiện!`, 'success')
+      
+      // TODO: Hiển thị bài tập cho học sinh làm
+      // Có thể mở modal hoặc chuyển đến trang làm bài tập
+      console.log('Practice exercises:', response.exercises)
+      
+      // Có thể sử dụng component AIPractice để hiển thị
+      if (practiceRef.value) {
+        showPractice.value = true
+        // Có thể truyền exercises vào component
+      }
+    } else {
+      showToast('Không thể tạo bài tập cải thiện. Vui lòng thử lại sau!', 'error')
+    }
+  } catch (e: any) {
+    console.error('Create improvement exercise error:', e)
+    showToast(e?.response?.data?.error || 'Có lỗi xảy ra khi tạo bài tập', 'error')
+  } finally {
+    creatingExercise.value = false
   }
 }
 

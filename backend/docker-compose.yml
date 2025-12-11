@@ -51,6 +51,60 @@ services:
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
 
+  celery_worker:
+    build: .
+    restart: always
+    user: root
+    command: celery -A backend worker -l info
+    volumes:
+      - ./:/app:z
+    depends_on:
+      - db
+      - redis
+      - web
+    env_file:
+      - .env
+    environment:
+      DB_NAME: elearning
+      DB_USER: elearning
+      DB_PASSWORD: 123456
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SECRET_KEY: dev-secret-elearing
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+
+  celery_beat:
+    build: .
+    restart: always
+    user: root
+    command: celery -A backend beat -l info
+    volumes:
+      - ./:/app:z
+    depends_on:
+      - db
+      - redis
+      - web
+    env_file:
+      - .env
+    environment:
+      DB_NAME: elearning
+      DB_USER: elearning
+      DB_PASSWORD: 123456
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SECRET_KEY: dev-secret-elearing
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+
 volumes:
   postgres_data:
   redis_data:

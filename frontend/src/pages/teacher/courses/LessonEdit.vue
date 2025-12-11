@@ -689,6 +689,7 @@ async function loadLesson() {
     }
     videoInputType.value = data.video_url ? 'url' : 'file'
     existingDocumentName.value = data.document_file || ''
+    // Transcript được tạo tự động, không cần load vào UI
 
     // Load exercises if content_type is exercise
     if (data.content_type === 'exercise') {
@@ -808,9 +809,10 @@ async function saveLesson() {
     if (form.value.content_type === 'text' && form.value.text_content) {
       fd.append('text_content', form.value.text_content)
     }
+    // Transcript được tạo tự động ở backend, không cần gửi từ frontend
     fd.append('requires_exercise_completion', String(form.value.requires_exercise_completion))
     
-    // Save lesson first
+    // Save lesson (backend sẽ tự động tạo transcript nếu cần)
     await http.patch(`/content/lessons/${lessonIdParam}/`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })

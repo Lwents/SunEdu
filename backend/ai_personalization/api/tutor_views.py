@@ -378,12 +378,23 @@ class AITutorPracticeView(APIView):
     
     def post(self, request):
         weaknesses = request.data.get('weaknesses', [])
-        num_exercises = min(request.data.get('num_exercises', 5), 10)
+        num_exercises = min(request.data.get('num_exercises', 15), 20)  # Mặc định 15 câu, tối đa 20
+        wrong_questions = request.data.get('wrong_questions', [])  # Câu hỏi sai cụ thể
         
         # Get student grade
         student_grade = 1
         if hasattr(request.user, 'profile'):
             student_grade = getattr(request.user.profile, 'grade', 1) or 1
+        
+        # Nếu có wrong_questions từ weaknesses, sử dụng chúng
+        if not wrong_questions and weaknesses:
+            # Lấy wrong_questions từ weaknesses nếu có
+            all_wrong_questions = []
+            for w in weaknesses:
+                if w.get('wrong_questions'):
+                    all_wrong_questions.extend(w.get('wrong_questions', []))
+            if all_wrong_questions:
+                wrong_questions = all_wrong_questions[:15]  # Lấy tối đa 15 câu sai
         
         # If no weaknesses provided, get from analysis
         if not weaknesses:
@@ -417,7 +428,8 @@ class AITutorPracticeView(APIView):
         result = ai_tutor.generate_practice_exercises(
             weaknesses=weaknesses,
             student_grade=student_grade,
-            num_exercises=num_exercises
+            num_exercises=num_exercises,
+            wrong_questions=wrong_questions  # Truyền câu hỏi sai vào
         )
         
         # Cache exercises for this user
@@ -572,6 +584,168 @@ class AITutorVideoQuestionView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    def _extract_transcript_at_timestamp(self, transcript: str, target_timestamp: int) -> str:
+        """
+        Extract transcript tại timestamp cụ thể (±90 giây, ưu tiên ±30 giây)
+        Hỗ trợ video dài hơn 1 giờ (parse HH:MM:SS)
+        Nếu transcript có format SRT/VTT với timestamp, parse và extract
+        Ưu tiên các segments gần timestamp nhưng vẫn lấy đủ context để nhận diện bài hát
+        """
+        import re
+        
+        # Kiểm tra xem transcript có format SRT/VTT không
+        # Pattern: HH:MM:SS,mmm --> HH:MM:SS,mmm hoặc HH:MM:SS.mmm --> HH:MM:SS.mmm
+        # Hỗ trợ video dài hơn 1 giờ (HH có thể > 00)
+        timestamp_pattern = r'(\d{1,2}):(\d{2}):(\d{2})[,\.](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,\.](\d{3})'
+        
+        if not re.search(timestamp_pattern, transcript):
+            # Không có timestamp format, không thể extract
+            return None
+        
+        # Parse SRT/VTT format
+        lines = transcript.split('\n')
+        segments = []
+        current_segment = None
+        
+        for i, line in enumerate(lines):
+            line = line.strip()
+            
+            # Tìm timestamp line
+            match = re.match(timestamp_pattern, line)
+            if match:
+                # Parse start time
+                h1, m1, s1, ms1 = map(int, match.groups()[:4])
+                start_seconds = h1 * 3600 + m1 * 60 + s1
+                
+                # Parse end time
+                h2, m2, s2, ms2 = map(int, match.groups()[4:])
+                end_seconds = h2 * 3600 + m2 * 60 + s2
+                
+                # Lấy text sau timestamp (các dòng tiếp theo cho đến khi gặp dòng trống hoặc timestamp mới)
+                text_lines = []
+                j = i + 1
+                while j < len(lines):
+                    next_line = lines[j].strip()
+                    if not next_line or re.match(timestamp_pattern, next_line):
+                        break
+                    # Bỏ qua HTML tags
+                    clean_line = re.sub(r'<[^>]+>', '', next_line)
+                    if clean_line:
+                        text_lines.append(clean_line)
+                    j += 1
+                
+                if text_lines:
+                    segments.append({
+                        'start': start_seconds,
+                        'end': end_seconds,
+                        'text': ' '.join(text_lines)
+                    })
+        
+        if not segments:
+            return None
+        
+        # Tìm segments trong khoảng ±90 giây từ target_timestamp (tăng để có đủ context nhận diện bài hát)
+        # Ưu tiên các segments gần timestamp hơn (±30 giây đầu tiên) nhưng vẫn lấy đủ context
+        # Hỗ trợ video dài hơn 1 giờ - target_timestamp có thể > 3600 giây
+        
+        # Khoảng ưu tiên: ±30 giây (gần timestamp nhất)
+        priority_start = max(0, target_timestamp - 30)
+        priority_end = target_timestamp + 30
+        
+        # Khoảng mở rộng: ±90 giây (để có đủ context nhận diện bài hát, hook, điệp khúc)
+        extended_start = max(0, target_timestamp - 90)
+        extended_end = target_timestamp + 90
+        
+        priority_segments = []
+        extended_segments = []
+        
+        for seg in segments:
+            # Tính khoảng cách từ segment đến target_timestamp
+            seg_center = (seg['start'] + seg['end']) / 2
+            distance = abs(seg_center - target_timestamp)
+            
+            # Segment trong khoảng ưu tiên (±30 giây) - lấy tất cả
+            if seg['start'] <= priority_end and seg['end'] >= priority_start:
+                priority_segments.append((distance, seg))
+            # Segment trong khoảng mở rộng (±90 giây) nhưng không trong khoảng ưu tiên
+            elif seg['start'] <= extended_end and seg['end'] >= extended_start:
+                extended_segments.append((distance, seg))
+        
+        # Sắp xếp theo khoảng cách (gần timestamp hơn = ưu tiên hơn)
+        priority_segments.sort(key=lambda x: x[0])
+        extended_segments.sort(key=lambda x: x[0])
+        
+        # Ưu tiên lấy từ khoảng ±30 giây trước, sau đó mở rộng để có đủ context
+        selected_segments = []
+        
+        # Lấy TẤT CẢ segments trong khoảng ưu tiên (±30 giây)
+        for _, seg in priority_segments:
+            selected_segments.append(seg)
+        
+        # Lấy thêm từ khoảng mở rộng (±90 giây) để có đủ context nhận diện bài hát
+        # Ưu tiên các segments gần timestamp hơn (trong ±60 giây trước, sau đó mở rộng)
+        for _, seg in extended_segments:
+            if seg not in selected_segments:
+                selected_segments.append(seg)
+        
+        if selected_segments:
+            # Combine các segments đã chọn, giữ nguyên thứ tự thời gian
+            selected_segments.sort(key=lambda x: x['start'])
+            combined_text = ' '.join([seg['text'] for seg in selected_segments])
+            # Tăng lên 6000 ký tự để có đủ context nhận diện bài hát (hook, điệp khúc, lời bài hát đầy đủ)
+            return combined_text[:6000]
+        
+        return None
+    
+    def _get_youtube_subtitle_with_timestamp(self, youtube_url: str) -> str:
+        """
+        Lấy subtitle từ YouTube với timestamp (SRT/VTT format)
+        """
+        import subprocess
+        import tempfile
+        import os
+        import shutil
+        
+        try:
+            temp_dir = tempfile.mkdtemp()
+            output_template = os.path.join(temp_dir, 'subtitle')
+            
+            # Lấy phụ đề với timestamp
+            cmd = [
+                'yt-dlp',
+                '--skip-download',
+                '--write-sub',
+                '--write-auto-sub',
+                '--sub-lang', 'vi,en',
+                '--sub-format', 'srt',
+                '-o', output_template,
+                '--no-playlist',
+                youtube_url
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            
+            if result.returncode != 0:
+                return None
+            
+            # Tìm file SRT
+            for filename in os.listdir(temp_dir):
+                if filename.endswith('.srt'):
+                    filepath = os.path.join(temp_dir, filename)
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        raw_subtitle = f.read()
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    return raw_subtitle
+            
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error getting YouTube subtitle with timestamp: {e}")
+            if 'temp_dir' in locals():
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            return None
+    
     def post(self, request):
         from content.models import Lesson
         
@@ -579,6 +753,7 @@ class AITutorVideoQuestionView(APIView):
         question = request.data.get('question', '').strip()
         timestamp = request.data.get('timestamp', 0)  # Giây
         video_title = request.data.get('video_title', '')
+        clear_history = request.data.get('clear_history', False)  # Flag để clear history khi chuyển bài học
         
         if not question:
             return Response(
@@ -592,20 +767,38 @@ class AITutorVideoQuestionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Validate lesson_id - bắt buộc phải có để tránh dùng chung cache
+        if not lesson_id:
+            return Response(
+                {'error': 'lesson_id là bắt buộc để đảm bảo context đúng cho từng bài học'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         # Get student grade from profile
         student_grade = 1
         if hasattr(request.user, 'profile'):
             student_grade = getattr(request.user.profile, 'grade', 1) or 1
         
-        # Format timestamp thành MM:SS
-        minutes = int(timestamp) // 60
-        seconds = int(timestamp) % 60
-        timestamp_str = f"{minutes:02d}:{seconds:02d}"
+        # Format timestamp thành HH:MM:SS hoặc MM:SS (hỗ trợ video dài hơn 1 giờ)
+        total_seconds = int(timestamp)
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        
+        if hours > 0:
+            # Video dài hơn 1 giờ: format HH:MM:SS
+            timestamp_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            time_label = "giờ:phút:giây"
+        else:
+            # Video ngắn hơn 1 giờ: format MM:SS
+            timestamp_str = f"{minutes:02d}:{seconds:02d}"
+            time_label = "phút:giây"
         
         # Lấy context từ lesson nếu có
         lesson_context = ""
         lesson_title = ""
         course_title = ""
+        song_info = ""  # Thông tin về bài hát nếu có
         
         if lesson_id:
             try:
@@ -620,12 +813,107 @@ class AITutorVideoQuestionView(APIView):
                 # Lấy nội dung bài học
                 if lesson.introduction:
                     lesson_context += f"Giới thiệu bài học: {lesson.introduction[:500]}\n"
+                    # Kiểm tra xem introduction có chứa thông tin về bài hát không
+                    intro_lower = lesson.introduction.lower()
+                    if any(keyword in intro_lower for keyword in ['bài hát', 'ca sĩ', 'nhạc sĩ', 'sáng tác', 'remix', 'cover']):
+                        song_info += f"Thông tin bài hát từ giới thiệu: {lesson.introduction[:500]}\n"
+                
                 if lesson.text_content:
                     lesson_context += f"Nội dung: {lesson.text_content[:1000]}\n"
+                    # Kiểm tra xem text_content có chứa thông tin về bài hát không
+                    text_lower = lesson.text_content.lower()
+                    if any(keyword in text_lower for keyword in ['bài hát', 'ca sĩ', 'nhạc sĩ', 'sáng tác', 'remix', 'cover']):
+                        song_info += f"Thông tin bài hát từ nội dung: {lesson.text_content[:500]}\n"
+                
+                # Kiểm tra title có chứa thông tin về bài hát không
+                title_lower = lesson_title.lower()
+                if any(keyword in title_lower for keyword in ['remix', 'cover', 'bài hát', 'nhạc']):
+                    song_info += f"Tiêu đề bài học có thể liên quan đến bài hát: {lesson_title}\n"
                 
                 # Ưu tiên lấy video_transcript từ field nếu có
+                # Cải thiện: Extract transcript tại timestamp cụ thể nếu có thể
                 if lesson.video_transcript:
-                    lesson_context += f"[Nội dung video] {lesson.video_transcript[:2000]}\n"
+                    # Thử extract transcript tại timestamp cụ thể (±90 giây, ưu tiên ±30 giây)
+                    transcript_at_timestamp = self._extract_transcript_at_timestamp(
+                        lesson.video_transcript, 
+                        timestamp
+                    )
+                    if transcript_at_timestamp:
+                        # Đảm bảo transcript tại timestamp này có đủ context để nhận diện bài hát
+                        lesson_context += f"[NỘI DUNG VIDEO TẠI {timestamp_str} (±90 giây, ưu tiên ±30 giây) - LỜI BÀI HÁT TẠI THỜI ĐIỂM NÀY]:\n{transcript_at_timestamp}\n"
+                        # Cập nhật format timestamp trong message
+                        time_label = "giờ:phút:giây" if hours > 0 else "phút:giây"
+                        lesson_context += f"\nLƯU Ý: Đây là nội dung TẠI {timestamp_str} ({time_label}). Nếu học sinh hỏi về bài hát tại thời điểm này, bạn PHẢI nhận biết từ lời bài hát ở trên.\n"
+                        lesson_context += f"\nHƯỚNG DẪN NHẬN BIẾT BÀI HÁT:\n"
+                        lesson_context += f"- Đọc kỹ từng câu trong lời bài hát ở trên\n"
+                        lesson_context += f"- Tìm các câu/đoạn đặc trưng, hook, điệp khúc (thường lặp lại)\n"
+                        lesson_context += f"- Tìm tên bài hát có thể xuất hiện trong lời (ví dụ: 'bài hát tên là...', 'đây là bài...')\n"
+                        lesson_context += f"- So sánh với kiến thức về các bài hát Việt Nam phổ biến\n"
+                        lesson_context += f"- Nếu có câu đặc trưng, dùng để nhận biết bài hát\n"
+                    else:
+                        # Fallback: transcript không có timestamp format SRT/VTT
+                        # Cố gắng tìm nội dung gần timestamp bằng cách ước tính vị trí trong transcript
+                        transcript_length = len(lesson.video_transcript)
+                        
+                        # Nếu transcript rất dài (>10000 ký tự) và có timestamp, cố gắng ước tính vị trí
+                        if transcript_length > 10000 and timestamp > 0:
+                            # Ước tính: mỗi giây video ≈ 10-20 ký tự transcript (tùy tốc độ nói)
+                            # Với video dài hơn 1 giờ, cần tính chính xác hơn
+                            estimated_video_duration = max(3600, timestamp + 300)  # Ước tính độ dài video
+                            chars_per_second = transcript_length / estimated_video_duration
+                            estimated_position = int(timestamp * chars_per_second)
+                            
+                            # Lấy ±2000 ký tự quanh vị trí ước tính (tương đương ±100-200 giây)
+                            start_pos = max(0, estimated_position - 2000)
+                            end_pos = min(transcript_length, estimated_position + 2000)
+                            
+                            # Lấy phần đầu (có thể chứa intro về bài hát) + phần gần timestamp
+                            transcript_part1 = lesson.video_transcript[:2000]  # Phần đầu
+                            transcript_part2 = lesson.video_transcript[start_pos:end_pos]  # Phần gần timestamp
+                            
+                            lesson_context += f"[Nội dung video - Học sinh đang xem tại {timestamp_str} ({time_label}) - LỜI BÀI HÁT (ước tính vị trí)]:\n"
+                            lesson_context += f"Phần đầu (có thể chứa thông tin bài hát): {transcript_part1}\n\n"
+                            lesson_context += f"Phần tại {timestamp_str} (ước tính, gần nhất với thời điểm đang xem): {transcript_part2}\n"
+                        else:
+                            # Video ngắn hoặc không có timestamp: lấy toàn bộ (giới hạn 8000 ký tự để có nhiều context hơn)
+                            lesson_context += f"[Nội dung video - Học sinh đang xem tại {timestamp_str} ({time_label}) - LỜI BÀI HÁT]:\n{lesson.video_transcript[:8000]}\n"
+                        
+                        lesson_context += f"\nCẢNH BÁO: Transcript không có timestamp format SRT/VTT, nên không thể xác định CHÍNH XÁC nội dung tại {timestamp_str} ({time_label}).\n"
+                        lesson_context += f"Hãy TÌM KIẾM trong transcript ở trên các từ khóa, câu hát đặc trưng để nhận biết bài hát.\n"
+                        if transcript_length > 10000 and timestamp > 0:
+                            lesson_context += f"Với video dài, phần 'Phần tại {timestamp_str}' là phần GẦN NHẤT với thời điểm học sinh đang xem (ước tính).\n"
+                        lesson_context += f"\nHƯỚNG DẪN NHẬN BIẾT BÀI HÁT:\n"
+                        lesson_context += f"- Đọc kỹ từng câu trong lời bài hát ở trên\n"
+                        lesson_context += f"- Tìm các câu/đoạn đặc trưng, hook, điệp khúc (thường lặp lại)\n"
+                        lesson_context += f"- Tìm tên bài hát có thể xuất hiện trong lời\n"
+                        lesson_context += f"- So sánh với kiến thức về các bài hát Việt Nam phổ biến\n"
+                
+                # Thử lấy transcript với timestamp từ YouTube nếu có video_url
+                # (Chỉ khi transcript trong DB không có timestamp format)
+                if lesson.video_url and ('youtube' in lesson.video_url.lower() or 'youtu.be' in lesson.video_url.lower()):
+                    # Kiểm tra xem transcript hiện tại có timestamp format không
+                    # Hỗ trợ video dài hơn 1 giờ: dùng \d{1,2} cho giờ (giống pattern parse)
+                    import re
+                    has_timestamp_format = re.search(
+                        r'\d{1,2}:\d{2}:\d{2}[,\.]\d{3}\s*-->\s*\d{1,2}:\d{2}:\d{2}[,\.]\d{3}',
+                        lesson.video_transcript or ''
+                    )
+                    
+                    if not has_timestamp_format:
+                        # Transcript không có timestamp, thử lấy từ YouTube
+                        try:
+                            raw_subtitle = self._get_youtube_subtitle_with_timestamp(lesson.video_url)
+                            if raw_subtitle:
+                                # Extract transcript tại timestamp từ raw subtitle
+                                transcript_at_timestamp = self._extract_transcript_at_timestamp(
+                                    raw_subtitle,
+                                    timestamp
+                                )
+                                if transcript_at_timestamp:
+                                    lesson_context = f"[Nội dung video tại {timestamp_str} (±90 giây, ưu tiên ±30 giây) - từ YouTube - LỜI BÀI HÁT]:\n{transcript_at_timestamp}\n" + lesson_context
+                        except Exception as e:
+                            logger.warning(f"Could not get YouTube subtitle with timestamp: {e}")
+                            pass
                 
                 # Lấy nội dung chi tiết từ content_blocks (giống phần bình luận)
                 try:
@@ -683,42 +971,127 @@ class AITutorVideoQuestionView(APIView):
                 pass
         
         # Build context cho AI
+        # Tăng độ dài context để AI có nhiều thông tin hơn để nhận biết bài hát
         context = {
             'lesson_title': lesson_title or video_title,
             'course_title': course_title,
             'video_timestamp': timestamp_str,
-            'lesson_content': lesson_context[:2000] if lesson_context else None,
+            'lesson_content': lesson_context[:4000] if lesson_context else None,  # Tăng từ 2000 lên 4000
         }
         
-        # Build prompt đặc biệt cho câu hỏi về video
+        # Build prompt đặc biệt cho câu hỏi về video với ngữ cảnh timestamp
         video_prompt = f"""Bạn là trợ lý học tập AI của SmartEdu.
 
-Học sinh đang xem video bài học "{lesson_title or video_title}" tại thời điểm {timestamp_str}.
+Học sinh đang xem video bài học "{lesson_title or video_title}" tại thời điểm {timestamp_str} ({time_label}).
 
-Câu hỏi: "{question}"
+Câu hỏi của học sinh: "{question}"
 
 {f'Khóa học: {course_title}' if course_title else ''}
-{f'Thông tin bài học:\n{lesson_context[:2000]}' if lesson_context else ''}
 
-YÊU CẦU TRẢ LỜI:
-1. Trả lời vừa đủ (3-5 câu), dễ hiểu
-2. Ngôn ngữ đơn giản, phù hợp học sinh lớp {student_grade}
-3. Thêm 1-2 emoji 🌟
-4. Xưng "mình", gọi học sinh là "bạn" hoặc "em"
-5. Nếu không biết nội dung cụ thể trong video, thành thật nói và gợi ý học sinh xem lại hoặc hỏi giáo viên
+{f'THÔNG TIN VỀ BÀI HÁT (nếu có):\n{song_info}' if song_info else ''}
 
-Trả lời:"""
+{f'NGỮ CẢNH VIDEO (nội dung tại {timestamp_str} ±90 giây, ưu tiên ±30 giây - LỜI BÀI HÁT):\n{lesson_context[:8000]}' if lesson_context else 'Không có transcript video. Hãy trả lời dựa trên kiến thức chung về chủ đề này.'}
 
-        # Get conversation history from cache
-        cache_key = f"ai_video_chat:{request.user.id}:{lesson_id or 'default'}"
-        conversation_history = cache.get(cache_key, [])
+LƯU Ý QUAN TRỌNG:
+- Học sinh đang hỏi về nội dung tại thời điểm {timestamp_str} ({time_label}) trong video
+- MỖI TIMESTAMP LÀ KHÁC NHAU - nội dung tại {timestamp_str} KHÁC với nội dung tại các timestamp khác
+- Nếu có transcript ở trên (được đánh dấu "LỜI BÀI HÁT TẠI THỜI ĐIỂM NÀY"), đó là LỜI BÀI HÁT TẠI {timestamp_str} - KHÔNG phải timestamp khác
+- Nếu học sinh hỏi "bài hát tên gì" hoặc "bài hát này là gì", bạn CẦN PHẢI:
+  * CHỈ nhận biết từ lời bài hát trong transcript TẠI {timestamp_str}
+  * KHÔNG được đoán mò hoặc dùng thông tin từ timestamp khác
+  * Đọc KỸ TỪNG CÂU trong lời bài hát ở trên
+  * Đọc KỸ TỪNG CÂU trong lời bài hát ở trên, đặc biệt chú ý các câu lặp lại nhiều lần
+  * Tìm các câu/đoạn ĐẶC TRƯNG của bài hát (hook, điệp khúc, câu nổi tiếng) - đây là chìa khóa để nhận biết
+  * Tìm tên bài hát có thể xuất hiện trong lời (ví dụ: "bài hát tên là...", "đây là bài...", "bài...")
+  * Tìm tên ca sĩ có thể xuất hiện trong lời
+  * So sánh với kiến thức về các bài hát Việt Nam phổ biến (nhạc trẻ, nhạc vàng, remix, cover, bài hát học tiếng Anh)
+  * Nếu có câu đặc trưng (ví dụ: "Một sương hai nắng dãi dầu cùng nhau", "i nhớ em trong tim anh lại càng buồn thêm"), 
+    DÙNG CÂU ĐÓ để tìm kiếm trong kiến thức của bạn về các bài hát Việt Nam
+  * Nếu câu đặc trưng khớp với một bài hát cụ thể mà bạn biết, HÃY TỰ TIN trả lời tên bài hát đó
+  * Nếu nhận biết được (dù chỉ 70-80% chắc chắn): Trả lời RÕ RÀNG "Bài hát này là [TÊN BÀI HÁT] của [TÊN CA SĨ]"
+  * Nếu có câu đặc trưng nhưng không chắc chắn tên bài hát: Trả lời "Dựa vào lời bài hát, đây có thể là bài [TÊN BÀI HÁT] của [TÊN CA SĨ]. Câu hát đặc trưng là '[CÂU HÁT]'."
+  * CHỈ nói "Mình chưa nhận biết được" khi transcript hoàn toàn không có câu đặc trưng nào hoặc không đủ thông tin
+- Nếu có thông tin về bài hát ở phần "THÔNG TIN VỀ BÀI HÁT", chỉ sử dụng nếu phù hợp với nội dung tại {timestamp_str}
+- CẤM trả lời dựa trên timestamp khác hoặc đoán mò
+- Hãy tập trung trả lời dựa trên ngữ cảnh TẠI {timestamp_str} này
+
+YÊU CẦU TRẢ LỜI (QUAN TRỌNG - PHẢI TUÂN THỦ):
+1. TRẢ LỜI TRỰC TIẾP, KHÔNG HỎI LẠI HỌC SINH
+   - KHÔNG được hỏi "em đang tò mò đúng không?", "em muốn biết gì?"
+   - TRẢ LỜI NGAY câu hỏi của học sinh, không vòng vo
+
+2. Nếu học sinh hỏi về tên bài hát:
+   - PHẢI CỐ GẮNG NHẬN BIẾT từ lời bài hát trong transcript TẠI {timestamp_str}
+   - CHỈ sử dụng transcript được đánh dấu "TẠI {timestamp_str}" - KHÔNG dùng transcript từ timestamp khác
+   - QUY TRÌNH NHẬN BIẾT (PHẢI LÀM ĐẦY ĐỦ):
+     a) Đọc KỸ TỪNG CÂU trong lời bài hát ở trên, đặc biệt chú ý các câu lặp lại nhiều lần
+     b) Tìm các câu/đoạn ĐẶC TRƯNG (hook, điệp khúc, câu nổi tiếng) - đây là dấu hiệu quan trọng nhất
+     c) Tìm tên bài hát có thể xuất hiện trong lời (ví dụ: "bài hát tên là...", "đây là bài...", "bài...")
+     d) Tìm tên ca sĩ có thể xuất hiện trong lời
+     e) SO SÁNH với kiến thức về các bài hát Việt Nam phổ biến:
+        - Nhạc trẻ Việt Nam: Sơn Tùng M-TP, Đen Vâu, Đức Phúc, Hương Tràm, Đông Nhi, etc.
+        - Nhạc vàng: Chế Linh, Như Quỳnh, Giao Linh, etc.
+        - Nhạc trữ tình: Trịnh Công Sơn, Phạm Duy, etc.
+        - Remix, cover các bài hát nổi tiếng
+        - Bài hát thiếu nhi, dân ca
+        - Bài hát quen thuộc trong giáo dục, học tiếng Anh qua bài hát
+     f) Nếu có câu đặc trưng (ví dụ: "Một sương hai nắng dãi dầu cùng nhau", "i nhớ em trong tim anh lại càng buồn thêm"), 
+        DÙNG CÂU ĐÓ để tìm kiếm trong kiến thức của bạn về các bài hát Việt Nam
+     g) Nếu câu đặc trưng khớp với một bài hát cụ thể mà bạn biết, HÃY TỰ TIN trả lời tên bài hát đó
+   - Nếu nhận biết được (dù chỉ 70-80% chắc chắn): Trả lời NGAY "Bài hát này là [TÊN BÀI HÁT] của [TÊN CA SĨ]" (nếu biết)
+   - Nếu có câu đặc trưng nhưng không chắc chắn tên bài hát: Trả lời "Dựa vào lời bài hát, đây có thể là bài [TÊN BÀI HÁT] của [TÊN CA SĨ]. Câu hát đặc trưng là '[CÂU HÁT]'."
+   - CHỈ nói "Mình chưa nhận biết được" khi transcript hoàn toàn không có câu đặc trưng nào hoặc không đủ thông tin
+   - KHÔNG được đoán mò hoặc trả lời dựa trên timestamp khác
+   - KHÔNG được trả lời chung chung như "Bài hát mà em đang nghe ở đoạn O"
+   - Nếu transcript có câu đặc trưng rõ ràng, PHẢI cố gắng nhận biết và trả lời, không được quá thận trọng
+
+3. Nếu học sinh hỏi về nội dung khác:
+   - Đọc kỹ transcript và trả lời DỰA TRỰC TIẾP vào nội dung đó
+   - Trả lời CỤ THỂ, không chung chung
+   - Tập trung vào nội dung tại {timestamp_str}
+
+4. Format trả lời:
+   - Trả lời ngắn gọn (2-4 câu), đi thẳng vào vấn đề
+   - Ngôn ngữ đơn giản, phù hợp học sinh lớp {student_grade}
+   - Thêm 1 emoji phù hợp 🌟
+   - Xưng "mình", gọi học sinh là "bạn" hoặc "em"
+   - BẮT ĐẦU trả lời NGAY, không có câu mở đầu dài dòng
+
+5. CẤM:
+   - Hỏi lại học sinh
+   - Trả lời chung chung, không cụ thể
+   - Lặp lại câu hỏi của học sinh
+   - Nói vòng vo, không đi vào trọng tâm
+
+Trả lời (bắt đầu ngay, không có câu mở đầu):"""
+
+        # Get conversation history from cache - MỖI BÀI HỌC CÓ CACHE RIÊNG
+        # Đảm bảo lesson_id luôn có để tránh dùng chung cache giữa các bài học
+        if not lesson_id:
+            lesson_id = 'unknown'
+        
+        cache_key = f"ai_video_chat:{request.user.id}:{lesson_id}"
+        
+        # Clear history nếu được yêu cầu (khi chuyển sang bài học mới)
+        if clear_history:
+            cache.delete(cache_key)
+            conversation_history = []
+        else:
+            conversation_history = cache.get(cache_key, [])
+        
+        # Lọc conversation history - chỉ lấy những câu hỏi gần đây
+        # Tránh dùng thông tin từ timestamp quá xa để tránh trả lời sai
+        filtered_history = []
+        for msg in conversation_history[-5:]:  # Chỉ lấy 5 tin nhắn gần nhất
+            if isinstance(msg, dict) and 'role' in msg and 'content' in msg:
+                filtered_history.append(msg)
         
         # Call AI Tutor
         try:
             result = ai_tutor.chat(
                 user_message=video_prompt,
                 context=context,
-                conversation_history=conversation_history,
+                conversation_history=filtered_history if filtered_history else [],  # Dùng filtered history
                 student_grade=student_grade
             )
         except Exception as e:

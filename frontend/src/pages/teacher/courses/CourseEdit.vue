@@ -70,7 +70,7 @@
                 class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition"
               >
                 <option value="basic">Cơ bản</option>
-                <option value="advanced">Mở rộng</option>
+                <option value="advanced">Nâng cao</option>
               </select>
             </label>
 

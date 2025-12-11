@@ -431,7 +431,7 @@
                         ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 ring-1 ring-cyan-100'
                         : it.locked 
                           ? 'bg-slate-50 text-slate-400'
-                          : 'bg-white text-gray-900 dark:text-gray-100 hover:bg-slate-50',
+                        : 'bg-white text-gray-900 dark:text-gray-100 hover:bg-slate-50',
                       lessonState(it) === 'next' ? 'ring-1 ring-cyan-50' : '',
                       it.done ? 'font-semibold' : '',
                     ]"
@@ -1688,8 +1688,8 @@ function buildUiSections() {
     }
     
     return {
-      id: s.id,
-      title: s.title,
+    id: s.id,
+    title: s.title,
       locked: moduleLocked,
       items: (s.lessons || []).map((l, li) => {
         // Check if lesson is locked
@@ -1710,11 +1710,11 @@ function buildUiSections() {
         }
         
         return {
-          id: l.id,
-          title: l.title,
-          durationMinutes: l.durationMinutes,
-          type: l.type,
-          done: doneSet.has(String(l.id)),
+      id: l.id,
+      title: l.title,
+      durationMinutes: l.durationMinutes,
+      type: l.type,
+      done: doneSet.has(String(l.id)),
           kind: resolveLessonKind(l),
           locked: lessonLocked,
           lockedReason
@@ -2606,6 +2606,7 @@ const aiVideoAsking = ref(false)
 const aiVideoResponse = ref('')
 const aiVideoTimestamp = ref(0)
 const aiVideoConversation = ref<Array<{ role: 'user' | 'ai'; content: string; timestamp?: string }>>([])
+const currentAILessonId = ref<string | null>(null)  // Track lesson_id hiện tại để phát hiện khi chuyển bài học
 
 function getCurrentVideoTimestamp(): number {
   // Lấy timestamp từ video HTML5
@@ -2631,6 +2632,19 @@ function formatTimestamp(seconds: number): string {
 
 function openAIVideoModal() {
   aiVideoTimestamp.value = getCurrentVideoTimestamp()
+  
+  // Kiểm tra xem có chuyển sang bài học mới không
+  const currentLessonId = currentLesson.value?.id
+  const currentLessonIdStr = currentLessonId ? String(currentLessonId) : null
+  if (currentLessonIdStr && currentLessonIdStr !== currentAILessonId.value) {
+    // Đã chuyển sang bài học mới - clear conversation history
+    aiVideoConversation.value = []
+    currentAILessonId.value = currentLessonIdStr
+  } else if (!currentAILessonId.value && currentLessonIdStr) {
+    // Lần đầu mở modal với bài học này
+    currentAILessonId.value = currentLessonIdStr
+  }
+  
   aiVideoModalOpen.value = true
   aiVideoQuestion.value = ''
   aiVideoResponse.value = ''
@@ -2658,11 +2672,25 @@ async function submitAIVideoQuestion() {
   aiVideoQuestion.value = ''
   
   try {
+    const currentLessonId = currentLesson.value?.id
+    const currentLessonIdStr = currentLessonId ? String(currentLessonId) : null
+    
+    // Kiểm tra xem có chuyển sang bài học mới không
+    const isNewLesson = currentLessonIdStr && currentLessonIdStr !== currentAILessonId.value
+    if (isNewLesson) {
+      // Clear conversation khi chuyển bài học mới
+      aiVideoConversation.value = []
+      currentAILessonId.value = currentLessonIdStr
+    } else if (!currentAILessonId.value && currentLessonIdStr) {
+      currentAILessonId.value = currentLessonIdStr
+    }
+    
     const { data } = await api.post('/student/ai/tutor/video-question/', {
-      lesson_id: currentLesson.value?.id,
+      lesson_id: currentLessonId,
       question: question,
       timestamp: timestamp,
-      video_title: currentLesson.value?.title || course.value?.title || ''
+      video_title: currentLesson.value?.title || course.value?.title || '',
+      clear_history: isNewLesson  // Gửi flag để clear history ở backend
     }, { timeout: 60000 })
     
     if (data.success && data.message) {
@@ -2694,6 +2722,8 @@ async function submitAIVideoQuestion() {
 function clearAIVideoConversation() {
   aiVideoConversation.value = []
   aiVideoResponse.value = ''
+  // Reset lesson_id tracking để có thể clear lại khi mở modal
+  currentAILessonId.value = null
 }
 
 function normalizeAvatar(input: any) {
@@ -2984,7 +3014,11 @@ async function continueAIChat(questionId: string, replyId: string) {
   askingAI[questionId] = true
   try {
     // Gửi câu hỏi mới như một reply, sau đó gọi AI trả lời
-    await api.post(`/student/lesson-questions/${questionId}/reply/`, { content })
+    // Gửi flag is_ai_interaction để không gửi thông báo cho giáo viên
+    await api.post(`/student/lesson-questions/${questionId}/reply/`, { 
+      content,
+      is_ai_interaction: true 
+    })
     
     // Gọi AI trả lời câu hỏi mới
     await api.post(`/student/lesson-questions/${questionId}/ai-answer/`, {}, { timeout: 60000 })

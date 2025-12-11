@@ -22,4 +22,19 @@ app.conf.beat_schedule = {
         'task': 'ai_personalization.tasks.train_mastery_prediction_model',
         'schedule': crontab(day_of_week=1, hour=3, minute=0),  # Weekly Monday 3 AM
     },
+    # Streak Warning - Chạy mỗi giờ từ 21:00-22:00
+    'send-streak-warnings': {
+        'task': 'ai_personalization.tasks.send_streak_warning_notifications',
+        'schedule': crontab(hour='21-22', minute=0),  # Mỗi giờ từ 21:00-22:00
+    },
+    # Come Back Reminder - Chạy mỗi ngày lúc 10:00
+    'send-comeback-reminders': {
+        'task': 'ai_personalization.tasks.send_comeback_reminders',
+        'schedule': crontab(hour=10, minute=0),  # Daily at 10 AM
+    },
+    # Come Back Email - Chạy mỗi ngày lúc 10:30
+    'send-comeback-emails': {
+        'task': 'ai_personalization.tasks.send_comeback_emails',
+        'schedule': crontab(hour=10, minute=30),  # Daily at 10:30 AM
+    },
 }
