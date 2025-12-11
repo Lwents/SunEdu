@@ -434,10 +434,31 @@ function getChoiceClass(choice: string) {
 
 // Lifecycle
 onMounted(() => {
+  // Thử khôi phục tiến trình trước
+  if (restoreProgress()) {
+    // Đã khôi phục tiến trình, không cần load lại
+    return
+  }
+  
   if (props.autoLoad) {
     // Tự động load analysis VÀ generate exercises
     loadAnalysis(true)
   }
+})
+
+// Lưu tiến trình khi component unmount
+onBeforeUnmount(() => {
+  if (!completed.value && exercises.value.length > 0) {
+    saveProgress()
+  }
+})
+
+// Lưu tiến trình trước khi rời trang
+onBeforeRouteLeave((to, from, next) => {
+  if (!completed.value && exercises.value.length > 0) {
+    saveProgress()
+  }
+  next()
 })
 
 // Expose methods
