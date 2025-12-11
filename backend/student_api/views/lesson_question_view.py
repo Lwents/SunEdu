@@ -196,25 +196,27 @@ class StudentLessonQuestionView(APIView):
 
         # Chỉ gửi thông báo cho giáo viên nếu KHÔNG phải là tương tác với AI
         if not is_ai_interaction:
-        course_title = course.title if course else "Khóa học"
-        Notification.objects.create(
-            user=teacher,
-            title=f"Học sinh hỏi về bài: {lesson.title}",
-            message=f"[{course_title}] {content}",
-            type="info",
-            category="lesson_question",
-            metadata={
-                "lesson_question_id": str(q.id),
-                "lesson_id": str(lesson.id),
-                "course_id": str(course.id) if course else None,
-                "student_id": str(student.id),
-                "student": student.username,
-                "lesson_title": lesson.title,
-                "course_title": course_title,
-            },
-        )
-
-        return Response({"item": serialize_question(q, user=request.user, request=request)}, status=status.HTTP_201_CREATED)
+            course = lesson.module.course if lesson.module else None
+            teacher = getattr(course, "owner", None)
+            if teacher:
+                course_title = course.title if course else "Khóa học"
+                lesson_title = lesson.title
+                Notification.objects.create(
+                    user=teacher,
+                    title=f"Học sinh hỏi về bài: {lesson.title}",
+                    message=f"[{course_title}] {content}",
+                    type="info",
+                    category="lesson_question",
+                    metadata={
+                        "lesson_question_id": str(q.id),
+                        "lesson_id": str(lesson.id),
+                        "course_id": str(course.id) if course else None,
+                        "student_id": str(student.id),
+                        "student": student.username,
+                        "lesson_title": lesson.title,
+                        "course_title": course_title,
+                    },
+                )
 
     def patch(self, request, pk=None):
         if not pk:
@@ -270,23 +272,23 @@ class StudentLessonQuestionReplyView(APIView):
 
         # Chỉ gửi thông báo cho giáo viên nếu KHÔNG phải là tương tác với AI
         if not is_ai_interaction:
-        course = question.lesson.module.course if question.lesson.module else None
-        teacher = getattr(course, "owner", None)
-        if teacher:
-            course_title = course.title if course else "Khóa học"
-            lesson_title = question.lesson.title
-            Notification.objects.create(
-                user=teacher,
-                title=f"Học sinh trả lời thảo luận: {lesson_title}",
-                message=f"[{course_title}] {content}",
-                type="info",
-                category="lesson_question_reply",
-                metadata={
-                    "lesson_question_id": str(question.id),
-                    "lesson_id": str(question.lesson_id),
-                    "course_id": str(course.id) if course else None,
-                    "course_title": course_title,
-                    "lesson_title": lesson_title,
+            course = question.lesson.module.course if question.lesson.module else None
+            teacher = getattr(course, "owner", None)
+            if teacher:
+                course_title = course.title if course else "Khóa học"
+                lesson_title = question.lesson.title
+                Notification.objects.create(
+                    user=teacher,
+                    title=f"Học sinh trả lời thảo luận: {lesson_title}",
+                    message=f"[{course_title}] {content}",
+                    type="info",
+                    category="lesson_question_reply",
+                    metadata={
+                        "lesson_question_id": str(question.id),
+                        "lesson_id": str(question.lesson_id),
+                        "course_id": str(course.id) if course else None,
+                        "course_title": course_title,
+                        "lesson_title": lesson_title,
                     "student_id": str(request.user.id),
                     "student": request.user.username,
                 },
