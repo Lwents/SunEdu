@@ -116,11 +116,11 @@ services:
   celery_beat:
     build: .
     restart: always
-    command: celery -A backend beat -l info
+    # Lưu schedule vào thư mục riêng để tránh lỗi mount file/dir
+    command: celery -A backend beat -l info --schedule /app/celerybeat-data/celerybeat-schedule
     volumes:
       - /var/www/elearning/logs:/app/logs
-      # Dùng named volume để tránh lỗi mount file/dir trên host
-      - celerybeat_data:/app/celerybeat-schedule
+      - celerybeat_data:/app/celerybeat-data
     depends_on:
       db:
         condition: service_healthy
