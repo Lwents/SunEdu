@@ -72,6 +72,7 @@ class ExerciseDomain:
                     'shuffle_choices': getattr(settings_obj, 'shuffle_choices', True),
                     'description': getattr(settings_obj, 'description', None),
                     'level': getattr(settings_obj, 'level', None),
+                    'course_id': getattr(settings_obj, 'course_id', None),
                 }
                 # Add scheduled_at if present
                 scheduled_at = getattr(settings_obj, 'scheduled_at', None)

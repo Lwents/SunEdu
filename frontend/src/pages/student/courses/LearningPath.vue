@@ -153,7 +153,14 @@
           
           <div class="flex items-center justify-between mb-3 relative z-10">
             <h3 class="text-lg font-bold text-orange-800 flex items-center gap-2">
-              <span class="fire-icon">🔥</span> Streak
+              <span class="mini-fire">
+                <span class="flame f1"></span>
+                <span class="flame f2"></span>
+                <span class="flame f3"></span>
+                <span class="flame f4"></span>
+                <span class="flame core"></span>
+              </span>
+              Streak
             </h3>
             <span class="text-3xl font-bold text-orange-600">{{ dailyGoal.streak }}</span>
           </div>
@@ -260,23 +267,27 @@
             class="rounded-xl bg-white p-4 border border-red-100 shadow-sm"
           >
             <div 
-              class="flex items-center gap-3 mb-3 cursor-pointer"
-            @click="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
-          >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl">
-              📖
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-slate-900 truncate">{{ weakness.topic }}</p>
-              <p class="text-xs text-slate-500">Điểm: {{ weakness.score }}% · {{ weakness.course }}</p>
-                <p v-if="weakness.wrong_questions_count" class="text-xs text-red-600 mt-1">
-                  {{ weakness.wrong_questions_count }} câu sai
+              class="flex items-center gap-3 mb-3"
+              :class="weakness.can_retry === true ? 'cursor-pointer' : 'opacity-80'"
+              @click="weakness.can_retry === true && router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
+            >
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl">
+                📖
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-slate-900 truncate">{{ weakness.topic }}</p>
+                <p class="text-xs text-slate-500">Điểm: {{ weakness.score }}% · {{ weakness.course }}</p>
+                  <p v-if="weakness.wrong_questions_count" class="text-xs text-red-600 mt-1">
+                    {{ weakness.wrong_questions_count }} câu sai
+                  </p>
+                <p v-if="weakness.can_retry === false" class="text-[11px] text-red-500 mt-1">
+                  Bài này không ôn lại, chỉ làm bài cải thiện.
                 </p>
-            </div>
+              </div>
             </div>
             <div class="flex gap-2">
               <button
-                v-if="weakness.can_retry !== false"
+                v-if="weakness.can_retry === true"
                 @click.stop="router.push({ name: 'student-course-player', params: { id: weakness.course_id, lessonId: weakness.lesson_id } })"
                 class="flex-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition-colors"
               >
@@ -296,7 +307,11 @@
       </div>
 
       <!-- AI Practice (Bài luyện tập AI) -->
-      <div v-if="!loading && showPracticeSection" class="mb-6 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 p-5 shadow-sm">
+      <div
+        v-if="!loading && showPracticeSection"
+        ref="practiceSectionRef"
+        class="mb-6 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 p-5 shadow-sm"
+      >
         <div class="flex items-center gap-2 mb-4">
           <span class="text-2xl">📝</span>
           <h3 class="text-lg font-bold text-purple-800">Bài luyện tập hôm nay</h3>
@@ -323,9 +338,10 @@
         <AIPractice 
           v-if="showPractice"
           ref="practiceRef"
-          :auto-load="true"
+          :auto-load="practiceAutoLoad"
           @completed="onPracticeCompleted"
           @exercise-answered="onExerciseAnswered"
+          @exit="onPracticeExit"
         />
       </div>
 
@@ -499,52 +515,6 @@
         </section>
       </div>
 
-      <!-- Default Paths -->
-      <div v-else class="mt-5 grid gap-4 sm:grid-cols-2">
-        <!-- basic -->
-        <section class="rounded-2xl border border-slate-200 bg-white p-5">
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-extrabold text-slate-900">Khối 1–2 (Cơ bản)</h2>
-            <span class="rounded-full border border-cyan-200 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20 px-3 py-1 text-xs font-bold text-cyan-700 dark:text-cyan-300">Nền tảng</span>
-          </div>
-          <p class="mt-2 text-slate-700">Củng cố Toán, Tiếng Việt, Tiếng Anh với các bài ngắn dễ tiếp thu.</p>
-          <ol class="mt-3 space-y-1 text-sm text-slate-700 list-decimal list-inside">
-            <li>Bước 1: Ôn từ vựng & đọc hiểu</li>
-            <li>Bước 2: Luyện toán cơ bản</li>
-            <li>Bước 3: Làm bài kiểm tra mini (10 phút)</li>
-          </ol>
-          <div class="mt-4">
-            <router-link
-              class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-extrabold text-white hover:bg-slate-800"
-              :to="{ name: 'student-catalog', query: { grade: 1 } }"
-            >
-              Bắt đầu ngay
-            </router-link>
-          </div>
-        </section>
-
-        <!-- advanced -->
-        <section class="rounded-2xl border border-slate-200 bg-white p-5">
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-extrabold text-slate-900">Khối 3–5 (Nâng cao)</h2>
-            <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">Nâng cao</span>
-          </div>
-          <p class="mt-2 text-slate-700">Hệ thống hoá & luyện thi: Toán, TV, Anh + Khoa học/Lịch sử.</p>
-          <ol class="mt-3 space-y-1 text-sm text-slate-700 list-decimal list-inside">
-            <li>Bước 1: Ôn kỹ năng đọc & ngữ pháp</li>
-            <li>Bước 2: Luyện đề Toán & Khoa học</li>
-            <li>Bước 3: Kiểm tra đánh giá, nhận phản hồi</li>
-          </ol>
-          <div class="mt-4">
-            <router-link
-              class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-extrabold text-white hover:bg-slate-800"
-              :to="{ name: 'student-catalog', query: { grade: 3 } }"
-            >
-              Chọn khóa
-            </router-link>
-          </div>
-        </section>
-      </div>
 
     </div>
 
@@ -755,7 +725,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { courseService } from '@/services/course.service'
 import { aiLearningService, type AISuggestion, type AIWeakness, type AIAchievement, type DailyGoal } from '@/services/ai-learning.service'
@@ -763,6 +733,7 @@ import { aiTutorService } from '@/services/ai-tutor.service'
 import AIPractice from '@/components/ai/AIPractice.vue'
 import http from '@/config/axios'
 import { showToast } from '@/utils/toast'
+import { useAuthStore } from '@/store/auth.store'
 
 const router = useRouter()
 const route = useRoute()
@@ -776,17 +747,42 @@ const overall = ref({ courses: 0, completed: 0, total: 0, progress: 0 })
 const showPractice = ref(false)
 const showPracticeSection = ref(true)
 const practiceRef = ref<InstanceType<typeof AIPractice> | null>(null)
+const practiceAutoLoad = ref(true)
+const practiceSectionRef = ref<HTMLElement | null>(null)
 
-function onPracticeCompleted(score: number) {
-  console.log('Practice completed with score:', score)
-  // Có thể cập nhật daily goal hoặc hiển thị thông báo
-  if (score >= 80) {
-    dailyGoal.value.completed++
+function onPracticeCompleted(score: number, dailyGoalData?: any) {
+  // Lưu streak cũ để so sánh
+  const oldStreak = dailyGoal.value.streak || 0
+  
+  // Refresh learning path để cập nhật streak và daily goal
+  if (dailyGoalData) {
+    const newStreak = dailyGoalData.streak || 0
+    dailyGoal.value = dailyGoalData
+    
+    // Check if streak increased to show celebration (so sánh với streak cũ)
+    // Chỉ hiện celebration khi streak thực sự tăng (từ 0 lên 1, hoặc từ 1 lên 2, v.v.)
+    if (newStreak > oldStreak && newStreak > 0) {
+      console.log('🔥 Streak increased!', { oldStreak, newStreak })
+      checkStreakCelebration(newStreak)
+    } else {
+      console.log('⏭️ Streak did not increase or is 0', { oldStreak, newStreak })
+    }
+  } else {
+    // Nếu không có daily_goal từ response, reload lại
+    loadAIAnalysis()
   }
+  // Đảm bảo reload AI analysis để đồng bộ streak/daily goal/weaknesses sau khi làm bài luyện tập
+  loadAIAnalysis()
+  console.log('Practice completed with score:', score, 'Old streak:', oldStreak, 'New streak:', dailyGoalData?.streak)
 }
 
 function onExerciseAnswered(correct: boolean) {
   console.log('Exercise answered:', correct ? 'correct' : 'incorrect')
+}
+
+function onPracticeExit() {
+  showPractice.value = false
+  practiceAutoLoad.value = true
 }
 
 // AI Data
@@ -799,13 +795,18 @@ const serverAiMessage = ref('')
 // Streak Celebration - Lưu vào localStorage để chỉ hiện 1 lần khi streak tăng
 const showStreakCelebration = ref(false)
 const celebratedStreak = ref(0) // Streak đang celebrate (để hiển thị trong modal)
-const STREAK_STORAGE_KEY = 'smartedu_last_celebrated_streak'
+const authStore = useAuthStore()
+const streakStorageKey = computed(() => {
+  const user = authStore.user
+  const suffix = user?.id || user?.email || 'guest'
+  return `smartedu_last_celebrated_streak_${suffix}`
+})
 const restoringStreak = ref(false)
 const creatingExercise = ref(false) // Trạng thái đang tạo bài tập cải thiện
 
 function getLastCelebratedStreak(): { streak: number; date: string } | null {
   try {
-    const stored = localStorage.getItem(STREAK_STORAGE_KEY)
+    const stored = localStorage.getItem(streakStorageKey.value)
     if (stored) {
       return JSON.parse(stored)
     }
@@ -818,7 +819,7 @@ function getLastCelebratedStreak(): { streak: number; date: string } | null {
 function saveLastCelebratedStreak(streak: number) {
   try {
     const today = new Date().toDateString()
-    localStorage.setItem(STREAK_STORAGE_KEY, JSON.stringify({ streak, date: today }))
+    localStorage.setItem(streakStorageKey.value, JSON.stringify({ streak, date: today }))
   } catch (e) {
     console.error('Error saving streak to localStorage:', e)
   }
@@ -831,18 +832,21 @@ function checkStreakCelebration(newStreak: number) {
   const today = new Date().toDateString()
   
   // Hiện celebration nếu:
-  // 1. Chưa bao giờ celebrate (stored = null)
-  // 2. Ngày mới và streak > 0 (reset mỗi ngày)
-  // 3. Streak tăng trong cùng ngày
+  // 1. Chưa bao giờ celebrate (stored = null) VÀ streak > 0
+  // 2. Ngày mới và streak > 0 (reset mỗi ngày) - nhưng chỉ hiện nếu streak tăng từ 0 lên > 0
+  // 3. Streak tăng trong cùng ngày (quan trọng nhất - khi làm bài xong streak tăng)
   const shouldCelebrate = 
-    !stored || 
-    stored.date !== today || 
-    newStreak > stored.streak
+    (!stored && newStreak > 0) || // Lần đầu có streak
+    (stored && stored.date !== today && newStreak > 0) || // Ngày mới và có streak
+    (stored && stored.date === today && newStreak > stored.streak) // Streak tăng trong cùng ngày
   
   if (shouldCelebrate) {
+    console.log('🎉 Showing streak celebration!', { newStreak, stored, today })
     celebratedStreak.value = newStreak
     showStreakCelebration.value = true
     saveLastCelebratedStreak(newStreak)
+  } else {
+    console.log('⏭️ Skipping streak celebration', { newStreak, stored, today, shouldCelebrate: false })
   }
 }
 
@@ -853,7 +857,7 @@ function closeStreakCelebration() {
 // Expose để test trong console: window.testStreakCelebration()
 if (typeof window !== 'undefined') {
   (window as any).testStreakCelebration = () => {
-    localStorage.removeItem(STREAK_STORAGE_KEY)
+    localStorage.removeItem(streakStorageKey.value)
     celebratedStreak.value = dailyGoal.value.streak || 1
     showStreakCelebration.value = true
   }
@@ -1128,18 +1132,19 @@ async function createImprovementExercise(weakness: AIWeakness) {
     )
     
     if (response.success && response.exercises && response.exercises.length > 0) {
-      // Lưu bài tập vào localStorage hoặc state để hiển thị
-      // Có thể mở modal hoặc chuyển đến trang làm bài
       showToast(`Đã tạo ${response.exercises.length} câu hỏi cải thiện!`, 'success')
-      
-      // TODO: Hiển thị bài tập cho học sinh làm
-      // Có thể mở modal hoặc chuyển đến trang làm bài tập
-      console.log('Practice exercises:', response.exercises)
-      
-      // Có thể sử dụng component AIPractice để hiển thị
-      if (practiceRef.value) {
+      // Mở section bài luyện tập và nạp đề vừa tạo
+      if (response.exercises.length) {
+        practiceAutoLoad.value = false // tránh auto-generate đề khác
         showPractice.value = true
-        // Có thể truyền exercises vào component
+        await nextTick()
+        if (practiceRef.value) {
+          practiceRef.value.loadExternalExercises(response.exercises, response.exercise_id || null)
+        }
+        // Cuộn xuống phần bài luyện tập để nhìn thấy đề
+        if (practiceSectionRef.value) {
+          practiceSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
       }
     } else {
       showToast('Không thể tạo bài tập cải thiện. Vui lòng thử lại sau!', 'error')
@@ -1155,6 +1160,8 @@ async function createImprovementExercise(weakness: AIWeakness) {
 async function loadAIAnalysis() {
   try {
     const data = await aiLearningService.getAnalysis()
+    console.log('📊 AI Analysis data received:', data)
+    
     if (data.suggestions) {
       aiSuggestions.value = data.suggestions
     }
@@ -1164,16 +1171,35 @@ async function loadAIAnalysis() {
     if (data.achievements) {
       aiAchievements.value = data.achievements
     }
-    if (data.daily_goal) {
-      dailyGoal.value = data.daily_goal
-      // Check if streak increased to show celebration
-      checkStreakCelebration(data.daily_goal.streak || 0)
+    // Luôn đảm bảo dailyGoal có giá trị để section hiển thị
+    const oldStreak = dailyGoal.value.streak || 0
+    const newStreak = data.daily_goal?.streak || 0
+    console.log('🔥 Streak update:', { oldStreak, newStreak, daily_goal: data.daily_goal })
+    
+    // Đảm bảo luôn có default values để tránh bị ẩn section khi thiếu field
+    dailyGoal.value = {
+      target: data.daily_goal?.target ?? 2,
+      completed: data.daily_goal?.completed ?? 0,
+      streak: data.daily_goal?.streak ?? 0,
+      streak_restoration: data.daily_goal?.streak_restoration
+    }
+    console.log('✅ dailyGoal.value updated:', dailyGoal.value)
+    // Check if streak increased to show celebration (hiện khi streak tăng thực sự)
+    if (newStreak > oldStreak) {
+      checkStreakCelebration(newStreak)
     }
     if (data.ai_message) {
       serverAiMessage.value = data.ai_message
     }
   } catch (e) {
     console.error('Load AI analysis error:', e)
+    // Đảm bảo dailyGoal luôn có giá trị mặc định khi API lỗi
+    dailyGoal.value = {
+      target: 2,
+      completed: 0,
+      streak: 0,
+      streak_restoration: undefined
+    }
   }
 }
 
@@ -1311,16 +1337,44 @@ watch(() => route.path, async (newPath) => {
 </script>
 
 <style scoped>
-/* Fire icon animation in streak card */
-.fire-icon {
+/* Mini fire animation in streak card (không dùng emoji) */
+.mini-fire {
+  position: relative;
+  width: 26px;
+  height: 36px;
   display: inline-block;
-  animation: fireWobble 0.3s ease-in-out infinite alternate;
-  filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.8));
+  filter: drop-shadow(0 0 7px rgba(249, 115, 22, 0.7));
 }
 
-@keyframes fireWobble {
-  0% { transform: scale(1) rotate(-5deg); }
-  100% { transform: scale(1.15) rotate(5deg); }
+.mini-fire .flame {
+  position: absolute;
+  bottom: 0;
+  width: 15px;
+  height: 24px;
+  border-radius: 50% 50% 35% 35%;
+  transform-origin: center bottom;
+  animation: miniFlicker 0.7s infinite ease-in-out;
+  background: radial-gradient(ellipse at bottom, #fcd34d 0%, #fb923c 50%, #f97316 70%, transparent 80%);
+}
+
+.mini-fire .core {
+  left: 6px;
+  width: 11px;
+  height: 18px;
+  background: radial-gradient(ellipse at bottom, #fff7ed 0%, #fde68a 40%, #fb923c 70%, transparent 80%);
+  animation-duration: 0.55s;
+}
+
+.mini-fire .f1 { left: 3px; animation-delay: -0.1s; }
+.mini-fire .f2 { left: 7px; animation-delay: -0.25s; }
+.mini-fire .f3 { left: 0px; animation-delay: -0.35s; }
+.mini-fire .f4 { left: 11px; animation-delay: -0.18s; }
+
+@keyframes miniFlicker {
+  0% { transform: scale(1) translateY(0); opacity: 0.95; }
+  40% { transform: scale(1.12) translateY(-4px); opacity: 0.85; }
+  70% { transform: scale(1.04) translateY(-2px); opacity: 0.9; }
+  100% { transform: scale(0.98) translateY(0); opacity: 1; }
 }
 
 /* Fire particles in streak card */

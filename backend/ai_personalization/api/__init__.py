@@ -7,6 +7,7 @@ from .tutor_views import (
     AITutorClearHistoryView,
     AITutorAnalyzeView,
     AITutorPracticeView,
+    AITutorPracticeSubmitView,
     AITutorDailyReportView,
     AITutorWeaknessNotificationView,
 )
@@ -19,6 +20,7 @@ __all__ = [
     'AITutorClearHistoryView',
     'AITutorAnalyzeView',
     'AITutorPracticeView',
+    'AITutorPracticeSubmitView',
     'AITutorDailyReportView',
     'AITutorWeaknessNotificationView',
 ]

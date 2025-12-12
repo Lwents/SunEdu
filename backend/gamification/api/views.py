@@ -2,6 +2,7 @@
 Game API Views
 - Student: List games, play game, submit score
 - Teacher: Create, edit, delete games
+- FE mapping: gameService (student) & teacherGameService (teacher)
 """
 import os
 import requests
@@ -199,6 +200,7 @@ class StudentGameSessionView(APIView):
             session.time_spent = request.data.get('time_spent', 0)
             session.answers = request.data.get('answers', [])
             session.completed = True
+            # Đảm bảo completed_at được set đúng timezone để tính streak chính xác
             session.completed_at = timezone.now()
             session.save()
             

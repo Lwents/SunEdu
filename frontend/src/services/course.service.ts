@@ -195,7 +195,7 @@ function buildMockDetail(id: ID): CourseDetail {
 
 // ====== SERVICE ======
 export const courseService = {
-  // LIST - Support both admin and student endpoints
+  // LIST - GET /content/courses/ (teacher/student) hoặc /admin/courses/ (admin) kèm bộ lọc
   async list(params: PageParams, useAdminEndpoint = false): Promise<PageResult<CourseSummary>> {
     if (USE_MOCK) return buildMockList(params)
     const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
@@ -209,7 +209,7 @@ export const courseService = {
     }
   },
 
-  // DETAIL - Support both admin and student endpoints
+  // DETAIL - GET /content/courses/:id/ hoặc /admin/courses/:id/
   async detail(id: ID, useAdminEndpoint = false): Promise<CourseDetail> {
     if (USE_MOCK) return buildMockDetail(id)
     const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
@@ -217,13 +217,14 @@ export const courseService = {
     return data
   },
 
-  // STUDENT DETAIL - Get course detail with student progress
+  // STUDENT DETAIL - GET /student/courses/:id/ bao gồm tiến độ cá nhân
   async studentDetail(id: ID): Promise<CourseDetail> {
     if (USE_MOCK) return buildMockDetail(id)
     const { data } = await api.get(`/student/courses/${id}/`)
     return data
   },
 
+  // GET /student/courses/ - danh sách khóa học của học sinh (cơ bản + bổ trợ)
   async myCourses(params: StudentMyCoursesFilters = {}): Promise<StudentMyCoursesResponse> {
     if (USE_MOCK) {
       return { base: [], supp: [], all: [] }
@@ -237,12 +238,14 @@ export const courseService = {
   },
 
   // CREATE / UPDATE
+  // POST /content|admin/courses/ - tạo khoá học (hỗ trợ FormData để upload)
   create(payload: Partial<CourseDetail> | FormData, useAdminEndpoint = false) {
     if (USE_MOCK) return Promise.resolve({ ok: true, id: Date.now() })
     const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
     const config = payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}
     return api.post(endpoint, payload, config).then((res) => res.data)
   },
+  // PATCH /content|admin/courses/:id/ - chỉnh sửa khoá học
   update(id: ID, payload: Partial<CourseDetail> | FormData, useAdminEndpoint = false) {
     if (USE_MOCK) return Promise.resolve({ ok: true })
     const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
@@ -250,6 +253,7 @@ export const courseService = {
   },
   
   // DELETE
+  // DELETE /content|admin/courses/:id/ - xoá khoá học
   async delete(id: ID, useAdminEndpoint = false): Promise<void> {
     if (USE_MOCK) return
     const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
@@ -257,11 +261,13 @@ export const courseService = {
   },
   
   // ENROLL (student only)
+  // POST /content/courses/:courseId/enroll/ - đăng ký khoá học
   async enroll(courseId: ID): Promise<{ success: boolean }> {
     if (USE_MOCK) return Promise.resolve({ success: true })
     const { data } = await api.post(`/content/courses/${courseId}/enroll/`)
     return data
   },
+  // DELETE /content/courses/:courseId/enroll/ - huỷ đăng ký
   async unenroll(courseId: ID): Promise<{ success: boolean }> {
     if (USE_MOCK) return Promise.resolve({ success: true })
     const { data } = await api.delete(`/content/courses/${courseId}/enroll/`)
@@ -269,6 +275,7 @@ export const courseService = {
   },
 
   // STATUS / ACTIONS (Admin)
+  // Các action duyệt/publish/khôi phục cho admin
   approve(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/approve/`) },
   reject(id: ID, reason?: string) {
     return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/reject/`, { reason })
@@ -279,6 +286,7 @@ export const courseService = {
   restore(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/restore/`) },
   
   // STATUS / ACTIONS (Teacher - use content endpoint)
+  // Giáo viên tự publish/unpublish/khôi phục qua content endpoint
   async publishCourse(id: ID): Promise<any> {
     if (USE_MOCK) return Promise.resolve({ ok: true })
     const { data } = await api.post(`/content/courses/${id}/publish/`, { published: true })
@@ -301,6 +309,7 @@ export const courseService = {
   },
 
   // BULK (tuỳ chọn dùng ở trang duyệt)
+  // POST /admin/courses/bulk/ - xử lý nhiều khoá học cùng lúc
   bulkApprove(ids: ID[]) {
     return USE_MOCK ? Promise.resolve({ ok: true }) : api.post('/admin/courses/bulk/', { action: 'approve', ids })
   },
@@ -315,6 +324,7 @@ export const courseService = {
   },
 
   // FILTER OPTIONS
+  // GET /account/admin/users/?role=instructor - lấy danh sách giáo viên cho bộ lọc
   async listTeachers(): Promise<{ id: ID; name: string }[]> {
     if (USE_MOCK) {
       return Array.from({ length: 15 }).map((_, i) => ({ id: i + 1, name: `GV ${i + 1}` }))

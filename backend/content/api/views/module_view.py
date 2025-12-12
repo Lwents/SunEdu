@@ -1,3 +1,7 @@
+"""
+Module API: list/create modules trong khoá học, chỉnh sửa/xoá và reorder vị trí.
+Liên kết FE: contentService.*Modules (FE gọi /content/courses/:courseId/modules/...).
+"""
 from typing import Any, Dict
 from django.db import transaction
 from django.shortcuts import get_object_or_404

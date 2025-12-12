@@ -51,6 +51,7 @@ export interface ExamSummary {
   status: ExamStatus
   updatedAt: string
   maxAttempts?: number
+  courseId?: ID
 }
 
 export interface ExamDetail extends ExamSummary {
@@ -64,6 +65,7 @@ export interface ExamDetail extends ExamSummary {
   submissions?: number
   avgScore?: number
   passRate?: number
+  courseId?: ID
 }
 
 export interface AttemptQuestion {
@@ -249,7 +251,7 @@ function scoreQuestion(q: Question, ans: any): number {
 
 // ========= SERVICE API =========
 export const examService = {
-  async list(params?: { level?: Level; q?: string; status?: ExamStatus; page?: number; pageSize?: number; includeStats?: boolean }): Promise<{ items: ExamSummary[]; total: number }> {
+  async list(params?: { level?: Level; q?: string; status?: ExamStatus; page?: number; pageSize?: number; includeStats?: boolean; excludeLessons?: boolean; studentView?: boolean }): Promise<{ items: ExamSummary[]; total: number }> {
     try {
      const apiParams: any = {}
       if (params?.q) apiParams.q = params.q
@@ -258,6 +260,7 @@ export const examService = {
       if (params?.page) apiParams.page = params.page
       if (params?.pageSize) apiParams.pageSize = params.pageSize
       if (params?.includeStats) apiParams.include_stats = 'true'
+      if (params?.studentView) apiParams.student_view = 'true'
       // yêu cầu backend gửi kèm attempt của user nếu đã đăng nhập
       apiParams.include_my_attempt = 'true'
       
@@ -272,8 +275,16 @@ export const examService = {
       if (params?.status === 'published') {
         filteredExercises = exercises.filter((ex: any) => ex.published === true)
       }
-      // Loại bỏ bài tập gắn với bài học (chỉ giữ đề thi độc lập)
-      filteredExercises = filteredExercises.filter((ex: any) => !ex.lesson)
+      // Tùy chọn loại bỏ bài tập gắn với bài học (nếu cần)
+      if (params?.excludeLessons) {
+        filteredExercises = filteredExercises.filter((ex: any) => !ex.lesson)
+      }
+      // Loại bỏ bài luyện tập AI (không hiển thị trong danh sách bài kiểm tra)
+      filteredExercises = filteredExercises.filter((ex: any) => {
+        const title = ex.title || ''
+        const isAIPractice = title.startsWith('AI Practice') || ex.metadata?.type === 'ai_practice'
+        return !isAIPractice
+      })
       
       // Map exercises to ExamSummary format
       const items = filteredExercises.map((ex: any) => ({
@@ -286,6 +297,7 @@ export const examService = {
         status: ex.published ? 'published' : (ex.settings?.scheduled_at ? 'scheduled' : 'draft'),
         scheduledAt: ex.settings?.scheduled_at,
         maxAttempts: ex.settings?.max_attempts ?? ex.max_attempts ?? 1,
+        courseId: ex.settings?.course_id || ex.course_id || ex.course?.id || ex.metadata?.course_id,
           updatedAt: ex.updated_at || ex.updatedAt || new Date().toISOString(),
         // Stats from backend if include_stats was true
         submissions: ex.stats?.total_attempts || ex.submissions || 0,
@@ -327,6 +339,7 @@ export const examService = {
         status: data.published ? 'published' : (data.settings?.scheduled_at ? 'scheduled' : 'draft'),
         updatedAt: data.updated_at || data.updatedAt || new Date().toISOString(),
         maxAttempts: data.settings?.max_attempts ?? data.max_attempts ?? 1,
+        courseId: data.settings?.course_id || data.course_id || data.course?.id || data.metadata?.course_id,
         // Description is stored in settings.description
         description: data.settings?.description || data.description || '',
         scheduledAt: data.settings?.scheduled_at,
@@ -457,6 +470,7 @@ export const examService = {
           max_attempts: data.maxAttempts ?? 1,
             shuffle_questions: data.shuffleQuestions ?? true,
             shuffle_choices: data.shuffleChoices ?? true,
+          ...(data.courseId ? { course_id: data.courseId } : {}),
           },
         questions: (data.questions || []).map((q: Question) => {
           // Ensure prompt is not empty
@@ -495,6 +509,9 @@ export const examService = {
       }
       if (data.level) {
         payload.settings.level = data.level
+      }
+      if (data.courseId) {
+        payload.settings.course_id = data.courseId
       }
       
       // Handle scheduled publishing
@@ -538,6 +555,7 @@ export const examService = {
           shuffleChoices: response.settings?.shuffle_choices ?? true,
           questions: data.questions || [],
           scheduledAt: response.settings?.scheduled_at,
+        courseId: response.settings?.course_id || response.metadata?.course_id || data.courseId,
         }
       } catch (e: any) {
         console.error('Create exam error:', e)
@@ -567,6 +585,9 @@ export const examService = {
       }
       if (data.level) {
         payload.settings.level = data.level
+      }
+      if (data.courseId) {
+        payload.settings.course_id = data.courseId
       }
       
       // Handle scheduled publishing
@@ -628,6 +649,7 @@ export const examService = {
           questions: data.questions || [],
           scheduledAt: response.settings?.scheduled_at,
           endAt: response.settings?.end_at,
+        courseId: response.settings?.course_id || response.metadata?.course_id || data.courseId,
         }
       } catch (e: any) {
         console.error('Update exam error:', e)

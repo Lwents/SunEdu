@@ -28,7 +28,9 @@ export function useIdleLogout(opts: Options) {
 
     function updateLastActivity(force = false) {
         if (!started && !force) return
-        // Any activity should clear warning state immediately
+        // Khi đang cảnh báo, chỉ cho phép reset nếu force=true (bấm nút giữ phiên)
+        if (isWarning.value && !force) return
+        // Clear warning trạng thái khi đã xác nhận tiếp tục
         if (isWarning.value) {
             isWarning.value = false
             opts.onActive?.()
@@ -98,6 +100,8 @@ export function useIdleLogout(opts: Options) {
         events.forEach((ev) => window.addEventListener(ev, onActivity, { passive: true }))
         document.addEventListener('visibilitychange', visibilityHandler)
         window.addEventListener('storage', handleStorageEvent)
+        // Cho phép nơi khác phát sự kiện giữ phiên
+        window.addEventListener('idle-keepalive', () => updateLastActivity(true))
     }
 
     function removeListeners() {

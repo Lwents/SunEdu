@@ -375,6 +375,65 @@ class AITutorPracticeView(APIView):
     Tạo bài luyện tập dựa trên điểm yếu
     """
     permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def _build_fallback_exercises(wrong_questions, weaknesses, num_exercises=10):
+        """Tạo bộ câu hỏi đơn giản khi AI trả về lỗi/JSON sai."""
+        exercises = []
+
+        # Ưu tiên tạo từ danh sách câu sai để sát nội dung học viên vừa làm
+        for wq in (wrong_questions or []):
+            if len(exercises) >= num_exercises:
+                break
+            question_text = wq.get('question_text') or f"Câu hỏi về {wq.get('topic', 'bài trước')}?"
+            correct = wq.get('correct_answer') or "Đáp án đúng"
+            student_ans = wq.get('student_answer') or "Câu con đã chọn"
+
+            # Đảm bảo đáp án không rỗng, loại bỏ trùng lặp đơn giản
+            base_options = [str(correct), str(student_ans), "Phương án khác", "Em chưa chắc"]
+            seen = set()
+            deduped = []
+            for opt in base_options:
+                if opt and opt not in seen:
+                    seen.add(opt)
+                    deduped.append(opt)
+            while len(deduped) < 4:
+                deduped.append(f"Đáp án {len(deduped)+1}")
+
+            letters = ["A", "B", "C", "D"]
+            choices = [f"{letters[i]}. {txt}" for i, txt in enumerate(deduped[:4])]
+
+            exercises.append({
+                "question": question_text,
+                "topic": wq.get('topic') or wq.get('lesson_title') or "Ôn tập",
+                "choices": choices,
+                "correct_answer": "A",  # Chọn đáp án đầu tiên làm đúng
+                "explanation": "Chọn phương án chính xác nhất giống đáp án đúng ở trên.",
+                "difficulty": "easy",
+                "related_wrong_question": question_text,
+            })
+
+        # Nếu không có câu sai, tạo câu hỏi gợi nhắc dựa trên topic điểm yếu
+        if not exercises:
+            for wk in (weaknesses or []):
+                if len(exercises) >= num_exercises:
+                    break
+                topic = wk.get('topic') or "Ôn tập kiến thức"
+                exercises.append({
+                    "question": f"Câu hỏi ôn tập về: {topic}",
+                    "topic": topic,
+                    "choices": [
+                        "Em đã hiểu nội dung này",
+                        "Em chưa chắc, cần xem lại",
+                        "Em cần ví dụ thêm",
+                        "Em muốn giáo viên giải thích"
+                    ],
+                    "correct_answer": "A",
+                    "explanation": "Chọn phương án phù hợp nhất với kiến thức đã học.",
+                    "difficulty": "easy",
+                })
+
+        return exercises[:num_exercises]
     
     def post(self, request):
         weaknesses = request.data.get('weaknesses', [])
@@ -431,13 +490,192 @@ class AITutorPracticeView(APIView):
             num_exercises=num_exercises,
             wrong_questions=wrong_questions  # Truyền câu hỏi sai vào
         )
+
+        # Fallback: nếu AI trả lỗi hoặc JSON sai, tự tạo bài ôn tập đơn giản
+        if not result.get('success') or not result.get('exercises'):
+            fallback_exercises = self._build_fallback_exercises(wrong_questions, weaknesses, num_exercises)
+            if fallback_exercises:
+                result = {
+                    'success': True,
+                    'exercises': fallback_exercises,
+                    'topics': [w.get('topic') for w in weaknesses[:3]],
+                    'provider': 'fallback'
+                }
         
-        # Cache exercises for this user
-        if result.get('success'):
-            cache_key = f"ai_practice:{request.user.id}"
-            cache.set(cache_key, result.get('exercises', []), 3600)
+        # Tạo Exercise đầy đủ với Question và Choice trong database
+        if result.get('success') and result.get('exercises'):
+            try:
+                from activities.models import Exercise, Question, Choice
+                from django.utils import timezone
+                
+                # Tạo Exercise mới cho bài luyện tập AI
+                exercise_title = f"AI Practice - {request.user.username} - {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                exercise = Exercise.objects.create(
+                    title=exercise_title,
+                    type='mcq',
+                    published=True,
+                )
+                
+                # Tạo Question và Choice cho mỗi exercise
+                exercise_id = str(exercise.id)
+                for idx, ex_data in enumerate(result.get('exercises', [])):
+                    question_text = ex_data.get('question', '')
+                    choices_list = ex_data.get('choices', [])
+                    correct_answer = ex_data.get('correct_answer', '')
+                    
+                    if question_text:
+                        # Tạo Question
+                        question = Question.objects.create(
+                            exercise=exercise,
+                            prompt=question_text,
+                            meta={
+                                'type': 'ai_practice',
+                                'index': idx,
+                                'difficulty': ex_data.get('difficulty', 'medium'),
+                                'topic': ex_data.get('topic', ''),
+                                'explanation': ex_data.get('explanation', '')
+                            }
+                        )
+                        
+                        # Tạo Choice cho mỗi lựa chọn
+                        for choice_idx, choice_text in enumerate(choices_list):
+                            is_correct = False
+                            # Xác định đáp án đúng (có thể là A, B, C, D hoặc text)
+                            if isinstance(correct_answer, str):
+                                # Nếu correct_answer là "A", "B", "C", "D"
+                                if len(correct_answer) == 1 and correct_answer.isalpha():
+                                    correct_letter = correct_answer.upper()
+                                    if choice_idx == ord(correct_letter) - ord('A'):
+                                        is_correct = True
+                                # Nếu correct_answer là text, so sánh với choice_text
+                                elif choice_text.strip() == correct_answer.strip():
+                                    is_correct = True
+                            elif isinstance(correct_answer, int):
+                                if choice_idx == correct_answer:
+                                    is_correct = True
+                            
+                            Choice.objects.create(
+                                question=question,
+                                text=choice_text,
+                                is_correct=is_correct,
+                                position=choice_idx
+                            )
+                
+                # Thêm exercise_id vào response để frontend có thể sử dụng
+                result['exercise_id'] = exercise_id
+                result['exercise_title'] = exercise_title
+                
+                # Cache exercises for this user
+                cache_key = f"ai_practice:{request.user.id}"
+                cache.set(cache_key, result.get('exercises', []), 3600)
+                
+            except Exception as e:
+                logger.error(f"Error creating Exercise from AI practice: {e}", exc_info=True)
+                # Vẫn trả về result nếu có lỗi khi tạo Exercise
         
         return Response(result)
+
+
+class AITutorPracticeSubmitView(APIView):
+    """
+    POST /api/student/ai/tutor/practice/submit/
+    
+    Submit kết quả bài luyện tập AI và tạo ExerciseAttempt để tính vào streak/daily goal
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        from activities.models import Exercise, ExerciseAttempt, ExerciseAnswer, Question, Choice
+        from activities.services import start_attempt, finalize_attempt
+        from django.utils import timezone
+        
+        exercises_data = request.data.get('exercises', [])  # Danh sách câu hỏi đã làm
+        score = request.data.get('score', 0)  # Điểm số tổng (0-100)
+        time_spent = request.data.get('time_spent', 0)  # Thời gian làm bài (giây)
+        exercise_id = request.data.get('exercise_id')  # ID của Exercise đã tạo sẵn (nếu có)
+        
+        if not exercises_data:
+            return Response(
+                {'error': 'Không có dữ liệu bài tập'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Nếu có exercise_id, sử dụng Exercise đã tạo sẵn
+            if exercise_id:
+                try:
+                    exercise = Exercise.objects.get(id=exercise_id)
+                except Exercise.DoesNotExist:
+                    exercise = None
+            else:
+                exercise = None
+            
+            # Nếu không có Exercise sẵn, tạo mới (fallback)
+            if not exercise:
+                exercise_title = f"AI Practice - {request.user.username} - {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                exercise = Exercise.objects.create(
+                    title=exercise_title,
+                    type='mcq',
+                    published=True,
+                )
+            
+            # Tạo ExerciseAttempt
+            attempt = ExerciseAttempt.objects.create(
+                exercise=exercise,
+                student=request.user,
+                score=score,
+                finished_at=timezone.now(),
+                metadata={
+                    'type': 'ai_practice',
+                    'time_spent': time_spent,
+                    'num_questions': len(exercises_data),
+                    'created_at': timezone.now().isoformat()
+                }
+            )
+            
+            # Tạo ExerciseAnswer cho mỗi câu hỏi (nếu cần)
+            # Lưu ý: Bài luyện tập AI có thể không có Question model, chỉ lưu metadata
+            for idx, ex_data in enumerate(exercises_data):
+                # Tạo Question tạm thời nếu chưa có
+                question_text = ex_data.get('question', '')
+                correct_answer = ex_data.get('correct_answer', '')
+                student_answer = ex_data.get('student_answer', '')
+                is_correct = ex_data.get('is_correct', False)
+                
+                if question_text:
+                    question, _ = Question.objects.get_or_create(
+                        exercise=exercise,
+                        prompt=question_text,
+                        defaults={'meta': {'type': 'ai_practice', 'index': idx}}
+                    )
+                    
+                    # Tạo ExerciseAnswer
+                    ExerciseAnswer.objects.create(
+                        attempt=attempt,
+                        question=question,
+                        answer={'text': student_answer, 'selected_choice': correct_answer},
+                        correct=is_correct
+                    )
+            
+            # Tính lại streak và daily goal sau khi submit
+            from student_api.views.ai_learning_view import AILearningAnalyzerView
+            analyzer = AILearningAnalyzerView()
+            daily_goal_data = analyzer._get_daily_goal(request.user)
+            
+            return Response({
+                'success': True,
+                'attempt_id': str(attempt.id),
+                'score': score,
+                'message': 'Đã lưu kết quả bài luyện tập!',
+                'daily_goal': daily_goal_data  # Trả về streak và daily goal mới để frontend cập nhật
+            })
+        
+        except Exception as e:
+            logger.error(f"Error submitting AI practice: {e}")
+            return Response(
+                {'error': f'Lỗi khi lưu kết quả: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class AITutorDailyReportView(APIView):
@@ -486,8 +724,12 @@ class AITutorDailyReportView(APIView):
             'time_spent': time_spent
         }
         
-        # Get weaknesses
-        wrong_attempts = today_attempts.filter(score__lt=70)
+        # Get weaknesses (bỏ qua các bài AI Practice)
+        wrong_attempts = today_attempts.filter(score__lt=70).exclude(
+            exercise__title__startswith='AI Practice'
+        ).exclude(
+            metadata__type='ai_practice'
+        )
         weaknesses = []
         for attempt in wrong_attempts[:5]:
             weaknesses.append({

@@ -32,17 +32,18 @@
             </div>
 
             <div>
-              <label class="mb-1 block text-sm font-medium">Khối lớp</label>
+              <label class="mb-1 block text-sm font-medium">Khóa học áp dụng <span class="text-rose-600">*</span></label>
               <select
-                v-model="form.level"
+                v-model="form.courseId"
                 class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30"
+                :disabled="loadingCourses"
               >
-                <option value="Khối 1">Khối 1</option>
-                <option value="Khối 2">Khối 2</option>
-                <option value="Khối 3">Khối 3</option>
-                <option value="Khối 4">Khối 4</option>
-                <option value="Khối 5">Khối 5</option>
+                <option value="" disabled>Chọn khóa học</option>
+                <option v-for="c in courses" :key="c.id" :value="String(c.id)">
+                  {{ c.title }} (Lớp {{ c.grade }})
+                </option>
               </select>
+              <p class="mt-1 text-xs text-slate-500">Chỉ học sinh đã ghi danh khóa này mới thấy đề thi.</p>
             </div>
 
             <div>
@@ -419,6 +420,8 @@
 import { computed, reactive, ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { examService, type ExamDetail, type Question, type QType, type Level, type ExamStatus } from '@/services/exam.service'
+import { courseService, type CourseSummary } from '@/services/course.service'
+import { useAuthStore } from '@/store/auth.store'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
 
@@ -431,6 +434,7 @@ const examId = computed(() => {
 })
 
 const loading = ref(true)
+const loadingCourses = ref(false)
 const submitting = ref(false)
 const showAddQuestion = ref(false)
 const editingQuestionIndex = ref<number | null>(null)
@@ -438,6 +442,7 @@ const editingQuestionIndex = ref<number | null>(null)
 const form = reactive<Partial<ExamDetail>>({
   title: '',
   level: 'Khối 1' as Level,
+  courseId: '',
   durationSec: 1800,
   passScore: 10,
   maxAttempts: 1,
@@ -463,6 +468,60 @@ const minDateTime = computed(() => {
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
   return now.toISOString().slice(0, 16)
 })
+
+async function loadCourses() {
+  loadingCourses.value = true
+  try {
+    const teacherId = authStore.user?.id
+    const { items } = await courseService.list({ teacherId, pageSize: 200 })
+    // Coerce id to string to avoid mismatched types between select option and value
+    courses.value = (items || []).map((c) => ({ ...c, id: String(c.id) })) as CourseSummary[]
+  } catch (e: any) {
+    console.error('Load courses error:', e)
+    showToast('Không tải được danh sách khóa học', 'error')
+  } finally {
+    loadingCourses.value = false
+  }
+}
+
+async function ensureCourseOption(courseId: ID | undefined) {
+  if (!courseId) return
+  const exists = courses.value.some(c => String(c.id) === String(courseId))
+  if (exists) return
+  try {
+    const detail = await courseService.detail(courseId)
+    if (detail) {
+        courses.value.push({ ...(detail as any), id: String(detail.id) })
+      return
+    }
+  } catch (e) {
+    console.warn('Không tìm thấy khóa học áp dụng', e)
+  }
+  // Fallback: thêm option tối thiểu để hiển thị giá trị đã lưu
+  courses.value.push({
+    id: String(courseId),
+    title: 'Khóa học đã áp dụng',
+    grade: 0 as any,
+    subject: '' as any,
+    teacherId: '',
+    teacherName: '',
+    lessonsCount: 0,
+    enrollments: 0,
+    status: 'draft',
+    createdAt: '',
+    updatedAt: '',
+  } as CourseSummary)
+}
+
+watch(() => form.courseId, (val) => {
+  const found = courses.value.find(c => String(c.id) === String(val))
+  if (found?.grade) {
+    form.level = (`Khối ${found.grade}`) as Level
+  }
+})
+
+const authStore = useAuthStore()
+const courses = ref<CourseSummary[]>([])
 
 function onStatusChange() {
   if (form.status === 'scheduled' && !scheduledAtLocal.value) {
@@ -520,7 +579,7 @@ watch(endAtLocal, (val) => {
 })
 
 const canSubmit = computed(() => {
-  return form.title && form.questions && form.questions.length > 0
+  return form.title && form.courseId && form.questions && form.questions.length > 0
 })
 
 function makeId(prefix: string) {
@@ -749,6 +808,8 @@ async function loadExam() {
     }
     form.title = exam.title || ''
     form.level = exam.level || 'Khối 1'
+    const loadedCourseId = exam.courseId ? String(exam.courseId) : ''
+    form.courseId = loadedCourseId
     form.durationSec = exam.durationSec || 1800
     form.passScore = exam.passScore || 10
     form.maxAttempts = exam.maxAttempts ?? 1
@@ -794,6 +855,11 @@ async function loadExam() {
       description: exam.description,
       settings: exam
     })
+
+    // Đảm bảo option khóa học tồn tại để select hiển thị đúng giá trị
+    await ensureCourseOption(loadedCourseId)
+    // Re-assign to force binding after options are ready
+    form.courseId = loadedCourseId
   } catch (e: any) {
     console.error('Load exam error:', e)
     showToast(e?.message || 'Không tải được đề thi', 'error')
@@ -814,6 +880,10 @@ async function submit() {
     showToast('Vui lòng nhập tên đề thi', 'warning')
     return
   }
+  if (!form.courseId) {
+    showToast('Vui lòng chọn khóa học áp dụng', 'warning')
+    return
+  }
 
   submitting.value = true
   try {
@@ -828,8 +898,9 @@ async function submit() {
   }
 }
 
-onMounted(() => {
-  loadExam()
+onMounted(async () => {
+  await loadCourses()
+  await loadExam()
 })
 </script>
 

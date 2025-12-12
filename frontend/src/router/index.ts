@@ -388,19 +388,20 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/student/exams/PracticeExams.vue'),
         meta: { title: 'Luyện đề' },
       },
-      {
-        path: 'exams/:id',
-        name: 'student-exam-detail',
-        component: () => import('@/pages/student/exams/ExamDetail.vue'),
-        props: true,
-        meta: { title: (to: any) => `Đề #${to.params.id}` },
-      },
+      // Đặt result route TRƯỚC detail route để match chính xác
       {
         path: 'exams/:id/result',
         name: 'student-exam-result',
         component: () => import('@/pages/student/exams/ExamResult.vue'),
         props: true,
         meta: { title: 'Kết quả bài thi' },
+      },
+      {
+        path: 'exams/:id',
+        name: 'student-exam-detail',
+        component: () => import('@/pages/student/exams/ExamDetail.vue'),
+        props: true,
+        meta: { title: (to: any) => `Đề #${to.params.id}` },
       },
       {
         path: 'exams/certificates',

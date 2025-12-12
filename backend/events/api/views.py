@@ -1,3 +1,7 @@
+"""
+Event API: giáo viên tạo/cập nhật sự kiện, học sinh xem sự kiện sắp tới.
+Liên kết FE: eventService.* (FE gọi /events/teacher/, /events/upcoming/).
+"""
 import datetime
 from rest_framework import status, permissions
 from rest_framework.views import APIView

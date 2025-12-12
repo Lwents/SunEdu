@@ -56,25 +56,25 @@ export interface LeaderboardEntry {
 
 // Student APIs
 export const gameService = {
-  // List all games
+  // GET /student/games/ - danh sách game đã publish (lọc theo type/subject/grade)
   async list(params?: { type?: string; subject?: string; grade?: number }) {
     const { data } = await api.get('/student/games/', { params })
     return data
   },
 
-  // Get game details
+  // GET /student/games/:gameId/ - chi tiết game + câu hỏi
   async detail(gameId: string) {
     const { data } = await api.get(`/student/games/${gameId}/`)
     return data as Game
   },
 
-  // Start game session
+  // POST /student/games/:gameId/start/ - bắt đầu phiên chơi và nhận danh sách câu hỏi
   async start(gameId: string): Promise<GameSession> {
     const { data } = await api.post(`/student/games/${gameId}/start/`)
     return data
   },
 
-  // Submit game results
+  // POST /student/games/:gameId/submit/ - nộp kết quả, trả về điểm và xếp hạng
   async submit(gameId: string, payload: {
     session_id?: string
     score: number
@@ -85,7 +85,7 @@ export const gameService = {
     return data
   },
 
-  // Get leaderboard
+  // GET /student/games/:gameId/leaderboard/ - bảng xếp hạng (best score mỗi người)
   async leaderboard(gameId: string) {
     const { data } = await api.get(`/student/games/${gameId}/leaderboard/`)
     return data as { leaderboard: LeaderboardEntry[] }
@@ -94,19 +94,19 @@ export const gameService = {
 
 // Teacher APIs
 export const teacherGameService = {
-  // List teacher's games
+  // GET /teacher/games/ - danh sách game của giáo viên
   async list() {
     const { data } = await api.get('/teacher/games/')
     return data
   },
 
-  // Get game details
+  // GET /teacher/games/:gameId/ - chi tiết game kèm thống kê cơ bản
   async detail(gameId: string) {
     const { data } = await api.get(`/teacher/games/${gameId}/`)
     return data
   },
 
-  // Create game
+  // POST /teacher/games/ - tạo game mới (quiz/word_match...)
   async create(payload: {
     title: string
     description?: string
@@ -122,7 +122,7 @@ export const teacherGameService = {
     return data
   },
 
-  // Update game
+  // PUT /teacher/games/:gameId/ - cập nhật nội dung/setting game
   async update(gameId: string, payload: Partial<{
     title: string
     description: string
@@ -138,19 +138,19 @@ export const teacherGameService = {
     return data
   },
 
-  // Delete game
+  // DELETE /teacher/games/:gameId/ - xoá game
   async delete(gameId: string) {
     const { data } = await api.delete(`/teacher/games/${gameId}/`)
     return data
   },
 
-  // Get game stats
+  // GET /teacher/games/:gameId/stats/ - thống kê lượt chơi/điểm
   async stats(gameId: string) {
     const { data } = await api.get(`/teacher/games/${gameId}/stats/`)
     return data
   },
 
-  // Generate questions with AI
+  // POST /teacher/games/ai-generate/ - nhờ AI sinh câu hỏi (Gemini/DeepSeek)
   async generateWithAI(payload: {
     game_type: string
     title?: string

@@ -48,6 +48,7 @@ from django.apps import apps
 ExerciseModel = apps.get_model("activities", "Exercise")
 ExerciseAttemptModel = apps.get_model("activities", "ExerciseAttempt")
 ExerciseAnswerModel = apps.get_model("activities", "ExerciseAnswer")
+EnrollmentModel = apps.get_model("content", "Enrollment")
 
 
 class ExerciseListCreateView(APIView):
@@ -86,6 +87,29 @@ class ExerciseListCreateView(APIView):
         if level_filter:
             level_lower = level_filter.lower()
             data = [item for item in data if level_lower in (item.get("level") or "").lower()]
+        
+        # Loại bỏ bài luyện tập AI (không hiển thị trong danh sách bài kiểm tra)
+        # Các bài AI Practice có title bắt đầu bằng "AI Practice" hoặc có metadata type = 'ai_practice'
+        data = [item for item in data if not (
+            (item.get("title") or "").startswith("AI Practice") or
+            (item.get("metadata") or {}).get("type") == "ai_practice"
+        )]
+
+        student_view = request.query_params.get("student_view", "").lower() == "true"
+        # Học sinh (hoặc caller yêu cầu student_view) chỉ thấy đề thi thuộc khóa đã tham gia
+        if student_view or (request.user and getattr(request.user, "role", "").lower() == "student"):
+            if not request.user or not request.user.is_authenticated:
+                return Response([])  # không đăng nhập thì không trả gì cho student view
+            enrolled_ids = {
+                str(cid) for cid in EnrollmentModel.objects.filter(student=request.user).values_list("course_id", flat=True)
+            }
+            filtered = []
+            for item in data:
+                settings = (item.get("settings") or {}) if isinstance(item, dict) else {}
+                course_id = settings.get("course_id") or item.get("course_id")
+                if course_id and str(course_id) in enrolled_ids:
+                    filtered.append(item)
+            data = filtered
         
         # Add stats if requested
         if include_stats:

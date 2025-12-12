@@ -133,6 +133,7 @@ export interface AssessmentResult {
 export const aiLearningService = {
   /**
    * Lấy phân tích tiến độ học tập và gợi ý AI
+   * GET /student/ai/learning-analyzer/
    */
   async getAnalysis(): Promise<AILearningData> {
     const response = await api.get('/student/ai/learning-analyzer/')
@@ -141,6 +142,7 @@ export const aiLearningService = {
 
   /**
    * Lấy câu hỏi đánh giá đầu vào cho khóa học
+   * POST /student/ai/assessment/
    */
   async getAssessment(courseId: string): Promise<AssessmentData> {
     const response = await api.post('/student/ai/assessment/', { course_id: courseId })
@@ -149,6 +151,7 @@ export const aiLearningService = {
 
   /**
    * Gửi kết quả đánh giá và nhận lộ trình cá nhân hóa
+   * POST /student/ai/assessment/result/
    */
   async submitAssessment(courseId: string, answers: AssessmentAnswer[]): Promise<AssessmentResult> {
     const response = await api.post('/student/ai/assessment/result/', {

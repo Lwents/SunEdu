@@ -152,7 +152,7 @@
         Con đã trả lời đúng {{ correctCount }}/{{ exercises.length }} câu
       </p>
       
-      <div class="flex justify-center gap-4">
+      <div class="flex justify-center gap-3 flex-wrap">
         <button
           @click="resetPractice"
           class="px-6 py-2 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition-colors"
@@ -165,13 +165,20 @@
         >
           📝 Bài mới
         </button>
+        <button
+          @click="exitPractice"
+          class="px-6 py-2 bg-white border border-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors"
+        >
+          ✖ Đóng
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import { aiTutorService, type PracticeExercise, type Weakness } from '@/services/ai-tutor.service'
 
 const props = defineProps<{
@@ -179,8 +186,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'completed', score: number): void
+  (e: 'completed', score: number, dailyGoal?: any): void
   (e: 'exercise-answered', correct: boolean): void
+  (e: 'exit'): void
 }>()
 
 // State
@@ -193,6 +201,18 @@ const answered = ref(false)
 const correctCount = ref(0)
 const completed = ref(false)
 const analysis = ref<any>(null)
+const answers = ref<string[]>([]) // Lưu tất cả câu trả lời
+const startTime = ref(0) // Thời gian bắt đầu làm bài
+const exerciseId = ref<string | null>(null) // ID của Exercise đã tạo trong database
+
+// Storage key cho localStorage
+import { useAuthStore } from '@/store/auth.store'
+const auth = useAuthStore()
+const storageKey = computed(() => {
+  const user = auth.user
+  const userKey = String(user?.id ?? user?.email ?? 'guest')
+  return `ai_practice_${userKey}`
+})
 
 // Computed
 const currentExercise = computed(() => exercises.value[currentIndex.value])
@@ -236,16 +256,36 @@ async function loadAnalysis(autoGenerate = false) {
 async function generateExercises() {
   generatingExercises.value = true
   try {
+    // Reset state UI trước khi tạo đề mới
+    completed.value = false
+    answered.value = false
+    selectedAnswer.value = null
+    exercises.value = []
+    currentIndex.value = 0
+    correctCount.value = 0
+
+    // Kiểm tra xem có tiến trình đã lưu không
+    if (restoreProgress()) {
+      generatingExercises.value = false
+      return // Đã khôi phục tiến trình, không cần tạo mới
+    }
+    
     const weaknesses = analysis.value?.weaknesses || []
     const response = await aiTutorService.generatePractice(weaknesses, 5)
     
     if (response.success && response.exercises?.length) {
       exercises.value = response.exercises
+      exerciseId.value = response.exercise_id || null // Lưu exercise_id từ backend
       currentIndex.value = 0
       correctCount.value = 0
       completed.value = false
       answered.value = false
       selectedAnswer.value = null
+      answers.value = [] // Reset answers
+      startTime.value = Date.now() // Ghi nhận thời gian bắt đầu
+      
+      // Lưu tiến trình mới
+      saveProgress()
     }
   } catch (error) {
     console.error('Generate exercises error:', error)
@@ -254,27 +294,77 @@ async function generateExercises() {
   }
 }
 
+function loadExternalExercises(external: PracticeExercise[], externalExerciseId?: string | null) {
+  if (!external || !external.length) return
+  exercises.value = external
+  exerciseId.value = externalExerciseId || null
+  currentIndex.value = 0
+  correctCount.value = 0
+  completed.value = false
+  answered.value = false
+  selectedAnswer.value = null
+  answers.value = []
+  startTime.value = Date.now()
+  clearProgress()
+  saveProgress()
+}
+
 function selectAnswer(choice: string) {
   if (answered.value) return
   
   selectedAnswer.value = choice
   answered.value = true
   
+  // Lưu câu trả lời vào mảng answers
+  answers.value[currentIndex.value] = choice
+  
   if (isCorrect.value) {
     correctCount.value++
   }
   
+  // Lưu tiến trình vào localStorage
+  saveProgress()
+  
   emit('exercise-answered', isCorrect.value)
 }
 
-function nextQuestion() {
+async function nextQuestion() {
   if (currentIndex.value < exercises.value.length - 1) {
     currentIndex.value++
     answered.value = false
     selectedAnswer.value = null
+    
+    // Lưu tiến trình vào localStorage
+    saveProgress()
   } else {
     completed.value = true
-    emit('completed', score.value)
+    
+    // Submit kết quả bài luyện tập để tính vào streak/daily goal
+    try {
+      const exercisesData = exercises.value.map((ex, idx) => ({
+        question: ex.question,
+        correct_answer: ex.correct_answer,
+        student_answer: answers.value[idx] || '',
+        is_correct: answers.value[idx] === ex.correct_answer
+      }))
+      
+      const response = await aiTutorService.submitPractice({
+        exercises: exercisesData,
+        score: score.value,
+        time_spent: Math.floor((Date.now() - startTime.value) / 1000), // Thời gian làm bài (giây)
+        exercise_id: exerciseId.value // Gửi exercise_id để sử dụng Exercise đã tạo sẵn
+      })
+      
+      // Xóa tiến trình đã lưu sau khi submit thành công
+      clearProgress()
+      
+      // Emit với daily_goal mới để parent component có thể cập nhật
+      emit('completed', score.value, response.daily_goal)
+    } catch (error) {
+      console.error('Error submitting practice:', error)
+      // Không block UI nếu submit lỗi
+      emit('completed', score.value, null)
+    }
   }
 }
 
@@ -284,6 +374,85 @@ function resetPractice() {
   completed.value = false
   answered.value = false
   selectedAnswer.value = null
+  answers.value = []
+  startTime.value = 0
+  clearProgress()
+}
+
+function exitPractice() {
+  resetPractice()
+  exercises.value = []
+  exerciseId.value = null
+  emit('exit')
+}
+
+// Lưu tiến trình vào localStorage
+function saveProgress() {
+  try {
+    const progress = {
+      exercises: exercises.value,
+      currentIndex: currentIndex.value,
+      answers: answers.value,
+      correctCount: correctCount.value,
+      startTime: startTime.value,
+      completed: completed.value,
+      exerciseId: exerciseId.value, // Lưu exercise_id
+      timestamp: Date.now()
+    }
+    localStorage.setItem(storageKey.value, JSON.stringify(progress))
+  } catch (e) {
+    console.warn('Cannot save practice progress:', e)
+  }
+}
+
+// Khôi phục tiến trình từ localStorage
+function restoreProgress(): boolean {
+  try {
+    const saved = localStorage.getItem(storageKey.value)
+    if (!saved) return false
+    
+    const progress = JSON.parse(saved)
+    
+    // Kiểm tra xem progress có còn hợp lệ không (không quá 24 giờ)
+    const maxAge = 24 * 60 * 60 * 1000 // 24 giờ
+    if (progress.timestamp && (Date.now() - progress.timestamp) > maxAge) {
+      clearProgress()
+      return false
+    }
+    
+    // Khôi phục nếu chưa hoàn thành
+    if (progress.exercises && progress.exercises.length > 0 && !progress.completed) {
+      exercises.value = progress.exercises
+      currentIndex.value = progress.currentIndex || 0
+      answers.value = progress.answers || []
+      correctCount.value = progress.correctCount || 0
+      startTime.value = progress.startTime || Date.now()
+      completed.value = false
+      exerciseId.value = progress.exerciseId || null // Khôi phục exercise_id
+      
+      // Khôi phục trạng thái câu hỏi hiện tại
+      if (currentIndex.value < exercises.value.length) {
+        answered.value = !!answers.value[currentIndex.value]
+        selectedAnswer.value = answers.value[currentIndex.value] || null
+      }
+      
+      return true
+    }
+    
+    return false
+  } catch (e) {
+    console.warn('Cannot restore practice progress:', e)
+    return false
+  }
+}
+
+// Xóa tiến trình đã lưu
+function clearProgress() {
+  try {
+    localStorage.removeItem(storageKey.value)
+  } catch (e) {
+    console.warn('Cannot clear practice progress:', e)
+  }
 }
 
 function getChoiceClass(choice: string) {
@@ -309,10 +478,31 @@ function getChoiceClass(choice: string) {
 
 // Lifecycle
 onMounted(() => {
+  // Thử khôi phục tiến trình trước
+  if (restoreProgress()) {
+    // Đã khôi phục tiến trình, không cần load lại
+    return
+  }
+  
   if (props.autoLoad) {
     // Tự động load analysis VÀ generate exercises
     loadAnalysis(true)
   }
+})
+
+// Lưu tiến trình khi component unmount
+onBeforeUnmount(() => {
+  if (!completed.value && exercises.value.length > 0) {
+    saveProgress()
+  }
+})
+
+// Lưu tiến trình trước khi rời trang
+onBeforeRouteLeave((to, from, next) => {
+  if (!completed.value && exercises.value.length > 0) {
+    saveProgress()
+  }
+  next()
 })
 
 // Expose methods
@@ -320,6 +510,7 @@ defineExpose({
   loadAnalysis,
   generateExercises,
   resetPractice,
+  loadExternalExercises,
 })
 </script>
 
