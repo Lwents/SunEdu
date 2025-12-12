@@ -419,7 +419,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { examService, type ExamDetail, type Question, type QType, type Level, type ExamStatus } from '@/services/exam.service'
+import { examService, type ExamDetail, type Question, type QType, type Level, type ExamStatus, type ID } from '@/services/exam.service'
 import { courseService, type CourseSummary } from '@/services/course.service'
 import { useAuthStore } from '@/store/auth.store'
 import { showToast } from '@/utils/toast'
