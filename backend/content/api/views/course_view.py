@@ -1,3 +1,7 @@
+"""
+Course API: list/create/update/publish khoá học, enroll/unenroll học viên.
+Liên kết FE: courseService.* (FE gọi /content/courses/, /admin/courses/..., /student/courses/).
+"""
 from typing import Any, Dict
 from django.db import transaction
 from django.db.models import Q

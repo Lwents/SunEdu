@@ -1,3 +1,7 @@
+"""
+Lesson API: CRUD bài học trong module, publish, transcribe video, và xử lý upload file.
+Liên kết FE: contentService.*Lesson* (FE gọi /content/modules/:moduleId/lessons/, /content/lessons/:id/...).
+"""
 from typing import Any, Dict
 from django.db import transaction
 from django.shortcuts import get_object_or_404

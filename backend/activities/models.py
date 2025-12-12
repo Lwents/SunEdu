@@ -96,6 +96,7 @@ class ExerciseSettings(models.Model):
     shuffle_choices = models.BooleanField(default=True)
     pass_score = models.FloatField(default=50.0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     negative_marking = models.BooleanField(default=False)  # penalize wrong answers
+    course_id = models.UUIDField(null=True, blank=True)  # Khóa học áp dụng (nếu là đề thi độc lập)
     show_answers = models.CharField(max_length=16, choices=SHOW_ANSWERS_CHOICES, default='always')
     scheduled_at = models.DateTimeField(null=True, blank=True)  # When to automatically publish
     end_at = models.DateTimeField(null=True, blank=True)  # When to automatically close the exam

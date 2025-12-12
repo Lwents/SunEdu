@@ -65,6 +65,7 @@ export const useExamStore = defineStore('exam', {
           page,
           pageSize,
           status: 'published', // Only fetch published exams for students
+          studentView: true,
         }
         
         if (this.q) {

@@ -159,6 +159,7 @@ def save_exercise(domain: ExerciseDomain) -> ExerciseDomain:
             'max_attempts': max_attempts,
             'scheduled_at': scheduled_at,
             'end_at': end_at,
+            'course_id': settings_data.get('course_id'),
         }
         
         # Check if show_answers field exists before adding

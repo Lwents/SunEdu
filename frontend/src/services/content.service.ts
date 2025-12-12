@@ -49,12 +49,14 @@ export interface CreateLessonInput {
 
 export const contentService = {
   // ====== MODULES (Chương) ======
+  // GET /content/courses/:courseId/modules/ - lấy danh sách chương và sắp xếp client-side
   async listModules(courseId: ID): Promise<Module[]> {
     const { data } = await http.get(`/content/courses/${courseId}/modules/`)
     const list = Array.isArray(data) ? data : data.results || []
     return sortByPosition(list)
   },
 
+  // POST /content/courses/:courseId/modules/ - tạo chương mới
   async createModule(courseId: ID, input: CreateModuleInput): Promise<Module> {
     const payload: Record<string, any> = {
       title: input.title,
@@ -67,26 +69,31 @@ export const contentService = {
     return data
   },
 
+  // PATCH /content/modules/:moduleId/ - chỉnh sửa chương
   async updateModule(moduleId: ID, input: Partial<CreateModuleInput>): Promise<Module> {
     const { data } = await http.patch(`/content/modules/${moduleId}/`, input)
     return data
   },
 
+  // DELETE /content/modules/:moduleId/ - xoá chương
   async deleteModule(moduleId: ID): Promise<void> {
     await http.delete(`/content/modules/${moduleId}/`)
   },
 
+  // POST /content/courses/:courseId/modules/reorder/ - cập nhật vị trí chương
   async reorderModules(courseId: ID, orderMap: Record<string, number>): Promise<void> {
     await http.post(`/content/courses/${courseId}/modules/reorder/`, { order_map: orderMap })
   },
 
   // ====== LESSONS (Bài học) ======
+  // GET /content/modules/:moduleId/lessons/ - lấy danh sách bài học đã sắp xếp
   async listLessons(moduleId: ID): Promise<Lesson[]> {
     const { data } = await http.get(`/content/modules/${moduleId}/lessons/`)
     const list = Array.isArray(data) ? data : data.results || []
     return sortByPosition(list)
   },
 
+  // POST /content/modules/:moduleId/lessons/ - tạo bài học (hỗ trợ FormData để upload video)
   async createLesson(moduleId: ID, input: CreateLessonInput | FormData): Promise<Lesson> {
     // If FormData, send directly (for file uploads)
     if (input instanceof FormData) {
@@ -104,6 +111,7 @@ export const contentService = {
     return data
   },
 
+  // PATCH /content/lessons/:lessonId/ - chỉnh sửa bài học (JSON hoặc FormData)
   async updateLesson(lessonId: ID, input: Partial<CreateLessonInput> | FormData): Promise<Lesson> {
     // Nếu là FormData (có video_file), gửi trực tiếp
     if (input instanceof FormData) {
@@ -121,20 +129,24 @@ export const contentService = {
     return data
   },
 
+  // DELETE /content/lessons/:lessonId/ - xoá bài học
   async deleteLesson(lessonId: ID): Promise<void> {
     await http.delete(`/content/lessons/${lessonId}/`)
   },
 
+  // POST /content/modules/:moduleId/lessons/reorder/ - sắp xếp lại thứ tự bài học
   async reorderLessons(moduleId: ID, orderMap: Record<string, number>): Promise<void> {
     await http.post(`/content/modules/${moduleId}/lessons/reorder/`, { order_map: orderMap })
   },
 
   // ====== LESSON PROGRESS ======
+  // GET /content/lessons/:lessonId/progress/ - lấy trạng thái hoàn thành của học sinh
   async getLessonProgress(lessonId: ID): Promise<any> {
     const { data } = await http.get(`/content/lessons/${lessonId}/progress/`)
     return data
   },
 
+  // POST /content/lessons/:lessonId/progress/ - cập nhật tiến độ (xem video, làm bài)
   async updateLessonProgress(lessonId: ID, progress: {
     video_watched?: boolean
     exercise_completed?: boolean
@@ -145,12 +157,14 @@ export const contentService = {
     return data
   },
 
+  // GET /content/lessons/:lessonId/unlock-check/ - kiểm tra quyền mở bài học
   async checkLessonUnlock(lessonId: ID): Promise<{ can_unlock: boolean; reason?: string }> {
     const { data } = await http.get(`/content/lessons/${lessonId}/unlock-check/`)
     return data
   },
 
   // ====== CONTENT LIBRARY ======
+  // GET /content/content-library/ - tra cứu thư viện nội dung (search + phân trang)
   async listContentLibrary(params?: {
     q?: string
     gradeBand?: string
@@ -162,6 +176,7 @@ export const contentService = {
     return data
   },
 
+  // POST /content/content-library/ - thêm tài nguyên thư viện
   async createContentLibrary(input: {
     title: string
     subject: string
@@ -173,6 +188,7 @@ export const contentService = {
     return data
   },
 
+  // PATCH /content/content-library/:id/ - cập nhật tài nguyên thư viện
   async updateContentLibrary(id: ID, input: Partial<{
     title: string
     subject: string
@@ -184,6 +200,7 @@ export const contentService = {
     return data
   },
 
+  // DELETE /content/content-library/:id/ - xoá tài nguyên thư viện
   async deleteContentLibrary(id: ID): Promise<void> {
     await http.delete(`/content/content-library/${id}/`)
   }

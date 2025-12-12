@@ -18,6 +18,8 @@ export const useUiStore = defineStore('ui', () => {
 
     function keepAlive() {
         if (_resetFn) _resetFn()
+        // Phát sự kiện để idleLogout reset timer
+        window.dispatchEvent(new Event('idle-keepalive'))
         closeIdleWarning()
     }
 

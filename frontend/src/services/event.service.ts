@@ -26,36 +26,36 @@ export interface CreateEventPayload {
 }
 
 export const eventService = {
-  // Get upcoming events for dashboard
+  // GET /events/upcoming/ - sự kiện sắp tới cho dashboard học sinh/giáo viên
   async getUpcoming(): Promise<EventItem[]> {
     const { data } = await api.get('/events/upcoming/')
     return data.items || []
   },
 
-  // Get all events for teacher
+  // GET /events/teacher/ - danh sách sự kiện giáo viên tạo
   async getTeacherEvents(): Promise<EventItem[]> {
     const { data } = await api.get('/events/teacher/')
     return data.items || []
   },
 
-  // Create new event
+  // POST /events/teacher/ - tạo sự kiện mới
   async create(payload: CreateEventPayload): Promise<{ id: string; message: string }> {
     const { data } = await api.post('/events/teacher/', payload)
     return data
   },
 
-  // Update event
+  // PATCH /events/teacher/:eventId/ - cập nhật sự kiện
   async update(eventId: string, payload: Partial<CreateEventPayload>): Promise<{ id: string; message: string }> {
     const { data } = await api.patch(`/events/teacher/${eventId}/`, payload)
     return data
   },
 
-  // Delete event
+  // DELETE /events/teacher/:eventId/ - xoá sự kiện
   async delete(eventId: string): Promise<void> {
     await api.delete(`/events/teacher/${eventId}/`)
   },
 
-  // Get event detail
+  // GET /events/teacher/:eventId/ - xem chi tiết
   async getDetail(eventId: string): Promise<EventItem> {
     const { data } = await api.get(`/events/teacher/${eventId}/`)
     return data

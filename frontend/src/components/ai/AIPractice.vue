@@ -152,7 +152,7 @@
         Con đã trả lời đúng {{ correctCount }}/{{ exercises.length }} câu
       </p>
       
-      <div class="flex justify-center gap-4">
+      <div class="flex justify-center gap-3 flex-wrap">
         <button
           @click="resetPractice"
           class="px-6 py-2 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition-colors"
@@ -164,6 +164,12 @@
           class="px-6 py-2 bg-purple-500 text-white rounded-full font-medium hover:bg-purple-600 transition-colors"
         >
           📝 Bài mới
+        </button>
+        <button
+          @click="exitPractice"
+          class="px-6 py-2 bg-white border border-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors"
+        >
+          ✖ Đóng
         </button>
       </div>
     </div>
@@ -180,8 +186,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'completed', score: number): void
+  (e: 'completed', score: number, dailyGoal?: any): void
   (e: 'exercise-answered', correct: boolean): void
+  (e: 'exit'): void
 }>()
 
 // State
@@ -196,6 +203,7 @@ const completed = ref(false)
 const analysis = ref<any>(null)
 const answers = ref<string[]>([]) // Lưu tất cả câu trả lời
 const startTime = ref(0) // Thời gian bắt đầu làm bài
+const exerciseId = ref<string | null>(null) // ID của Exercise đã tạo trong database
 
 // Storage key cho localStorage
 import { useAuthStore } from '@/store/auth.store'
@@ -248,6 +256,14 @@ async function loadAnalysis(autoGenerate = false) {
 async function generateExercises() {
   generatingExercises.value = true
   try {
+    // Reset state UI trước khi tạo đề mới
+    completed.value = false
+    answered.value = false
+    selectedAnswer.value = null
+    exercises.value = []
+    currentIndex.value = 0
+    correctCount.value = 0
+
     // Kiểm tra xem có tiến trình đã lưu không
     if (restoreProgress()) {
       generatingExercises.value = false
@@ -259,6 +275,7 @@ async function generateExercises() {
     
     if (response.success && response.exercises?.length) {
       exercises.value = response.exercises
+      exerciseId.value = response.exercise_id || null // Lưu exercise_id từ backend
       currentIndex.value = 0
       correctCount.value = 0
       completed.value = false
@@ -275,6 +292,21 @@ async function generateExercises() {
   } finally {
     generatingExercises.value = false
   }
+}
+
+function loadExternalExercises(external: PracticeExercise[], externalExerciseId?: string | null) {
+  if (!external || !external.length) return
+  exercises.value = external
+  exerciseId.value = externalExerciseId || null
+  currentIndex.value = 0
+  correctCount.value = 0
+  completed.value = false
+  answered.value = false
+  selectedAnswer.value = null
+  answers.value = []
+  startTime.value = Date.now()
+  clearProgress()
+  saveProgress()
 }
 
 function selectAnswer(choice: string) {
@@ -316,20 +348,23 @@ async function nextQuestion() {
         is_correct: answers.value[idx] === ex.correct_answer
       }))
       
-      await aiTutorService.submitPractice({
+      const response = await aiTutorService.submitPractice({
         exercises: exercisesData,
         score: score.value,
-        time_spent: Math.floor((Date.now() - startTime.value) / 1000) // Thời gian làm bài (giây)
+        time_spent: Math.floor((Date.now() - startTime.value) / 1000), // Thời gian làm bài (giây)
+        exercise_id: exerciseId.value // Gửi exercise_id để sử dụng Exercise đã tạo sẵn
       })
       
       // Xóa tiến trình đã lưu sau khi submit thành công
       clearProgress()
+      
+      // Emit với daily_goal mới để parent component có thể cập nhật
+      emit('completed', score.value, response.daily_goal)
     } catch (error) {
       console.error('Error submitting practice:', error)
       // Không block UI nếu submit lỗi
+      emit('completed', score.value, null)
     }
-    
-    emit('completed', score.value)
   }
 }
 
@@ -344,6 +379,13 @@ function resetPractice() {
   clearProgress()
 }
 
+function exitPractice() {
+  resetPractice()
+  exercises.value = []
+  exerciseId.value = null
+  emit('exit')
+}
+
 // Lưu tiến trình vào localStorage
 function saveProgress() {
   try {
@@ -354,6 +396,7 @@ function saveProgress() {
       correctCount: correctCount.value,
       startTime: startTime.value,
       completed: completed.value,
+      exerciseId: exerciseId.value, // Lưu exercise_id
       timestamp: Date.now()
     }
     localStorage.setItem(storageKey.value, JSON.stringify(progress))
@@ -385,6 +428,7 @@ function restoreProgress(): boolean {
       correctCount.value = progress.correctCount || 0
       startTime.value = progress.startTime || Date.now()
       completed.value = false
+      exerciseId.value = progress.exerciseId || null // Khôi phục exercise_id
       
       // Khôi phục trạng thái câu hỏi hiện tại
       if (currentIndex.value < exercises.value.length) {
@@ -466,6 +510,7 @@ defineExpose({
   loadAnalysis,
   generateExercises,
   resetPractice,
+  loadExternalExercises,
 })
 </script>
 

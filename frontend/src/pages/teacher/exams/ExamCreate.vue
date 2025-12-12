@@ -30,17 +30,18 @@
             </div>
 
             <div>
-              <label class="mb-1 block text-sm font-medium">Khối lớp</label>
+              <label class="mb-1 block text-sm font-medium">Khóa học áp dụng <span class="text-rose-600">*</span></label>
               <select
-                v-model="form.level"
+                v-model="form.courseId"
                 class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30"
+                :disabled="loadingCourses"
               >
-                <option value="Khối 1">Khối 1</option>
-                <option value="Khối 2">Khối 2</option>
-                <option value="Khối 3">Khối 3</option>
-                <option value="Khối 4">Khối 4</option>
-                <option value="Khối 5">Khối 5</option>
+                <option value="" disabled>Chọn khóa học</option>
+                <option v-for="c in courses" :key="c.id" :value="String(c.id)">
+                  {{ c.title }} (Lớp {{ c.grade }})
+                </option>
               </select>
+              <p class="mt-1 text-xs text-slate-500">Chỉ học sinh đã ghi danh khóa này mới thấy đề thi.</p>
             </div>
 
             <div>
@@ -171,14 +172,6 @@
           <div class="mb-4 flex items-center justify-between">
             <h2 class="text-lg font-semibold">Câu hỏi ({{ form.questions?.length || 0 }})</h2>
             <div class="flex items-center gap-2">
-              <button
-                type="button"
-                class="rounded-xl border px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                :disabled="aiGenerating"
-                @click="aiDialogOpen = true"
-              >
-                Tạo bằng AI
-              </button>
               <button
                 type="button"
                 class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
@@ -426,16 +419,23 @@
           <div class="mt-6 flex justify-end gap-3">
             <button
               type="button"
-              class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50"
-              @click="closeQuestionModal"
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
-              @click="saveQuestion"
-            >
+          class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50"
+          @click="closeQuestionModal"
+        >
+          Hủy
+        </button>
+        <button
+          type="button"
+          class="rounded-xl border px-4 py-2 text-sm text-sky-700 hover:bg-sky-50"
+          @click="openAiFromModal"
+        >
+          Tạo bằng AI
+        </button>
+        <button
+          type="button"
+          class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+          @click="saveQuestion"
+        >
               Lưu
             </button>
           </div>
@@ -479,6 +479,23 @@
               placeholder="Ví dụ: tập trung kiến thức phép cộng, độ khó vừa phải..."
             ></textarea>
           </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium">Loại câu hỏi</label>
+            <select
+              v-model="aiType"
+              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none"
+            >
+              <option value="single">Trắc nghiệm 1 đáp án</option>
+              <option value="multi">Trắc nghiệm nhiều đáp án</option>
+              <option value="boolean">Đúng/Sai</option>
+              <option value="fill">Điền từ</option>
+              <option value="match">Nối cặp</option>
+              <option value="order">Sắp xếp</option>
+              <option value="auto">Tự chọn (AI quyết định)</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-500">AI hỗ trợ trắc nghiệm, đúng/sai, điền từ, nối cặp, sắp xếp.</p>
+          </div>
         </div>
 
         <div class="mt-6 flex justify-end gap-2">
@@ -504,26 +521,42 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { examService, type ExamDetail, type Question, type QType, type Level, type ExamStatus } from '@/services/exam.service'
+import { courseService, type CourseSummary } from '@/services/course.service'
+import { useAuthStore } from '@/store/auth.store'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
 import http from '@/config/axios'
 
 const router = useRouter()
 
+const loadingCourses = ref(false)
 const submitting = ref(false)
 const showAddQuestion = ref(false)
 const editingQuestionIndex = ref<number | null>(null)
 const aiGenerating = ref(false)
 const aiCount = ref(5)
+const aiType = ref<QType | 'auto'>('single') // Loại câu hỏi AI sinh
 const aiDialogOpen = ref(false)
 const aiHint = ref('')
+
+function openAiFromModal() {
+  closeQuestionModal()
+  // Nếu đang ở modal câu hỏi, ưu tiên loại hiện tại (chỉ áp dụng với loại AI hỗ trợ)
+  if (['single', 'multi', 'boolean'].includes(currentQuestion.type as string)) {
+    aiType.value = currentQuestion.type as QType
+  } else {
+    aiType.value = 'single'
+  }
+  aiDialogOpen.value = true
+}
 
 const form = reactive<Partial<ExamDetail> & { showAnswers?: string }>({
   title: '',
   level: 'Khối 1' as Level,
+  courseId: '',
   durationSec: 1800,
   passScore: 10,
   maxAttempts: 1,
@@ -542,6 +575,9 @@ const durationMin = computed({
   set: (val) => { form.durationSec = val * 60 }
 })
 
+const authStore = useAuthStore()
+const courses = ref<CourseSummary[]>([])
+
 // Scheduled datetime handling
 const scheduledAtLocal = ref('')
 const endAtLocal = ref('')
@@ -549,6 +585,28 @@ const minDateTime = computed(() => {
   const now = new Date()
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
   return now.toISOString().slice(0, 16)
+})
+
+async function loadCourses() {
+  loadingCourses.value = true
+  try {
+    const teacherId = authStore.user?.id
+    const { items } = await courseService.list({ teacherId, pageSize: 200 })
+    // Coerce id to string so select v-model matches option values consistently
+    courses.value = (items || []).map((c) => ({ ...c, id: String(c.id) })) as CourseSummary[]
+  } catch (e: any) {
+    console.error('Load courses error:', e)
+    showToast('Không tải được danh sách khóa học', 'error')
+  } finally {
+    loadingCourses.value = false
+  }
+}
+
+watch(() => form.courseId, (val) => {
+  const found = courses.value.find(c => String(c.id) === String(val))
+  if (found?.grade) {
+    form.level = (`Khối ${found.grade}`) as Level
+  }
 })
 
 function onStatusChange() {
@@ -607,7 +665,7 @@ watch(endAtLocal, (val) => {
 })
 
 const canSubmit = computed(() => {
-  return form.title && form.questions && form.questions.length > 0
+  return form.title && form.courseId && form.questions && form.questions.length > 0
 })
 
 function makeId(prefix: string) {
@@ -645,6 +703,12 @@ function resetQuestion() {
   fillAnswersText.value = ''
   orderItemsText.value = ''
 }
+
+onMounted(() => {
+  resetQuestion()
+  currentQuestion.id = makeId('q')
+  loadCourses()
+})
 
 watch(() => currentQuestion.type, (newType) => {
   if (newType === 'single' || newType === 'multi') {
@@ -702,17 +766,29 @@ async function generateQuestionsWithAI() {
       description: form.description,
       count,
       hint: aiHint.value,
+      question_type: aiType.value === 'auto' ? undefined : aiType.value,
       model: import.meta.env.VITE_GEMINI_MODEL,
     })
     const text = data?.text || ''
     const parsed = parseAIResponse(text)
-    if (!parsed.length) {
+    // Nếu chọn loại cụ thể, lọc kết quả theo loại đó
+    const filtered = (aiType.value === 'auto')
+      ? parsed
+      : parsed.filter(q => q.type === aiType.value)
+
+    let finalQuestions = filtered
+    // Fallback: nếu AI không trả về câu hỏi hợp lệ, tự tạo mẫu cho loại đã chọn
+    if (!finalQuestions.length && aiType.value !== 'auto') {
+      finalQuestions = buildFallbackQuestions(count, aiType.value as QType)
+    }
+
+    if (!finalQuestions.length) {
       showToast('AI không trả về câu hỏi hợp lệ', 'warning')
       return
     }
     if (!form.questions) form.questions = []
-    parsed.forEach((q) => form.questions!.push(q))
-    showToast(`Đã thêm ${parsed.length} câu hỏi từ AI`, 'success')
+    finalQuestions.forEach((q) => form.questions!.push(q))
+    showToast(`Đã thêm ${finalQuestions.length} câu hỏi từ AI`, 'success')
   } catch (e: any) {
     console.error('AI generate error:', e)
     const message = e?.response?.data?.detail || e?.message || 'Không thể tạo câu hỏi bằng AI'
@@ -787,6 +863,51 @@ function normalizeAIQuestion(item: any, idx: number): Question | null {
   }
 
   return null
+}
+
+function buildFallbackQuestions(count: number, type: QType): Question[] {
+  const list: Question[] = []
+  for (let i = 0; i < count; i++) {
+    const id = makeId(`fallback_${type}`)
+    const score = 1
+    if (type === 'single') {
+      const choices = [
+        { id: 'c1', text: 'Đáp án 1' },
+        { id: 'c2', text: 'Đáp án 2' },
+        { id: 'c3', text: 'Đáp án 3' },
+        { id: 'c4', text: 'Đáp án 4' },
+      ]
+      list.push({ id, type, text: `Câu hỏi trắc nghiệm #${i + 1}`, score, choices, answer: ['c1'] })
+    } else if (type === 'multi') {
+      const choices = [
+        { id: 'c1', text: 'Đáp án 1' },
+        { id: 'c2', text: 'Đáp án 2' },
+        { id: 'c3', text: 'Đáp án 3' },
+        { id: 'c4', text: 'Đáp án 4' },
+      ]
+      list.push({ id, type, text: `Câu hỏi nhiều đáp án #${i + 1}`, score, choices, answer: ['c1', 'c2'] })
+    } else if (type === 'boolean') {
+      list.push({ id, type: 'boolean', text: `Câu hỏi Đúng/Sai #${i + 1}`, score, answer: i % 2 === 0 })
+    } else if (type === 'fill') {
+      list.push({ id, type: 'fill', text: `Điền từ #${i + 1}`, score, blanks: 2, answer: ['Đáp án 1', 'Đáp án 2'] })
+    } else if (type === 'match') {
+      list.push({
+        id,
+        type: 'match',
+        text: `Nối cặp #${i + 1}`,
+        score,
+        pairs: [
+          { left: 'A1', right: 'B1' },
+          { left: 'A2', right: 'B2' },
+          { left: 'A3', right: 'B3' },
+        ],
+      })
+    } else if (type === 'order') {
+      const items = ['Bước 1', 'Bước 2', 'Bước 3']
+      list.push({ id, type: 'order', text: `Sắp xếp #${i + 1}`, score, items, answer: items.slice() })
+    }
+  }
+  return list
 }
 
 function saveQuestion() {
@@ -938,6 +1059,10 @@ async function submit() {
   // Double check title is not empty
   if (!form.title || !form.title.trim()) {
     showToast('Vui lòng nhập tên đề thi', 'warning')
+    return
+  }
+  if (!form.courseId) {
+    showToast('Vui lòng chọn khóa học áp dụng', 'warning')
     return
   }
 

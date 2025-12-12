@@ -218,6 +218,10 @@ class StudentLessonQuestionView(APIView):
                     },
                 )
 
+        # Trả về câu hỏi vừa tạo
+        data = serialize_question(q, user=request.user, request=request)
+        return Response(data, status=status.HTTP_201_CREATED)
+
     def patch(self, request, pk=None):
         if not pk:
             return Response({"detail": "question id required"}, status=status.HTTP_400_BAD_REQUEST)

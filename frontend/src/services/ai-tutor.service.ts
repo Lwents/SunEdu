@@ -167,7 +167,19 @@ export const aiTutorService = {
     }>
     score: number
     time_spent: number
-  }): Promise<{ success: boolean; attempt_id?: string; message?: string; error?: string }> {
+    exercise_id?: string | null
+  }): Promise<{ 
+    success: boolean
+    attempt_id?: string
+    message?: string
+    error?: string
+    daily_goal?: {
+      target: number
+      completed: number
+      streak: number
+      streak_restoration?: any
+    }
+  }> {
     const response = await api.post('/student/ai/tutor/practice/submit/', data)
     return response.data
   },
@@ -209,6 +221,8 @@ export interface PracticeResponse {
   success: boolean
   exercises: PracticeExercise[]
   topics: string[]
+  exercise_id?: string
+  exercise_title?: string
   error?: string
 }
 

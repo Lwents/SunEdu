@@ -195,9 +195,8 @@ def auto_restore_streak_and_award_badges():
                     )
                     badge_count += 1
                     logger.info(f"Awarded 'streak_reborn' badge to {student.username}")
-        
         except Exception as e:
-            logger.error(f"Error processing auto-restore/badge for {student.id}: {e}")
+            logger.error(f"Error processing auto-restore/badge for {student.id}: {e}", exc_info=True)
     
     logger.info(f"Auto-restored {restored_count} streaks and awarded {badge_count} badges")
     return {'restored': restored_count, 'badges': badge_count}
@@ -378,7 +377,6 @@ MESSAGE: [nội dung cảnh báo]"""
                         title = f'🔥 Cảnh báo: Sắp mất streak {streak} ngày!'
                 else:
                     raise Exception("AI response failed")
-                    
             except Exception as e:
                 logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
                 # Fallback messages
@@ -573,7 +571,6 @@ MESSAGE: [nội dung động viên]"""
                 else:
                     # Fallback nếu AI không hoạt động
                     raise Exception("AI response failed")
-        
             except Exception as e:
                 logger.warning(f"AI generation failed for {student.id}, using fallback: {e}")
                 # Fallback messages cho tất cả các mốc
@@ -651,7 +648,7 @@ def send_comeback_emails():
     from django.db.models import Q
     from datetime import timedelta
     from django.conf import settings
-        
+    
     today = timezone.localdate()
     reminder_days = [1, 2, 3, 4, 5, 7, 14, 21, 30]  # Các mốc ngày cần nhắc (giống comeback reminders)
     
@@ -872,9 +869,8 @@ BODY: [nội dung email động viên]"""
             )
             
             sent_count += 1
-
         except Exception as e:
-            logger.error(f"Error sending comeback email to {student.id}: {e}")
+            logger.error(f"Error sending comeback email to {student.id}: {e}", exc_info=True)
 
     logger.info(f"Sent {sent_count} comeback reminder emails")
     return sent_count

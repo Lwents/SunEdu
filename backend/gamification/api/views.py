@@ -2,6 +2,7 @@
 Game API Views
 - Student: List games, play game, submit score
 - Teacher: Create, edit, delete games
+- FE mapping: gameService (student) & teacherGameService (teacher)
 """
 import os
 import requests
