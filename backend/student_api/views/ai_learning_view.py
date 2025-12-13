@@ -86,23 +86,30 @@ def _get_activity_qs_and_dates(user, tz, before_date=None):
     return lesson_qs, exercise_qs, game_qs, activity_dates
 
 
-def _compute_streak(activity_dates, upto_date):
-    """Compute consecutive-day streak ending at the most recent activity <= upto_date."""
+def _compute_streak(activity_dates, upto_date, require_activity_on_upto_date=True):
+    """
+    Compute consecutive-day streak ending at ``upto_date`` (inclusive).
+
+    If ``require_activity_on_upto_date`` is False, the streak ends at the most
+    recent activity on/before ``upto_date``.
+    """
     if not activity_dates:
         return 0
 
-    latest = max((d for d in activity_dates if d <= upto_date), default=None)
-    if not latest:
-        return 0
+    if require_activity_on_upto_date:
+        if upto_date not in activity_dates:
+            return 0
+        start_date = upto_date
+    else:
+        start_date = max((d for d in activity_dates if d <= upto_date), default=None)
+        if not start_date:
+            return 0
 
     streak = 0
-    check_date = latest
-    while streak < 365:
-        if check_date in activity_dates:
-            streak += 1
-            check_date -= timedelta(days=1)
-        else:
-            break
+    check_date = start_date
+    while streak < 365 and check_date in activity_dates:
+        streak += 1
+        check_date -= timedelta(days=1)
     return streak
 
 
@@ -646,7 +653,9 @@ class AILearningAnalyzerView(APIView):
         # - Không phải người mới chưa có dữ liệu
         has_history = bool(activity_dates)
         last_activity = max(activity_dates) if activity_dates else None
-        lost_streak = has_history and streak == 0 and last_activity and last_activity < today
+        gap_days = (today - last_activity).days if last_activity else None
+        # Mất streak khi đã bỏ lỡ ÍT NHẤT 1 ngày (không hoạt động hôm qua và hôm nay)
+        lost_streak = has_history and streak == 0 and gap_days is not None and gap_days >= 2
         can_restore_flag = can_restore_monthly and lost_streak
 
         return {
@@ -1049,7 +1058,11 @@ class StreakRestoreView(APIView):
         tz = timezone.get_current_timezone()
         _, _, _, activity_dates = _get_activity_qs_and_dates(user, tz, before_date=before_date)
         # Use the latest activity strictly before the given date
-        return _compute_streak(activity_dates, before_date - timedelta(days=1))
+        return _compute_streak(
+            activity_dates,
+            before_date - timedelta(days=1),
+            require_activity_on_upto_date=False
+        )
     
     def post(self, request):
         user = request.user
