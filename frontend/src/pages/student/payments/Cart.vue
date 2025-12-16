@@ -133,7 +133,7 @@ async function addCourse(courseId: string | number) {
     
     // Nếu đã có trong cart, không thêm lại
     if (items.find(i => String(i.id) === String(courseId))) {
-      showToast('Khóa học đã có trong giỏ hàng', 'warning')
+      // Đã có trong giỏ hàng, bỏ qua để tránh spam toast
       return
     }
     
@@ -157,16 +157,39 @@ function remove(id: number | string) {
   }
 }
 
-function goCheckout() {
+async function goCheckout() {
   if (total.value === 0) {
     showToast('Giỏ hàng trống hoặc tất cả khóa học đều miễn phí', 'warning')
     return
   }
-  // Lưu cart items vào localStorage để enroll sau khi thanh toán thành công
+  // Chặn mua thêm khi còn giao dịch đang xử lý
+  try {
+    const pending = await paymentService.listMyPayments({ status: 'pending' } as any)
+    if (pending?.items && pending.items.length > 0) {
+      showToast('Bạn đang có giao dịch đang xử lý, hãy đợi hoàn tất trước khi thanh toán tiếp', 'warning')
+      return
+    }
+  } catch (e: any) {
+    console.warn('Không kiểm tra được giao dịch pending:', e)
+  }
+  // Lưu cart items để enroll sau khi thanh toán thành công
   localStorage.setItem('pending_cart_enroll', JSON.stringify(items.map(i => i.id)))
-  router.push({
-    name: 'student-payments-checkout',
-    query: { amount: String(total.value), plan: items[0]?.name || 'Thanh toán khóa học' }
+  // Gọi trực tiếp init MoMo và chuyển hướng sang payUrl
+  paymentService.initiateMomo({
+    amount: total.value,
+    description: items[0]?.name || 'Thanh toán khóa học',
+    flow: 'pay_with_method',
+    courseIds: items.map(i => i.id),
+    courseTitles: items.map(i => i.name),
+  }).then((res) => {
+    const payUrl = res.payUrl || res.deeplink
+    if (!payUrl) {
+      showToast(res.message || 'Không nhận được link thanh toán', 'error')
+      return
+    }
+    window.location.href = payUrl
+  }).catch((err: any) => {
+    showToast(err?.message || 'Không thể khởi tạo thanh toán', 'error')
   })
 }
 

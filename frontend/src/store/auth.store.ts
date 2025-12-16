@@ -130,8 +130,12 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('refreshToken')
       sessionStorage.removeItem('accessToken')
       sessionStorage.removeItem('refreshToken')
-      // Không redirect ở đây, để component tự xử lý redirect
-      // router.push('/')
+      // Đảm bảo luôn quay về trang đăng nhập ngay cả khi API lỗi hoặc token hết hạn
+      try {
+        await router.replace('/auth/login')
+      } catch (_) {
+        /* ignore */
+      }
     },
 
     redirectByRole(role: Role) {

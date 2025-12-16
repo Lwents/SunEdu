@@ -6,7 +6,7 @@ export type ToastType = 'success' | 'error' | 'warning' | 'info'
 let toastContainer: HTMLElement | null = null
 let toastCount = 0
 let isHovering = false
-let closingToasts = new Set<HTMLElement>()
+const closingToasts = new Set<HTMLElement>()
 
 function getToastContainer() {
   if (!toastContainer) {

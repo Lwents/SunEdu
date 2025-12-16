@@ -89,7 +89,7 @@
                 </RouterLink>
 
                 <RouterLink
-                  to="/student/payments"
+                  to="/student/payments/history"
                   class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition"
                   @click="avatarOpen = false"
                 >
@@ -103,10 +103,10 @@
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       stroke-width="2"
-                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
                     />
                   </svg>
-                  <span>Nạp tiền</span>
+                  <span>Lịch sử thanh toán</span>
                 </RouterLink>
 
                 <button

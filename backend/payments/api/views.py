@@ -33,6 +33,8 @@ class MoMoPaymentInitView(APIView):
         plan = serializer.validated_data["plan"]
         amount = serializer.validated_data["amount"]
         description = serializer.validated_data["description"]
+        course_ids = serializer.validated_data.get("course_ids") or []
+        course_titles = serializer.validated_data.get("course_titles") or []
         flow = request.data.get("flow", "pay_with_method")
         payment_code = request.data.get("payment_code", "")
 
@@ -41,7 +43,13 @@ class MoMoPaymentInitView(APIView):
             plan=plan,
             amount=amount,
             status="pending",
-            metadata={"gateway": "momo", "flow": flow},
+            metadata={
+                "gateway": "momo",
+                "flow": flow,
+                "title": description,
+                "course_ids": course_ids,
+                "course_titles": course_titles,
+            },
         )
 
         order_id = payment.id.hex

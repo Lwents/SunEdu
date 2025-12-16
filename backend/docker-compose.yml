@@ -77,6 +77,8 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    healthcheck:
+      test: ["CMD", "true"]  # Celery worker doesn't expose HTTP; mark healthy by default
 
   celery_beat:
     build: .
@@ -104,6 +106,8 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    healthcheck:
+      test: ["CMD", "true"]  # Celery beat doesn't expose HTTP; mark healthy by default
 
 volumes:
   postgres_data:

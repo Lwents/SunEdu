@@ -61,13 +61,22 @@ class AdminTransactionListView(APIView):
         items = []
         for tx in page_obj:
             gateway_name = tx.metadata.get('gateway', 'N/A') if tx.metadata else 'N/A'
+            meta = tx.metadata or {}
+            course_ids = meta.get('course_ids') or []
+            course_titles = meta.get('course_titles') or []
+            if isinstance(course_titles, str):
+                course_titles = [course_titles]
+            course_id = str(tx.plan.id) if tx.plan else (str(course_ids[0]) if course_ids else None)
+            course_title = tx.plan.name if tx.plan else (
+                course_titles[0] if course_titles else meta.get('title') or 'N/A'
+            )
             items.append({
                 'id': str(tx.id),
                 'userId': str(tx.user.id) if tx.user else None,
                 'buyerName': tx.user.email if tx.user else 'N/A',
                 'buyerEmail': tx.user.email if tx.user else 'N/A',
-                'courseId': str(tx.plan.id) if tx.plan else None,
-                'courseTitle': tx.plan.name if tx.plan else 'N/A',
+                'courseId': course_id,
+                'courseTitle': course_title,
                 'amount': float(tx.amount),
                 'currency': 'VND',
                 'gateway': gateway_name,
@@ -96,6 +105,16 @@ class AdminTransactionDetailView(APIView):
         fees = float(tx.amount) * 0.03  # Placeholder - calculate actual fees
         net = float(tx.amount) - fees
 
+        meta = tx.metadata or {}
+        course_ids = meta.get('course_ids') or []
+        course_titles = meta.get('course_titles') or []
+        if isinstance(course_titles, str):
+            course_titles = [course_titles]
+        course_id = str(tx.plan.id) if tx.plan else (str(course_ids[0]) if course_ids else None)
+        course_title = tx.plan.name if tx.plan else (
+            course_titles[0] if course_titles else meta.get('title') or 'N/A'
+        )
+
         # Build events (mock - need actual event log)
         events = [
             {
@@ -122,8 +141,8 @@ class AdminTransactionDetailView(APIView):
             'userId': str(tx.user.id) if tx.user else None,
             'buyerName': tx.user.email if tx.user else 'N/A',
             'buyerEmail': tx.user.email if tx.user else 'N/A',
-            'courseId': str(tx.plan.id) if tx.plan else None,
-            'courseTitle': tx.plan.name if tx.plan else 'N/A',
+            'courseId': course_id,
+            'courseTitle': course_title,
             'amount': float(tx.amount),
             'currency': 'VND',
             'gateway': gateway_name,
@@ -270,7 +289,6 @@ class AdminTransactionExportView(APIView):
             ])
 
         return response
-
 
 
 

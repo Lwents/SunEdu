@@ -3,14 +3,14 @@
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 mb-2">Nạp tiền</h1>
+        <h1 class="text-3xl font-bold text-slate-900 mb-2">Thanh toán</h1>
         <p class="text-slate-600">Hoàn tất thanh toán để nạp tiền vào tài khoản</p>
       </div>
 
       <div class="grid gap-6 lg:grid-cols-[1fr_400px]">
         <!-- Main Form -->
         <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="text-lg font-semibold text-slate-900 mb-4">Nạp tiền qua MoMo</h2>
+          <h2 class="text-lg font-semibold text-slate-900 mb-4">Thanh toán qua MoMo</h2>
           <p class="text-sm text-slate-600 mb-6">
             Chọn gói và bấm nút bên dưới, bạn sẽ được chuyển đến cổng MoMo Collection Link để hoàn tất.
           </p>
@@ -19,7 +19,7 @@
             <!-- Description Input -->
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">
-                Nội dung hiển thị khi nạp tiền
+                Nội dung hiển thị khi thanh toán
               </label>
               <input
                 v-model="descriptionText"
@@ -83,10 +83,10 @@
                   <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                   Đang chuyển hướng...
                 </span>
-                <span v-else>Nạp tiền với MoMo</span>
+                <span v-else>Thanh toán với MoMo</span>
               </button>
               <p class="mt-2 text-xs text-slate-500 text-center">
-                Bạn sẽ được chuyển đến trang nạp tiền an toàn của MoMo.
+                Bạn sẽ được chuyển đến trang thanh toán an toàn của MoMo.
               </p>
             </div>
           </div>

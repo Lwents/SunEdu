@@ -130,6 +130,18 @@ http.interceptors.response.use(
         localStorage.removeItem('refreshToken')
         sessionStorage.removeItem('accessToken')
         sessionStorage.removeItem('refreshToken')
+        // Đồng bộ store và chuyển về login nếu đã hết hạn hoàn toàn
+        try {
+          const { useAuthStore } = await import('@/store/auth.store')
+          const auth = useAuthStore()
+          auth.token = null
+          auth.user = null
+        } catch (_) {
+          /* ignore pinia load errors */
+        }
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+          window.location.replace('/auth/login')
+        }
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

@@ -82,6 +82,24 @@ export interface StudentMyCoursesResponse {
   all: StudentMyCourse[]
 }
 
+function normalizeCourseSummary(row: any): CourseSummary {
+  return {
+    id: row.id,
+    title: row.title,
+    grade: (row.grade as Grade) ?? (row.grade_label as any) ?? row.gradeNumber ?? row.gradeNumber,
+    subject: (row.subject as Subject) ?? row.subjectSlug ?? row.subject_name ?? row.subject_label,
+    teacherId: row.teacherId ?? row.teacher_id ?? row.teacher?.id ?? null,
+    teacherName: row.teacherName ?? row.teacher_name ?? row.teacher?.name ?? row.teacher?.full_name ?? '',
+    lessonsCount: row.lessonsCount ?? row.lessons_count ?? 0,
+    enrollments: row.enrollments ?? row.enrollments_count ?? 0,
+    status: (row.status as CourseStatus) ?? 'draft',
+    createdAt: row.createdAt || row.created_at || row.created_on || '',
+    updatedAt: row.updatedAt || row.updated_at || row.updated_on || '',
+    thumbnail: row.thumbnail,
+    price: row.price,
+  }
+}
+
 export interface StudentMyCoursesFilters {
   q?: string
   grade?: string
@@ -201,10 +219,10 @@ export const courseService = {
     const endpoint = useAdminEndpoint ? '/admin/courses/' : '/content/courses/'
     const { data } = await api.get(endpoint, { params })
     if (Array.isArray(data)) {
-      return { items: data, total: data.length }
+      return { items: data.map(normalizeCourseSummary), total: data.length }
     }
     return {
-      items: data.results || data.items || [],
+      items: (data.results || data.items || []).map(normalizeCourseSummary),
       total: data.count || data.total || 0,
     }
   },

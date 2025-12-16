@@ -542,7 +542,7 @@ function normalizeQuestions(raw: any[], gameType: string) {
       ? q.choices.map((c: any) => c?.text ?? c?.option ?? c?.answer ?? '')
       : []
 
-    let correctIndex =
+    const correctIndex =
       typeof q.correct === 'number'
         ? q.correct
         : Array.isArray(q.choices)
