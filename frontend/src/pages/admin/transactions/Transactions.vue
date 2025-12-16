@@ -164,7 +164,7 @@ const router = useRouter()
 // state
 const items = ref<TxSummary[]>([])
 const total = ref(0)
-let page = ref(1)
+const page = ref(1)
 const pageSize = 20
 const loading = ref(false)
 const exporting = ref(false)

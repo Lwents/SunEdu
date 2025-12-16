@@ -16,14 +16,28 @@ class MomoPaymentInitSerializer(serializers.Serializer):
     )
     description = serializers.CharField(max_length=255, required=False, allow_blank=True)
     redirect_url = serializers.URLField(required=False)
+    course_ids = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True,
+    )
+    course_titles = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True,
+    )
 
     def validate(self, attrs):
         plan_id = attrs.get("plan_id")
         amount = attrs.get("amount")
+        course_ids = attrs.get("course_ids") or []
+        course_titles = attrs.get("course_titles") or []
         if not plan_id and amount is None:
             raise serializers.ValidationError("Either plan_id or amount is required.")
         if plan_id and amount is not None:
             raise serializers.ValidationError("Provide either plan_id or amount, not both.")
+        attrs["course_ids"] = course_ids
+        attrs["course_titles"] = course_titles
 
         if plan_id:
             try:
@@ -101,7 +115,15 @@ class PaymentHistorySerializer(serializers.ModelSerializer):
         )
 
     def get_plan_name(self, obj: Payment) -> str:
-        return obj.plan.name if obj.plan else "Thanh toán tuỳ chỉnh"
+        if obj.plan:
+            return obj.plan.name
+        meta = obj.metadata or {}
+        titles = meta.get("course_titles") or meta.get("title")
+        if isinstance(titles, list) and titles:
+            return titles[0]
+        if isinstance(titles, str) and titles:
+            return titles
+        return "Thanh toán tuỳ chỉnh"
 
     def get_gateway(self, obj: Payment) -> str:
         return (obj.metadata or {}).get("gateway") or "momo"

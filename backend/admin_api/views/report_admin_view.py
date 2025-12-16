@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 from django.db.models import Sum, Count, Avg, Q
 from django.utils import timezone
 from django.db.models import F
@@ -27,13 +28,15 @@ class AdminRevenueReportView(APIView):
         to_date = request.query_params.get('to')
         granularity = request.query_params.get('granularity', 'day')  # day, week, month
 
+        # Dùng local date để đồng bộ với created_at/paid_at (lưu theo timezone)
+        local_today = timezone.localdate()
         if not from_date:
-            from_date = (timezone.now() - timedelta(days=30)).date()
+            from_date = local_today - timedelta(days=30)
         else:
             from_date = datetime.fromisoformat(from_date).date()
 
         if not to_date:
-            to_date = timezone.now().date()
+            to_date = local_today
         else:
             to_date = datetime.fromisoformat(to_date).date()
 
@@ -64,9 +67,9 @@ class AdminRevenueReportView(APIView):
                 status='paid'
             )
 
-            gross = payments.aggregate(total=Sum('amount'))['total'] or 0
-            refunds = payments.filter(status='refunded').aggregate(total=Sum('amount'))['total'] or 0
-            fees = gross * 0.03  # Placeholder
+            gross = payments.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            refunds = payments.filter(status='refunded').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            fees = gross * Decimal('0.03')  # Placeholder phí 3%
             net = gross - fees - refunds
 
             points.append({
@@ -99,35 +102,152 @@ class AdminRevenueReportView(APIView):
         return Response(result, status=status.HTTP_200_OK)
 
     def _get_top_courses(self, from_date, to_date):
-        """Get top courses by revenue"""
-        payments = Payment.objects.filter(
-            created_at__date__gte=from_date,
-            created_at__date__lte=to_date,
-            status='paid'
-        ).select_related('plan')
+        """
+        Get top courses by number of orders (ưu tiên số đơn, sau đó gross).
+        Nếu payment không gắn plan → nhóm vào 'Thanh toán tuỳ chỉnh'.
+        """
+        payments = (
+            Payment.objects.filter(
+                created_at__date__gte=from_date,
+                created_at__date__lte=to_date,
+                status='paid',
+            )
+            .select_related('plan')
+        )
 
         course_revenue = {}
+
         for payment in payments:
             if payment.plan:
                 course_id = str(payment.plan.id)
-                if course_id not in course_revenue:
-                    course_revenue[course_id] = {
-                        'courseId': course_id,
-                        'title': payment.plan.name,
-                        'teacher': 'N/A',
-                        'gross': 0,
-                        'net': 0,
-                        'orders': 0
-                    }
-                course_revenue[course_id]['gross'] += float(payment.amount)
-                course_revenue[course_id]['orders'] += 1
+                title = payment.plan.name
+                teacher = getattr(getattr(payment.plan, 'teacher', None), 'name', 'N/A')
+            else:
+                meta = payment.metadata or {}
+                course_ids = meta.get('course_ids') or []
+                titles = meta.get('course_titles') or meta.get('title') or []
+                if isinstance(titles, str):
+                    titles = [titles] * max(1, len(course_ids) or 1)
+                # Nếu FE chưa gửi title, cố gắng lấy từ DB theo id và lấy luôn tên GV (owner)
+                course_meta_map = {}
+                if course_ids:
+                    try:
+                        courses_qs = Course.objects.filter(id__in=course_ids).select_related('owner', 'owner__profile')
+                        for c in courses_qs:
+                            teacher_name = (
+                                getattr(getattr(c.owner, "profile", None), "display_name", None)
+                                or getattr(c.owner, "username", None)
+                                or getattr(c.owner, "email", None)
+                                or "N/A"
+                            )
+                            course_meta_map[str(c.id)] = {
+                                "title": c.title,
+                                "teacher": teacher_name,
+                            }
+                        if not titles or len(titles) < len(course_ids):
+                            titles = [
+                                course_meta_map.get(str(cid), {}).get("title", titles[0] if titles else "Thanh toán tuỳ chỉnh")
+                                for cid in course_ids
+                            ]
+                    except Exception:
+                        pass
+                # Fallback suy đoán course theo giá/enrollment nếu không có metadata
+                if not course_ids:
+                    try:
+                        inferred = list(Course.objects.filter(price=payment.amount).values('id', 'title'))
+                        # ưu tiên course mà user vừa enroll trong vòng 1 giờ quanh thời điểm tạo payment
+                        if inferred:
+                            course_id_set = [c['id'] for c in inferred]
+                            recent_enrolls = set(
+                                Enrollment.objects.filter(
+                                    student_id=payment.user_id,
+                                    course_id__in=course_id_set,
+                                    enrolled_at__gte=payment.created_at - timedelta(hours=1),
+                                    enrolled_at__lte=payment.created_at + timedelta(hours=1),
+                                ).values_list('course_id', flat=True)
+                            )
+                            if recent_enrolls:
+                                inferred = [c for c in inferred if c['id'] in recent_enrolls]
+                        if len(inferred) == 1:
+                            course_ids = [str(inferred[0]['id'])]
+                            titles = [inferred[0]['title']]
+                            # lấy teacher cho khóa suy đoán
+                            course_meta_map[str(inferred[0]['id'])] = {
+                                "title": inferred[0]['title'],
+                                "teacher": None,  # sẽ fill bên dưới
+                            }
+                    except Exception:
+                        pass
+
+                # Nếu có course_ids nhưng chưa có teacher_map, cố gắng lấy owner để điền teacher
+                if course_ids and not course_meta_map:
+                    try:
+                        courses_qs = Course.objects.filter(id__in=course_ids).select_related('owner', 'owner__profile')
+                        for c in courses_qs:
+                            teacher_name = (
+                                getattr(getattr(c.owner, "profile", None), "display_name", None)
+                                or getattr(c.owner, "username", None)
+                                or getattr(c.owner, "email", None)
+                                or "N/A"
+                            )
+                            course_meta_map[str(c.id)] = {
+                                "title": course_meta_map.get(str(c.id), {}).get("title", c.title),
+                                "teacher": teacher_name,
+                            }
+                    except Exception:
+                        pass
+
+                if course_ids:
+                    share = float(payment.amount) / max(1, len(course_ids))
+                    for idx, cid in enumerate(course_ids):
+                        name = titles[idx] if idx < len(titles) else titles[0] if titles else "Thanh toán tuỳ chỉnh"
+                        course_id = str(cid)
+                        teacher = course_meta_map.get(course_id, {}).get("teacher") or "N/A"
+                        if course_id not in course_revenue:
+                            course_revenue[course_id] = {
+                                'courseId': course_id,
+                                'title': name,
+                                'teacher': teacher,
+                                'gross': 0,
+                                'net': 0,
+                                'orders': 0,
+                            }
+                        course_revenue[course_id]['gross'] += share
+                        course_revenue[course_id]['orders'] += 1
+                    continue
+                else:
+                    course_id = 'custom'
+                    title = (
+                        meta.get('title')
+                        if isinstance(meta, dict)
+                        else None
+                    ) or "Thanh toán tuỳ chỉnh"
+                    teacher = 'N/A'
+
+            if course_id not in course_revenue:
+                course_revenue[course_id] = {
+                    'courseId': course_id,
+                    'title': title,
+                    'teacher': teacher,
+                    'gross': 0,
+                    'net': 0,
+                    'orders': 0,
+                }
+
+            course_revenue[course_id]['gross'] += float(payment.amount)
+            course_revenue[course_id]['orders'] += 1
 
         # Calculate net
-        for course_id, data in course_revenue.items():
+        for data in course_revenue.values():
             fees = data['gross'] * 0.03
             data['net'] = data['gross'] - fees
 
-        result = sorted(course_revenue.values(), key=lambda x: x['gross'], reverse=True)[:10]
+        # Sort by orders desc, then gross desc
+        result = sorted(
+            course_revenue.values(),
+            key=lambda x: (x['orders'], x['gross']),
+            reverse=True,
+        )[:10]
         return Response(result, status=status.HTTP_200_OK)
 
 

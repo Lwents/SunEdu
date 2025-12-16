@@ -14,7 +14,7 @@
               />
             </svg>
           </div>
-          <h1 class="text-3xl font-bold text-slate-900">Nạp tiền</h1>
+          <h1 class="text-3xl font-bold text-slate-900">Thanh toán</h1>
         </div>
         <p class="text-slate-600 text-sm ml-13">Chọn số tiền và phương thức thanh toán</p>
       </div>

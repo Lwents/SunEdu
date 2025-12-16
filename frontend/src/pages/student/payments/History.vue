@@ -14,9 +14,9 @@
               />
             </svg>
           </div>
-          <h1 class="text-3xl font-bold text-slate-900">Lịch sử nạp tiền</h1>
+          <h1 class="text-3xl font-bold text-slate-900">Lịch sử thanh toán</h1>
         </div>
-        <p class="text-slate-600">Xem tất cả các giao dịch nạp tiền của bạn</p>
+        <p class="text-slate-600">Xem tất cả các giao dịch thanh toán của bạn</p>
       </div>
 
       <!-- Filters -->
@@ -41,21 +41,12 @@
             {{ loading ? 'Đang tải...' : 'Làm mới' }}
           </button>
         </div>
-        <RouterLink
-          to="/student/payments"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Quay lại nạp tiền
-        </RouterLink>
       </div>
 
       <!-- Stats -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="rounded-lg border border-slate-200 bg-white p-4">
-          <div class="text-xs text-slate-500 mb-1">Tổng nạp</div>
+          <div class="text-xs text-slate-500 mb-1">Tổng thanh toán</div>
           <div class="text-xl font-bold text-slate-900">{{ vnd(totalPaid) }}</div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4">
@@ -188,9 +179,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { paymentService } from '@/services/payment.service'
 import { showToast } from '@/utils/toast'
+import { courseService } from '@/services/course.service'
 
 type Item = {
   id: string
@@ -213,6 +206,10 @@ const pendingCount = computed(() => items.value.filter((t) => t.status === 'pend
 const successCount = computed(() => items.value.filter((t) => t.status === 'success').length)
 const failedCount = computed(() => items.value.filter((t) => t.status === 'failed').length)
 
+const refreshTimer = ref<ReturnType<typeof setInterval> | null>(null)
+const route = useRoute()
+const router = useRouter()
+
 async function load() {
   loading.value = true
   try {
@@ -220,6 +217,12 @@ async function load() {
       status.value ? { status: status.value as any } : undefined,
     )
     items.value = (data as unknown as Item[]) || []
+    // Auto refresh nếu còn giao dịch pending
+    if (pendingCount.value > 0) {
+      startAutoRefresh()
+    } else {
+      stopAutoRefresh()
+    }
   } catch (e: any) {
     showToast(e?.message || 'Không tải được lịch sử', 'error')
     items.value = []
@@ -238,8 +241,89 @@ async function refresh(item: Item) {
   }
 }
 
-onMounted(load)
+async function enrollCoursesFromCart() {
+  const pendingEnroll = localStorage.getItem('pending_cart_enroll')
+  if (!pendingEnroll) return
+  try {
+    const courseIds = JSON.parse(pendingEnroll) as (string | number)[]
+    if (!Array.isArray(courseIds) || courseIds.length === 0) {
+      localStorage.removeItem('pending_cart_enroll')
+      return
+    }
+    const results = await Promise.all(
+      courseIds.map((id) =>
+        courseService.enroll(id).catch((err) => {
+          console.error('Enroll failed for', id, err)
+          return { success: false }
+        }),
+      ),
+    )
+    const ok = results.filter((r: any) => r?.success !== false).length
+    if (ok > 0) {
+      showToast(`Đã kích hoạt ${ok} khóa học vào "Khóa học của tôi"`, 'success')
+      localStorage.removeItem('pending_cart_enroll')
+      await load()
+    }
+  } catch (e) {
+    console.error('Error enroll from cart', e)
+  }
+}
+
+async function handlePaymentReturn() {
+  const resultCode = route.query.resultCode
+  const statusQuery = route.query.status
+  if (!resultCode && !statusQuery) return
+  // Sync trạng thái nếu có payment_id trong extraData/orderId
+  try {
+    const paymentId = (route.query.orderId as string) || undefined
+    if (paymentId) {
+      await paymentService.syncMomoPayment(paymentId).catch(() => {})
+    }
+  } catch (e) {
+    console.warn('Sync payment error', e)
+  }
+
+  if (resultCode === '0' || statusQuery === 'paid' || statusQuery === 'success') {
+    await enrollCoursesFromCart()
+  }
+
+  // clear query to tránh xử lý lại
+  const clean = { ...route.query }
+  delete clean.resultCode
+  delete clean.status
+  delete clean.orderId
+  delete clean.partnerCode
+  delete clean.extraData
+  delete clean.requestId
+  delete clean.message
+  if (Object.keys(clean).length !== Object.keys(route.query).length) {
+    router.replace({ query: clean })
+  }
+}
+
+onMounted(async () => {
+  await load()
+  await handlePaymentReturn()
+})
+onUnmounted(() => stopAutoRefresh())
 watch(status, load)
+watch(pendingCount, (val) => {
+  if (val > 0) startAutoRefresh()
+})
+
+function startAutoRefresh() {
+  if (refreshTimer.value) return
+  refreshTimer.value = setInterval(() => {
+    load()
+  }, 5000)
+}
+
+function stopAutoRefresh() {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value)
+    refreshTimer.value = null
+  }
+}
 
 function vnd(n: number) {
   return n.toLocaleString('vi-VN') + 'đ'

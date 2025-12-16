@@ -31,7 +31,7 @@
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
       <div class="xl:col-span-2 rounded-lg bg-white p-4 ring-1 ring-black/5">
         <div class="mb-3 font-medium">Doanh thu & giao dịch</div>
-        <div class="h-64 grid place-items-center text-gray-400">[Chart placeholder]</div>
+        <v-chart :option="chartOption" autoresize style="height: 260px" />
       </div>
       <div class="rounded-lg bg-white p-4 ring-1 ring-black/5">
         <div class="mb-3 font-medium">Top khóa học</div>
@@ -122,10 +122,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import { dashboardService } from '@/services/dashboard.service'
 import { systemService } from '@/services/system.service'
+import { reportService } from '@/services/report.service'
 import { showToast } from '@/utils/toast'
+import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import { CanvasRenderer } from 'echarts/renderers'
+import { GridComponent, TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components'
+
+use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent])
 
 const range = ref<[Date, Date] | null>(null)
 const granularity = ref<'day' | 'week' | 'month'>('day')
@@ -143,6 +151,8 @@ const recentTransactions = ref<any[]>([])
 const activeUsers = reactive({ count: 0, windowMinutes: 10, recent: [] as any[] })
 const security = reactive({ failedLogins24h: 0, lockedAccounts: 0, sslDaysToExpire: 30 })
 const system = reactive({ cpuP95: 0, ramP95: 0, disk: 0, backup: { lastRun: '-', status: '-' } })
+const chartData = ref<{ labels: string[]; gross: number[]; tx: number[] }>({ labels: [], gross: [], tx: [] })
+const loadingChart = ref(false)
 
 function fmt(v: number) {
   return new Intl.NumberFormat().format(v)
@@ -153,6 +163,34 @@ function currency(v: number) {
 function percent(v: number) {
   return `${v.toFixed(1)}%`
 }
+
+const chartOption = computed(() => ({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['Gross', 'Giao dịch'], bottom: 0 },
+  grid: { left: 40, right: 20, top: 20, bottom: 40 },
+  xAxis: { type: 'category', data: chartData.value.labels },
+  yAxis: [
+    { type: 'value', name: '₫' },
+    { type: 'value', name: 'Đơn', minInterval: 1 },
+  ],
+  series: [
+    {
+      name: 'Gross',
+      type: 'line',
+      smooth: true,
+      data: chartData.value.gross,
+      lineStyle: { color: '#2563eb' },
+    },
+    {
+      name: 'Giao dịch',
+      type: 'line',
+      yAxisIndex: 1,
+      smooth: true,
+      data: chartData.value.tx,
+      lineStyle: { color: '#f59e0b' },
+    },
+  ],
+}))
 
 function formatTime(value: string | null) {
   if (!value) return 'Không rõ'
@@ -216,6 +254,49 @@ async function fetchActiveUsers() {
   }
 }
 
+function buildRangeParams() {
+  if (range.value && range.value[0] && range.value[1]) {
+    return {
+      from: range.value[0].toISOString().slice(0, 10),
+      to: range.value[1].toISOString().slice(0, 10),
+      granularity: granularity.value,
+    }
+  }
+  // Mặc định 30 ngày gần nhất
+  const to = new Date()
+  const from = new Date()
+  from.setDate(to.getDate() - 30)
+  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10), granularity: granularity.value }
+}
+
+async function fetchChart() {
+  loadingChart.value = true
+  try {
+    const params = buildRangeParams()
+    const series = await reportService.revenueTimeseries(params)
+    const byDate: Record<string, { gross: number; tx: number }> = {}
+    series.forEach((p) => {
+      byDate[p.date] = { gross: p.gross, tx: 0 }
+    })
+    // Thêm số đơn từ recent transactions (nếu cùng ngày)
+    recentTransactions.value.forEach((tx) => {
+      const d = tx.createdAt ? tx.createdAt.slice(0, 10) : ''
+      if (!byDate[d]) byDate[d] = { gross: 0, tx: 0 }
+      byDate[d].tx += 1
+    })
+    const labels = Object.keys(byDate).sort()
+    chartData.value = {
+      labels,
+      gross: labels.map((d) => byDate[d].gross),
+      tx: labels.map((d) => byDate[d].tx),
+    }
+  } catch (err) {
+    console.error('Chart load error', err)
+  } finally {
+    loadingChart.value = false
+  }
+}
+
 async function fetchAll() {
   try {
     const data = await dashboardService.getDashboard()
@@ -225,6 +306,8 @@ async function fetchAll() {
     Object.assign(activeUsers, data.activeUsers)
     Object.assign(security, data.security)
     Object.assign(system, data.system)
+    
+    await fetchChart()
     
     // Fetch realtime panels on initial load
     await Promise.all([fetchSystemHealth(), fetchActiveUsers()])

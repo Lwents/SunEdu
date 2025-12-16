@@ -117,12 +117,14 @@
           <el-input v-model="changePasswordForm.newPassword" type="password" />
         </el-form-item>
       </el-form>
-      <div slot="footer" class="dialog-footer">
+      <template v-slot:footer>
+<div  class="dialog-footer">
         <el-button @click="changePasswordDialogVisible = false">Hủy</el-button>
         <el-button type="primary" :loading="changingPassword" @click="changePassword">
           Xác nhận
         </el-button>
       </div>
+</template>
     </el-dialog>
   </div>
 </template>

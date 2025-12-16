@@ -321,7 +321,7 @@ async function fetchList() {
 
 // Filtered and sorted list
 const filteredList = computed(() => {
-  let arr = list.value.slice()
+  const arr = list.value.slice()
   
   // Sort
   if (sortBy.value === 'courses') {

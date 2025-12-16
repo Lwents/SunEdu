@@ -77,6 +77,8 @@ export interface MomoInitPayload {
     description?: string
     flow?: MomoFlow
     paymentCode?: string
+    courseIds?: ID[]
+    courseTitles?: string[]
 }
 
 export interface MomoInitResponse {
@@ -401,6 +403,8 @@ export const paymentService = {
         if (payload.description) body.description = payload.description
         if (payload.flow) body.flow = payload.flow
         if (payload.paymentCode) body.payment_code = payload.paymentCode
+        if (payload.courseIds?.length) body.course_ids = payload.courseIds
+        if (payload.courseTitles?.length) body.course_titles = payload.courseTitles
 
         const { data } = await api.post('/payments/momo/initiate/', body)
         return {
