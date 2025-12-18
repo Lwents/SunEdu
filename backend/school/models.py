@@ -89,7 +89,7 @@ class MembershipModel(models.Model):
 class InvitationModel(models.Model):
     classroom = models.ForeignKey(ClassroomModel, on_delete=models.CASCADE, related_name="invitations")
     invite_code = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
     created_by = models.IntegerField()
     created_on = models.DateTimeField(auto_now_add=True)
     expires_on = models.DateTimeField()

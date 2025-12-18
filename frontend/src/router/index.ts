@@ -491,6 +491,8 @@ const router = createRouter({
 // Guard đơn giản theo role + tự hydrate từ localStorage
 router.beforeEach((to, _from, next) => {
   const auth = useAuthStore()
+  const redirectPathByRole = (role: any) =>
+    role === 'admin' ? '/admin/dashboard' : role === 'instructor' ? '/teacher/dashboard' : '/student/dashboard'
   // Hydrate từ storage nếu chưa có user nhưng có token
   if (!auth.user && (auth.token || localStorage.getItem('accessToken'))) {
     auth.hydrateFromStorage()
@@ -501,8 +503,7 @@ router.beforeEach((to, _from, next) => {
 
   // Đã đăng nhập mà vào /auth → đẩy về khu đúng role
   if (to.path.startsWith('/auth') && isAuthenticated) {
-    auth.redirectByRole(auth.user!.role)
-    return
+    return next(redirectPathByRole(auth.user!.role))
   }
 
   // Chưa đăng nhập mà vào khu riêng → đẩy về login
@@ -514,14 +515,12 @@ router.beforeEach((to, _from, next) => {
 
   // Sai role → đẩy về khu đúng
   if (needRole && isAuthenticated && auth.user && auth.user.role !== needRole) {
-    auth.redirectByRole(auth.user.role)
-    return
+    return next(redirectPathByRole(auth.user.role))
   }
 
   // Nếu đang ở "/" mà đã login → về dashboard theo role
   if (to.path === '/' && isAuthenticated && auth.user) {
-    auth.redirectByRole(auth.user.role)
-    return
+    return next(redirectPathByRole(auth.user.role))
   }
 
   next()

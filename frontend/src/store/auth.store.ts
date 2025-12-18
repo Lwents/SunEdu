@@ -72,6 +72,8 @@ export const useAuthStore = defineStore('auth', {
             sessionStorage.removeItem('refreshToken')
           }
           localStorage.removeItem('refreshToken')
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('auth')
         }
         try {
           const profile = await authService.getProfile()

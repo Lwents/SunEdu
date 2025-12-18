@@ -1077,7 +1077,28 @@ const scrollToSection = (id) => {
 }
 
 const scrollToTop = () => {
+  const el = document.documentElement
+  const start = el.scrollTop || window.scrollY || 0
+
+  // Preferred: native smooth scroll on window
   window.scrollTo({ top: 0, behavior: 'smooth' })
+
+  // Fallback for browsers/contexts không hỗ trợ behavior
+  const duration = 500
+  const startTime = performance.now()
+
+  const animate = (now) => {
+    const elapsed = now - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3) // easeOutCubic
+    const next = start * (1 - eased)
+    document.documentElement.scrollTop = next
+    document.body.scrollTop = next
+    if (progress < 1) requestAnimationFrame(animate)
+  }
+
+  // If native smooth is unsupported, scrollTo will jump; still run fallback to animate
+  requestAnimationFrame(animate)
 }
 
 const handleScroll = () => {
@@ -1152,7 +1173,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-html {
+:global(html) {
   scroll-behavior: smooth;
 }
 
