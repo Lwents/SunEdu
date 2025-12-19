@@ -300,6 +300,15 @@ class LessonQuestionReport(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(question__isnull=False, reply__isnull=True) |
+                    models.Q(question__isnull=True, reply__isnull=False)
+                ),
+                name='lesson_question_report_must_have_question_or_reply'
+            )
+        ]
 
     def __str__(self):
         target = self.question_id or self.reply_id

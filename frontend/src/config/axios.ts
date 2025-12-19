@@ -16,23 +16,58 @@ const apiPrefix = `/${normalizePrefix(import.meta.env.VITE_API_PREFIX)}`
 const http = axios.create({
   baseURL: `${apiUrl}${apiPrefix}`,
   timeout: 90000, // 90 giây - đủ cho AI API
-  headers: { 'Content-Type': 'application/json' }
+  headers: { 'Content-Type': 'application/json' },
 })
 
 let isRefreshing = false
-let refreshQueue: Array<(token: string) => void> = []
+type RefreshSubscriber = { resolve: (token: string) => void; reject: (error: any) => void }
+let refreshQueue: RefreshSubscriber[] = []
 
-function enqueueRefresh(cb: (token: string) => void) {
-  refreshQueue.push(cb)
+function enqueueRefresh(resolve: RefreshSubscriber['resolve'], reject: RefreshSubscriber['reject']) {
+  refreshQueue.push({ resolve, reject })
 }
 
 function resolveRefreshQueue(token: string) {
-  refreshQueue.forEach((cb) => cb(token))
+  refreshQueue.forEach(({ resolve }) => resolve(token))
+  refreshQueue = []
+}
+
+function rejectRefreshQueue(error: any) {
+  refreshQueue.forEach(({ reject }) => reject(error))
   refreshQueue = []
 }
 
 function getAccessToken() {
   return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
+}
+
+function shouldUseSessionStorage() {
+  const sessionRefresh = !!sessionStorage.getItem('refreshToken')
+  const localRefresh = !!localStorage.getItem('refreshToken')
+  if (sessionRefresh && !localRefresh) return true
+  if (localRefresh) return false
+
+  const sessionAccess = !!sessionStorage.getItem('accessToken')
+  const localAccess = !!localStorage.getItem('accessToken')
+  if (sessionAccess && !localAccess) return true
+
+  return false
+}
+
+function storeTokens(access: string, refresh?: string, preferSession = false) {
+  if (preferSession) {
+    sessionStorage.setItem('accessToken', access)
+    if (refresh) sessionStorage.setItem('refreshToken', refresh)
+    else sessionStorage.removeItem('refreshToken')
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+  } else {
+    localStorage.setItem('accessToken', access)
+    if (refresh) localStorage.setItem('refreshToken', refresh)
+    else localStorage.removeItem('refreshToken')
+    sessionStorage.removeItem('accessToken')
+    sessionStorage.removeItem('refreshToken')
+  }
 }
 
 http.interceptors.response.use(
@@ -91,17 +126,25 @@ http.interceptors.response.use(
   async (error: any) => {
     const originalRequest = error.config
     const status = error.response?.status
+    const isRefreshEndpoint = originalRequest?.url?.includes('/refresh')
 
     const isAuthEndpoint =
-      originalRequest?.url?.includes('/login') || originalRequest?.url?.includes('/register')
+      originalRequest?.url?.includes('/login') ||
+      originalRequest?.url?.includes('/register') ||
+      isRefreshEndpoint
 
     if (status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          enqueueRefresh((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            resolve(http(originalRequest))
-          })
+        return new Promise((resolve, reject) => {
+          enqueueRefresh(
+            (token) => {
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${token}`
+              }
+              resolve(http(originalRequest))
+            },
+            (err) => reject(err)
+          )
         })
       }
 
@@ -113,18 +156,20 @@ http.interceptors.response.use(
           localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
         if (!refresh) throw new Error('No refresh token')
 
+        const preferSession = shouldUseSessionStorage()
         const { data } = await http.post('/account/refresh/', { refresh })
         const newAccess = data.access || data.access_token
         const newRefresh = data.refresh || data.refresh_token
         if (!newAccess) throw new Error('No access token')
 
-        localStorage.setItem('accessToken', newAccess)
-        if (newRefresh) localStorage.setItem('refreshToken', newRefresh)
-        originalRequest.headers.Authorization = `Bearer ${newAccess}`
+        storeTokens(newAccess, newRefresh, preferSession)
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newAccess}`
+        }
         resolveRefreshQueue(newAccess)
         return http(originalRequest)
       } catch (refreshError) {
-        refreshQueue = []
+        rejectRefreshQueue(refreshError)
         localStorage.removeItem('auth')
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')

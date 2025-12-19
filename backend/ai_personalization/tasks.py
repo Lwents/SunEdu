@@ -669,9 +669,12 @@ def send_comeback_emails():
                 logger.debug(f"Student {student.id} has no profile, skipping")
                 continue
             
-            # Kiểm tra email_notifications_enabled
-            email_notifications_enabled = profile.metadata.get('email_notifications_enabled', False)
-            if not email_notifications_enabled:
+            # Kiểm tra email_notifications_enabled (ưu tiên), fallback về email_updates (được FE lưu)
+            metadata = profile.metadata or {}
+            email_pref = metadata.get('email_notifications_enabled')
+            if email_pref is None:
+                email_pref = metadata.get('email_updates', False)
+            if not email_pref:
                 logger.debug(f"Student {student.id} has email notifications disabled, skipping")
                 continue
             
