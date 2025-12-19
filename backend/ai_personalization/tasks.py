@@ -425,7 +425,7 @@ def send_comeback_reminders():
     from datetime import timedelta
     
     today = timezone.localdate()
-    reminder_days = [1, 2, 3, 4, 5, 7, 14, 21, 30]  # Các mốc ngày cần nhắc (1, 2, 3, 4, 5, 7, 14, 21, 30 ngày)
+    reminder_days = [1, 3, 4, 5, 7, 14, 21, 30]  # Các mốc ngày cần nhắc (1, 3, 4, 5, 7, 14, 21, 30 ngày)
     
     # Lấy tất cả học sinh có enrollment
     students = User.objects.filter(
@@ -550,8 +550,6 @@ MESSAGE: [nội dung động viên]"""
                         message = ai_response.strip()
                         if days_missed == 1:
                             title = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
-                        elif days_missed == 2:
-                            title = '⏰ Đã 2 ngày rồi từ lần cuối bạn học'
                         elif days_missed == 3:
                             title = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
                         elif days_missed == 4:
@@ -577,9 +575,6 @@ MESSAGE: [nội dung động viên]"""
                 if days_missed == 1:
                     title = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
                     message = 'Hôm qua bạn bỏ lỡ bài học rồi, hôm nay quay lại nhé!'
-                elif days_missed == 2:
-                    title = '⏰ Đã 2 ngày rồi từ lần cuối bạn học'
-                    message = 'Đã 2 ngày rồi từ lần cuối bạn học. Hãy quay lại để tiếp tục hành trình học tập nhé!'
                 elif days_missed == 3:
                     title = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
                     message = 'Đã 3 ngày rồi từ lần cuối bạn học. Thói quen nhỏ mỗi ngày sẽ tạo ra khác biệt lớn!'
@@ -650,7 +645,7 @@ def send_comeback_emails():
     from django.conf import settings
     
     today = timezone.localdate()
-    reminder_days = [1, 2, 3, 4, 5, 7, 14, 21, 30]  # Các mốc ngày cần nhắc (giống comeback reminders)
+    reminder_days = [1, 3, 4, 5, 7, 14, 21, 30]  # Các mốc ngày cần nhắc (giống comeback reminders)
     
     # Lấy tất cả học sinh
     students = User.objects.filter(
@@ -774,8 +769,6 @@ BODY: [nội dung email động viên]"""
                         body_text = ai_response.strip()
                         if days_missed == 1:
                             subject = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
-                        elif days_missed == 2:
-                            subject = '⏰ Đã 2 ngày rồi từ lần cuối bạn học'
                         elif days_missed == 3:
                             subject = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
                         elif days_missed == 4:
@@ -801,9 +794,6 @@ BODY: [nội dung email động viên]"""
                 if days_missed == 1:
                     subject = '📚 Hôm qua bạn bỏ lỡ bài học rồi!'
                     body_text = 'Hôm qua bạn bỏ lỡ bài học rồi, hôm nay quay lại nhé!'
-                elif days_missed == 2:
-                    subject = '⏰ Đã 2 ngày rồi từ lần cuối bạn học'
-                    body_text = 'Đã 2 ngày rồi từ lần cuối bạn học. Hãy quay lại để tiếp tục hành trình học tập nhé!'
                 elif days_missed == 3:
                     subject = '💪 Đã 3 ngày rồi từ lần cuối bạn học'
                     body_text = 'Đã 3 ngày rồi từ lần cuối bạn học. Thói quen nhỏ mỗi ngày sẽ tạo ra khác biệt lớn!'

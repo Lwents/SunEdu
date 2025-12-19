@@ -220,9 +220,25 @@
                     : 'border-slate-300 focus:border-slate-400 focus:ring-slate-200',
                   ]"
                 />
-              <p v-if="errors.email" class="text-xs text-red-600">
+                <p v-if="errors.email" class="text-xs text-red-600">
                   {{ errors.email }}
                 </p>
+            </div>
+          </div>
+
+          <!-- Email Notifications -->
+          <div class="grid gap-3 lg:grid-cols-[180px_1fr]">
+            <label class="text-sm font-medium text-slate-700 lg:pt-2">Thông báo email</label>
+            <div class="flex items-start gap-3">
+              <input
+                id="email-updates"
+                v-model="form.emailUpdates"
+                type="checkbox"
+                class="mt-1 h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-200"
+              />
+              <label for="email-updates" class="text-sm text-slate-700">
+                Nhận thông báo qua email
+              </label>
             </div>
           </div>
 
@@ -486,7 +502,7 @@ const form = reactive({
   username: '',
   fullname: '',
   email: '',
-  emailUpdates: false,
+  emailUpdates: true,
   gender: 'male',
   className: '',
   address: '',
@@ -636,7 +652,7 @@ function applyProfileToForm(profile?: ProfileDetails | null) {
   form.email = profile.email || ''
   form.gender = (profile.gender as any) || form.gender
   form.className = profile.class_name || profile.className || ''
-  form.emailUpdates = profile.email_updates ?? false
+  form.emailUpdates = profile.email_updates ?? true
   form.address = profile.address || ''
   form.city = profile.city || ''
   form.district = profile.district || ''

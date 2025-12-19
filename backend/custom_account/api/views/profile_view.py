@@ -62,7 +62,13 @@ class UserProfileView(RoleBasedOutputMixin, APIView):
         Handle GET requests to retrieve the user's profile.
         """
         user = request.user
-        profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
+        profile, _ = Profile.objects.get_or_create(
+            user=user,
+            defaults={
+                "language": "vietnamese",
+                "metadata": profile_service.default_profile_metadata(),
+            },
+        )
         return Response(build_profile_payload(user, profile), status=status.HTTP_200_OK)
 
     def patch(self, request):
@@ -75,7 +81,13 @@ class UserProfileView(RoleBasedOutputMixin, APIView):
         data = serializer.validated_data
 
         user = request.user
-        profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
+        profile, _ = Profile.objects.get_or_create(
+            user=user,
+            defaults={
+                "language": "vietnamese",
+                "metadata": profile_service.default_profile_metadata(),
+            },
+        )
         metadata = profile.metadata or {}
 
         user_updated = False
@@ -115,6 +127,7 @@ class UserProfileView(RoleBasedOutputMixin, APIView):
                 metadata[key] = data[key]
         if "email_updates" in data:
             metadata["email_updates"] = data["email_updates"]
+            metadata["email_notifications_enabled"] = data["email_updates"]
 
         metadata["updated_on"] = timezone.now().isoformat()
         profile.metadata = metadata
