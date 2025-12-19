@@ -6,12 +6,7 @@
     <!-- Home Button -->
     <router-link to="/" class="home-button">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-        />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
       </svg>
       <span class="home-text">Trang chủ</span>
     </router-link>
@@ -19,15 +14,12 @@
     <!-- Main Container -->
     <div class="content-wrapper">
       <!-- Sliding Auth Container (Login/Register) -->
-      <div
-        v-if="isLoginOrRegister"
-        class="auth-container"
-        :class="{ 'register-mode': isRegisterPage }"
-      >
+      <div v-if="isLoginOrRegister" class="auth-container" :class="{ 'register-mode': isRegisterPage }">
         <!-- Left Panel - Login Form -->
         <div class="form-panel left-panel">
           <div class="form-wrapper">
             <div class="brand-header">
+              <LogoSmartEdu :size="50" />
               <h2 class="form-title">Đăng nhập</h2>
             </div>
             <Login v-if="route.path === '/auth/login'" />
@@ -38,6 +30,7 @@
         <div class="form-panel right-panel">
           <div class="form-wrapper">
             <div class="brand-header">
+              <LogoSmartEdu :size="50" />
               <h2 class="form-title">Đăng ký</h2>
             </div>
             <Register v-if="route.path === '/auth/register'" />
@@ -50,15 +43,23 @@
             <!-- Left Overlay (shown when in Register mode) -->
             <div class="overlay-panel overlay-left">
               <h2 class="overlay-title">Chào mừng trở lại!</h2>
-              <p class="overlay-text">Đăng nhập để tiếp tục hành trình học tập của bạn</p>
-              <button class="overlay-btn" @click="switchToLogin">Đăng nhập</button>
+              <p class="overlay-text">
+                Đăng nhập để tiếp tục hành trình học tập của bạn
+              </p>
+              <button class="overlay-btn" @click="switchToLogin">
+                Đăng nhập
+              </button>
             </div>
 
             <!-- Right Overlay (shown when in Login mode) -->
             <div class="overlay-panel overlay-right">
               <h2 class="overlay-title">Chào bạn!</h2>
-              <p class="overlay-text">Tạo tài khoản mới để bắt đầu học tập cùng SmartEdu</p>
-              <button class="overlay-btn" @click="switchToRegister">Đăng ký</button>
+              <p class="overlay-text">
+                Tạo tài khoản mới để bắt đầu học tập cùng SmartEdu
+              </p>
+              <button class="overlay-btn" @click="switchToRegister">
+                Đăng ký
+              </button>
             </div>
           </div>
         </div>
@@ -66,7 +67,7 @@
 
       <!-- Simple Card for Other Auth Pages -->
       <div v-else class="simple-auth-card">
-        <div v-if="!hideSimpleHeader" class="brand-header">
+        <div class="brand-header">
           <LogoSmartEdu :size="50" />
           <h2 class="form-title">{{ route.meta.title }}</h2>
         </div>
@@ -86,12 +87,11 @@ import Register from '@/pages/auth/Register.vue'
 const route = useRoute()
 const router = useRouter()
 
-const isLoginOrRegister = computed(
-  () => route.path === '/auth/login' || route.path === '/auth/register',
+const isLoginOrRegister = computed(() => 
+  route.path === '/auth/login' || route.path === '/auth/register'
 )
 
 const isRegisterPage = computed(() => route.path === '/auth/register')
-const hideSimpleHeader = computed(() => Boolean(route.meta?.hideSimpleHeader))
 
 function switchToLogin() {
   router.push('/auth/login')
@@ -173,7 +173,7 @@ function switchToRegister() {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 32px;
-  box-shadow:
+  box-shadow: 
     0 20px 60px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.3) inset;
   overflow: hidden;
@@ -201,7 +201,7 @@ function switchToRegister() {
   align-items: center;
   justify-content: center;
   padding: 3.3rem 2.75rem;
-  transition:
+  transition: 
     transform 1s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 0.6s ease-out;
   z-index: 2;
@@ -266,7 +266,7 @@ function switchToRegister() {
   backdrop-filter: blur(20px);
   border-radius: 32px;
   padding: 3.3rem 2.75rem;
-  box-shadow:
+  box-shadow: 
     0 20px 60px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.3) inset;
   animation: fadeInScale 0.6s ease-out;
@@ -280,7 +280,8 @@ function switchToRegister() {
   width: 50%;
   height: 100%;
   overflow: hidden;
-  transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: 
+    transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 100;
 }
 
@@ -296,7 +297,8 @@ function switchToRegister() {
   left: -100%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   transform: translateX(0);
-  transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: 
+    transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .auth-container.register-mode .overlay {
@@ -317,7 +319,7 @@ function switchToRegister() {
   text-align: center;
   color: white;
   transform: translateX(0);
-  transition:
+  transition: 
     transform 1s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -664,37 +666,14 @@ function switchToRegister() {
   .auth-container {
     min-height: 500px;
     border-radius: 24px;
-    display: flex;
-    flex-direction: column;
   }
 
   .form-panel {
     padding: 2rem 1.5rem;
-    position: relative;
-    width: 100%;
-    transform: none;
-    opacity: 1;
-    min-height: unset;
   }
 
   .brand-header {
     margin-bottom: 1.5rem;
-  }
-
-  .form-wrapper {
-    max-width: 100%;
-  }
-
-  .right-panel {
-    display: none;
-  }
-
-  .auth-container.register-mode .left-panel {
-    display: none;
-  }
-
-  .auth-container.register-mode .right-panel {
-    display: flex;
   }
 
   .form-title {
@@ -720,16 +699,10 @@ function switchToRegister() {
   .auth-container {
     min-height: 450px;
     border-radius: 20px;
-    padding-top: 3rem;
   }
 
   .form-panel {
     padding: 1.75rem 1.25rem;
-  }
-
-  .home-button {
-    padding: 0.4rem 0.9rem;
-    font-size: 0.75rem;
   }
 
   .form-title {
@@ -752,56 +725,6 @@ function switchToRegister() {
 
   .form-panel {
     padding: 2rem 1.5rem;
-  }
-}
-
-@media (max-height: 720px) {
-  .sliding-auth-layout {
-    align-items: center;
-    justify-content: center;
-    padding: 3.5rem 1rem 2rem;
-    min-height: 100vh;
-    overflow-y: auto;
-  }
-
-  .auth-container {
-    margin: 0 auto 2rem;
-    min-height: auto;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .form-panel {
-    position: relative;
-    width: 100%;
-    transform: none;
-    opacity: 1;
-    padding: 1.75rem 1.5rem;
-    min-height: unset;
-  }
-
-  .overlay-container,
-  .overlay {
-    display: none;
-  }
-
-  .home-button {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    margin-bottom: 0;
-  }
-
-  .right-panel {
-    display: none;
-  }
-
-  .auth-container.register-mode .left-panel {
-    display: none;
-  }
-
-  .auth-container.register-mode .right-panel {
-    display: flex;
   }
 }
 </style>

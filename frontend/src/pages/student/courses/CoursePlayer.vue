@@ -2090,12 +2090,16 @@ function getVideoFileUrl(videoFile?: string): string {
   if (!videoFile) return ''
   const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
 
-  // Nếu BE trả về URL tuyệt đối (http/https), map sang endpoint stream để hỗ trợ Range
+  // Nếu BE trả về URL tuyệt đối, chỉ map sang stream khi cùng host API
   if (videoFile.startsWith('http://') || videoFile.startsWith('https://')) {
     try {
       const url = new URL(videoFile)
-      const mediaPath = url.pathname.startsWith('/media/') ? url.pathname.replace(/^\/media\//, '') : url.pathname.replace(/^\//, '')
-      return `${apiBase}/api/media/stream/${encodeURI(mediaPath)}`
+      const apiHost = new URL(apiBase)
+      if (url.host === apiHost.host) {
+        const mediaPath = url.pathname.startsWith('/media/') ? url.pathname.replace(/^\/media\//, '') : url.pathname.replace(/^\//, '')
+        return `${apiBase}/api/media/stream/${encodeURI(mediaPath)}`
+      }
+      return videoFile
     } catch {
       return videoFile
     }
