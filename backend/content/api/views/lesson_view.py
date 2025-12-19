@@ -34,6 +34,7 @@ from content.services.content_block_service import ContentBlockService
 from content.services.exploration_service import (
     ExplorationService, ExplorationStateService, ExplorationTransitionService
 )
+from content.utils.storage_utils import local_path_from_storage
 
 # Create service instances
 lesson_service = LessonService()
@@ -65,9 +66,10 @@ def _auto_transcribe_if_needed(lesson_model):
                 
                 # Transcribe
                 if lesson_model.video_file:
-                    from django.conf import settings
-                    video_path = str(settings.MEDIA_ROOT / str(lesson_model.video_file))
-                    transcript = video_transcriber.transcribe_video(video_path=video_path)
+                    with local_path_from_storage(str(lesson_model.video_file)) as video_path:
+                        if not video_path:
+                            return
+                        transcript = video_transcriber.transcribe_video(video_path=video_path)
                 elif lesson_model.video_url:
                     transcript = video_transcriber.transcribe_video(video_url=lesson_model.video_url)
                 else:
@@ -359,9 +361,8 @@ class LessonTranscribeView(APIView):
             
             # Transcribe
             if video_file:
-                from django.conf import settings
-                video_path = str(settings.MEDIA_ROOT / str(video_file))
-                transcript = video_transcriber.transcribe_video(video_path=video_path)
+                with local_path_from_storage(str(video_file)) as video_path:
+                    transcript = video_transcriber.transcribe_video(video_path=video_path) if video_path else None
             else:
                 transcript = video_transcriber.transcribe_video(video_url=video_url)
             

@@ -66,9 +66,11 @@ class ContentConfig(AppConfig):
                             # Transcribe
                             transcript = None
                             if lesson.video_file:
-                                from django.conf import settings
-                                video_path = str(settings.MEDIA_ROOT / str(lesson.video_file))
-                                transcript = video_transcriber.transcribe_video(video_path=video_path)
+                                from content.utils.storage_utils import local_path_from_storage
+                                with local_path_from_storage(str(lesson.video_file)) as video_path:
+                                    if not video_path:
+                                        continue
+                                    transcript = video_transcriber.transcribe_video(video_path=video_path)
                             elif lesson.video_url:
                                 transcript = video_transcriber.transcribe_video(video_url=lesson.video_url)
                             

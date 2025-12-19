@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from content.models import Lesson
 from content.services.video_transcriber import video_transcriber
+from content.utils.storage_utils import local_path_from_storage
 import logging
 
 logger = logging.getLogger(__name__)
@@ -93,9 +94,8 @@ class Command(BaseCommand):
                 transcript = None
                 
                 if lesson.video_file:
-                    from django.conf import settings
-                    video_path = str(settings.MEDIA_ROOT / str(lesson.video_file))
-                    transcript = video_transcriber.transcribe_video(video_path=video_path)
+                    with local_path_from_storage(str(lesson.video_file)) as video_path:
+                        transcript = video_transcriber.transcribe_video(video_path=video_path) if video_path else None
                 elif lesson.video_url:
                     transcript = video_transcriber.transcribe_video(video_url=lesson.video_url)
                 
@@ -128,7 +128,6 @@ class Command(BaseCommand):
                 f'\n✓ Hoàn thành! Thành công: {success_count}, Thất bại: {failed_count}, Tổng: {total}'
             )
         )
-
 
 
 

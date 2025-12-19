@@ -3,6 +3,7 @@ annotated-types==0.7.0
 anyio==4.11.0
 asgiref==3.9.1
 billiard==4.2.2
+boto3>=1.28.0
 celery==5.5.3
 certifi==2025.8.3
 cffi==2.0.0
@@ -20,6 +21,7 @@ django-allauth==65.13.0
 django-filter==25.2
 django-cors-headers==4.5.0
 django-redis==6.0.0
+django-storages>=1.14.2
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 factory_boy==3.3.3
