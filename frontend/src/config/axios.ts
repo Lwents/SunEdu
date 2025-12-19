@@ -41,6 +41,21 @@ function getAccessToken() {
   return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
 }
 
+function syncAuthStorage(token: string, preferSession = false) {
+  const storage = preferSession ? sessionStorage : localStorage
+  try {
+    const raw = storage.getItem('auth')
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') {
+      parsed.token = token
+      storage.setItem('auth', JSON.stringify(parsed))
+    }
+  } catch {
+    /* ignore storage errors */
+  }
+}
+
 function shouldUseSessionStorage() {
   const sessionRefresh = !!sessionStorage.getItem('refreshToken')
   const localRefresh = !!localStorage.getItem('refreshToken')
@@ -101,7 +116,12 @@ function translateMessage(message: string): string {
 http.interceptors.request.use(
   (config) => {
     const token = getAccessToken()
-    if (config.url && !config.url.includes('/login') && !config.url.includes('/register')) {
+    if (
+      config.url &&
+      !config.url.includes('/login') &&
+      !config.url.includes('/register') &&
+      !config.url.includes('/refresh')
+    ) {
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`
       }
@@ -163,6 +183,19 @@ http.interceptors.response.use(
         if (!newAccess) throw new Error('No access token')
 
         storeTokens(newAccess, newRefresh, preferSession)
+        syncAuthStorage(newAccess, preferSession)
+        try {
+          const { useAuthStore } = await import('@/store/auth.store')
+          const auth = useAuthStore()
+          if (auth) {
+            auth.token = newAccess
+            if (auth.user && !preferSession && typeof auth.persist === 'function') {
+              auth.persist()
+            }
+          }
+        } catch (_) {
+          /* ignore pinia load errors */
+        }
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccess}`
         }
@@ -179,8 +212,12 @@ http.interceptors.response.use(
         try {
           const { useAuthStore } = await import('@/store/auth.store')
           const auth = useAuthStore()
-          auth.token = null
-          auth.user = null
+          if (typeof auth.clearAuth === 'function') {
+            auth.clearAuth()
+          } else {
+            auth.token = null
+            auth.user = null
+          }
         } catch (_) {
           /* ignore pinia load errors */
         }

@@ -494,8 +494,21 @@ router.beforeEach((to, _from, next) => {
   const redirectPathByRole = (role: any) =>
     role === 'admin' ? '/admin/dashboard' : role === 'instructor' ? '/teacher/dashboard' : '/student/dashboard'
   // Hydrate từ storage nếu chưa có user nhưng có token
-  if (!auth.user && (auth.token || localStorage.getItem('accessToken'))) {
+  if (
+    !auth.user &&
+    (auth.token ||
+      localStorage.getItem('accessToken') ||
+      sessionStorage.getItem('accessToken'))
+  ) {
     auth.hydrateFromStorage()
+  }
+
+  const storedToken =
+    auth.token ||
+    localStorage.getItem('accessToken') ||
+    sessionStorage.getItem('accessToken')
+  if (storedToken && typeof auth.isTokenExpired === 'function' && auth.isTokenExpired(storedToken)) {
+    auth.clearAuth()
   }
 
   // Kiểm tra cả token và user để đảm bảo đã đăng nhập
