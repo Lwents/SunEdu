@@ -8,6 +8,7 @@ from custom_account.domains.reset_password_domain import ResetPasswordDomain
 from custom_account.models import UserModel
 from custom_account.models import Profile
 from custom_account.services.exceptions import DomainError, UserNotFoundError, IncorrectPasswordError
+from custom_account.services.profile_service import default_profile_metadata
 
 try:
     from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
@@ -42,6 +43,11 @@ def register_user(data: dict) -> UserDomain:
     user_domain.id = user.id
     profile_domain = user_domain.create_profile()
     profile_data = data.get('profile', {})
+    metadata = profile_data.get('metadata') or {}
+    defaults = default_profile_metadata()
+    metadata.setdefault('email_updates', defaults['email_updates'])
+    metadata.setdefault('email_notifications_enabled', defaults['email_notifications_enabled'])
+    profile_data['metadata'] = metadata
     Profile.objects.create(user=user, **profile_data)
     return UserDomain.from_model(user)
 

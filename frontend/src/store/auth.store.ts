@@ -10,6 +10,19 @@ import {
 } from '@/services/auth.service'
 import { ElMessage } from 'element-plus'
 import { getAvatarSrc } from '@/utils/avatar'
+import { jwtDecode } from 'jwt-decode'
+
+const isTokenExpired = (token?: string | null) => {
+  if (!token) return true
+  try {
+    const payload = jwtDecode<{ exp?: number }>(token)
+    if (!payload?.exp) return false
+    const now = Math.floor(Date.now() / 1000)
+    return payload.exp <= now
+  } catch {
+    return true
+  }
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -124,14 +137,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.warn('Logout API error:', error)
       }
-      // Clear state trước
-      this.token = null
-      this.user = null
-      localStorage.removeItem('auth')
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
-      sessionStorage.removeItem('accessToken')
-      sessionStorage.removeItem('refreshToken')
+      this.clearAuth()
       // Đảm bảo luôn quay về trang đăng nhập ngay cả khi API lỗi hoặc token hết hạn
       try {
         await router.replace('/auth/login')
@@ -183,6 +189,22 @@ export const useAuthStore = defineStore('auth', {
       } else {
         localStorage.removeItem('auth')
       }
+    },
+
+    clearAuth() {
+      this.token = null
+      this.user = null
+      localStorage.removeItem('auth')
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('access')
+      localStorage.removeItem('refresh')
+      sessionStorage.removeItem('accessToken')
+      sessionStorage.removeItem('refreshToken')
+    },
+
+    isTokenExpired(token?: string | null) {
+      return isTokenExpired(token)
     },
 
     // Dùng cho trang Profile để cập nhật hồ sơ người dùng
@@ -240,6 +262,10 @@ export const useAuthStore = defineStore('auth', {
     // Khởi tạo nhanh khi app load, đồng bộ avatar từ profile để tránh fallback boy/girl
     async init() {
       this.hydrateFromStorage()
+      if (this.token && isTokenExpired(this.token)) {
+        this.clearAuth()
+        return
+      }
       if (this.token) {
         await this.refreshProfile().catch((err) => {
           console.warn('Không thể tải profile khi khởi tạo:', err)

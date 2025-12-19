@@ -8,6 +8,12 @@ from custom_account.models import Profile , UserModel
 
 
 logger = logging.getLogger(__name__)
+def default_profile_metadata() -> dict:
+    return {
+        "email_updates": True,
+        "email_notifications_enabled": True,
+    }
+
 def create_default_profile(user_id: int):
     """
     Service-layer method to create a default profile for a user.
@@ -25,7 +31,10 @@ def create_default_profile(user_id: int):
         
     # Create the default object (repository operation)
     try:
-        new_profile = Profile.objects.create(user=user_to_link)
+        new_profile = Profile.objects.create(
+            user=user_to_link,
+            metadata=default_profile_metadata(),
+        )
         return new_profile
     except Exception as e:
         logger.error(f"Error creating default profile in service: {e}", exc_info=True)
@@ -33,6 +42,9 @@ def create_default_profile(user_id: int):
 
 
 def create_profile(domain: ProfileDomain) -> ProfileDomain:
+    metadata = domain.metadata or {}
+    metadata.setdefault("email_updates", True)
+    metadata.setdefault("email_notifications_enabled", True)
     profile = Profile.objects.create(
         user_id=domain.user_id,
         display_name=domain.display_name,
@@ -40,7 +52,7 @@ def create_profile(domain: ProfileDomain) -> ProfileDomain:
         dob=domain.dob,
         gender=domain.gender,
         language=domain.language,
-        metadata=domain.metadata,
+        metadata=metadata,
     )
     return ProfileDomain.from_model(profile)
 
