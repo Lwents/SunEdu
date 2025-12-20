@@ -773,15 +773,20 @@ async function deleteLesson(lessonId: ID) {
 }
 
 function getNextModulePosition() {
-  if (!modules.value.length) return 1
-  const maxPos = Math.max(
-    ...modules.value.map((m, idx) => (typeof m.position === 'number' ? m.position : idx + 1)),
-  )
+  if (!modules.value.length) return 0
+  const positions = modules.value.map((m, idx) => (typeof m.position === 'number' ? m.position : idx))
+  const maxPos = Math.max(...positions)
   return maxPos + 1
 }
 
 function getNextModuleLabel() {
-  return `Chương ${getNextModulePosition()}`
+  if (!modules.value.length) return 'Chương 1'
+  const positions = modules.value.map((m, idx) => (typeof m.position === 'number' ? m.position : idx))
+  const maxPos = Math.max(...positions)
+  const nextPos = maxPos + 1
+  const isZeroBased = positions.includes(0)
+  const labelNumber = isZeroBased ? nextPos + 1 : nextPos
+  return `Chương ${labelNumber}`
 }
 
 function getNextLessonPosition(moduleId: ID) {

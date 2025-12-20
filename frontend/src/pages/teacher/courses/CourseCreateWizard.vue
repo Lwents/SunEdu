@@ -973,7 +973,24 @@ const thumbnailInput = ref<HTMLInputElement | null>(null)
 const thumbnailFile = ref<File | null>(null)
 const thumbnailPreview = ref<string>('')
 
-const modules = ref<Array<{ id?: string; title: string; lessons: Array<{ id?: string; title: string; video_url?: string; video_file?: File }> }>>([])
+type LessonDraft = {
+  id?: string
+  title: string
+  content_type?: 'lesson' | 'video' | 'pdf' | 'text' | 'exercise' | 'document'
+  video_url?: string
+  video_file?: File
+  document_file?: File
+  text_content?: string
+  questions?: ExerciseQuestion[]
+}
+
+type ModuleDraft = {
+  id?: string
+  title: string
+  lessons: LessonDraft[]
+}
+
+const modules = ref<ModuleDraft[]>([])
 const showAddModule = ref(false)
 const newModuleTitle = ref('')
 const showAddLessonModuleIdx = ref<number | null>(null)
@@ -1425,17 +1442,7 @@ function addLesson() {
   if (showAddLessonModuleIdx.value === null || !newLessonTitle.value.trim()) return
   const module = modules.value[showAddLessonModuleIdx.value]
   if (module) {
-    const lesson: { 
-      id?: string; 
-      title: string; 
-      content_type?: string;
-      video_url?: string; 
-      video_file?: File;
-      document_file?: File;
-      text_content?: string;
-      questions?: ExerciseQuestion[];
-      editing?: boolean 
-    } = {
+    const lesson: LessonDraft = {
       title: newLessonTitle.value.trim(),
       content_type: newLessonContentType.value
     }
@@ -1532,33 +1539,32 @@ async function submit() {
         for (let lIdx = 0; lIdx < module.lessons.length; lIdx++) {
           const lesson = module.lessons[lIdx]
           try {
-            // Nếu có video_file, cần upload riêng sau khi tạo lesson
-            if (lesson.video_file) {
-              // Tạo lesson trước
-              const createdLesson = await contentService.createLesson(createdModule.id, {
-                title: lesson.title,
-                module: createdModule.id,
-                position: lIdx,
-                content_type: 'lesson',
-                video_url: undefined
-              })
-              // Upload video file sau
+            const contentType = lesson.content_type || 'lesson'
+            const basePayload: any = {
+              title: lesson.title,
+              module: createdModule.id,
+              position: lIdx,
+              content_type: contentType,
+            }
+            if (lesson.video_url) basePayload.video_url = lesson.video_url
+            if (lesson.text_content) basePayload.text_content = lesson.text_content
+
+            const needsFileUpload = !!lesson.video_file || !!lesson.document_file
+            if (needsFileUpload) {
+              const createdLesson = await contentService.createLesson(createdModule.id, basePayload)
               const lessonFd = new FormData()
-              lessonFd.append('video_file', lesson.video_file)
+              lessonFd.append('content_type', contentType)
+              if (lesson.video_file) lessonFd.append('video_file', lesson.video_file)
+              if (lesson.document_file) lessonFd.append('document_file', lesson.document_file)
+              if (lesson.text_content) lessonFd.append('text_content', lesson.text_content)
+              if (lesson.video_url) lessonFd.append('video_url', lesson.video_url)
               try {
                 await contentService.updateLesson(createdLesson.id, lessonFd as any)
-              } catch (videoErr) {
-                console.warn('Error uploading video file:', videoErr)
+              } catch (uploadErr) {
+                console.warn('Error uploading lesson file:', uploadErr)
               }
             } else {
-              // Tạo lesson với video_url nếu có
-              await contentService.createLesson(createdModule.id, {
-                title: lesson.title,
-                module: createdModule.id,
-                position: lIdx,
-                content_type: 'lesson',
-                video_url: lesson.video_url
-              })
+              await contentService.createLesson(createdModule.id, basePayload)
             }
           } catch (e) {
             console.error('Error creating lesson:', e)
