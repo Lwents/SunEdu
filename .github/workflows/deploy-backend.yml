@@ -28,7 +28,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 30m
+          timeout: 15m
+          command_timeout: 15m
           envs: BACKEND_ENV_FILE,BRANCH_NAME
           script: |
             set -euo pipefail
@@ -102,15 +103,11 @@ jobs:
             sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
             sudo lsof -ti:5432 | xargs -r sudo kill -9 || true
             sleep 2
-            docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
-            # Giữ cache để rút ngắn thời gian build; chỉ rebuild khi file thay đổi
-            echo "Building (using cache)..."
-            DOCKER_BUILDKIT=1 docker compose -f "$COMPOSE_FILE" build
-            echo "Starting services..."
-            docker compose -f "$COMPOSE_FILE" up -d
+            echo "Building & starting services (using cache)..."
+            DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f "$COMPOSE_FILE" up -d --build --remove-orphans
             echo "Waiting for services..."
             for i in {1..30}; do
-              if curl -f http://localhost:8000/health/ 2>/dev/null; then
+              if curl -fsS --max-time 2 http://localhost:8000/admin/ >/dev/null; then
                 echo "Services are running"
                 break
               fi
@@ -118,7 +115,6 @@ jobs:
             done
             echo "Container status:"
             docker compose -f "$COMPOSE_FILE" ps
-            docker system prune -f || true
             echo "Deployment complete!"
             echo "Disabling any git push operations..."
             cd /home/ubuntu/SunEdu
