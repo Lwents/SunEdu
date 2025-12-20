@@ -189,7 +189,9 @@ const avatarSrc = computed(() => {
 
 const pageTitle = computed(() => {
   const matched = [...route.matched].reverse().find((r) => r.meta?.title) as any
-  return matched?.meta?.title || 'Admin'
+  const raw = matched?.meta?.title
+  const title = typeof raw === 'function' ? raw(route) : raw
+  return title || 'Admin'
 })
 
 // Confirm popup
