@@ -27,10 +27,14 @@ export interface Lesson {
   title: string
   position: number
   module: ID
-  content_type: 'lesson' | 'exploration' | 'exercise'
+  content_type: 'lesson' | 'exploration' | 'exercise' | 'video' | 'pdf' | 'text' | 'document'
   published: boolean
   video_url?: string
   video_file?: string
+  document_file?: string
+  text_content?: string
+  introduction?: string
+  requires_exercise_completion?: boolean
 }
 
 export interface CreateModuleInput {
@@ -43,8 +47,11 @@ export interface CreateLessonInput {
   title: string
   module: ID
   position?: number
-  content_type?: 'lesson' | 'exploration' | 'exercise'
+  content_type?: 'lesson' | 'exploration' | 'exercise' | 'video' | 'pdf' | 'text' | 'document'
   video_url?: string
+  introduction?: string
+  text_content?: string
+  requires_exercise_completion?: boolean
 }
 
 export const contentService = {
@@ -107,6 +114,11 @@ export const contentService = {
       content_type: input.content_type || 'lesson'
     }
     if (input.video_url) payload.video_url = input.video_url
+    if (input.introduction !== undefined) payload.introduction = input.introduction
+    if (input.text_content !== undefined) payload.text_content = input.text_content
+    if (input.requires_exercise_completion !== undefined) {
+      payload.requires_exercise_completion = input.requires_exercise_completion
+    }
     const { data } = await http.post(`/content/modules/${moduleId}/lessons/`, payload)
     return data
   },

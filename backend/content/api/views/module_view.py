@@ -77,7 +77,12 @@ class ModuleDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         updates = serializer.validated_data
-        updated_domain = module_service.update_module(module_id=instance.id, update_data=updates)
+        from content.domains.module_domain import UpdateModuleDomain
+        update_domain = UpdateModuleDomain(
+            title=updates.get("title"),
+            position=updates.get("position"),
+        )
+        updated_domain = module_service.update_module(module_id=instance.id, update_data=update_domain)
         if not updated_domain:
             return Response({"detail": "Cannot update module"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(ModuleSerializer.from_domain(updated_domain))
