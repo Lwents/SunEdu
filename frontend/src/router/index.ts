@@ -104,6 +104,11 @@ const routes: RouteRecordRaw[] = [
 
       // System - Order matters: specific routes first, then general
       {
+        path: 'system/health',
+        component: () => import('@/pages/admin/system/SystemHealth.vue'),
+        meta: { title: 'Sức khỏe hệ thống' },
+      },
+      {
         path: 'system/activity',
         component: () => import('@/pages/admin/system/ActivityLogs.vue'),
         meta: { title: 'Log hoạt động' },
