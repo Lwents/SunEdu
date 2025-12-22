@@ -57,7 +57,7 @@
             <span v-else class="file-info text-gray-500">Chưa có ảnh nào được chọn</span>
           </div>
           <img v-if="coverPreview" :src="coverPreview" alt="Xem trước ảnh" class="image-preview" />
-          <p class="hint-text">Hỗ trợ: JPG/PNG. Tối đa 2MB.</p>
+          <p class="hint-text">Hỗ trợ: JPG/PNG. Tối đa 5MB.</p>
           <p v-if="coverErr" class="error-text">{{ coverErr }}</p>
         </div>
 
@@ -134,7 +134,7 @@ function onPickCover(e: Event) {
   const file = input.files?.[0]
   if (!file) return
   if (!file.type.startsWith('image/')) { coverErr.value = 'Vui lòng chọn file ảnh (JPG/PNG).'; input.value=''; return }
-  if (file.size > 2 * 1024 * 1024) { coverErr.value = 'Ảnh tối đa 2MB.'; input.value=''; return }
+  if (file.size > 5 * 1024 * 1024) { coverErr.value = 'Ảnh tối đa 5MB.'; input.value=''; return }
   coverFile.value = file
   if (coverPreview.value) URL.revokeObjectURL(coverPreview.value)
   coverPreview.value = URL.createObjectURL(file)

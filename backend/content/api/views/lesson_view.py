@@ -38,6 +38,7 @@ from content.utils.storage_utils import local_path_from_storage
 
 # Create service instances
 lesson_service = LessonService()
+MAX_VIDEO_BYTES = 500 * 1024 * 1024
 
 
 def _auto_transcribe_if_needed(lesson_model):
@@ -170,7 +171,13 @@ class LessonListCreateView(generics.ListCreateAPIView):
             if 'video_url' in data:
                 lesson_model.video_url = data['video_url']
             if 'video_file' in request.FILES and request.FILES['video_file']:
-                lesson_model.video_file = request.FILES['video_file']
+                video_file = request.FILES['video_file']
+                if getattr(video_file, 'size', 0) > MAX_VIDEO_BYTES:
+                    return Response(
+                        {"detail": "File video tối đa 500MB."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                lesson_model.video_file = video_file
             if 'document_file' in request.FILES and request.FILES['document_file']:
                 lesson_model.document_file = request.FILES['document_file']
             if 'text_content' in data:
@@ -269,7 +276,13 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
         if 'video_url' in updates:
             instance.video_url = updates['video_url']
         if 'video_file' in request.FILES and request.FILES['video_file']:
-            instance.video_file = request.FILES['video_file']
+            video_file = request.FILES['video_file']
+            if getattr(video_file, 'size', 0) > MAX_VIDEO_BYTES:
+                return Response(
+                    {"detail": "File video tối đa 500MB."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            instance.video_file = video_file
         if 'document_file' in request.FILES and request.FILES['document_file']:
             instance.document_file = request.FILES['document_file']
         if 'text_content' in updates:

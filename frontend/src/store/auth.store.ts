@@ -7,6 +7,7 @@ import {
   type AuthUser,
   type ProfileUpdatePayload,
   type ProfileDetails,
+  type LoginResult,
 } from '@/services/auth.service'
 import { ElMessage } from 'element-plus'
 import { getAvatarSrc } from '@/utils/avatar'
@@ -47,9 +48,14 @@ export const useAuthStore = defineStore('auth', {
   }, // [ADD]
 
   actions: {
-    async login(identifier: string, password: string, remember = true) {
+    async login(identifier: string, password: string, remember = true, otp?: string): Promise<LoginResult> {
       try {
-        const { token, refresh, user } = await authService.login(identifier, password)
+        const result = await authService.login(identifier, password, otp)
+        if ('requiresOtp' in result) {
+          return result
+        }
+
+        const { token, refresh, user } = result
         this.token = token
         this.user = user
         if (remember) {

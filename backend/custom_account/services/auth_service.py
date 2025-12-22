@@ -1,6 +1,7 @@
 from urllib.parse import quote
 
 from django.conf import settings
+from django.utils import timezone
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
@@ -103,6 +104,11 @@ def authenticate_user(username_or_email: str, password: str) -> UserModel:
     """
     user = UserModel.objects.filter(username=username_or_email).first() or \
             UserModel.objects.filter(email=username_or_email).first()
-    if user is None or not user.check_password(password) or not user.is_active:
+    if (
+        user is None
+        or not user.check_password(password)
+        or not user.is_active
+        or (user.lockout_until and user.lockout_until > timezone.now())
+    ):
         raise ValidationError("No active account found with the given credentials")
     return user

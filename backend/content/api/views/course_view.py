@@ -40,6 +40,8 @@ from content.domains.course_domain import CourseDomain
 
 # Create service instances
 course_service = CourseService()
+MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024
+MAX_VIDEO_BYTES = 500 * 1024 * 1024
 
 
 
@@ -143,6 +145,11 @@ class CourseListCreateView(generics.ListCreateAPIView):
                 # Optimize image before saving
                 from content.utils.image_optimizer import optimize_image
                 thumbnail_file = request.FILES['thumbnail']
+                if getattr(thumbnail_file, 'size', 0) > MAX_THUMBNAIL_BYTES:
+                    return Response(
+                        {"detail": "Ảnh khóa học tối đa 5MB."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
                 optimized_thumbnail = optimize_image(
                     thumbnail_file,
                     max_width=1200,
@@ -154,7 +161,13 @@ class CourseListCreateView(generics.ListCreateAPIView):
                 course_model.thumbnail = optimized_thumbnail if optimized_thumbnail else thumbnail_file
                 file_updated = True
             if 'video_file' in request.FILES and request.FILES['video_file']:
-                course_model.video_file = request.FILES['video_file']
+                video_file = request.FILES['video_file']
+                if getattr(video_file, 'size', 0) > MAX_VIDEO_BYTES:
+                    return Response(
+                        {"detail": "File video khóa học tối đa 500MB."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                course_model.video_file = video_file
                 file_updated = True
             
             if file_updated:
@@ -283,6 +296,11 @@ class CourseDetailView(generics.RetrieveUpdateDestroyAPIView):
             # Optimize image before saving
             from content.utils.image_optimizer import optimize_image
             thumbnail_file = request.FILES['thumbnail']
+            if getattr(thumbnail_file, 'size', 0) > MAX_THUMBNAIL_BYTES:
+                return Response(
+                    {"detail": "Ảnh khóa học tối đa 5MB."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             optimized_thumbnail = optimize_image(
                 thumbnail_file,
                 max_width=1200,
@@ -293,7 +311,13 @@ class CourseDetailView(generics.RetrieveUpdateDestroyAPIView):
             # Use optimized version if available, otherwise use original
             instance.thumbnail = optimized_thumbnail if optimized_thumbnail else thumbnail_file
         if 'video_file' in request.FILES and request.FILES['video_file']:
-            instance.video_file = request.FILES['video_file']
+            video_file = request.FILES['video_file']
+            if getattr(video_file, 'size', 0) > MAX_VIDEO_BYTES:
+                return Response(
+                    {"detail": "File video khóa học tối đa 500MB."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            instance.video_file = video_file
         if 'thumbnail' in request.FILES or 'video_file' in request.FILES:
             instance.save()
             updated_domain = CourseDomain.from_model(instance)

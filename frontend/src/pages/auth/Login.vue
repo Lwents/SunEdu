@@ -40,6 +40,7 @@
             :class="{ 'border-red-300': errors.email }"
             @blur="validateEmail"
             @input="() => { errors.email = '' }"
+            :disabled="otpRequired"
           />
         </div>
         <p v-if="errors.email" class="form-error">
@@ -87,6 +88,7 @@
             :class="{ 'border-red-300': errors.password }"
             @blur="validatePassword"
             @input="errors.password = ''"
+            :disabled="otpRequired"
           />
           <button
             type="button"
@@ -133,6 +135,55 @@
             />
           </svg>
           <span>{{ errors.password }}</span>
+        </p>
+      </div>
+
+      <!-- OTP -->
+      <div v-if="otpRequired" class="form-group">
+        <label for="otp" class="form-label">
+          Mã OTP
+          <span class="text-red-500">*</span>
+        </label>
+        <div class="relative">
+          <div class="input-icon">
+            <svg
+              class="w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 11c.552 0 1 .448 1 1v4a1 1 0 11-2 0v-4c0-.552.448-1 1-1zm0-7a5 5 0 00-5 5v3a2 2 0 002 2h6a2 2 0 002-2V9a5 5 0 00-5-5z"
+              />
+            </svg>
+          </div>
+          <input
+            id="otp"
+            v-model="form.otp"
+            type="text"
+            name="otp-field"
+            placeholder="Nhập mã OTP"
+            inputmode="numeric"
+            maxlength="6"
+            autocomplete="one-time-code"
+            class="form-input"
+            :class="{ 'border-red-300': errors.otp }"
+            @input="errors.otp = ''"
+          />
+        </div>
+        <p v-if="otpHint" class="text-xs text-gray-500">{{ otpHint }}</p>
+        <p v-if="errors.otp" class="form-error">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fill-rule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <span>{{ errors.otp }}</span>
         </p>
       </div>
 
@@ -184,7 +235,7 @@
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           ></path>
         </svg>
-        <span v-if="!loading">Đăng nhập</span>
+        <span v-if="!loading">{{ otpRequired ? 'Xác nhận OTP' : 'Đăng nhập' }}</span>
         <span v-else>Đang đăng nhập...</span>
       </button>
     </form>
@@ -266,16 +317,20 @@ const auth = useAuthStore()
 const loading = ref(false)
 // const loadingGoogle = ref(false)
 const showPassword = ref(false)
+const otpRequired = ref(false)
+const otpHint = ref('')
 
 const form = reactive({
   email: '',
   password: '',
   remember: true,
+  otp: '',
 })
 
 const errors = reactive({
   email: '',
   password: '',
+  otp: '',
 })
 
 function validateEmail() {
@@ -317,10 +372,25 @@ function validatePassword() {
   return true
 }
 
+function validateOtp() {
+  if (!otpRequired.value) return true
+  if (!form.otp.trim()) {
+    errors.otp = 'Vui lòng nhập mã OTP'
+    return false
+  }
+  if (!/^\d{6}$/.test(form.otp.trim())) {
+    errors.otp = 'Mã OTP phải gồm 6 chữ số'
+    return false
+  }
+  errors.otp = ''
+  return true
+}
+
 function validate() {
   const emailValid = validateEmail()
   const passwordValid = validatePassword()
-  return emailValid && passwordValid
+  const otpValid = validateOtp()
+  return emailValid && passwordValid && otpValid
 }
 
 const onSubmit = async () => {
@@ -328,7 +398,18 @@ const onSubmit = async () => {
 
   loading.value = true
   try {
-    await auth.login(form.email, form.password, form.remember)
+    const result = await auth.login(
+      form.email,
+      form.password,
+      form.remember,
+      otpRequired.value ? form.otp.trim() : undefined
+    )
+    if ('requiresOtp' in result) {
+      otpRequired.value = true
+      otpHint.value = result.message || 'Mã OTP đã được gửi đến email.'
+      showToast(otpHint.value, 'info')
+      return
+    }
     showToast('Đăng nhập thành công!', 'success')
   } catch (e: any) {
     showToast(e?.message || 'Đăng nhập thất bại', 'error')

@@ -213,7 +213,7 @@ const renewing = ref(false)
 const testingAlert = ref(false)
 
 const policy = reactive<SecurityPolicy>({
-  twoFA: { enforceAdmin: true, enforceTeacher: false },
+  twoFA: { enforceAdmin: false, enforceTeacher: false },
   rateLimit: { loginFailures: 5, windowMin: 10 },
   lockout: { attempts: 5, lockMinutes: 30, banStrikes: 5 },
   rbacNote: '',
