@@ -4,6 +4,5 @@ export const adminMenu = [
     { path: '/admin/users', label: 'Quản lý người dùng' },
     { path: '/admin/courses', label: 'Quản lý khóa học' },
     { path: '/admin/system', label: 'Cấu hình hệ thống' },
-    { path: '/admin/system/health', label: 'Sức khỏe hệ thống' },
     { path: '/admin/reports', label: 'Báo cáo' },
 ]

@@ -67,7 +67,6 @@
 
 <script setup lang="ts">
 import {
-  Activity,
   LayoutDashboard,
   Users,
   BookOpen,
@@ -111,7 +110,6 @@ const groups: NavGroup[] = [
     label: 'Hệ thống',
     items: [
       { to: '/admin/system', label: 'Cấu hình', icon: ShieldCheck },
-      { to: '/admin/system/health', label: 'Sức khỏe', icon: Activity },
       { to: '/admin/system/security', label: 'Bảo mật', icon: ShieldCheck },
       { to: '/admin/system/activity', label: 'Log hoạt động', icon: History },
     ],
