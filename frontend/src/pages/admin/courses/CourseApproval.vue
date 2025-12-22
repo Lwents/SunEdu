@@ -121,7 +121,7 @@ async function fetch() {
       status: 'pending_review',
       page: page.value,
       pageSize,
-    })
+    }, true)
     items.value = rows
     total.value = t
   } catch (error: any) {

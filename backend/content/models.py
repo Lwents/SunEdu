@@ -24,6 +24,8 @@ class Course(models.Model):
     description = models.TextField(blank=True, null=True)
     introduction = models.TextField(blank=True, null=True, help_text="Giới thiệu chi tiết về khóa học (hiển thị ở trang chi tiết)")
     grade = models.CharField(max_length=16, blank=True, null=True)
+    created_on = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_on = models.DateTimeField(auto_now=True, null=True, blank=True)
     published = models.BooleanField(default=False)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='courses_owned')
     video_url = models.URLField(blank=True, null=True, help_text="URL video khóa học (ví dụ: YouTube link hoặc link video trực tiếp)")

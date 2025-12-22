@@ -207,9 +207,12 @@ const validateForm = () => {
   if (form.newPassword.length < 8) {
     errors.newPassword = 'Mật khẩu mới phải có ít nhất 8 ký tự.'
     ok = false
+  } else if (form.currentPassword && form.newPassword === form.currentPassword) {
+    errors.newPassword = 'Mật khẩu mới trùng mật khẩu cũ.'
+    ok = false
   }
   if (form.confirmPassword !== form.newPassword) {
-    errors.confirmPassword = 'Xác nhận mật khẩu mới không khớp.'
+    errors.confirmPassword = 'Xác nhận mật khẩu chưa khớp.'
     ok = false
   }
   return ok

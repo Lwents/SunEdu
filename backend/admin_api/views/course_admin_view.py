@@ -90,8 +90,8 @@ class AdminCourseListView(APIView):
                 'lessonsCount': getattr(course, 'lessons_count', 0),
                 'enrollments': getattr(course, 'enrollments_count', 0),
                 'status': 'published' if course.published else 'draft',
-                'createdAt': None,  # Course model doesn't have created_at field
-                'updatedAt': None,  # Course model doesn't have updated_at field
+                'createdAt': course.created_on.isoformat() if getattr(course, 'created_on', None) else None,
+                'updatedAt': course.updated_on.isoformat() if getattr(course, 'updated_on', None) else None,
                 'thumbnail': thumbnail_url
             })
 
@@ -151,8 +151,8 @@ class AdminCourseDetailView(APIView):
             'lessonsCount': sum(len(s['lessons']) for s in sections),
             'enrollments': enrollments_count,
             'status': 'published' if course.published else 'draft',
-            'createdAt': None,  # Course model doesn't have created_at field
-            'updatedAt': None,  # Course model doesn't have updated_at field
+            'createdAt': course.created_on.isoformat() if getattr(course, 'created_on', None) else None,
+            'updatedAt': course.updated_on.isoformat() if getattr(course, 'updated_on', None) else None,
             'thumbnail': thumbnail_url,
             'level': None,  # Placeholder
             'durationMinutes': None,  # Placeholder
@@ -294,6 +294,5 @@ class AdminCourseBulkActionView(APIView):
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'success': True, 'count': courses.count()}, status=status.HTTP_200_OK)
-
 
 

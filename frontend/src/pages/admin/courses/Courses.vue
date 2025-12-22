@@ -292,7 +292,7 @@ async function fetch() {
       ...query,
       page: page.value,
       pageSize,
-    })
+    }, true)
     items.value = rows
     total.value = t
   } finally {
@@ -365,8 +365,12 @@ async function restore(row: CourseSummary) {
 }
 
 onMounted(async () => {
-  teachers.value = await courseService.listTeachers()
   fetch()
+  try {
+    teachers.value = await courseService.listTeachers()
+  } catch (error: any) {
+    showToast(error?.message || 'Không tải được danh sách giáo viên', 'warning')
+  }
 })
 
 const placeholderThumb =

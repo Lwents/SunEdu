@@ -403,10 +403,16 @@ watch(
 )
 
 watch(
-  () => pwd.new1,
-  () => {
-    errs.new1 = pwd.new1.length >= 6 ? '' : 'Mật khẩu mới tối thiểu 6 ký tự.'
-    errs.new2 = pwd.new2 === pwd.new1 ? '' : 'Xác nhận mật khẩu chưa khớp.'
+  () => [pwd.new1, pwd.current],
+  ([newPassword, currentPassword]) => {
+    if (!newPassword || newPassword.length < 6) {
+      errs.new1 = 'Mật khẩu mới tối thiểu 6 ký tự.'
+    } else if (currentPassword && newPassword === currentPassword) {
+      errs.new1 = 'Mật khẩu mới trùng mật khẩu cũ.'
+    } else {
+      errs.new1 = ''
+    }
+    errs.new2 = pwd.new2 === newPassword ? '' : 'Xác nhận mật khẩu chưa khớp.'
   },
   { immediate: true },
 )
@@ -423,6 +429,7 @@ const credentialsValid = computed(
   () =>
     !!pwd.current &&
     pwd.new1.length >= 6 &&
+    pwd.new1 !== pwd.current &&
     pwd.new2 === pwd.new1 &&
     !errs.current &&
     !errs.new1 &&

@@ -68,6 +68,10 @@ class CourseSerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(max_length=255, required=False, allow_null=True)
     published = serializers.BooleanField(default=False)
     published_at = serializers.DateTimeField(read_only=True)
+    created_on = serializers.DateTimeField(read_only=True)
+    updated_on = serializers.DateTimeField(read_only=True)
+    createdAt = serializers.SerializerMethodField()
+    updatedAt = serializers.SerializerMethodField()
     # Status field: computed from published boolean
     # 'draft' = not published, 'published' = published, 'archived' = not published (can be extended later)
     status = serializers.SerializerMethodField()
@@ -80,8 +84,8 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Course
-        fields = ["id", "subject", "subject_slug", "title", "description", "introduction", "grade", "owner", "slug", "published", "published_at", "status", "enrollments", "lessonsCount", "video_url", "video_file", "price", "thumbnail"]
-        read_only_fields = ["id", "published_at", "status", "enrollments", "lessonsCount"]
+        fields = ["id", "subject", "subject_slug", "title", "description", "introduction", "grade", "owner", "slug", "published", "published_at", "created_on", "updated_on", "createdAt", "updatedAt", "status", "enrollments", "lessonsCount", "video_url", "video_file", "price", "thumbnail"]
+        read_only_fields = ["id", "published_at", "created_on", "updated_on", "createdAt", "updatedAt", "status", "enrollments", "lessonsCount"]
 
     def get_status(self, obj):
         """Compute status from published boolean"""
@@ -89,6 +93,12 @@ class CourseSerializer(serializers.ModelSerializer):
             return "published"
         # For now, we only have draft and published. Archived can be added later if needed.
         return "draft"
+
+    def get_createdAt(self, obj):
+        return obj.created_on.isoformat() if obj.created_on else None
+
+    def get_updatedAt(self, obj):
+        return obj.updated_on.isoformat() if obj.updated_on else None
     
     def get_enrollments(self, obj):
         """Get enrollment count"""
@@ -163,6 +173,12 @@ class CourseSerializer(serializers.ModelSerializer):
         result = domain.to_dict()
         # Add status field computed from published
         result['status'] = 'published' if domain.published else 'draft'
+        created_on = result.get('created_on')
+        if created_on:
+            result['createdAt'] = created_on.isoformat() if hasattr(created_on, 'isoformat') else created_on
+        updated_on = result.get('updated_on')
+        if updated_on:
+            result['updatedAt'] = updated_on.isoformat() if hasattr(updated_on, 'isoformat') else updated_on
         # Add thumbnail and video_file URLs if available
         from django.conf import settings
         # Handle thumbnail - ensure it's a string, not a file object

@@ -30,6 +30,8 @@ class CourseDomain:
                  id: Optional[str] = None,
                  published: bool = False,
                  published_at: Optional[datetime] = None,
+                 created_on: Optional[datetime] = None,
+                 updated_on: Optional[datetime] = None,
                  introduction: Optional[str] = None,
                  video_url: Optional[str] = None,
                  price: float = 0):
@@ -43,6 +45,8 @@ class CourseDomain:
         self.slug = slug
         self.published = published
         self.published_at = published_at
+        self.created_on = created_on
+        self.updated_on = updated_on
         self.video_url = video_url
         self.price = price
         # contained aggregates (in-memory)
@@ -168,6 +172,8 @@ class CourseDomain:
             "slug": self.slug,
             "published": self.published,
             "published_at": self.published_at,
+            "created_on": self.created_on,
+            "updated_on": self.updated_on,
             "video_url": self.video_url,
             "video_file": getattr(self, 'video_file', None),
             "price": self.price,
@@ -192,6 +198,8 @@ class CourseDomain:
             id=str(model.id), 
             published=model.published, 
             published_at=getattr(model,'published_at',None),
+            created_on=getattr(model, 'created_on', None),
+            updated_on=getattr(model, 'updated_on', None),
             video_url=getattr(model, 'video_url', None),
             price=float(getattr(model, 'price', 0) or 0)
         )

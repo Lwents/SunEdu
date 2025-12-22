@@ -18,13 +18,11 @@
     </div>
 
     <!-- KPI cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <KpiCard title="DAU" :value="fmt(kpis.dau)" icon="users" />
       <KpiCard title="ĐK mới (7d)" :value="fmt(kpis.signups7d)" icon="user-plus" />
       <KpiCard title="GMV hôm nay" :value="currency(kpis.gmvToday)" icon="credit-card" />
       <KpiCard title="Giao dịch hôm nay" :value="fmt(kpis.txToday)" icon="activity" />
-      <KpiCard title="Refund rate (7d)" :value="percent(kpis.refundRate7d)" icon="rotate-ccw" />
-      <KpiCard title="Chờ duyệt" :value="fmt(kpis.approvalsPending)" icon="clipboard-check" />
     </div>
 
     <!-- Charts -->
@@ -108,8 +106,9 @@
         <div class="mb-3 font-medium">Sức khỏe hệ thống</div>
         <ul class="text-sm text-gray-700 space-y-2">
           <li>
-            CPU p95: <b>{{ system.cpuP95.toFixed(1) }}%</b> • RAM p95: <b>{{ system.ramP95.toFixed(1) }}%</b> • Disk:
-            <b>{{ system.disk.toFixed(1) }}%</b>
+            CPU p95: <b>{{ formatPercentValue(system.cpuP95) }}</b> • RAM p95:
+            <b>{{ formatPercentValue(system.ramP95) }}</b> • Disk:
+            <b>{{ formatPercentValue(system.disk) }}</b>
           </li>
           <li>
             Backup lần gần nhất: <b>{{ system.backup.lastRun }}</b> • Trạng thái:
@@ -127,6 +126,7 @@ import { dashboardService } from '@/services/dashboard.service'
 import { systemService } from '@/services/system.service'
 import { reportService } from '@/services/report.service'
 import { showToast } from '@/utils/toast'
+import KpiCard from '@/components/ui/KpiCard.vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { LineChart } from 'echarts/charts'
@@ -160,7 +160,8 @@ function fmt(v: number) {
 function currency(v: number) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v)
 }
-function percent(v: number) {
+function formatPercentValue(v: number | null | undefined) {
+  if (typeof v !== 'number' || Number.isNaN(v)) return '--'
   return `${v.toFixed(1)}%`
 }
 

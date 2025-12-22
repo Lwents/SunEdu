@@ -60,3 +60,5 @@ backend/env/
 *.dylib
 *.dll
 frontend/awscliv2.zip
+
+docs

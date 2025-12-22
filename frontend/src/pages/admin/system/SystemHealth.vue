@@ -6,11 +6,6 @@
           <div class="text-lg font-semibold">Sức khỏe hệ thống</div>
           <p class="text-xs text-gray-500">Theo dõi CPU/RAM/Disk và biểu đồ Grafana. Tự cập nhật mỗi 5s.</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <el-button type="primary" :disabled="!grafanaLink" @click="openGrafana">
-            Mở Grafana
-          </el-button>
-        </div>
       </div>
     </div>
 
@@ -163,11 +158,6 @@ async function loadHealth() {
   } finally {
     loading.value = false
   }
-}
-
-function openGrafana() {
-  if (!grafanaLink.value) return
-  window.open(grafanaLink.value, '_blank', 'noopener')
 }
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null

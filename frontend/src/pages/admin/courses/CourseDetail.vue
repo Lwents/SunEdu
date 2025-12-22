@@ -4,7 +4,20 @@
     <div class="rounded-lg bg-white p-4 ring-1 ring-black/5">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div class="flex min-w-0 items-center gap-4">
-          <img :src="detail.thumbnail" class="h-16 w-28 rounded object-cover" />
+          <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded bg-gray-100">
+            <img
+              :src="thumbnailUrl"
+              class="h-full w-full object-cover"
+              alt="Course thumbnail"
+              @error="onThumbError"
+            />
+            <div
+              v-if="!detail.thumbnail"
+              class="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400"
+            >
+              Không có ảnh
+            </div>
+          </div>
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h2 class="truncate text-xl font-semibold text-gray-800">{{ detail.title }}</h2>
@@ -136,6 +149,7 @@ import {
 } from '@/services/course.service'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
+import { resolveMediaUrl } from '@/utils/media'
 
 const route = useRoute()
 const id = computed(() => route.params.id as string)
@@ -154,7 +168,18 @@ const detail = reactive<CourseDetail>({
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   sections: [],
+  thumbnail: '',
 })
+
+const placeholderThumb =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90" viewBox="0 0 160 90"><rect width="160" height="90" fill="%23f3f4f6" rx="8"/><path d="M52 56l14-18 12 14 8-10 20 24H52z" fill="%23d1d5db"/><circle cx="65" cy="38" r="6" fill="%23d1d5db"/><text x="80" y="82" text-anchor="middle" font-family="Arial" font-size="12" fill="%239ca3af">No image</text></svg>'
+
+const thumbnailUrl = computed(() => resolveMediaUrl(detail.thumbnail) || placeholderThumb)
+
+function onThumbError(event: Event) {
+  const target = event.target as HTMLImageElement | null
+  if (target) target.src = placeholderThumb
+}
 
 const subjects = courseService.subjects()
 function subjectName(s: Subject) {
@@ -190,7 +215,7 @@ const minutes = (m?: number) => (m ? `${m} phút` : '—')
 
 async function load() {
   try {
-  const d = await courseService.detail(id.value)
+  const d = await courseService.detail(id.value, true)
   Object.assign(detail, d)
   } catch (error: any) {
     showToast(error?.message || 'Không tải được khoá học', 'error')
