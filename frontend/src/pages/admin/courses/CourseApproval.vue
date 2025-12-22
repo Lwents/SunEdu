@@ -38,9 +38,14 @@
       <el-table :data="items" v-loading="loading" height="560" @selection-change="onSelection">
         <el-table-column type="selection" width="42" fixed="left" />
         <el-table-column label="" width="72">
-          <template #default="{ row }"
-            ><img :src="row.thumbnail" class="h-10 w-16 rounded object-cover"
-          /></template>
+          <template #default="{ row }">
+            <img
+              :src="getThumbnailSrc(row.thumbnail)"
+              class="h-10 w-16 rounded object-cover"
+              alt="Course thumbnail"
+              @error="(e: any) => { e.target.src = placeholderThumb }"
+            />
+          </template>
         </el-table-column>
         <el-table-column label="Khoá học" min-width="260" show-overflow-tooltip>
           <template #default="{ row }">
@@ -95,6 +100,7 @@ import {
 } from '@/services/course.service'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
+import { resolveMediaUrl } from '@/utils/media'
 
 const router = useRouter()
 const subjects = courseService.subjects()
@@ -112,6 +118,9 @@ function subjectName(s: Subject) {
   return subjects.find((x) => x.value === s)?.label || s
 }
 const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleString('vi-VN') : '')
+const placeholderThumb =
+  'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"90\" viewBox=\"0 0 160 90\"><rect width=\"160\" height=\"90\" fill=\"%23f3f4f6\" rx=\"8\"/><path d=\"M52 56l14-18 12 14 8-10 20 24H52z\" fill=\"%23d1d5db\"/><circle cx=\"65\" cy=\"38\" r=\"6\" fill=\"%23d1d5db\"/><text x=\"80\" y=\"82\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"12\" fill=\"%239ca3af\">No image</text></svg>'
+const getThumbnailSrc = (thumbnail?: string) => resolveMediaUrl(thumbnail) || placeholderThumb
 
 async function fetch() {
   loading.value = true

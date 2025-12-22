@@ -256,6 +256,7 @@
 import { onBeforeUnmount, onMounted, reactive, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { courseService, type CourseDetail, type Subject } from '@/services/course.service'
+import { resolveMediaUrl } from '@/utils/media'
 import { showToast } from '@/utils/toast'
 
 /* ===== Router & state ===== */
@@ -355,7 +356,7 @@ onMounted(async () => {
 
     // preview ảnh ban đầu = thumbnail (nếu có)
     if (course.value.thumbnail) {
-      coverPreview.value = course.value.thumbnail
+      coverPreview.value = resolveMediaUrl(course.value.thumbnail)
       previewFromFile.value = false
     }
 

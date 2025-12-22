@@ -80,12 +80,12 @@
           <template #default="{ row }">
             <div class="thumb-box">
               <img
-                :src="row.thumbnail || placeholderThumb"
+                :src="getThumbnailSrc(row.thumbnail)"
                 class="thumb-img"
                 alt="Course thumbnail"
                 @error="(e: any) => { e.target.src = placeholderThumb }"
               />
-              <div v-if="!row.thumbnail" class="thumb-badge">Không có ảnh</div>
+              <div v-if="!hasThumbnail(row.thumbnail)" class="thumb-badge">Không có ảnh</div>
             </div>
           </template>
         </el-table-column>
@@ -181,6 +181,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
+import { resolveMediaUrl } from '@/utils/media'
 import {
   courseService,
   type CourseSummary,
@@ -262,6 +263,8 @@ const fmtDate = (iso?: string) => {
   if (Number.isNaN(d.getTime())) return ''
   return d.toLocaleString('vi-VN')
 }
+const getThumbnailSrc = (thumbnail?: string) => resolveMediaUrl(thumbnail) || placeholderThumb
+const hasThumbnail = (thumbnail?: string) => !!resolveMediaUrl(thumbnail)
 
 function applyDateRange() {
   query.from = dateRange.value?.[0]
