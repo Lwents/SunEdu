@@ -53,6 +53,18 @@ class UserModel(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    def get_full_name(self):
+        try:
+            profile = getattr(self, 'profile', None)
+            if profile and profile.display_name:
+                return profile.display_name
+        except Exception:
+            pass
+        return self.username or self.email or ''
+
+    def get_short_name(self):
+        return self.get_full_name() or self.username or self.email or ''
     
 
 class AuthAttempt(models.Model):
@@ -144,5 +156,4 @@ class PasswordChangeOTP(models.Model):
     @property
     def is_expired(self):
         return timezone.now() >= self.expires_at
-
 
