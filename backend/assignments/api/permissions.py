@@ -8,7 +8,7 @@ class IsTeacher(permissions.BasePermission):
     
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
-               hasattr(request.user, 'role') and request.user.role == 'teacher'
+               hasattr(request.user, 'role') and request.user.role in ['teacher', 'instructor']
 
 
 class IsStudent(permissions.BasePermission):
@@ -39,4 +39,4 @@ class CanGrade(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # obj is submission, check if user is teacher of assignment
         return hasattr(request.user, 'role') and \
-               request.user.role == 'teacher'
+               request.user.role in ['teacher', 'instructor']

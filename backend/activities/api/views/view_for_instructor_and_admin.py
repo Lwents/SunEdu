@@ -27,13 +27,13 @@ from activities.services import ServiceError, NotFoundError, ValidationError, Pe
 from activities.api.permissions import IsAdminOrReadOnly
 
 class IsTeacherOrAdmin(permissions.BasePermission):
-    """Allow instructors and admins."""
+    """Allow teachers/instructors and admins."""
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
         return bool(
             request.user.is_staff or 
-            (hasattr(request.user, 'role') and request.user.role in ['instructor', 'admin'])
+            (hasattr(request.user, 'role') and request.user.role in ['instructor', 'teacher', 'admin'])
         )
 
 
