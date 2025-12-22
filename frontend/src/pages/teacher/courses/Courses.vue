@@ -122,7 +122,7 @@
             :class="openMenuId === c.id ? 'overflow-visible' : 'overflow-hidden'"
           >
             <img
-              v-if="c.thumbnail"
+              v-if="getImageUrl(c.thumbnail)"
               :src="getImageUrl(c.thumbnail)"
               :alt="c.title"
               class="h-full w-full object-cover transition-transform group-hover:scale-105"
@@ -350,6 +350,7 @@ import { useRouter } from 'vue-router'
 import { courseService, type CourseSummary, type CourseStatus } from '@/services/course.service'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
+import { resolveMediaUrl } from '@/utils/media'
 
 const router = useRouter()
 
@@ -460,23 +461,17 @@ function fmtDate(iso?: string) {
   try { return new Date(iso).toLocaleString() } catch { return iso }
 }
 
+const placeholderThumb =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180"><rect width="320" height="180" fill="%23f3f4f6"/><path d="M90 112l28-36 24 28 16-20 40 48H90z" fill="%23d1d5db"/><circle cx="120" cy="70" r="12" fill="%23d1d5db"/></svg>'
+
 function getImageUrl(thumbnail: string | undefined): string {
-  if (!thumbnail) return ''
-  // Nếu đã là full URL, trả về nguyên bản
-  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
-    return thumbnail
-  }
-  // Nếu là relative path, thêm base URL
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  const baseUrl = apiUrl.replace(/\/+$/, '')
-  // Thumbnail từ backend thường bắt đầu bằng /media/ hoặc không có /
-  const path = thumbnail.startsWith('/') ? thumbnail : `/${thumbnail}`
-  return `${baseUrl}${path}`
+  return resolveMediaUrl(thumbnail)
 }
 
 function handleImageError(event: Event) {
   const img = event.target as HTMLImageElement
-  img.style.display = 'none'
+  img.onerror = null
+  img.src = placeholderThumb
 }
 
 /* Pager */

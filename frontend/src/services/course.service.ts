@@ -83,6 +83,18 @@ export interface StudentMyCoursesResponse {
 }
 
 function normalizeCourseSummary(row: any): CourseSummary {
+  const rawThumbnail =
+    row.thumbnail ??
+    row.thumbnail_url ??
+    row.thumbnailUrl ??
+    row.thumbnail?.url ??
+    row.thumbnail?.path ??
+    row.thumbnail_path
+  const thumbnail =
+    typeof rawThumbnail === 'string'
+      ? rawThumbnail
+      : rawThumbnail?.url ?? rawThumbnail?.path
+
   return {
     id: row.id,
     title: row.title,
@@ -95,7 +107,7 @@ function normalizeCourseSummary(row: any): CourseSummary {
     status: (row.status as CourseStatus) ?? 'draft',
     createdAt: row.createdAt || row.created_at || row.created_on || '',
     updatedAt: row.updatedAt || row.updated_at || row.updated_on || '',
-    thumbnail: row.thumbnail,
+    thumbnail,
     price: row.price,
   }
 }
