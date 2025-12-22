@@ -189,7 +189,7 @@ export const userService = {
     },
 
     // CRUD
-    create(payload: { username: string; email: string; password: string; role: Role }) {
+    create(payload: { username: string; email: string; password: string; role: Role; phone?: string | null }) {
         return api.post('/account/admin/users/', payload)
     },
     update(id: ID, payload: { username: string; email: string; phone?: string | null; name?: string }) {
