@@ -215,7 +215,7 @@ const minutes = (m?: number) => (m ? `${m} phút` : '—')
 
 async function load() {
   try {
-  const d = await courseService.detail(id.value)
+  const d = await courseService.detail(id.value, true)
   Object.assign(detail, d)
   } catch (error: any) {
     showToast(error?.message || 'Không tải được khoá học', 'error')
