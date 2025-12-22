@@ -33,7 +33,6 @@
         @change="applyFilters"
         class="w-full"
       >
-        <el-option label="Admin" value="admin" />
         <el-option label="Giáo viên" value="instructor" />
         <el-option label="Học sinh" value="student" />
       </el-select>
@@ -552,6 +551,7 @@ const form = reactive<User>({
   role: 'student',
   status: 'active',
   createdAt: new Date().toISOString(),
+  password: '',
 })
 const rules = {
   name: [{ required: true, message: 'Nhập họ tên', trigger: 'blur' }],
@@ -559,6 +559,17 @@ const rules = {
   email: [
     { required: true, message: 'Nhập email', trigger: 'blur' },
     { type: 'email', message: 'Email không hợp lệ', trigger: 'blur' },
+  ],
+  password: [
+    {
+      validator: (_rule: any, value: string, callback: (error?: Error) => void) => {
+        if (formDialog.mode !== 'create') return callback()
+        if (!value) return callback(new Error('Nhập mật khẩu'))
+        if (value.length < 6) return callback(new Error('Mật khẩu tối thiểu 6 ký tự'))
+        return callback()
+      },
+      trigger: 'blur',
+    },
   ],
   role: [{ required: true, message: 'Chọn vai trò', trigger: 'change' }],
   status: [{ required: true, message: 'Chọn trạng thái', trigger: 'change' }],
@@ -582,16 +593,28 @@ function openCreate() {
     role: 'student',
     status: 'active',
     createdAt: new Date().toISOString(),
+    password: '',
   } as User)
   formDialog.open = true
 }
 function openEdit(row: User) {
   formDialog.mode = 'edit'
-  Object.assign(form, row)
+  Object.assign(form, { ...row, password: '' })
   formDialog.open = true
 }
 async function submitForm() {
-  await formRef.value?.validate() // Validate form trước khi gửi
+  if (formDialog.mode === 'create') {
+    const pwd = (form.password || '').trim()
+    if (!pwd || pwd.length < 6) {
+      showToast('Mật khẩu tối thiểu 6 ký tự', 'error')
+      return
+    }
+  }
+  const isValid = await formRef.value?.validate().catch(() => false)
+  if (!isValid) {
+    showToast('Vui lòng kiểm tra lại thông tin', 'warning')
+    return
+  }
   saving.value = true
   try {
     if (formDialog.mode === 'create') {
@@ -599,6 +622,7 @@ async function submitForm() {
       await userService.create({
         username: form.username,
         email: form.email,
+        phone: form.phone || undefined,
         password: form.password || '', // Đảm bảo password được gửi
         role: form.role,
       })
@@ -616,7 +640,22 @@ async function submitForm() {
     fetchList() // Refresh danh sách sau khi tạo/cập nhật
   } catch (error: any) {
     console.error('Error saving user:', error)
-    showToast(error?.message || 'Không thể lưu dữ liệu', 'error')
+    const data = error?.response?.data || {}
+    const detail = data.detail || data.message || error?.message || ''
+    const passwordErrors = Array.isArray(data.password) ? data.password.join(' ') : ''
+    if (detail.includes('Username already taken')) {
+      showToast('Username đã tồn tại', 'error')
+    } else if (detail.includes('Email already taken')) {
+      showToast('Email đã tồn tại', 'error')
+    } else if (detail.includes('Phone already taken')) {
+      showToast('Số điện thoại đã tồn tại', 'error')
+    } else if (passwordErrors) {
+      showToast(passwordErrors, 'error')
+    } else if (detail.toLowerCase().includes('password') && detail.includes('6')) {
+      showToast('Mật khẩu tối thiểu 6 ký tự', 'error')
+    } else {
+      showToast(detail || 'Không thể lưu dữ liệu', 'error')
+    }
   } finally {
     saving.value = false
   }

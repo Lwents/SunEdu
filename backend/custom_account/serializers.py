@@ -123,7 +123,7 @@ class ParentalConsentSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, min_length=6)
     role = serializers.ChoiceField(choices=["student", "instructor", "admin"], default="student")
     phone = serializers.CharField(max_length=15, required=False)
 

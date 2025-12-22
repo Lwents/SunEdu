@@ -22,12 +22,12 @@ def register_user(data: dict) -> UserDomain:
     """Register a new user and its profile (aggregate root = User)."""
 
     # enforce business invariants (uniqueness)
-    if UserModel.objects.filter(username=data['username']).exists():
+    if UserModel.objects.filter(username__iexact=data['username']).exists():
         raise DomainError("Username already taken")
-    if UserModel.objects.filter(email=data['email']).exists():
+    if UserModel.objects.filter(email__iexact=data['email']).exists():
         raise DomainError("Email already taken")
     phone = data.get('phone')
-    if phone and UserModel.objects.filter(phone=phone).exists():
+    if phone and UserModel.objects.filter(phone__iexact=phone).exists():
         raise DomainError("Phone already taken")
 
     user_domain = UserDomain(username=data['username'],
@@ -209,6 +209,7 @@ def list_all_users_for_admin(
         'id', 'username', 'email', 'role', 'is_staff', 'is_active', 
         'phone', 'created_on', 'updated_on', 'last_login'
     )
+    queryset = queryset.exclude(Q(is_staff=True) | Q(role='admin'))
     
     # Search by q (username, email)
     if q:
