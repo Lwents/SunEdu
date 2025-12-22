@@ -171,6 +171,7 @@
                 class="h-20 w-32 rounded-lg object-cover border"
               />
             </div>
+            <p class="mt-2 text-xs text-gray-500">JPG/PNG, tối đa 5MB.</p>
           </div>
 
         </div>
@@ -507,7 +508,7 @@
                   </button>
                 </div>
                 <p class="mt-1 text-xs text-gray-500">
-                  Hỗ trợ: MP4, AVI, MOV. Tối đa 300MB
+                  Hỗ trợ: MP4, AVI, MOV. Tối đa 500MB
                 </p>
                 <p v-if="newLessonVideoFile" class="mt-1 text-xs text-green-600">
                   Đã chọn: {{ newLessonVideoFile.name }} ({{ formatFileSize(newLessonVideoFile.size) }})
@@ -1242,6 +1243,11 @@ function onPickThumbnail(e: Event) {
     showToast('Vui lòng chọn file ảnh', 'warning')
     return
   }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Ảnh tối đa 5MB', 'warning')
+    input.value = ''
+    return
+  }
   thumbnailFile.value = file
   if (thumbnailPreview.value) URL.revokeObjectURL(thumbnailPreview.value)
   thumbnailPreview.value = URL.createObjectURL(file)
@@ -1331,7 +1337,7 @@ function onPickLessonVideo(e: Event) {
     input.value = ''
     return
   }
-  const maxSize = 300 * 1024 * 1024 // 300MB
+  const maxSize = 500 * 1024 * 1024 // 500MB
   if (file.size > maxSize) {
     const fileSize = formatFileSize(file.size)
     const maxSizeStr = formatFileSize(maxSize)

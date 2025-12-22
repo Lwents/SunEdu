@@ -1,3 +1,5 @@
+import base64
+import binascii
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -172,6 +174,25 @@ class ProfileUpdateRequestSerializer(serializers.Serializer):
     parent_email = serializers.EmailField(required=False, allow_blank=True)
     parent_relation = serializers.CharField(required=False, allow_blank=True, max_length=50)
     parent_address = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+    def validate_avatar_url(self, value):
+        if not value:
+            return value
+        if not isinstance(value, str):
+            return value
+        if value.startswith("data:") and "base64," in value:
+            base64_data = value.split("base64,", 1)[1].strip()
+            if not base64_data:
+                return value
+            padding = base64_data.count("=")
+            size_bytes = (len(base64_data) * 3) // 4 - padding
+            if size_bytes > 5 * 1024 * 1024:
+                raise serializers.ValidationError("Dung lượng ảnh đại diện vượt quá 5MB.")
+            try:
+                base64.b64decode(base64_data, validate=True)
+            except (binascii.Error, ValueError):
+                raise serializers.ValidationError("Ảnh đại diện không hợp lệ.")
+        return value
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):

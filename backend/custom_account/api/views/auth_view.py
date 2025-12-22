@@ -1,12 +1,14 @@
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 from django.db import IntegrityError
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
-from dj_rest_auth.views import LoginView
+from rest_framework.permissions import AllowAny
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
 from dj_rest_auth.views import PasswordResetConfirmView
@@ -18,7 +20,7 @@ from custom_account.serializers import (
     ResetPasswordSerializer,
     PasswordResetRequestSerializer,
 )
-from custom_account.services import user_service, auth_service
+from custom_account.services import user_service, auth_service, profile_service, login_otp_service, login_security_service
 from custom_account.services.exceptions import DomainError
 
 
@@ -57,10 +59,11 @@ class RegisterView(RoleBasedOutputMixin, APIView):
     
 
 # ---------- Login -----------
-class CustomLoginView(LoginView):
+class CustomLoginView(APIView):
     """
-    Override login to show a clear message when the account is locked/inactive.
+    Custom login with rate limit, lockout, and optional OTP (2FA).
     """
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         identifier = (
@@ -69,19 +72,157 @@ class CustomLoginView(LoginView):
             or request.data.get("username_or_email")
             or request.data.get("email_or_username")
         )
+        password = request.data.get("password")
+        otp = request.data.get("otp")
 
-        if identifier:
-            user = User.objects.filter(username__iexact=identifier).first()
-            if not user:
-                user = User.objects.filter(email__iexact=identifier).first()
+        if not identifier or not password:
+            return Response(
+                {"detail": "Thiếu thông tin đăng nhập."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-            if user and not user.is_active:
+        normalized = login_security_service.normalize_identifier(identifier)
+        user = User.objects.filter(username__iexact=normalized).first()
+        if not user:
+            user = User.objects.filter(email__iexact=normalized).first()
+
+        policy = login_security_service.get_policy()
+        now = timezone.now()
+        ip = login_security_service.get_client_ip(request)
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+
+        if user and not user.is_active:
+            login_security_service.record_attempt(
+                user=user,
+                identifier=normalized,
+                success=False,
+                ip=ip,
+                user_agent=user_agent,
+                error="inactive",
+            )
+            return Response(
+                {"detail": "Tài khoản đã bị khóa. Vui lòng liên hệ hỗ trợ."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if user and user.lockout_until:
+            if user.lockout_until > now:
+                login_security_service.record_attempt(
+                    user=user,
+                    identifier=normalized,
+                    success=False,
+                    ip=ip,
+                    user_agent=user_agent,
+                    error="lockout",
+                )
                 return Response(
-                    {"detail": "Tài khoản đã bị khóa. Vui lòng liên hệ hỗ trợ."},
+                    {"detail": "Tài khoản tạm thời bị khóa. Vui lòng thử lại sau."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
+            user.lockout_until = None
+            user.failed_login_count = 0
+            user.last_failed_login_at = None
+            user.save(update_fields=['lockout_until', 'failed_login_count', 'last_failed_login_at'])
 
-        return super().post(request, *args, **kwargs)
+        if login_security_service.is_rate_limited(normalized, ip, policy, now=now):
+            login_security_service.record_attempt(
+                user=user,
+                identifier=normalized,
+                success=False,
+                ip=ip,
+                user_agent=user_agent,
+                error="rate_limited",
+            )
+            return Response(
+                {"detail": "Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        if not user or not user.check_password(password):
+            login_security_service.record_attempt(
+                user=user,
+                identifier=normalized,
+                success=False,
+                ip=ip,
+                user_agent=user_agent,
+                error="invalid_credentials",
+            )
+            login_security_service.register_failure(user, policy, now=now)
+            return Response(
+                {"detail": "Sai tài khoản hoặc mật khẩu."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if login_security_service.is_twofa_required(user, policy):
+            if not otp:
+                try:
+                    login_otp_service.request_login_otp(user)
+                except login_otp_service.OTPThrottleError:
+                    return Response(
+                        {"detail": "OTP vừa được gửi, vui lòng đợi.", "requires_otp": True},
+                        status=status.HTTP_202_ACCEPTED,
+                    )
+                return Response(
+                    {"detail": "Mã OTP đã được gửi đến email.", "requires_otp": True, "otp_sent": True},
+                    status=status.HTTP_202_ACCEPTED,
+                )
+            try:
+                login_otp_service.verify_login_otp(user, otp)
+            except login_otp_service.OTPExpiredError as exc:
+                login_security_service.record_attempt(
+                    user=user,
+                    identifier=normalized,
+                    success=False,
+                    ip=ip,
+                    user_agent=user_agent,
+                    error="otp_expired",
+                )
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            except login_otp_service.OTPInvalidError as exc:
+                login_security_service.record_attempt(
+                    user=user,
+                    identifier=normalized,
+                    success=False,
+                    ip=ip,
+                    user_agent=user_agent,
+                    error="otp_invalid",
+                )
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            except login_otp_service.OTPNotFoundError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            except login_otp_service.OTPAttemptsExceededError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        login_security_service.reset_failures(user)
+        login_security_service.record_attempt(
+            user=user,
+            identifier=normalized,
+            success=True,
+            ip=ip,
+            user_agent=user_agent,
+        )
+        user.last_login = now
+        user.save(update_fields=['last_login'])
+
+        try:
+            profile = profile_service.get_profile_by_user(user.id)
+        except ObjectDoesNotExist:
+            profile = profile_service.create_default_profile(user.id)
+
+        refresh = RefreshToken.for_user(user)
+        role = "admin" if user.is_staff else (user.role or "student")
+        response_data = {
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": role,
+                "full_name": profile.display_name or user.username,
+            },
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class GoogleLogin(SocialLoginView):

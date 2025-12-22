@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from admin_api.permissions import IsAdmin
+from custom_account.models import SecurityPolicy
 
 
 class AdminSecurityPolicyView(APIView):
@@ -14,38 +15,86 @@ class AdminSecurityPolicyView(APIView):
 
     def get(self, request):
         """Get security policy"""
-        try:
-            policy = cache.get('security_policy')
-        except Exception:
-            policy = None
-        if not policy:
-            policy = {
+        policy = SecurityPolicy.get_current()
+        return Response(
+            {
                 'twoFA': {
-                    'enforceAdmin': True,
-                    'enforceTeacher': False
+                    'enforceAdmin': policy.twofa_enforce_admin,
+                    'enforceTeacher': policy.twofa_enforce_teacher,
                 },
                 'rateLimit': {
-                    'loginFailures': 5,
-                    'windowMin': 10
+                    'loginFailures': policy.rate_limit_login_failures,
+                    'windowMin': policy.rate_limit_window_min,
                 },
                 'lockout': {
-                    'attempts': 5,
-                    'lockMinutes': 30,
-                    'banStrikes': 5
+                    'attempts': policy.lockout_attempts,
+                    'lockMinutes': policy.lockout_minutes,
+                    'banStrikes': policy.lockout_ban_strikes,
                 },
-                'rbacNote': ''
-            }
-        return Response(policy, status=status.HTTP_200_OK)
+                'rbacNote': policy.rbac_note or '',
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request):
         """Update security policy"""
-        policy = request.data
-        try:
-            cache.set('security_policy', policy, timeout=None)
-        except Exception:
-            # If cache fails, continue without caching
-            pass
-        return Response(policy, status=status.HTTP_200_OK)
+        payload = request.data or {}
+        policy = SecurityPolicy.get_current()
+
+        def parse_int(value, default):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return default
+
+        twofa = payload.get('twoFA') or {}
+        rate_limit = payload.get('rateLimit') or {}
+        lockout = payload.get('lockout') or {}
+
+        if isinstance(twofa, dict):
+            if 'enforceAdmin' in twofa:
+                policy.twofa_enforce_admin = bool(twofa.get('enforceAdmin'))
+            if 'enforceTeacher' in twofa:
+                policy.twofa_enforce_teacher = bool(twofa.get('enforceTeacher'))
+
+        if isinstance(rate_limit, dict):
+            if 'loginFailures' in rate_limit:
+                policy.rate_limit_login_failures = max(parse_int(rate_limit.get('loginFailures'), policy.rate_limit_login_failures), 1)
+            if 'windowMin' in rate_limit:
+                policy.rate_limit_window_min = max(parse_int(rate_limit.get('windowMin'), policy.rate_limit_window_min), 1)
+
+        if isinstance(lockout, dict):
+            if 'attempts' in lockout:
+                policy.lockout_attempts = max(parse_int(lockout.get('attempts'), policy.lockout_attempts), 1)
+            if 'lockMinutes' in lockout:
+                policy.lockout_minutes = max(parse_int(lockout.get('lockMinutes'), policy.lockout_minutes), 1)
+            if 'banStrikes' in lockout:
+                policy.lockout_ban_strikes = max(parse_int(lockout.get('banStrikes'), policy.lockout_ban_strikes), 1)
+
+        if 'rbacNote' in payload:
+            policy.rbac_note = payload.get('rbacNote') or ''
+
+        policy.save()
+
+        return Response(
+            {
+                'twoFA': {
+                    'enforceAdmin': policy.twofa_enforce_admin,
+                    'enforceTeacher': policy.twofa_enforce_teacher,
+                },
+                'rateLimit': {
+                    'loginFailures': policy.rate_limit_login_failures,
+                    'windowMin': policy.rate_limit_window_min,
+                },
+                'lockout': {
+                    'attempts': policy.lockout_attempts,
+                    'lockMinutes': policy.lockout_minutes,
+                    'banStrikes': policy.lockout_ban_strikes,
+                },
+                'rbacNote': policy.rbac_note or '',
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class AdminIpAllowListView(APIView):
@@ -235,4 +284,3 @@ class AdminAlertPolicyView(APIView):
             'success': True,
             'message': 'Test alert sent'
         }, status=status.HTTP_200_OK)
-

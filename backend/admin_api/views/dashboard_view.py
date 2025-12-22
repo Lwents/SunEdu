@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from admin_api.permissions import IsAdmin
+from django.db.models import Q
 from custom_account.models import UserModel, AuthAttempt
 from content.models import Course
 from payments.models import Payment
@@ -116,7 +117,9 @@ class AdminDashboardView(APIView):
             success=False,
             created_at__gte=window_start,
         ).count()
-        locked_accounts = UserModel.objects.filter(is_active=False).count()
+        locked_accounts = UserModel.objects.filter(
+            Q(is_active=False) | Q(lockout_until__gt=now)
+        ).count()
 
         cert = cache.get('security_cert_status')
         days_to_expire = None
@@ -204,7 +207,6 @@ class AdminActiveUsersRealtimeView(AdminDashboardView):
         now = timezone.now()
         active_users = self._get_active_users(now)
         return Response(active_users, status=status.HTTP_200_OK)
-
 
 
 

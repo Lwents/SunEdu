@@ -171,7 +171,7 @@
                 Đã chọn ảnh mới: <b>{{ coverFile.name }}</b> ({{ formatFileSize(coverFile.size) }})
               </p>
               <p v-if="coverErr" class="mt-2 text-sm text-rose-600 font-medium">{{ coverErr }}</p>
-              <p class="mt-2 text-xs text-gray-500">JPG/PNG, tối đa 10MB. Giữ ảnh cũ nếu không đổi.</p>
+              <p class="mt-2 text-xs text-gray-500">JPG/PNG, tối đa 5MB. Giữ ảnh cũ nếu không đổi.</p>
             </div>
           </div>
         </div>
@@ -317,9 +317,9 @@ function onPickCover(e: Event) {
     return
   }
   
-  const maxSize = 10 * 1024 * 1024 // 10MB
+  const maxSize = 5 * 1024 * 1024 // 5MB
   if (file.size > maxSize) {
-    coverErr.value = `File ảnh tối đa 10MB. File của bạn: ${formatFileSize(file.size)}`
+    coverErr.value = `File ảnh tối đa 5MB. File của bạn: ${formatFileSize(file.size)}`
     input.value = ''
     return
   }

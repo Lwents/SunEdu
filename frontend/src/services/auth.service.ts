@@ -131,14 +131,29 @@ function normalizeProfileResponse(data: any): ProfileDetails {
   }
 }
 
+export type LoginResult =
+  | AuthPayload
+  | { requiresOtp: true; message?: string; otpSent?: boolean }
+
 export const authService = {
-  async login(identifier: string, password: string): Promise<AuthPayload> {
+  async login(identifier: string, password: string, otp?: string): Promise<LoginResult> {
     if (!identifier || !password) throw new Error('Thiếu thông tin đăng nhập')
 
     const isEmail = /\S+@\S+\.\S+/.test(identifier)
     const body = isEmail ? { email: identifier, password } : { username: identifier, password }
+    if (otp) {
+      Object.assign(body, { otp })
+    }
 
     const { data } = await http.post('/account/login/', body)
+
+    if (data?.requires_otp || data?.requiresOtp) {
+      return {
+        requiresOtp: true,
+        message: data.detail || 'Vui lòng nhập mã OTP để tiếp tục.',
+        otpSent: data.otp_sent ?? data.otpSent,
+      }
+    }
 
     const token = (data.access || data.access_token || data.token) as string
     if (!token) throw new Error('Không nhận được token từ server')

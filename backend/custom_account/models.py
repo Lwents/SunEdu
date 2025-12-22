@@ -38,6 +38,10 @@ class UserModel(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=15, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    failed_login_count = models.PositiveSmallIntegerField(default=0)
+    last_failed_login_at = models.DateTimeField(null=True, blank=True)
+    lockout_until = models.DateTimeField(null=True, blank=True)
+    lockout_strikes = models.PositiveSmallIntegerField(default=0)
 
     objects = UserManager()
 
@@ -92,6 +96,27 @@ class AuthAttempt(models.Model):
     def __str__(self):
         status = 'success' if self.success else 'failed'
         return f"{self.username_or_email or self.user_id} - {status}"
+
+
+class SecurityPolicy(models.Model):
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    twofa_enforce_admin = models.BooleanField(default=False)
+    twofa_enforce_teacher = models.BooleanField(default=False)
+    rate_limit_login_failures = models.PositiveSmallIntegerField(default=5)
+    rate_limit_window_min = models.PositiveSmallIntegerField(default=10)
+    lockout_attempts = models.PositiveSmallIntegerField(default=5)
+    lockout_minutes = models.PositiveSmallIntegerField(default=30)
+    lockout_ban_strikes = models.PositiveSmallIntegerField(default=5)
+    rbac_note = models.TextField(blank=True, default='')
+
+    class Meta:
+        verbose_name = 'Security Policy'
+        verbose_name_plural = 'Security Policies'
+
+    @classmethod
+    def get_current(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
 
 
 class Profile(models.Model):
@@ -157,3 +182,19 @@ class PasswordChangeOTP(models.Model):
     def is_expired(self):
         return timezone.now() >= self.expires_at
 
+
+class LoginOTP(models.Model):
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE, related_name='login_otps')
+    code_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveIntegerField(default=0)
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [models.Index(fields=['user', '-created_at'])]
+        ordering = ['-created_at']
+
+    @property
+    def is_expired(self) -> bool:
+        return timezone.now() >= self.expires_at

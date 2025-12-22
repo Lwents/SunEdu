@@ -774,9 +774,9 @@ function onPickDocument(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
-  // 50MB max
-  if (file.size > 50 * 1024 * 1024) {
-    showToast('File quá lớn (tối đa 50MB)', 'warning')
+  // 500MB max
+  if (file.size > 500 * 1024 * 1024) {
+    showToast('File quá lớn (tối đa 500MB)', 'warning')
     return
   }
   docFile.value = file

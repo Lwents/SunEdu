@@ -56,7 +56,7 @@ export const securityService = {
             return data
         }
         return {
-            twoFA: { enforceAdmin: true, enforceTeacher: false },
+            twoFA: { enforceAdmin: false, enforceTeacher: false },
             rateLimit: { loginFailures: 5, windowMin: 10 },
             lockout: { attempts: 5, lockMinutes: 30, banStrikes: 5 },
             rbacNote: 'RBAC được quản trị ở backend; FE chỉ hiển thị.',
