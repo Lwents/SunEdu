@@ -1,12 +1,20 @@
 <template>
-  <div class="student-shell" v-if="course">
+  <div :class="isDark ? 'dark-mode' : 'light-mode'" v-if="course">
+    <!-- Background glow effects for dark mode -->
+    <div v-if="isDark" class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      <div class="absolute top-1/4 -left-32 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+    </div>
+    <div class="student-shell relative z-10">
     <div class="student-container max-w-[1600px] px-4 lg:px-8">
       <div
-        class="mb-4 flex flex-col gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400 sm:flex-row sm:items-center sm:justify-between"
+        class="mb-4 flex flex-col gap-2 text-sm font-semibold sm:flex-row sm:items-center sm:justify-between"
+        :class="isDark ? 'text-gray-400' : 'text-gray-600'"
       >
         <button
           type="button"
-          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:bg-slate-50 sm:w-auto"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition sm:w-auto"
+          :class="isDark ? 'border-white/10 text-gray-100 hover:bg-slate-800' : 'border-slate-200 text-gray-900 hover:bg-slate-50'"
           @click="goBack"
         >
           ‹ Rời khỏi đây
@@ -272,14 +280,14 @@
             </template>
             <div class="flex items-start justify-between gap-4 px-6 py-5">
               <div class="space-y-1">
-                <p class="student-section-title text-xs text-gray-600 dark:text-gray-400">
+                <p class="student-section-title text-xs" :class="isDark ? 'text-gray-400' : 'text-gray-600'">
                   {{ currentLesson ? 'Bài học hiện tại' : 'Video khóa học' }}
                 </p>
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <h2 class="text-2xl font-bold" :class="isDark ? 'text-gray-100' : 'text-gray-900'">
                   {{ currentLesson?.title || course.title }}
                 </h2>
                 <div class="mt-2">
-                  <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                  <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" :class="isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-700'">
                     <span v-if="currentLessonKind === 'video'">🎬</span>
                     <span v-else-if="currentLessonKind === 'quiz'">✏️</span>
                     <span v-else-if="currentLessonKind === 'pdf'">📄</span>
@@ -338,12 +346,12 @@
           </div>
         </div>
 
-        <aside class="order-2 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-100">
+        <aside class="order-2 rounded-3xl border p-5 shadow-sm transition-colors duration-300" :class="isDark ? 'border-white/10 bg-slate-900/95 shadow-slate-900' : 'border-slate-200 bg-white/95 shadow-slate-100'">
           <div class="flex items-center gap-4">
-            <div class="relative flex h-20 w-20 items-center justify-center rounded-full bg-slate-100">
-              <svg viewBox="0 0 36 36" class="h-16 w-16 text-brand-200">
+            <div class="relative flex h-20 w-20 items-center justify-center rounded-full" :class="isDark ? 'bg-slate-800' : 'bg-slate-100'">
+              <svg viewBox="0 0 36 36" class="h-16 w-16">
                 <path
-                  class="text-slate-200"
+                  :class="isDark ? 'text-slate-700' : 'text-slate-200'"
                   stroke="currentColor"
                   stroke-width="3"
                   fill="none"
@@ -359,13 +367,13 @@
                   d="M18 2.0845 a 15.9155 15.9155 0 1 1 0 31.831 a 15.9155 15.9155 0 1 1 0 -31.831"
                 />
               </svg>
-              <span class="absolute text-lg font-black text-gray-900 dark:text-gray-100">{{ progressPct }}%</span>
+              <span class="absolute text-lg font-black" :class="isDark ? 'text-gray-100' : 'text-gray-900'">{{ progressPct }}%</span>
             </div>
             <div>
-              <p class="text-sm font-semibold uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">
+              <p class="text-sm font-semibold uppercase tracking-[0.3em]" :class="isDark ? 'text-gray-300' : 'text-gray-600'">
                 Nội dung khóa học
               </p>
-              <p class="text-base font-bold text-gray-900 dark:text-gray-100">{{ doneCount }}/{{ totalCount }} bài học</p>
+              <p class="text-base font-bold" :class="isDark ? 'text-gray-100' : 'text-gray-900'">{{ doneCount }}/{{ totalCount }} bài học</p>
             </div>
           </div>
 
@@ -374,10 +382,11 @@
               v-for="(sec, si) in uiSections"
               :key="sec.id"
               :class="[
-                'rounded-2xl border shadow-sm shadow-slate-100',
+                'rounded-2xl border shadow-sm transition-colors duration-300',
+                isDark ? 'shadow-slate-900' : 'shadow-slate-100',
                 sec.locked 
-                  ? 'border-slate-200 bg-slate-50 opacity-75' 
-                  : 'border-slate-100 bg-white'
+                  ? isDark ? 'border-white/5 bg-slate-800/50 opacity-75' : 'border-slate-200 bg-slate-50 opacity-75'
+                  : isDark ? 'border-white/10 bg-slate-800' : 'border-slate-100 bg-white'
               ]"
             >
               <button
@@ -386,7 +395,7 @@
                   'flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-semibold',
                   sec.locked 
                     ? 'text-slate-400 cursor-not-allowed' 
-                    : 'text-gray-900 dark:text-gray-100'
+                    : isDark ? 'text-gray-100' : 'text-gray-900'
                 ]"
                 @click="toggle(si)"
               >
@@ -396,12 +405,12 @@
                     <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </span>
-                <span :class="sec.locked ? 'text-xs text-slate-400' : 'text-xs text-gray-600 dark:text-gray-400'">
+                <span :class="sec.locked ? 'text-xs text-slate-400' : isDark ? 'text-xs text-gray-400' : 'text-xs text-gray-600'">
                   {{ sec.items.length }}
                 </span>
                 <svg
-                  class="h-4 w-4 text-gray-600 dark:text-gray-400 transition"
-                  :class="{ 'rotate-180': openIndex === si }"
+                  class="h-4 w-4 transition"
+                  :class="[{ 'rotate-180': openIndex === si }, isDark ? 'text-gray-400' : 'text-gray-600']"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -418,20 +427,20 @@
                 leave-from-class="max-h-[600px] opacity-100"
                 leave-to-class="max-h-0 opacity-0"
               >
-                <ul v-show="openIndex === si" class="divide-y divide-slate-100 overflow-hidden">
+                <ul v-show="openIndex === si" class="overflow-hidden" :class="isDark ? 'divide-y divide-white/5' : 'divide-y divide-slate-100'">
                   <li
                     v-for="(it, li) in sec.items"
                     :key="it.id"
                     :class="[
                       'flex items-center justify-between gap-3 px-4 py-3 text-sm transition',
                       it.locked 
-                        ? 'cursor-not-allowed bg-slate-50 text-slate-400 opacity-60'
+                        ? isDark ? 'cursor-not-allowed bg-slate-800/50 text-slate-500 opacity-60' : 'cursor-not-allowed bg-slate-50 text-slate-400 opacity-60'
                         : 'cursor-pointer',
                       String(it.id) === String(currentLesson?.id)
                         ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 ring-1 ring-cyan-100'
                         : it.locked 
-                          ? 'bg-slate-50 text-slate-400'
-                        : 'bg-white text-gray-900 dark:text-gray-100 hover:bg-slate-50',
+                          ? isDark ? 'bg-slate-800/50 text-slate-500' : 'bg-slate-50 text-slate-400'
+                        : isDark ? 'bg-slate-800 text-gray-100 hover:bg-slate-700' : 'bg-white text-gray-900 hover:bg-slate-50',
                       lessonState(it) === 'next' ? 'ring-1 ring-cyan-50' : '',
                       it.done ? 'font-semibold' : '',
                     ]"
@@ -472,10 +481,10 @@
                       </span>
                       <div class="flex flex-col">
                         <span class="text-sm font-semibold leading-tight">{{ li + 1 }}. {{ it.title }}</span>
-                        <span :class="it.locked ? 'text-xs text-slate-400' : 'text-xs text-gray-500'">
+                        <span :class="it.locked ? 'text-xs text-slate-400' : isDark ? 'text-xs text-gray-400' : 'text-xs text-gray-500'">
                           {{ it.locked ? (it.lockedReason || 'Đã khóa') : lessonStateLabel(lessonState(it)) }}
                         </span>
-                        <span class="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                        <span class="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'">
                           <span v-if="lessonKind(it) === 'video'">🎬</span>
                           <span v-else-if="lessonKind(it) === 'quiz'">✏️</span>
                           <span v-else-if="lessonKind(it) === 'pdf'">📄</span>
@@ -487,7 +496,7 @@
                         </span>
                       </div>
                     </div>
-                    <div class="text-right text-xs font-semibold text-gray-500 dark:text-gray-400 min-w-[42px]">
+                    <div class="text-right text-xs font-semibold min-w-[42px]" :class="isDark ? 'text-gray-400' : 'text-gray-500'">
                       {{ formatDuration(it.durationMinutes) }}
                     </div>
                   </li>
@@ -497,16 +506,17 @@
           </div>
         </aside>
 
-        <div class="order-3 flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm shadow-slate-100 sm:flex-row sm:items-center sm:justify-between">
+        <div class="order-3 flex flex-col gap-3 rounded-3xl border px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between transition-colors duration-300" :class="isDark ? 'border-white/10 bg-slate-900 shadow-slate-900' : 'border-slate-200 bg-white shadow-slate-100'">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 transition hover:bg-slate-50 disabled:opacity-50"
+            class="inline-flex items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+            :class="isDark ? 'border-white/10 text-gray-100 hover:bg-slate-800' : 'border-slate-200 text-gray-900 hover:bg-slate-50'"
             :disabled="!prevLesson"
             @click="goPrev"
           >
             ‹ Bài trước
           </button>
-          <div class="text-center text-xs font-semibold uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">
+          <div class="text-center text-xs font-semibold uppercase tracking-[0.3em]" :class="isDark ? 'text-gray-400' : 'text-gray-600'">
             {{ doneCount }}/{{ totalCount }} bài hoàn thành
           </div>
           <button
@@ -541,98 +551,150 @@
     <transition name="fade">
       <div
         v-if="qaOpen"
-        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
         @click.self="toggleQA(false)"
       ></div>
     </transition>
     <transition name="slide">
       <div
         v-if="qaOpen"
-        class="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-gradient-to-b from-white to-slate-50 shadow-2xl"
+        class="fixed inset-y-0 right-0 z-50 flex w-[90vw] max-w-md flex-col shadow-2xl sm:w-[400px]"
+        :class="isDark ? 'bg-slate-900' : 'bg-white'"
       >
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5 shadow-sm">
-          <div class="flex items-center gap-3">
-            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg">
-              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div 
+          class="flex items-center justify-between px-4 py-4 shadow-sm"
+          :class="isDark ? 'bg-slate-800 border-b border-slate-700' : 'bg-white border-b border-slate-200'"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <div 
+              class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-lg"
+              :class="isDark ? 'bg-gradient-to-br from-cyan-500 to-purple-500' : 'bg-gradient-to-br from-orange-500 to-orange-600'"
+            >
+              <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
-          <div>
-              <p class="text-xs font-bold uppercase tracking-wider text-orange-600">HỎI ĐÁP BÀI HỌC</p>
-              <h3 class="mt-0.5 text-lg font-bold text-slate-900 line-clamp-1">{{ currentLesson?.title || '—' }}</h3>
+            <div class="min-w-0">
+              <p 
+                class="text-[10px] font-bold uppercase tracking-wider"
+                :class="isDark ? 'text-cyan-400' : 'text-orange-600'"
+              >HỎI ĐÁP BÀI HỌC</p>
+              <h3 
+                class="text-sm font-bold truncate"
+                :class="isDark ? 'text-white' : 'text-slate-900'"
+              >{{ currentLesson?.title || '—' }}</h3>
             </div>
           </div>
           <button
-            class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 active:scale-95"
+            class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition-all active:scale-95"
+            :class="isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'"
             @click="toggleQA(false)"
           >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         <!-- Input Area -->
-        <div class="border-b border-slate-200 bg-white px-6 py-5 shadow-sm">
-          <div class="relative">
+        <div 
+          class="px-4 py-3 shadow-sm"
+          :class="isDark ? 'bg-slate-800 border-b border-slate-700' : 'bg-white border-b border-slate-200'"
+        >
           <textarea
             v-model="questionText"
-            rows="3"
-              class="w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100"
+            rows="2"
+            class="w-full rounded-xl border-2 px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2"
+            :class="isDark 
+              ? 'border-slate-600 bg-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20' 
+              : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-orange-400 focus:ring-orange-100'"
             placeholder="Nhập bình luận mới..."
           ></textarea>
-            <div class="absolute bottom-3 right-3 flex items-center gap-2">
-              <span v-if="questionText.length > 0" class="text-xs text-slate-400">{{ questionText.length }} ký tự</span>
-            </div>
-          </div>
-          <div class="mt-3 flex justify-end">
+          <div class="mt-2 flex items-center justify-between">
+            <span 
+              v-if="questionText.length > 0" 
+              class="text-xs"
+              :class="isDark ? 'text-slate-500' : 'text-slate-400'"
+            >{{ questionText.length }} ký tự</span>
+            <span v-else></span>
             <button
-              class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-200 transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none disabled:hover:translate-y-0"
+              class="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+              :class="isDark 
+                ? 'bg-gradient-to-r from-cyan-500 to-purple-500 shadow-cyan-500/30' 
+                : 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-orange-200'"
               :disabled="sendingQuestion || !canSendQuestion"
               @click="submitQuestion()"
             >
-              <span v-if="sendingQuestion" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-              <span v-else>
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </span>
+              <span v-if="sendingQuestion" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+              <svg v-else class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
               Đăng bình luận
             </button>
           </div>
         </div>
 
         <!-- Comments List -->
-        <div class="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+        <div 
+          class="flex-1 space-y-3 overflow-y-auto px-4 py-4"
+          :class="isDark ? 'bg-slate-900' : 'bg-slate-50'"
+        >
           <!-- Loading State -->
-          <div v-if="qaLoading" class="flex flex-col items-center justify-center py-12">
-            <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
-            <p class="mt-4 text-sm font-medium text-slate-500">Đang tải bình luận…</p>
+          <div v-if="qaLoading" class="flex flex-col items-center justify-center py-10">
+            <div 
+              class="h-6 w-6 animate-spin rounded-full border-3"
+              :class="isDark ? 'border-slate-700 border-t-cyan-400' : 'border-orange-200 border-t-orange-500'"
+            ></div>
+            <p 
+              class="mt-3 text-xs font-medium"
+              :class="isDark ? 'text-slate-400' : 'text-slate-500'"
+            >Đang tải bình luận…</p>
           </div>
           
           <!-- Empty State -->
-          <div v-else-if="qaItems.length === 0" class="flex flex-col items-center justify-center py-12">
-            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-              <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div v-else-if="qaItems.length === 0" class="flex flex-col items-center justify-center py-10">
+            <div 
+              class="flex h-12 w-12 items-center justify-center rounded-full"
+              :class="isDark ? 'bg-slate-800' : 'bg-slate-100'"
+            >
+              <svg 
+                class="h-6 w-6" 
+                :class="isDark ? 'text-slate-500' : 'text-slate-400'"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
-            <p class="mt-4 text-sm font-semibold text-slate-600">Chưa có bình luận nào</p>
-            <p class="mt-1 text-xs text-slate-400">Hãy mở lời trước!</p>
+            <p 
+              class="mt-3 text-sm font-semibold"
+              :class="isDark ? 'text-slate-300' : 'text-slate-600'"
+            >Chưa có bình luận nào</p>
+            <p 
+              class="mt-1 text-xs"
+              :class="isDark ? 'text-slate-500' : 'text-slate-400'"
+            >Hãy mở lời trước!</p>
           </div>
           
           <!-- Comments -->
-          <div v-else class="space-y-5">
+          <div v-else class="space-y-3">
             <div
               v-for="q in qaItems"
               :key="q.id"
-              class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+              class="group rounded-xl p-3 transition-all"
+              :class="isDark 
+                ? 'bg-slate-800 border border-slate-700 hover:border-slate-600' 
+                : 'bg-white border border-slate-200 shadow-sm hover:shadow-md'"
             >
-              <div class="flex items-start gap-4">
+              <div class="flex items-start gap-3">
                 <!-- Avatar -->
                 <div class="relative flex-shrink-0">
-                  <div class="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold text-slate-700 shadow-md ring-2 ring-white transition-all group-hover:ring-orange-200">
+                  <div 
+                    class="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow ring-2 transition-all"
+                    :class="isDark 
+                      ? 'bg-gradient-to-br from-slate-600 to-slate-700 text-slate-300 ring-slate-800 group-hover:ring-cyan-500/30' 
+                      : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700 ring-white group-hover:ring-orange-200'"
+                  >
                     <!-- Avatar Image -->
                     <img
                       v-if="!avatarErrors[`q-${q.id}`]"
@@ -645,13 +707,17 @@
                     <!-- Fallback Initials -->
                     <span 
                       v-if="avatarErrors[`q-${q.id}`]"
-                      class="text-base"
+                      class="text-xs"
                     >
                       {{ getInitials(q.student) || 'HS' }}
                     </span>
                 </div>
-                  <div v-if="q.is_owner" class="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 ring-2 ring-white shadow-md">
-                    <svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <div 
+                    v-if="q.is_owner" 
+                    class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full ring-2 shadow"
+                    :class="isDark ? 'bg-cyan-500 ring-slate-800' : 'bg-orange-500 ring-white'"
+                  >
+                    <svg class="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
                   </div>
@@ -660,90 +726,124 @@
                 <!-- Content -->
                 <div class="flex-1 min-w-0">
                   <!-- Header -->
-                  <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-start justify-between gap-2">
                     <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                        <p class="font-bold text-slate-900">{{ q.student || 'Học sinh' }}</p>
-                        <span v-if="q.is_owner" class="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">Bạn</span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p 
+                          class="text-sm font-bold truncate"
+                          :class="isDark ? 'text-white' : 'text-slate-900'"
+                        >{{ q.student || 'Học sinh' }}</p>
+                        <span 
+                          v-if="q.is_owner" 
+                          class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                          :class="isDark ? 'bg-cyan-500/20 text-cyan-400' : 'bg-orange-100 text-orange-700'"
+                        >Bạn</span>
                       </div>
-                      <p class="mt-0.5 text-xs text-slate-500">{{ formatDateTimeShort(q.created_at) }}</p>
+                      <p 
+                        class="mt-0.5 text-[10px]"
+                        :class="isDark ? 'text-slate-500' : 'text-slate-500'"
+                      >{{ formatDateTimeShort(q.created_at) }}</p>
                     </div>
                     <div class="relative flex-shrink-0">
                         <button
-                        class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600"
+                        class="flex h-6 w-6 items-center justify-center rounded-md transition-all"
+                        :class="isDark ? 'text-slate-500 hover:bg-slate-700 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'"
                           @click="toggleQuestionMenu(q.id)"
                       >
-                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                         </svg>
                       </button>
                       <transition name="fade">
                         <div
                           v-if="questionMenu[q.id]"
-                          class="absolute right-0 top-full z-10 mt-2 min-w-[140px] rounded-xl border border-slate-200 bg-white py-2 shadow-xl"
+                          class="absolute right-0 top-full z-10 mt-1 min-w-[120px] rounded-lg py-1 shadow-xl"
+                          :class="isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'"
                           @click.stop
                         >
-                          <button v-if="q.is_owner" class="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" @click="startEditQuestion(q); questionMenu[q.id]=false">✏️ Sửa</button>
-                          <button v-if="q.is_owner" class="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" @click="deleteQuestion(q.id); questionMenu[q.id]=false">🗑️ Xóa</button>
-                          <button v-if="!q.is_owner" class="w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50" @click="openReport(q.id, null); questionMenu[q.id]=false">🚨 Báo cáo</button>
+                          <button 
+                            v-if="q.is_owner" 
+                            class="w-full px-3 py-1.5 text-left text-xs"
+                            :class="isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50'"
+                            @click="startEditQuestion(q); questionMenu[q.id]=false"
+                          >✏️ Sửa</button>
+                          <button 
+                            v-if="q.is_owner" 
+                            class="w-full px-3 py-1.5 text-left text-xs text-rose-500 hover:bg-rose-500/10"
+                            @click="deleteQuestion(q.id); questionMenu[q.id]=false"
+                          >🗑️ Xóa</button>
+                          <button 
+                            v-if="!q.is_owner" 
+                            class="w-full px-3 py-1.5 text-left text-xs text-amber-500 hover:bg-amber-500/10"
+                            @click="openReport(q.id, null); questionMenu[q.id]=false"
+                          >🚨 Báo cáo</button>
                         </div>
                       </transition>
                       </div>
                     </div>
                   
                   <!-- Edit Mode -->
-                  <div v-if="editingQuestion.id === q.id" class="mt-3 space-y-3">
+                  <div v-if="editingQuestion.id === q.id" class="mt-2 space-y-2">
                     <textarea
                       v-model="editingQuestion.draft"
-                      rows="3"
-                      class="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition-all focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100"
+                      rows="2"
+                      class="w-full rounded-lg border-2 px-3 py-2 text-xs transition-all focus:outline-none focus:ring-2"
+                      :class="isDark 
+                        ? 'border-slate-600 bg-slate-700 text-white focus:border-cyan-500 focus:ring-cyan-500/20' 
+                        : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-orange-400 focus:ring-orange-100'"
                     ></textarea>
                     <div class="flex gap-2">
                       <button
-                        class="rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-bold text-white shadow-md transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-lg active:scale-95"
+                        class="rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow transition-all active:scale-95"
+                        :class="isDark ? 'bg-gradient-to-r from-cyan-500 to-purple-500' : 'bg-gradient-to-r from-orange-500 to-orange-600'"
                         @click="saveEditQuestion(q.id)"
-                      >
-                        Lưu
-                      </button>
+                      >Lưu</button>
                       <button
-                        class="rounded-xl border-2 border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
+                        class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
+                        :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'"
                         @click="cancelEditQuestion"
-                      >
-                        Hủy
-                      </button>
+                      >Hủy</button>
                     </div>
                   </div>
                   
                   <!-- Content -->
-                  <p v-else class="mt-3 text-sm leading-relaxed text-slate-800 whitespace-pre-line">{{ q.content }}</p>
+                  <p 
+                    v-else 
+                    class="mt-2 text-xs leading-relaxed whitespace-pre-line"
+                    :class="isDark ? 'text-slate-300' : 'text-slate-700'"
+                  >{{ q.content }}</p>
                   
                   <!-- Actions -->
-                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
                     <button
-                      class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
-                      :class="q.reacted ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-600'"
+                      class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold transition-all"
+                      :class="q.reacted 
+                        ? (isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-600')
+                        : (isDark ? 'bg-slate-700 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400' : 'bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-600')"
                       :disabled="reacting[`q-${q.id}`]"
                       @click="toggleReactionOnQuestion(q.id)"
                     >
-                      <span class="text-sm">❤️</span>
+                      <span class="text-xs">❤️</span>
                       <span>{{ q.reactions_count || 0 }}</span>
                     </button>
                     <button
-                      class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-600 transition-all hover:bg-sky-100 hover:scale-105 active:scale-95"
+                      class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold transition-all"
+                      :class="isDark ? 'bg-sky-500/20 text-sky-400 hover:bg-sky-500/30' : 'bg-sky-50 text-sky-600 hover:bg-sky-100'"
                       @click="toggleReplyBox(q.id)"
                     >
-                      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                       </svg>
                       Phản hồi
                     </button>
                     <button
-                      class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:from-purple-600 hover:to-indigo-600 hover:shadow-md hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold text-white shadow-sm transition-all disabled:opacity-50"
+                      :class="isDark ? 'bg-gradient-to-r from-cyan-500 to-purple-500' : 'bg-gradient-to-r from-purple-500 to-indigo-500'"
                       :disabled="askingAI[q.id]"
                       @click="askAI(q.id)"
                     >
-                      <span v-if="askingAI[q.id]" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                      <svg v-else class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span v-if="askingAI[q.id]" class="h-2.5 w-2.5 animate-spin rounded-full border border-white/30 border-t-white"></span>
+                      <svg v-else class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                       {{ askingAI[q.id] ? 'Đang hỏi...' : 'Hỏi AI' }}
@@ -751,11 +851,18 @@
                   </div>
 
                   <!-- Replies -->
-                  <div v-if="q.replies && q.replies.length > 0" class="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                  <div 
+                    v-if="q.replies && q.replies.length > 0" 
+                    class="mt-3 space-y-2 border-t pt-3"
+                    :class="isDark ? 'border-slate-700' : 'border-slate-100'"
+                  >
                     <div
                       v-for="rep in q.replies"
                       :key="rep.id"
-                      class="group/reply rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm transition-all hover:border-slate-200 hover:shadow-md"
+                      class="group/reply rounded-lg p-2.5 transition-all"
+                      :class="isDark 
+                        ? 'bg-slate-800/50 border border-slate-700 hover:border-slate-600' 
+                        : 'bg-slate-50 border border-slate-100 hover:border-slate-200'"
                     >
                       <div class="flex items-start gap-3">
                         <!-- Reply Avatar -->
@@ -1141,29 +1248,35 @@
     <transition name="fade">
       <div
         v-if="aiVideoModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 py-6"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-3 py-4 sm:px-4 sm:py-6"
         @click.self="closeAIVideoModal"
       >
-        <div class="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden">
+        <div 
+          class="w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden"
+          :class="isDark ? 'bg-slate-900 border border-slate-700' : 'bg-white'"
+        >
           <!-- Header -->
-          <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-5">
+          <div 
+            class="px-4 py-4 sm:px-6 sm:py-5"
+            :class="isDark ? 'bg-gradient-to-r from-cyan-600 to-purple-600' : 'bg-gradient-to-r from-purple-500 to-indigo-600'"
+          >
             <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
-                  <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex items-center gap-2 sm:gap-3">
+                <div class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
+                  <svg class="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                 </div>
                 <div>
-                  <p class="text-xs font-bold uppercase tracking-wider text-purple-200">HỎI AI VỀ VIDEO</p>
-                  <h3 class="text-lg font-bold text-white">Tại {{ formatTimestamp(aiVideoTimestamp) }}</h3>
+                  <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/70">HỎI AI VỀ VIDEO</p>
+                  <h3 class="text-sm sm:text-lg font-bold text-white">Tại {{ formatTimestamp(aiVideoTimestamp) }}</h3>
                 </div>
               </div>
               <button
-                class="flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-all hover:bg-white/20 hover:text-white"
+                class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full text-white/70 transition-all hover:bg-white/20 hover:text-white"
                 @click="closeAIVideoModal"
               >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -1171,94 +1284,147 @@
           </div>
 
           <!-- Conversation -->
-          <div class="max-h-[400px] overflow-y-auto px-6 py-4 space-y-4">
+          <div 
+            class="max-h-[280px] sm:max-h-[350px] overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 space-y-3 sm:space-y-4"
+            :class="isDark ? 'bg-slate-900' : 'bg-white'"
+          >
             <!-- Empty state -->
-            <div v-if="aiVideoConversation.length === 0" class="text-center py-8">
-              <div class="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-purple-100">
-                <svg class="h-8 w-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div v-if="aiVideoConversation.length === 0" class="text-center py-6 sm:py-8">
+              <div 
+                class="flex h-14 w-14 sm:h-16 sm:w-16 mx-auto items-center justify-center rounded-full"
+                :class="isDark ? 'bg-cyan-500/20' : 'bg-purple-100'"
+              >
+                <svg 
+                  class="h-7 w-7 sm:h-8 sm:w-8" 
+                  :class="isDark ? 'text-cyan-400' : 'text-purple-500'"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p class="mt-4 text-sm font-semibold text-slate-600">Hỏi AI về đoạn video này!</p>
-              <p class="mt-1 text-xs text-slate-400">Bạn đang xem tại {{ formatTimestamp(aiVideoTimestamp) }}</p>
+              <p 
+                class="mt-3 sm:mt-4 text-xs sm:text-sm font-semibold"
+                :class="isDark ? 'text-slate-200' : 'text-slate-600'"
+              >Hỏi AI về đoạn video này!</p>
+              <p 
+                class="mt-1 text-[10px] sm:text-xs"
+                :class="isDark ? 'text-slate-500' : 'text-slate-400'"
+              >Bạn đang xem tại {{ formatTimestamp(aiVideoTimestamp) }}</p>
             </div>
 
             <!-- Messages -->
-            <div v-for="(msg, idx) in aiVideoConversation" :key="idx" class="flex gap-3" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
-              <!-- AI Avatar - Mặt Trời -->
+            <div v-for="(msg, idx) in aiVideoConversation" :key="idx" class="flex gap-2 sm:gap-3" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+              <!-- AI Avatar -->
               <div v-if="msg.role === 'ai'" class="flex-shrink-0">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg shadow-orange-200">
-                  <span class="text-xl">☀️</span>
+                <div 
+                  class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full shadow-lg"
+                  :class="isDark ? 'bg-gradient-to-br from-cyan-400 to-blue-500 shadow-cyan-500/30' : 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-orange-200'"
+                >
+                  <span class="text-base sm:text-xl">☀️</span>
                 </div>
               </div>
               
               <!-- Message bubble -->
               <div 
-                class="max-w-[80%] rounded-2xl px-4 py-3"
+                class="max-w-[75%] sm:max-w-[80%] rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3"
                 :class="msg.role === 'user' 
-                  ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white' 
-                  : 'bg-slate-100 text-slate-800'"
+                  ? (isDark ? 'bg-gradient-to-r from-cyan-600 to-purple-600 text-white' : 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white')
+                  : (isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-800')"
               >
-                <p v-if="msg.timestamp && msg.role === 'user'" class="text-xs mb-1" :class="msg.role === 'user' ? 'text-purple-200' : 'text-slate-500'">
+                <p v-if="msg.timestamp && msg.role === 'user'" class="text-[10px] sm:text-xs mb-1 text-white/70">
                   Tại {{ msg.timestamp }}
                 </p>
-                <p class="text-sm whitespace-pre-line">{{ msg.content }}</p>
+                <p class="text-xs sm:text-sm whitespace-pre-line">{{ msg.content }}</p>
               </div>
 
               <!-- User Avatar -->
               <div v-if="msg.role === 'user'" class="flex-shrink-0">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-600 text-sm font-bold">
+                <div 
+                  class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full text-xs sm:text-sm font-bold"
+                  :class="isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600'"
+                >
                   {{ auth.user?.name?.charAt(0) || 'HS' }}
                 </div>
               </div>
             </div>
 
             <!-- Loading -->
-            <div v-if="aiVideoAsking" class="flex gap-3 justify-start">
+            <div v-if="aiVideoAsking" class="flex gap-2 sm:gap-3 justify-start">
               <div class="flex-shrink-0">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg shadow-orange-200 animate-pulse">
-                  <span class="text-xl">☀️</span>
+                <div 
+                  class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full animate-pulse shadow-lg"
+                  :class="isDark ? 'bg-gradient-to-br from-cyan-400 to-blue-500 shadow-cyan-500/30' : 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-orange-200'"
+                >
+                  <span class="text-base sm:text-xl">☀️</span>
                 </div>
               </div>
-              <div class="bg-slate-100 rounded-2xl px-4 py-3">
-                <div class="flex items-center gap-2">
-                  <div class="h-2 w-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 0ms"></div>
-                  <div class="h-2 w-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 150ms"></div>
-                  <div class="h-2 w-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 300ms"></div>
+              <div 
+                class="rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3"
+                :class="isDark ? 'bg-slate-800' : 'bg-slate-100'"
+              >
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                  <div 
+                    class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full animate-bounce"
+                    :class="isDark ? 'bg-cyan-400' : 'bg-purple-500'"
+                    style="animation-delay: 0ms"
+                  ></div>
+                  <div 
+                    class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full animate-bounce"
+                    :class="isDark ? 'bg-cyan-400' : 'bg-purple-500'"
+                    style="animation-delay: 150ms"
+                  ></div>
+                  <div 
+                    class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full animate-bounce"
+                    :class="isDark ? 'bg-cyan-400' : 'bg-purple-500'"
+                    style="animation-delay: 300ms"
+                  ></div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Input -->
-          <div class="border-t border-slate-200 px-6 py-4">
-            <div class="flex gap-3">
+          <div 
+            class="px-4 py-3 sm:px-6 sm:py-4"
+            :class="isDark ? 'border-t border-slate-700 bg-slate-900' : 'border-t border-slate-200 bg-white'"
+          >
+            <div class="flex gap-2 sm:gap-3">
               <input
                 v-model="aiVideoQuestion"
                 type="text"
-                class="flex-1 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-purple-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-purple-100"
+                class="flex-1 rounded-lg sm:rounded-xl border-2 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm transition-all focus:outline-none focus:ring-2"
+                :class="isDark 
+                  ? 'border-slate-600 bg-slate-800 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20' 
+                  : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-purple-400 focus:bg-white focus:ring-purple-100'"
                 placeholder="Hỏi về đoạn video này..."
                 @keyup.enter="submitAIVideoQuestion"
                 :disabled="aiVideoAsking"
               />
               <button
-                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-purple-200 transition-all hover:from-purple-600 hover:to-indigo-700 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                class="inline-flex items-center justify-center rounded-lg sm:rounded-xl px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                :class="isDark 
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-500 shadow-cyan-500/30 hover:from-cyan-600 hover:to-purple-600' 
+                  : 'bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-200 hover:from-purple-600 hover:to-indigo-700'"
                 :disabled="!aiVideoQuestion.trim() || aiVideoAsking"
                 @click="submitAIVideoQuestion"
               >
-                <span v-if="aiVideoAsking" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span v-if="aiVideoAsking" class="h-3 w-3 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                <svg v-else class="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
             </div>
-            <div class="mt-3 flex items-center justify-between">
-              <p class="text-xs text-slate-400">
+            <div class="mt-2 sm:mt-3 flex items-center justify-between">
+              <p 
+                class="text-[10px] sm:text-xs truncate max-w-[60%]"
+                :class="isDark ? 'text-slate-500' : 'text-slate-400'"
+              >
                 Đang xem: {{ currentLesson?.title || 'Video' }}
               </p>
               <button
                 v-if="aiVideoConversation.length > 0"
-                class="text-xs text-slate-500 hover:text-slate-700 transition"
+                class="text-[10px] sm:text-xs transition"
+                :class="isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700'"
                 @click="clearAIVideoConversation"
               >
                 Xóa hội thoại
@@ -1268,8 +1434,9 @@
         </div>
       </div>
     </transition>
+    </div>
   </div>
-  <div v-else class="grid min-h-screen place-items-center text-gray-600 dark:text-gray-400">Đang tải…</div>
+  <div v-else class="grid min-h-screen place-items-center" :class="isDark ? 'text-slate-400 bg-slate-950' : 'text-gray-600 bg-slate-50'">Đang tải…</div>
   
   <!-- 🎉 Celebration khi hoàn thành khóa học -->
   <CourseCompletionCelebration
@@ -1290,6 +1457,10 @@ import api from '@/config/axios'
 import { showToast } from '@/utils/toast'
 import { getAvatarSrc } from '@/utils/avatar'
 import { useAuthStore } from '@/store/auth.store'
+import { useThemeStore } from '@/store/theme.store'
+
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 type Lesson = CourseDetail['sections'][0]['lessons'][0];
 
@@ -3405,5 +3576,13 @@ onBeforeUnmount(() => {
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background-color: rgb(148 163 184);
+}
+
+/* Dark/Light mode */
+.dark-mode {
+  @apply bg-slate-950;
+}
+.light-mode {
+  @apply bg-gradient-to-br from-slate-50 via-white to-indigo-50;
 }
 </style>

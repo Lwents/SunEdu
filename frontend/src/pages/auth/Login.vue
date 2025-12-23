@@ -5,7 +5,7 @@
       <div class="form-group">
         <label for="email" class="form-label">
           Tên đăng nhập
-          <span class="text-red-500">*</span>
+          <span class="text-red-400">*</span>
         </label>
         <div class="relative">
           <div class="input-icon">
@@ -59,7 +59,7 @@
       <div class="form-group">
         <label for="password" class="form-label">
           Mật khẩu
-          <span class="text-red-500">*</span>
+          <span class="text-red-400">*</span>
         </label>
         <div class="relative">
           <div class="input-icon">
@@ -92,7 +92,7 @@
           />
           <button
             type="button"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition p-1"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition p-1"
             @click="showPassword = !showPassword"
             tabindex="-1"
           >
@@ -142,7 +142,7 @@
       <div v-if="otpRequired" class="form-group">
         <label for="otp" class="form-label">
           Mã OTP
-          <span class="text-red-500">*</span>
+          <span class="text-red-400">*</span>
         </label>
         <div class="relative">
           <div class="input-icon">
@@ -193,15 +193,15 @@
           <input
             v-model="form.remember"
             type="checkbox"
-            class="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-2 focus:ring-pink-500/30 transition"
+            class="w-4 h-4 text-cyan-500 bg-transparent border-gray-600 rounded focus:ring-2 focus:ring-cyan-500/30 transition"
           />
-          <span class="ml-2 text-sm text-gray-600 group-hover:text-gray-900 transition"
+          <span class="ml-2 text-sm text-gray-400 group-hover:text-gray-300 transition"
             >Ghi nhớ đăng nhập</span
           >
         </label>
         <RouterLink
           to="/auth/forgot-password"
-          class="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition"
+          class="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition"
         >
           Quên mật khẩu?
         </RouterLink>
@@ -295,11 +295,11 @@
     </button> -->
 
     <!-- Register Link -->
-    <p class="text-center text-sm text-gray-600">
+    <p class="text-center text-sm text-gray-400">
       Chưa có tài khoản?
       <RouterLink
         to="/auth/register"
-        class="font-medium text-indigo-600 hover:text-indigo-700 transition"
+        class="font-medium text-cyan-400 hover:text-cyan-300 transition"
       >
         Đăng ký ngay
       </RouterLink>
@@ -437,52 +437,57 @@ const onSubmit = async () => {
 }
 
 .form-label {
-  @apply block text-sm font-medium text-gray-700;
+  @apply block text-sm font-medium text-gray-300;
 }
 
 .form-input {
-  @apply w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400;
-  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500;
+  @apply w-full pl-11 pr-4 py-3 rounded-xl text-white placeholder-gray-500;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  @apply focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50;
   @apply transition duration-200;
 }
 
 .form-input:hover {
-  @apply border-gray-300;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .input-icon {
   @apply absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10;
 }
 
-.form-error {
-  @apply text-xs text-red-600 mt-1.5 flex items-start gap-1.5;
+.input-icon svg {
+  @apply text-gray-500;
 }
 
-/* Primary Button — Purple gradient */
+.form-error {
+  @apply text-xs text-red-400 mt-1.5 flex items-start gap-1.5;
+}
+
+/* Primary Button — Cyan to Purple gradient */
 .btn-primary {
   width: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0.75rem 1.5rem !important;
-  border-radius: 0.75rem !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  padding: 0.875rem 1.5rem !important;
+  border-radius: 0.875rem !important;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%) !important;
   color: white !important;
-  font-weight: 600 !important;
-  transition: all 0.2s !important;
+  font-weight: 700 !important;
+  transition: all 0.3s !important;
   transform-origin: center !important;
-  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
+  box-shadow: 0 10px 30px -5px rgba(6, 182, 212, 0.4) !important;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5568d3 0%, #663d8f 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 15px 40px -5px rgba(6, 182, 212, 0.5) !important;
 }
 
 .btn-primary:focus {
   outline: none !important;
-  box-shadow:
-    0 0 0 2px rgba(102, 126, 234, 0.5),
-    0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3), 0 10px 30px -5px rgba(6, 182, 212, 0.4) !important;
 }
 
 .btn-primary:active:not(:disabled) {
@@ -494,33 +499,46 @@ const onSubmit = async () => {
   cursor: not-allowed !important;
 }
 
-/* Google Button giữ nguyên */
+/* Checkbox */
+input[type="checkbox"] {
+  @apply bg-transparent border-gray-600;
+}
+
+input[type="checkbox"]:checked {
+  @apply bg-cyan-500 border-cyan-500;
+}
+
+/* Links */
+a {
+  @apply text-cyan-400 hover:text-cyan-300;
+}
+
+/* Text colors for dark theme */
+.text-gray-600 {
+  @apply text-gray-400;
+}
+
+.text-gray-700 {
+  @apply text-gray-300;
+}
+
+/* Google Button */
 .btn-google {
   width: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 0.75rem 1.5rem !important;
-  border-radius: 0.75rem !important;
-  background: white !important;
-  border: 1px solid rgb(229, 231, 235) !important;
-  color: rgb(55, 65, 81) !important;
+  border-radius: 0.875rem !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
   font-weight: 500 !important;
-  transition: all 0.2s !important;
-  transform-origin: center !important;
+  transition: all 0.3s !important;
 }
 
 .btn-google:hover:not(:disabled) {
-  background: rgb(249, 250, 251) !important;
-  border-color: rgb(209, 213, 219) !important;
-}
-
-.btn-google:focus {
-  outline: none !important;
-  box-shadow: 0 0 0 2px rgb(229, 231, 235) !important;
-}
-
-.btn-google:active:not(:disabled) {
-  transform: scale(0.98) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 </style>

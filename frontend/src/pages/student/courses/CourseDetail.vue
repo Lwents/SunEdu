@@ -1,68 +1,65 @@
-<!-- src/pages/student/courses/CourseDetail.vue -->
 <template>
-  <div class="student-shell">
-    <div class="student-container max-w-6xl">
-      <div v-if="loading" class="py-16 text-center text-slate-500">Đang tải...</div>
+  <div class="page-wrapper" :class="isDark ? 'dark-mode' : 'light-mode'">
+    <!-- Background Elements -->
+    <div v-if="isDark" class="bg-elements">
+      <div class="glow glow-1"></div>
+      <div class="glow glow-2"></div>
+    </div>
+
+    <div class="page-content">
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Đang tải...</p>
+      </div>
 
       <div v-else-if="course" class="space-y-6">
-        <!-- Header -->
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div class="flex flex-col gap-4 md:flex-row md:items-start">
-            <img
-              v-if="course.thumbnail && !thumbnailError"
-              :src="getThumbnailUrl(course.thumbnail)"
-              :alt="course.title"
-              class="h-48 w-full rounded-2xl object-cover md:h-64 md:w-80"
-              loading="lazy"
-              @error="handleImageError"
-            />
-            <div v-else class="flex h-48 w-full flex-col items-center justify-center gap-2 rounded-2xl bg-slate-100 md:h-64 md:w-80">
-              <svg class="h-16 w-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span class="text-base font-medium text-slate-500">Không có ảnh</span>
+        <!-- Header Card -->
+        <div class="header-card">
+          <div class="header-content">
+            <div class="thumbnail-wrapper">
+              <img
+                v-if="course.thumbnail && !thumbnailError"
+                :src="getThumbnailUrl(course.thumbnail)"
+                :alt="course.title"
+                class="thumbnail-img"
+                loading="lazy"
+                @error="handleImageError"
+              />
+              <div v-else class="thumbnail-placeholder">
+                <svg class="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Không có ảnh</span>
+              </div>
             </div>
-            <div class="flex-1 space-y-4">
+            <div class="course-info">
               <div>
-                <h1 class="text-3xl font-bold text-slate-900">{{ course.title }}</h1>
-                <p class="mt-2 text-slate-600">{{ course.description }}</p>
+                <h1 class="course-title">{{ course.title }}</h1>
+                <p class="course-desc">{{ course.description }}</p>
               </div>
 
-              <div class="flex flex-wrap items-center gap-3">
-                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
-                  Khối {{ course.grade }}
-                </span>
-                <span v-if="subjectLabel(course.subject)" class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
-                  {{ subjectLabel(course.subject) }}
-                </span>
-                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
-                  {{ course.lessonsCount || 0 }} bài học
-                </span>
-                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold">
-                  {{ course.enrollments || 0 }} học viên
-                </span>
-                <span class="rounded-full border px-3 py-1 text-sm font-semibold"
-                  :class="(course.price || 0) === 0 
-                    ? 'border-green-200 bg-green-50 text-green-700' 
-                    : 'border-amber-200 bg-amber-50 text-amber-700'">
+              <div class="tags-row">
+                <span class="tag">Khối {{ course.grade }}</span>
+                <span v-if="subjectLabel(course.subject)" class="tag">{{ subjectLabel(course.subject) }}</span>
+                <span class="tag">{{ course.lessonsCount || 0 }} bài học</span>
+                <span class="tag">{{ course.enrollments || 0 }} học viên</span>
+                <span class="tag" :class="(course.price || 0) === 0 ? 'tag-free' : 'tag-paid'">
                   {{ (course.price || 0) === 0 ? 'Miễn phí' : formatPrice(course.price) }}
                 </span>
               </div>
 
-
-              <div class="flex gap-3">
-                <button
-                  v-if="isEnrolled"
-                  class="rounded-xl bg-cyan-600 px-6 py-3 text-sm font-semibold text-white hover:bg-cyan-700"
-                  @click="startLearning"
-                >
+              <div class="action-buttons">
+                <button v-if="isEnrolled" class="btn-primary" @click="startLearning">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                   Vào học ngay
                 </button>
-                <button
-                  v-else
-                  class="rounded-xl bg-cyan-600 px-6 py-3 text-sm font-semibold text-white hover:bg-cyan-700"
-                  @click="enrollCourse"
-                >
+                <button v-else class="btn-primary" @click="enrollCourse">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
                   Đăng ký khóa học
                 </button>
               </div>
@@ -70,71 +67,58 @@
           </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div class="border-b border-slate-200">
-            <div class="flex gap-2 p-4">
-              <button
-                v-for="tab in tabs"
-                :key="tab.id"
-                class="rounded-lg px-4 py-2 text-sm font-semibold transition"
-                :class="
-                  activeTab === tab.id
-                    ? 'bg-cyan-50 text-cyan-700'
-                    : 'text-slate-600 hover:bg-slate-50'
-                "
-                @click="activeTab = tab.id as 'overview' | 'students'"
-              >
-                {{ tab.label }}
-              </button>
-            </div>
+        <!-- Tabs Card -->
+        <div class="tabs-card">
+          <div class="tabs-header">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              class="tab-btn"
+              :class="{ active: activeTab === tab.id }"
+              @click="activeTab = tab.id as 'overview' | 'students'"
+            >
+              {{ tab.label }}
+            </button>
           </div>
 
-          <div class="p-6">
+          <div class="tabs-content">
             <!-- Overview Tab -->
-            <div v-if="activeTab === 'overview'" class="space-y-6">
-              <!-- Giới thiệu chi tiết -->
-              <div>
-                <h3 class="mb-3 text-lg font-semibold">Giới thiệu khóa học</h3>
-                <div class="text-slate-700 whitespace-pre-line">{{ course.introduction || course.description || 'Chưa có giới thiệu.' }}</div>
+            <div v-if="activeTab === 'overview'" class="tab-panel">
+              <div class="section">
+                <h3 class="section-title">Giới thiệu khóa học</h3>
+                <div class="section-content">{{ course.introduction || course.description || 'Chưa có giới thiệu.' }}</div>
               </div>
 
-              <div>
-                <h3 class="mb-3 text-lg font-semibold">Nội dung khóa học</h3>
-                <div class="space-y-3">
+              <div class="section">
+                <h3 class="section-title">Nội dung khóa học</h3>
+                <div class="sections-list">
                   <div
                     v-for="(section, si) in course.sections"
                     :key="section.id"
-                    class="rounded-xl border border-slate-200 p-4"
+                    class="section-item"
                   >
-                    <h4 class="font-semibold text-slate-900">{{ si + 1 }}. {{ section.title }}</h4>
-                    <ul class="mt-2 space-y-2">
+                    <h4 class="section-item-title">{{ si + 1 }}. {{ section.title }}</h4>
+                    <ul class="lessons-list">
                       <li
                         v-for="(lesson, li) in section.lessons"
                         :key="lesson.id"
-                        class="flex items-center gap-2 text-sm text-slate-600"
+                        class="lesson-item"
                       >
-                        <!-- Video icon -->
-                        <svg v-if="getLessonKind(lesson) === 'video'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg v-if="getLessonKind(lesson) === 'video'" class="lesson-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <!-- PDF icon -->
-                        <span v-else-if="getLessonKind(lesson) === 'pdf'" class="text-base">📄</span>
-                        <!-- Document icon -->
-                        <span v-else-if="getLessonKind(lesson) === 'doc'" class="text-base">📑</span>
-                        <!-- Text icon -->
-                        <span v-else-if="getLessonKind(lesson) === 'text'" class="text-base">📝</span>
-                        <!-- Exercise/Quiz icon -->
-                        <svg v-else-if="getLessonKind(lesson) === 'quiz'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <span v-else-if="getLessonKind(lesson) === 'pdf'" class="lesson-icon-emoji">📄</span>
+                        <span v-else-if="getLessonKind(lesson) === 'doc'" class="lesson-icon-emoji">📑</span>
+                        <span v-else-if="getLessonKind(lesson) === 'text'" class="lesson-icon-emoji">📝</span>
+                        <svg v-else-if="getLessonKind(lesson) === 'quiz'" class="lesson-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                         </svg>
-                        <!-- Default icon -->
-                        <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg v-else class="lesson-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <span>{{ lesson.title }}</span>
-                        <span class="text-xs text-slate-400">{{ formatDuration(lesson.durationMinutes) }}</span>
+                        <span class="lesson-title">{{ lesson.title }}</span>
+                        <span class="lesson-duration">{{ formatDuration(lesson.durationMinutes) }}</span>
                       </li>
                     </ul>
                   </div>
@@ -142,88 +126,84 @@
               </div>
             </div>
 
-
             <!-- Students Tab -->
-            <div v-if="activeTab === 'students'" class="space-y-4">
-              <h3 class="text-lg font-semibold">Học viên ({{ students.length }})</h3>
-              <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            <div v-if="activeTab === 'students'" class="tab-panel">
+              <h3 class="section-title">Học viên ({{ students.length }})</h3>
+              <div v-if="students.length" class="students-grid">
                 <div
                   v-for="student in students"
                   :key="student.id"
-                  class="flex flex-col items-center gap-2 rounded-xl border border-slate-200 p-3"
+                  class="student-card"
                 >
                   <img
                     :src="getStudentAvatar(student)"
                     :alt="student.name"
-                    class="h-12 w-12 rounded-full object-cover aspect-square"
+                    class="student-avatar"
                   />
-                  <div class="text-center">
-                    <div class="text-sm font-semibold text-slate-900">{{ student.name }}</div>
-                    <div class="text-xs text-slate-500">{{ student.progress }}% hoàn thành</div>
+                  <div class="student-info">
+                    <div class="student-name">{{ student.name }}</div>
+                    <div class="student-progress">{{ student.progress }}% hoàn thành</div>
                   </div>
                 </div>
+              </div>
+              <div v-else class="empty-students">
+                <p>Chưa có học viên nào tham gia khóa học này.</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-else class="py-16 text-center text-slate-500">Không tìm thấy khóa học.</div>
+      <div v-else class="empty-state">
+        <div class="empty-icon">📚</div>
+        <h3>Không tìm thấy khóa học</h3>
+        <p>Khóa học này không tồn tại hoặc đã bị xóa.</p>
+      </div>
+    </div>
 
-      <!-- Review Modal -->
-      <div
-        v-if="showReviewModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="showReviewModal = false"
-      >
-        <div class="w-full max-w-md rounded-2xl bg-white p-6">
-          <h3 class="mb-4 text-lg font-semibold">Viết đánh giá</h3>
-          <div class="space-y-4">
-            <div>
-              <label class="mb-1 block text-sm font-medium">Đánh giá</label>
-              <div class="flex gap-1">
-                <button
-                  v-for="i in 5"
-                  :key="i"
-                  type="button"
-                  class="h-8 w-8"
-                  @click="reviewRating = i"
+    <!-- Review Modal -->
+    <div
+      v-if="showReviewModal"
+      class="modal-overlay"
+      @click.self="showReviewModal = false"
+    >
+      <div class="modal-content">
+        <h3 class="modal-title">Viết đánh giá</h3>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Đánh giá</label>
+            <div class="rating-stars">
+              <button
+                v-for="i in 5"
+                :key="i"
+                type="button"
+                class="star-btn"
+                @click="reviewRating = i"
+              >
+                <svg
+                  class="star-icon"
+                  :class="i <= reviewRating ? 'star-active' : 'star-inactive'"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
                 >
-                  <svg
-                    class="h-full w-full"
-                    :class="i <= reviewRating ? 'text-amber-400' : 'text-slate-300'"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium">Nhận xét</label>
-              <textarea
-                v-model.trim="reviewComment"
-                rows="4"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none"
-                placeholder="Chia sẻ trải nghiệm của bạn..."
-              ></textarea>
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </button>
             </div>
           </div>
-          <div class="mt-6 flex justify-end gap-3">
-            <button
-              class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50"
-              @click="showReviewModal = false"
-            >
-              Hủy
-            </button>
-            <button
-              class="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
-              @click="submitReview"
-            >
-              Gửi đánh giá
-            </button>
+          <div class="form-group">
+            <label class="form-label">Nhận xét</label>
+            <textarea
+              v-model.trim="reviewComment"
+              rows="4"
+              class="form-textarea"
+              placeholder="Chia sẻ trải nghiệm của bạn..."
+            ></textarea>
           </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-outline" @click="showReviewModal = false">Hủy</button>
+          <button class="btn-primary" @click="submitReview">Gửi đánh giá</button>
         </div>
       </div>
     </div>
@@ -235,6 +215,7 @@ import { computed, ref, onMounted, watch, onActivated, nextTick } from 'vue'
 import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
 import { courseService, type CourseDetail, type Subject } from '@/services/course.service'
 import { useAuthStore } from '@/store/auth.store'
+import { useThemeStore } from '@/store/theme.store'
 import { showToast } from '@/utils/toast'
 import api from '@/config/axios'
 import { getAvatarSrc } from '@/utils/avatar'
@@ -242,6 +223,9 @@ import { getAvatarSrc } from '@/utils/avatar'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
+
 const routeCourseId = () => {
   const raw = route.params.id
   return Array.isArray(raw) ? raw[0] : raw
@@ -332,18 +316,8 @@ function subjectLabel(s?: Subject | string | null) {
   if (!s) return ''
   const key = String(s).toLowerCase()
   if (labels[key as Subject]) return labels[key as Subject]
-  // Nếu backend trả về UUID hoặc chuỗi lạ, không hiển thị
   if (/[0-9a-f-]{8,}/i.test(key)) return ''
   return s
-}
-
-function formatDate(iso?: string) {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleDateString('vi-VN')
-  } catch {
-    return iso
-  }
 }
 
 function formatDuration(min?: number) {
@@ -356,7 +330,6 @@ function formatDuration(min?: number) {
 }
 
 function getLessonKind(lesson: any): string {
-  // Ưu tiên kiểm tra content_type
   const contentType = lesson?.content_type?.toLowerCase()
   if (contentType) {
     if (contentType === 'exercise' || contentType === 'quiz') return 'quiz'
@@ -365,7 +338,6 @@ function getLessonKind(lesson: any): string {
     if (contentType === 'document') return 'doc'
     if (contentType === 'video') return 'video'
   }
-  // Fallback: kiểm tra type
   const type = lesson?.type?.toLowerCase()
   if (type) {
     if (type === 'quiz' || type === 'exercise') return 'quiz'
@@ -374,7 +346,7 @@ function getLessonKind(lesson: any): string {
     if (type === 'text') return 'text'
     if (type === 'video') return 'video'
   }
-  return 'video' // default
+  return 'video'
 }
 
 function formatPrice(price?: number) {
@@ -382,63 +354,20 @@ function formatPrice(price?: number) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)
 }
 
-function isYouTubeUrl(url?: string): boolean {
-  if (!url) return false
-  return url.includes('youtube.com') || url.includes('youtu.be')
-}
-
-function getYouTubeEmbedUrl(url: string): string {
-  if (!url) return ''
-  // Extract video ID from various YouTube URL formats
-  let videoId = ''
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1]?.split('&')[0] || ''
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1]?.split('?')[0] || ''
-  } else if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('embed/')[1]?.split('?')[0] || ''
-  }
-  return videoId ? `https://www.youtube.com/embed/${videoId}` : url
-}
-
 function getThumbnailUrl(thumbnail?: string): string {
   if (!thumbnail) return ''
-  // If already a full URL, return as is
-  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
-    return thumbnail
-  }
-  // If it's a data URL (base64), return as is
-  if (thumbnail.startsWith('data:')) {
-    return thumbnail
-  }
-  // Otherwise, prepend media URL
+  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) return thumbnail
+  if (thumbnail.startsWith('data:')) return thumbnail
   const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  // Remove leading slash if present
   const cleanThumbnail = thumbnail.startsWith('/') ? thumbnail.slice(1) : thumbnail
   return `${apiBase}/media/${cleanThumbnail}`
 }
 
 const thumbnailError = ref(false)
-
-function handleImageError() {
-  thumbnailError.value = true
-}
+function handleImageError() { thumbnailError.value = true }
 
 function getStudentAvatar(student: typeof students.value[0]): string {
-  return getAvatarSrc(
-    student.avatar,
-    student.gender,
-    'student'
-  )
-}
-
-function getVideoFileUrl(videoFile?: string): string {
-  if (!videoFile) return ''
-  if (videoFile.startsWith('http://') || videoFile.startsWith('https://')) {
-    return videoFile
-  }
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  return `${apiBase}/media/${videoFile}`
+  return getAvatarSrc(student.avatar, student.gender, 'student')
 }
 
 async function loadCourse() {
@@ -447,74 +376,41 @@ async function loadCourse() {
     currentCourseId.value = String(routeCourseId() || '')
     restoreCachedEnrollment()
     const id = currentCourseId.value
-    // Sử dụng student API endpoint để lấy isEnrolled
-    // Thêm timestamp để tránh cache - LUÔN force reload
     try {
       const { data } = await api.get(`/student/courses/${id}/`, {
-        params: { _t: Date.now() }, // Cache busting
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
+        params: { _t: Date.now() },
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
       })
       course.value = data
-      console.log('Course loaded from student API:', data)
-      console.log('isEnrolled from API:', data.isEnrolled)
       normalizeEnrollmentFlag(data.isEnrolled)
     } catch (e: any) {
-      console.error('Error loading from student API:', e)
-      // Fallback to regular endpoint nếu student endpoint không có
       const d = await courseService.detail(id)
       course.value = d
     }
 
-    // Load reviews
     reviews.value = [
-      {
-        id: 1,
-        name: 'Nguyễn Văn A',
-        avatar: 'https://i.pravatar.cc/100?img=1',
-        rating: 5,
-        comment: 'Khóa học rất hay và dễ hiểu!',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'Trần Thị B',
-        avatar: 'https://i.pravatar.cc/100?img=2',
-        rating: 4,
-        comment: 'Nội dung phong phú, giáo viên giảng dạy tốt.',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-      },
+      { id: 1, name: 'Nguyễn Văn A', avatar: 'https://i.pravatar.cc/100?img=1', rating: 5, comment: 'Khóa học rất hay và dễ hiểu!', createdAt: new Date().toISOString() },
+      { id: 2, name: 'Trần Thị B', avatar: 'https://i.pravatar.cc/100?img=2', rating: 4, comment: 'Nội dung phong phú, giáo viên giảng dạy tốt.', createdAt: new Date(Date.now() - 86400000).toISOString() },
     ]
 
-    // Load students from API response
     if (course.value && (course.value as any).students && Array.isArray((course.value as any).students)) {
       const studentsFromApi = (course.value as any).students
       students.value = studentsFromApi.map((s: any) => ({
         id: s.id || s.student_id,
         name: s.name || s.display_name || 'Học viên',
         avatar: s.avatar || s.avatar_url || null,
-        gender: s.gender || null, // Backend có thể trả về gender hoặc không
+        gender: s.gender || null,
         progress: s.progress || 0,
       }))
     } else {
-      // Fallback: nếu không có dữ liệu từ API, để mảng rỗng hoặc hiển thị thông báo
       students.value = []
     }
 
-    // Check enrollment from course data
-    // Đảm bảo isEnrolled được set đúng từ API response
     if (course.value) {
       const enrolled = (course.value as any).isEnrolled
-      if (enrolled === undefined || enrolled === null) {
-        console.warn('isEnrolled not in API response, keeping previous value')
-      } else {
+      if (enrolled !== undefined && enrolled !== null) {
         normalizeEnrollmentFlag(enrolled)
       }
-      console.log('Course loaded - isEnrolled:', isEnrolled.value, 'from API:', enrolled, 'type:', typeof enrolled, 'course data:', course.value)
-    } else {
-      console.log('Course not loaded from API')
     }
     isFavorite.value = false
     hasReviewed.value = false
@@ -526,34 +422,19 @@ async function loadCourse() {
 }
 
 function startLearning() {
-  if (!course.value) {
-    console.error('Course not loaded')
-    return
-  }
-  
+  if (!course.value) return
   const courseId = course.value.id
-  console.log('Starting learning for course:', courseId)
-  
-  // Kiểm tra enrollment trước khi vào học
   if (!isEnrolled.value) {
     showToast('Bạn cần đăng ký khóa học trước', 'warning')
     return
   }
-  
-  // Nếu có video_url hoặc video_file, vào trang player để xem video
   if (course.value.video_url || course.value.video_file) {
-    console.log('Navigating to player with course video')
     router.push({ name: 'student-course-player', params: { id: String(courseId) } }).catch((err) => {
-      console.error('Navigation error:', err)
       showToast('Không thể vào khóa học. Vui lòng thử lại.', 'error')
     })
     return
   }
-  
-  // Kiểm tra nội dung từ sections (backend trả về sections với lessons)
   const sections = course.value.sections || []
-  
-  // Tìm lesson đầu tiên từ tất cả sections
   let firstLesson = null
   for (const section of sections) {
     if (section.lessons && section.lessons.length > 0) {
@@ -561,95 +442,49 @@ function startLearning() {
       break
     }
   }
-  
-  // Kiểm tra xem có nội dung không:
-  // 1. Có lesson đầu tiên
-  // 2. Hoặc có lessonsCount > 0 (backend đã tính)
-  // 3. Hoặc có sections với lessons
   const hasLessons = sections.some(s => s.lessons && s.lessons.length > 0)
   const lessonsCount = course.value.lessonsCount || 0
-  
-  // Nếu có video_url hoặc video_file ở course level, coi như có nội dung
   const hasCourseVideo = !!(course.value.video_url || course.value.video_file)
-  
   const hasContent = firstLesson || hasLessons || lessonsCount > 0 || hasCourseVideo
-  
-  // Nếu có nội dung (lessonsCount > 0 hoặc có sections với lessons), cho phép vào học
-  // Backend sẽ tự tìm lesson đầu tiên khi vào player nếu không có lessonId
+
   if (hasContent) {
     if (firstLesson) {
-      router.push({
-        name: 'student-course-player',
-        params: { id: String(courseId), lessonId: String(firstLesson.id) },
-      }).catch((err) => {
-        console.error('Navigation error:', err)
+      router.push({ name: 'student-course-player', params: { id: String(courseId), lessonId: String(firstLesson.id) } }).catch(() => {
         showToast('Không thể vào khóa học. Vui lòng thử lại.', 'error')
       })
     } else {
-      // Có nội dung (lessonsCount > 0) nhưng chưa có lesson cụ thể trong sections
-      // Backend sẽ tự tìm lesson đầu tiên khi vào player
-      router.push({ name: 'student-course-player', params: { id: String(courseId) } }).catch((err) => {
-        console.error('Navigation error:', err)
+      router.push({ name: 'student-course-player', params: { id: String(courseId) } }).catch(() => {
         showToast('Không thể vào khóa học. Vui lòng thử lại.', 'error')
       })
     }
   } else {
-    // Không có nội dung nào
     showToast('Khóa học chưa có nội dung. Vui lòng thử lại sau.', 'warning')
   }
 }
 
 async function enrollCourse() {
   if (!course.value) return
-  
   const courseId = course.value.id
   const price = Number(course.value.price) || 0
-  
-  // Nếu khóa học miễn phí, enroll trực tiếp
   if (price === 0) {
     try {
       await courseService.enroll(courseId)
-      
-      // Cập nhật trạng thái enrolled NGAY LẬP TỨC để UI phản hồi ngay
-      // Không cần chờ API response
       normalizeEnrollmentFlag(true)
-      
-      // Force Vue reactivity update ngay lập tức
       await nextTick()
-      
-      // Hiển thị toast thông báo thành công
       showToast('Đăng ký khóa học thành công!', 'success')
-      
-      // Reload lại course data để đồng bộ với backend (chạy background)
-      // Không block UI, chỉ để đảm bảo data đồng bộ
-      api.get(`/student/courses/${courseId}/`, {
-        params: { _t: Date.now() } // Cache busting
-      }).then(({ data }) => {
+      api.get(`/student/courses/${courseId}/`, { params: { _t: Date.now() } }).then(({ data }) => {
         if (data) {
           course.value = data
-          // Đảm bảo isEnrolled được set đúng từ API response
           normalizeEnrollmentFlag(data.isEnrolled)
-          console.log('After enroll reload - isEnrolled:', isEnrolled.value, 'from API:', data.isEnrolled)
         }
-      }).catch((e: any) => {
-        console.error('Error reloading course after enroll:', e)
-        // Giữ nguyên isEnrolled = true nếu reload fail
-      })
+      }).catch(() => {})
     } catch (e: any) {
-      console.error('Enroll error:', e)
-      // Nếu enroll fail, reset lại isEnrolled
       normalizeEnrollmentFlag(false)
       showToast(e?.message || 'Đăng ký khóa học thất bại', 'error')
     }
   } else {
-    // Nếu có phí, thêm vào giỏ hàng
     router.push({ name: 'student-payments-cart', query: { add: String(courseId) } })
   }
-}
-
-function toggleFavorite() {
-  isFavorite.value = !isFavorite.value
-  console.log('Toggle favorite:', isFavorite.value)
 }
 
 async function submitReview() {
@@ -681,49 +516,233 @@ watch(() => route.params.id, () => {
   restoreCachedEnrollment()
 }, { immediate: false })
 
-// Reload khi quay lại trang (nếu dùng keep-alive)
-onActivated(() => {
-  // Force reload khi quay lại từ player hoặc bất kỳ đâu
-  console.log('Component activated, reloading course data...')
-  loadCourse()
-})
+onActivated(() => { loadCourse() })
 
-// Watch route params để reload khi chuyển course khác
 watch(() => route.params.id, (newId, oldId) => {
-  if (newId !== oldId) {
-    console.log('Course ID changed, reloading...')
-    loadCourse()
-  }
+  if (newId !== oldId) loadCourse()
 }, { immediate: false })
 
-// Watch route để reload khi quay lại từ player
 const previousRoute = ref<string | null>(null)
 watch(() => route.fullPath, (newPath) => {
-  // Nếu quay lại từ player (cùng course ID), reload data
   if (previousRoute.value && previousRoute.value.includes('/player') && 
       newPath.includes('/student/courses/') && !newPath.includes('/player')) {
     const courseId = route.params.id
-    if (courseId) {
-      console.log('Returned from player, reloading course data...')
-      // Force reload với delay nhỏ để đảm bảo route đã update
-      setTimeout(() => {
-        loadCourse()
-      }, 100)
-    }
+    if (courseId) setTimeout(() => { loadCourse() }, 100)
   }
   previousRoute.value = newPath
 }, { immediate: true })
 
-// Thêm onBeforeRouteUpdate để reload khi navigate vào
 onBeforeRouteUpdate((to, from) => {
-  // Nếu quay lại từ player, reload
   if (from.path.includes('/player') && to.path.includes('/student/courses/') && !to.path.includes('/player')) {
-    console.log('Route update: returned from player, will reload')
     loadCourse()
   }
 })
 </script>
 
 <style scoped>
-:host, .student-shell { overflow-x: hidden; }
+.page-wrapper {
+  min-height: 100vh;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+.page-wrapper.dark-mode { background: #020617; }
+.page-wrapper.light-mode { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); }
+
+.bg-elements { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.glow { position: absolute; border-radius: 50%; filter: blur(100px); }
+.glow-1 { top: 10%; left: -5%; width: 300px; height: 300px; background: rgba(6, 182, 212, 0.1); }
+.glow-2 { bottom: 10%; right: -5%; width: 250px; height: 250px; background: rgba(139, 92, 246, 0.1); }
+
+.page-content { position: relative; z-index: 10; max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 16px; }
+.spinner { width: 40px; height: 40px; border: 3px solid rgba(6, 182, 212, 0.2); border-top-color: #06b6d4; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-state p { font-size: 14px; }
+.dark-mode .loading-state p { color: #94a3b8; }
+.light-mode .loading-state p { color: #64748b; }
+
+.space-y-6 > * + * { margin-top: 24px; }
+
+.header-card { border-radius: 24px; overflow: hidden; }
+.dark-mode .header-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+.light-mode .header-card { background: white; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+.header-content { display: flex; flex-direction: column; gap: 24px; padding: 24px; }
+@media (min-width: 768px) { .header-content { flex-direction: row; align-items: flex-start; } }
+
+.thumbnail-wrapper { width: 100%; height: 200px; border-radius: 16px; overflow: hidden; flex-shrink: 0; }
+@media (min-width: 768px) { .thumbnail-wrapper { width: 320px; height: 220px; } }
+.dark-mode .thumbnail-wrapper { background: rgba(255,255,255,0.05); }
+.light-mode .thumbnail-wrapper { background: #f1f5f9; }
+
+.thumbnail-img { width: 100%; height: 100%; object-fit: cover; }
+.thumbnail-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px; }
+.dark-mode .thumbnail-placeholder { color: #475569; }
+.light-mode .thumbnail-placeholder { color: #94a3b8; }
+.thumbnail-placeholder span { font-size: 14px; font-weight: 500; }
+
+.course-info { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.course-title { font-size: 28px; font-weight: 800; margin: 0; line-height: 1.3; }
+.dark-mode .course-title { color: white; }
+.light-mode .course-title { color: #1e293b; }
+
+.course-desc { font-size: 15px; margin: 8px 0 0; line-height: 1.6; }
+.dark-mode .course-desc { color: #94a3b8; }
+.light-mode .course-desc { color: #64748b; }
+
+.tags-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+.dark-mode .tag { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; }
+.light-mode .tag { background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; }
+.tag-free { }
+.dark-mode .tag-free { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); color: #4ade80; }
+.light-mode .tag-free { background: #dcfce7; border-color: #bbf7d0; color: #16a34a; }
+.tag-paid { }
+.dark-mode .tag-paid { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); color: #fbbf24; }
+.light-mode .tag-paid { background: #fef3c7; border-color: #fde68a; color: #d97706; }
+
+.action-buttons { display: flex; gap: 12px; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;
+  border-radius: 12px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s;
+}
+.dark-mode .btn-primary { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: white; }
+.light-mode .btn-primary { background: #1e293b; color: white; }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+.btn-outline {
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;
+  border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s;
+}
+.dark-mode .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; }
+.light-mode .btn-outline { background: transparent; border: 1px solid #e2e8f0; color: #64748b; }
+.btn-outline:hover { transform: translateY(-1px); }
+.dark-mode .btn-outline:hover { border-color: #06b6d4; color: #06b6d4; }
+.light-mode .btn-outline:hover { border-color: #6366f1; color: #6366f1; }
+
+.tabs-card { border-radius: 24px; overflow: hidden; }
+.dark-mode .tabs-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+.light-mode .tabs-card { background: white; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+.tabs-header { display: flex; gap: 8px; padding: 16px; }
+.dark-mode .tabs-header { background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); }
+.light-mode .tabs-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+
+.tab-btn { padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; }
+.dark-mode .tab-btn { background: transparent; color: #64748b; }
+.light-mode .tab-btn { background: transparent; color: #64748b; }
+.tab-btn:hover { }
+.dark-mode .tab-btn:hover { color: white; }
+.light-mode .tab-btn:hover { color: #1e293b; }
+.tab-btn.active { }
+.dark-mode .tab-btn.active { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: white; }
+.light-mode .tab-btn.active { background: #1e293b; color: white; }
+
+.tabs-content { padding: 24px; }
+.tab-panel { }
+
+.section { margin-bottom: 24px; }
+.section:last-child { margin-bottom: 0; }
+.section-title { font-size: 18px; font-weight: 700; margin: 0 0 12px; }
+.dark-mode .section-title { color: white; }
+.light-mode .section-title { color: #1e293b; }
+
+.section-content { font-size: 15px; line-height: 1.7; white-space: pre-line; }
+.dark-mode .section-content { color: #94a3b8; }
+.light-mode .section-content { color: #64748b; }
+
+.sections-list { display: flex; flex-direction: column; gap: 16px; }
+.section-item { padding: 16px; border-radius: 16px; }
+.dark-mode .section-item { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
+.light-mode .section-item { background: #f8fafc; border: 1px solid #e2e8f0; }
+
+.section-item-title { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
+.dark-mode .section-item-title { color: white; }
+.light-mode .section-item-title { color: #1e293b; }
+
+.lessons-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.lesson-item { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.dark-mode .lesson-item { color: #94a3b8; }
+.light-mode .lesson-item { color: #64748b; }
+
+.lesson-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.lesson-icon-emoji { font-size: 14px; flex-shrink: 0; }
+.lesson-title { flex: 1; }
+.lesson-duration { font-size: 12px; }
+.dark-mode .lesson-duration { color: #64748b; }
+.light-mode .lesson-duration { color: #94a3b8; }
+
+.students-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media (min-width: 640px) { .students-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 768px) { .students-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.student-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: 16px; }
+.dark-mode .student-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
+.light-mode .student-card { background: #f8fafc; border: 1px solid #e2e8f0; }
+
+.student-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+.student-info { text-align: center; }
+.student-name { font-size: 14px; font-weight: 600; }
+.dark-mode .student-name { color: white; }
+.light-mode .student-name { color: #1e293b; }
+.student-progress { font-size: 12px; margin-top: 2px; }
+.dark-mode .student-progress { color: #64748b; }
+.light-mode .student-progress { color: #94a3b8; }
+
+.empty-students { text-align: center; padding: 40px 20px; }
+.empty-students p { font-size: 14px; }
+.dark-mode .empty-students p { color: #64748b; }
+.light-mode .empty-students p { color: #94a3b8; }
+
+.empty-state { text-align: center; padding: 80px 20px; border-radius: 24px; }
+.dark-mode .empty-state { background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.1); }
+.light-mode .empty-state { background: #f8fafc; border: 2px dashed #e2e8f0; }
+.empty-icon { font-size: 48px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 18px; font-weight: 600; margin: 0 0 8px; }
+.dark-mode .empty-state h3 { color: white; }
+.light-mode .empty-state h3 { color: #1e293b; }
+.empty-state p { font-size: 14px; margin: 0; }
+.dark-mode .empty-state p { color: #64748b; }
+.light-mode .empty-state p { color: #64748b; }
+
+.modal-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.dark-mode .modal-overlay { background: rgba(0,0,0,0.7); }
+.light-mode .modal-overlay { background: rgba(0,0,0,0.5); }
+
+.modal-content { width: 100%; max-width: 400px; border-radius: 20px; padding: 24px; }
+.dark-mode .modal-content { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); }
+.light-mode .modal-content { background: white; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+
+.modal-title { font-size: 18px; font-weight: 700; margin: 0 0 20px; }
+.dark-mode .modal-title { color: white; }
+.light-mode .modal-title { color: #1e293b; }
+
+.modal-body { display: flex; flex-direction: column; gap: 16px; }
+.form-group { }
+.form-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+.dark-mode .form-label { color: #94a3b8; }
+.light-mode .form-label { color: #64748b; }
+
+.rating-stars { display: flex; gap: 4px; }
+.star-btn { width: 32px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer; }
+.star-icon { width: 100%; height: 100%; }
+.star-active { color: #fbbf24; }
+.star-inactive { color: #475569; }
+
+.form-textarea { width: 100%; padding: 12px; border-radius: 12px; font-size: 14px; resize: vertical; outline: none; }
+.dark-mode .form-textarea { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; }
+.light-mode .form-textarea { background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b; }
+.form-textarea:focus { }
+.dark-mode .form-textarea:focus { border-color: #06b6d4; }
+.light-mode .form-textarea:focus { border-color: #6366f1; }
+
+.modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+
+@media (max-width: 640px) {
+  .page-content { padding: 20px 16px; }
+  .course-title { font-size: 22px; }
+  .header-content { padding: 16px; }
+  .tabs-content { padding: 16px; }
+}
 </style>

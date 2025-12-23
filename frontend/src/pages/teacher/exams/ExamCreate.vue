@@ -245,7 +245,6 @@
       <div
         v-if="showAddQuestion || editingQuestionIndex !== null"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="closeQuestionModal"
       >
         <div class="w-full max-w-2xl rounded-2xl bg-white p-6 max-h-[90vh] overflow-y-auto">
           <h3 class="mb-4 text-lg font-semibold">
@@ -449,7 +448,6 @@
     <div
       v-if="aiDialogOpen"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      @click.self="aiDialogOpen = false"
     >
       <div class="w-full max-w-lg rounded-2xl bg-white p-6">
         <div class="mb-4 flex items-center justify-between">

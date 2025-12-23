@@ -1,63 +1,57 @@
 <template>
-  <div class="student-shell">
-    <div class="student-container">
-      <div class="mb-4">
-        <p class="student-section-title">Thanh toán</p>
-        <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100">Giỏ hàng</h1>
+  <div class="page-wrapper" :class="isDark ? 'dark-mode' : 'light-mode'">
+    <!-- Background Elements -->
+    <div v-if="isDark" class="bg-elements">
+      <div class="glow glow-1"></div>
+      <div class="glow glow-2"></div>
+    </div>
+
+    <div class="page-content">
+      <div class="page-header">
+        <p class="section-label">Thanh toán</p>
+        <h1>Giỏ hàng</h1>
       </div>
 
-      <div v-if="items.length" class="student-card space-y-6">
-        <div class="overflow-hidden rounded-2xl border border-slate-100">
-          <table class="min-w-full divide-y divide-slate-100 text-sm">
-            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+      <div v-if="items.length" class="cart-card">
+        <div class="table-wrapper">
+          <table class="cart-table">
+            <thead>
               <tr>
-                <th class="px-4 py-3 text-left">Khoá học</th>
-                <th class="px-4 py-3 text-right">Giá</th>
-                <th class="px-4 py-3 text-center">Hành động</th>
+                <th class="text-left">Khoá học</th>
+                <th class="text-right">Giá</th>
+                <th class="text-center">Hành động</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="it in items" :key="it.id" class="bg-white/80">
-                <td class="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">{{ it.name }}</td>
-                <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{{ vnd(it.price) }}</td>
-                <td class="px-4 py-3 text-center">
-                  <button
-                    type="button"
-                    class="inline-flex items-center rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 transition hover:bg-slate-50"
-                    @click="remove(it.id)"
-                  >
-                    Xoá
-                  </button>
+            <tbody>
+              <tr v-for="it in items" :key="it.id">
+                <td class="course-name">{{ it.name }}</td>
+                <td class="course-price">{{ vnd(it.price) }}</td>
+                <td class="course-action">
+                  <button type="button" class="btn-remove" @click="remove(it.id)">Xoá</button>
                 </td>
               </tr>
             </tbody>
-            <tfoot class="bg-slate-50 text-sm font-bold text-gray-900 dark:text-gray-100">
+            <tfoot>
               <tr>
-                <td class="px-4 py-3">Tổng cộng</td>
-                <td class="px-4 py-3 text-right">{{ vnd(total) }}</td>
+                <td class="total-label">Tổng cộng</td>
+                <td class="total-value">{{ vnd(total) }}</td>
                 <td></td>
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <div class="flex justify-end">
-          <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-cyan-500 to-cyan-600 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-cyan-500/40 transition hover:from-cyan-600 hover:to-cyan-700 hover:shadow-xl hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:translate-y-0"
-            :disabled="!items.length || total === 0"
-            @click="goCheckout"
-          >
+        <div class="checkout-actions">
+          <button type="button" class="btn-checkout" :disabled="!items.length || total === 0" @click="goCheckout">
             Thanh toán
           </button>
         </div>
       </div>
 
-      <div
-        v-else
-        class="student-card flex flex-col items-center justify-center text-center text-sm text-gray-600 dark:text-gray-400"
-      >
-        Giỏ hàng trống.
+      <div v-else class="empty-state">
+        <div class="empty-icon">🛒</div>
+        <h3>Giỏ hàng trống</h3>
+        <p>Hãy thêm khóa học vào giỏ hàng để thanh toán</p>
       </div>
     </div>
   </div>
@@ -69,112 +63,68 @@ import { useRouter, useRoute } from 'vue-router'
 import { courseService } from '@/services/course.service'
 import { showToast } from '@/utils/toast'
 import { paymentService } from '@/services/payment.service'
+import { useThemeStore } from '@/store/theme.store'
 
 const router = useRouter()
 const route = useRoute()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
-// Cart items - lấy từ localStorage hoặc tạo mới
 const items = reactive<Array<{ id: string | number; name: string; price: number }>>([])
-
 const total = computed(() => items.reduce((s, i) => s + (Number(i.price) || 0), 0))
 function vnd(n: number) { return n.toLocaleString('vi-VN') + 'đ' }
 
-// Load cart from localStorage
 function loadCart() {
   const saved = localStorage.getItem('student_cart')
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
       items.splice(0, items.length, ...parsed)
-    } catch (e) {
-      console.error('Error loading cart:', e)
-    }
+    } catch (e) { console.error('Error loading cart:', e) }
   }
 }
 
-// Save cart to localStorage
-function saveCart() {
-  localStorage.setItem('student_cart', JSON.stringify(items))
-}
+function saveCart() { localStorage.setItem('student_cart', JSON.stringify(items)) }
 
-// Add course to cart
 async function addCourse(courseId: string | number) {
   try {
     const course = await courseService.detail(courseId)
     const price = Number(course.price) || 0
-    
-    // Nếu khóa học miễn phí, enroll trực tiếp
     if (price === 0) {
       try {
         await courseService.enroll(courseId)
-        // Sau khi enroll thành công, tự động mở khóa học để xem
-        // Kiểm tra xem có video không
         if (course.video_url || course.video_file) {
           router.push({ name: 'student-course-player', params: { id: courseId } })
         } else {
-          // Nếu không có video, vào lesson đầu tiên
           const firstSection = course.sections?.[0]
           const firstLesson = firstSection?.lessons?.[0]
-          if (firstLesson) {
-            router.push({ 
-              name: 'student-course-player', 
-              params: { id: courseId, lessonId: firstLesson.id } 
-            })
-          } else {
-            router.push({ name: 'student-course-player', params: { id: courseId } })
-          }
+          if (firstLesson) router.push({ name: 'student-course-player', params: { id: courseId, lessonId: firstLesson.id } })
+          else router.push({ name: 'student-course-player', params: { id: courseId } })
         }
         return
-      } catch (e: any) {
-        showToast(e?.message || 'Đăng ký khóa học thất bại', 'error')
-        return
-      }
+      } catch (e: any) { showToast(e?.message || 'Đăng ký khóa học thất bại', 'error'); return }
     }
-    
-    // Nếu đã có trong cart, không thêm lại
-    if (items.find(i => String(i.id) === String(courseId))) {
-      // Đã có trong giỏ hàng, bỏ qua để tránh spam toast
-      return
-    }
-    
-    // Thêm vào cart
-    items.push({
-      id: courseId,
-      name: course.title,
-      price: price
-    })
+    if (items.find(i => String(i.id) === String(courseId))) return
+    items.push({ id: courseId, name: course.title, price: price })
     saveCart()
-  } catch (e: any) {
-    showToast(e?.message || 'Không thể thêm khóa học vào giỏ hàng', 'error')
-  }
+  } catch (e: any) { showToast(e?.message || 'Không thể thêm khóa học vào giỏ hàng', 'error') }
 }
 
 function remove(id: number | string) {
   const idx = items.findIndex(i => String(i.id) === String(id))
-  if (idx >= 0) {
-    items.splice(idx, 1)
-    saveCart()
-  }
+  if (idx >= 0) { items.splice(idx, 1); saveCart() }
 }
 
 async function goCheckout() {
-  if (total.value === 0) {
-    showToast('Giỏ hàng trống hoặc tất cả khóa học đều miễn phí', 'warning')
-    return
-  }
-  // Chặn mua thêm khi còn giao dịch đang xử lý
+  if (total.value === 0) { showToast('Giỏ hàng trống hoặc tất cả khóa học đều miễn phí', 'warning'); return }
   try {
     const pending = await paymentService.listMyPayments({ status: 'pending' } as any)
     if (pending?.items && pending.items.length > 0) {
       showToast('Bạn đang có giao dịch đang xử lý, hãy đợi hoàn tất trước khi thanh toán tiếp', 'warning')
       return
     }
-  } catch (e: any) {
-    console.warn('Không kiểm tra được giao dịch pending:', e)
-  }
-  // Lưu cart items để enroll sau khi thanh toán thành công
+  } catch (e: any) { console.warn('Không kiểm tra được giao dịch pending:', e) }
   localStorage.setItem('pending_cart_enroll', JSON.stringify(items.map(i => i.id)))
-  // Gọi trực tiếp init MoMo và chuyển hướng sang payUrl
   paymentService.initiateMomo({
     amount: total.value,
     description: items[0]?.name || 'Thanh toán khóa học',
@@ -183,95 +133,125 @@ async function goCheckout() {
     courseTitles: items.map(i => i.name),
   }).then((res) => {
     const payUrl = res.payUrl || res.deeplink
-    if (!payUrl) {
-      showToast(res.message || 'Không nhận được link thanh toán', 'error')
-      return
-    }
+    if (!payUrl) { showToast(res.message || 'Không nhận được link thanh toán', 'error'); return }
     window.location.href = payUrl
-  }).catch((err: any) => {
-    showToast(err?.message || 'Không thể khởi tạo thanh toán', 'error')
-  })
+  }).catch((err: any) => { showToast(err?.message || 'Không thể khởi tạo thanh toán', 'error') })
 }
 
-// Enroll các course trong cart sau khi thanh toán thành công
 async function enrollCoursesFromCart() {
   const pendingEnroll = localStorage.getItem('pending_cart_enroll')
   if (!pendingEnroll) return
-  
   try {
     const courseIds = JSON.parse(pendingEnroll) as (string | number)[]
-    if (!Array.isArray(courseIds) || courseIds.length === 0) {
-      localStorage.removeItem('pending_cart_enroll')
-      return
-    }
-    
-    // Enroll từng course
-    const enrollPromises = courseIds.map(courseId => 
-      courseService.enroll(courseId).catch(err => {
-        console.error(`Failed to enroll course ${courseId}:`, err)
-        return { success: false, courseId }
-      })
-    )
-    
+    if (!Array.isArray(courseIds) || courseIds.length === 0) { localStorage.removeItem('pending_cart_enroll'); return }
+    const enrollPromises = courseIds.map(courseId => courseService.enroll(courseId).catch(err => { console.error(`Failed to enroll course ${courseId}:`, err); return { success: false, courseId } }))
     const results = await Promise.all(enrollPromises)
     const successCount = results.filter(r => r?.success !== false).length
-    
-    // Xóa cart sau khi enroll thành công
-    if (successCount > 0) {
-      items.splice(0, items.length)
-      saveCart()
-      showToast(`Đã đăng ký ${successCount} khóa học vào "Khóa học của tôi"!`, 'success')
-    }
-    
-    // Xóa pending enroll
+    if (successCount > 0) { items.splice(0, items.length); saveCart(); showToast(`Đã đăng ký ${successCount} khóa học vào "Khóa học của tôi"!`, 'success') }
     localStorage.removeItem('pending_cart_enroll')
-  } catch (e) {
-    console.error('Error enrolling courses from cart:', e)
-  }
+  } catch (e) { console.error('Error enrolling courses from cart:', e) }
 }
 
-// Kiểm tra thanh toán thành công từ query params
 function checkPaymentSuccess() {
   const resultCode = route.query.resultCode
   const hasPendingEnroll = localStorage.getItem('pending_cart_enroll')
-  
-  // Chỉ enroll nếu có pending enroll và thanh toán thành công
   if (!hasPendingEnroll) return
-  
-  // Nếu thanh toán thành công (resultCode = '0' hoặc 'paid')
   if (resultCode === '0' || route.query.status === 'paid') {
-    // Đợi một chút để payment được sync
-    setTimeout(() => {
-      enrollCoursesFromCart()
-    }, 1500)
-    
-    // Xóa query params sau khi xử lý
+    setTimeout(() => { enrollCoursesFromCart() }, 1500)
     const cleanQuery = { ...route.query }
-    delete cleanQuery.resultCode
-    delete cleanQuery.status
-    delete cleanQuery.extraData
-    delete cleanQuery.orderId
-    delete cleanQuery.message
+    delete cleanQuery.resultCode; delete cleanQuery.status; delete cleanQuery.extraData; delete cleanQuery.orderId; delete cleanQuery.message
     router.replace({ query: cleanQuery })
   }
 }
 
 onMounted(() => {
   loadCart()
-  // Nếu có query param 'add', thêm course vào cart
   const addId = route.query.add
-  if (addId) {
-    addCourse(addId as string)
-    // Xóa query param sau khi xử lý
-    router.replace({ query: {} })
-  } else {
-    // Kiểm tra thanh toán thành công
-    checkPaymentSuccess()
-  }
+  if (addId) { addCourse(addId as string); router.replace({ query: {} }) }
+  else { checkPaymentSuccess() }
 })
 
-// Watch route changes để detect payment success
-watch(() => route.query, () => {
-  checkPaymentSuccess()
-}, { deep: true })
+watch(() => route.query, () => { checkPaymentSuccess() }, { deep: true })
 </script>
+
+<style scoped>
+.page-wrapper { min-height: 100vh; position: relative; transition: background-color 0.3s ease; }
+.page-wrapper.dark-mode { background: #020617; }
+.page-wrapper.light-mode { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); }
+
+.bg-elements { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.glow { position: absolute; border-radius: 50%; filter: blur(100px); }
+.glow-1 { top: 10%; left: -5%; width: 300px; height: 300px; background: rgba(6, 182, 212, 0.1); }
+.glow-2 { bottom: 10%; right: -5%; width: 250px; height: 250px; background: rgba(139, 92, 246, 0.1); }
+
+.page-content { position: relative; z-index: 10; max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+.page-header { margin-bottom: 24px; }
+.section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px; }
+.dark-mode .section-label { color: #06b6d4; }
+.light-mode .section-label { color: #6366f1; }
+.page-header h1 { font-size: 28px; font-weight: 800; margin: 0; }
+.dark-mode .page-header h1 { color: white; }
+.light-mode .page-header h1 { color: #1e293b; }
+
+.cart-card { border-radius: 20px; padding: 24px; }
+.dark-mode .cart-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+.light-mode .cart-card { background: white; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+.table-wrapper { overflow: hidden; border-radius: 16px; margin-bottom: 24px; }
+.dark-mode .table-wrapper { border: 1px solid rgba(255,255,255,0.08); }
+.light-mode .table-wrapper { border: 1px solid #e2e8f0; }
+
+.cart-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cart-table thead { }
+.dark-mode .cart-table thead { background: rgba(255,255,255,0.03); }
+.light-mode .cart-table thead { background: #f8fafc; }
+.cart-table th { padding: 12px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.dark-mode .cart-table th { color: #64748b; }
+.light-mode .cart-table th { color: #64748b; }
+.cart-table tbody tr { }
+.dark-mode .cart-table tbody tr { border-top: 1px solid rgba(255,255,255,0.05); }
+.light-mode .cart-table tbody tr { border-top: 1px solid #f1f5f9; }
+.cart-table td { padding: 16px; }
+.course-name { font-weight: 600; }
+.dark-mode .course-name { color: white; }
+.light-mode .course-name { color: #1e293b; }
+.course-price { text-align: right; font-weight: 600; }
+.dark-mode .course-price { color: white; }
+.light-mode .course-price { color: #1e293b; }
+.course-action { text-align: center; }
+.btn-remove { padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+.dark-mode .btn-remove { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; }
+.light-mode .btn-remove { background: transparent; border: 1px solid #e2e8f0; color: #64748b; }
+.btn-remove:hover { }
+.dark-mode .btn-remove:hover { border-color: #ef4444; color: #ef4444; }
+.light-mode .btn-remove:hover { border-color: #ef4444; color: #ef4444; }
+
+.cart-table tfoot { }
+.dark-mode .cart-table tfoot { background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.08); }
+.light-mode .cart-table tfoot { background: #f8fafc; border-top: 1px solid #e2e8f0; }
+.total-label { font-weight: 700; }
+.dark-mode .total-label { color: white; }
+.light-mode .total-label { color: #1e293b; }
+.total-value { text-align: right; font-weight: 700; }
+.dark-mode .total-value { color: white; }
+.light-mode .total-value { color: #1e293b; }
+
+.checkout-actions { display: flex; justify-content: flex-end; }
+.btn-checkout { padding: 14px 32px; border-radius: 16px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border: none; cursor: pointer; transition: all 0.3s; }
+.dark-mode .btn-checkout { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: white; box-shadow: 0 8px 24px rgba(6,182,212,0.3); }
+.light-mode .btn-checkout { background: #1e293b; color: white; box-shadow: 0 8px 24px rgba(30,41,59,0.2); }
+.btn-checkout:hover { transform: translateY(-2px); }
+.btn-checkout:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.empty-state { text-align: center; padding: 60px 20px; border-radius: 20px; }
+.dark-mode .empty-state { background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.1); }
+.light-mode .empty-state { background: #f8fafc; border: 2px dashed #e2e8f0; }
+.empty-icon { font-size: 48px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 18px; font-weight: 600; margin: 0 0 8px; }
+.dark-mode .empty-state h3 { color: white; }
+.light-mode .empty-state h3 { color: #1e293b; }
+.empty-state p { font-size: 14px; margin: 0; }
+.dark-mode .empty-state p { color: #64748b; }
+.light-mode .empty-state p { color: #64748b; }
+</style>
