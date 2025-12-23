@@ -4,8 +4,11 @@
     <!-- Bell Button -->
     <button
       @click="toggleDropdown"
-      class="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-slate-200"
-      :class="{ 'animate-bell-shake text-slate-900': hasNewAnimation }"
+      class="relative rounded-lg p-2 transition focus:outline-none focus:ring-2"
+      :class="[
+        isDark ? 'text-slate-300 hover:bg-white/10 focus:ring-white/20' : 'text-slate-600 hover:bg-slate-100 focus:ring-slate-200',
+        { 'animate-bell-shake': hasNewAnimation }
+      ]"
       aria-label="Thông báo"
     >
       <!-- Bell Icon -->
@@ -44,15 +47,17 @@
     >
       <div
         v-if="isOpen"
-        class="absolute left-1/2 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden sm:left-auto sm:right-0 sm:w-96 sm:translate-x-0"
+        class="absolute left-1/2 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border shadow-lg overflow-hidden sm:left-auto sm:right-0 sm:w-96 sm:translate-x-0"
+        :class="isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'"
       >
         <!-- Header -->
-        <div class="px-4 py-3 bg-slate-50 border-b border-slate-200">
+        <div class="px-4 py-3 border-b" :class="isDark ? 'bg-slate-800 border-white/10' : 'bg-slate-50 border-slate-200'">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-semibold text-slate-900">Thông báo {{ roleLabel }}</h3>
+            <h3 class="text-sm font-semibold" :class="isDark ? 'text-slate-100' : 'text-slate-900'">Thông báo {{ roleLabel }}</h3>
             <span
               v-if="unreadCount > 0"
-              class="px-2 py-1 text-xs font-medium text-slate-700 bg-slate-200 rounded-full"
+              class="px-2 py-1 text-xs font-medium rounded-full"
+              :class="isDark ? 'text-slate-300 bg-slate-700' : 'text-slate-700 bg-slate-200'"
             >
               {{ unreadCount }} mới
             </span>
@@ -63,16 +68,18 @@
         <div class="max-h-80 overflow-y-auto">
           <!-- Loading State -->
           <div v-if="loading" class="flex items-center justify-center py-8">
-            <div class="h-6 w-6 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin"></div>
+            <div class="h-6 w-6 border-2 rounded-full animate-spin" :class="isDark ? 'border-slate-600 border-t-slate-300' : 'border-slate-300 border-t-slate-900'"></div>
           </div>
 
           <!-- Empty State -->
           <div
             v-else-if="displayedNotifications.length === 0"
-            class="px-4 py-8 text-center text-slate-500"
+            class="px-4 py-8 text-center"
+            :class="isDark ? 'text-slate-400' : 'text-slate-500'"
           >
             <svg
-              class="mx-auto h-12 w-12 text-slate-400 mb-2"
+              class="mx-auto h-12 w-12 mb-2"
+              :class="isDark ? 'text-slate-600' : 'text-slate-400'"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -88,13 +95,16 @@
           </div>
 
           <!-- Notification Items -->
-          <div v-else class="divide-y divide-slate-100">
+          <div v-else :class="isDark ? 'divide-y divide-white/5' : 'divide-y divide-slate-100'">
             <div
               v-for="notification in displayedNotifications"
               :key="notification.id"
               @click="handleNotificationClick(notification)"
-              class="px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer"
-              :class="{ 'bg-blue-50/50': !notification.is_read }"
+              class="px-4 py-3 transition-colors cursor-pointer"
+              :class="[
+                isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50',
+                !notification.is_read ? (isDark ? 'bg-blue-500/10' : 'bg-blue-50/50') : ''
+              ]"
             >
               <div class="flex gap-3">
                 <!-- Icon -->
@@ -119,13 +129,13 @@
 
                 <!-- Content -->
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-slate-900">
+                  <p class="text-sm font-medium" :class="isDark ? 'text-slate-100' : 'text-slate-900'">
                     {{ notification.title }}
                   </p>
-                  <p class="text-xs text-slate-600 mt-0.5 line-clamp-2">
+                  <p class="text-xs mt-0.5 line-clamp-2" :class="isDark ? 'text-slate-400' : 'text-slate-600'">
                     {{ notification.message }}
                   </p>
-                  <p class="text-xs text-slate-500 mt-1">
+                  <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-slate-500'">
                     {{ formatTime(notification.created_at) }}
                   </p>
                 </div>
@@ -142,12 +152,14 @@
         <!-- Footer -->
         <div
           v-if="displayedNotifications.length > 0"
-          class="px-4 py-3 bg-slate-50 border-t border-slate-200"
+          class="px-4 py-3 border-t"
+          :class="isDark ? 'bg-slate-800 border-white/10' : 'bg-slate-50 border-slate-200'"
         >
           <button
             v-if="hasUnread"
             @click="markAllAsRead"
-            class="w-full px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+            class="w-full px-3 py-2 text-xs font-medium border rounded-lg transition"
+            :class="isDark ? 'text-slate-300 bg-slate-700 border-slate-600 hover:bg-slate-600' : 'text-slate-700 bg-white border-slate-300 hover:bg-slate-50'"
           >
             Đánh dấu tất cả đã đọc
           </button>
@@ -157,29 +169,31 @@
   </div>
 
   <!-- Expanded notification modal -->
-  <Transition
-    enter-active-class="transition ease-out duration-200"
-    enter-from-class="opacity-0"
-    enter-to-class="opacity-100"
-    leave-active-class="transition ease-in duration-150"
-    leave-from-class="opacity-100"
-    leave-to-class="opacity-0"
-  >
-    <div
-      v-if="focusedNotification"
-      class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 px-4"
-      @click.self="closeExpanded"
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition ease-out duration-200"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition ease-in duration-150"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
     >
-      <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <button
-          type="button"
-          class="absolute right-3 top-3 rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-          @click="closeExpanded"
-        >
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+      <div
+        v-if="focusedNotification"
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 px-4"
+        @click.self="closeExpanded"
+      >
+        <div class="relative w-full max-w-md rounded-2xl p-6 shadow-2xl" :class="isDark ? 'bg-slate-800' : 'bg-white'">
+          <button
+            type="button"
+            class="absolute right-3 top-3 rounded-full p-2 transition"
+            :class="isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'"
+            @click="closeExpanded"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
 
         <div class="flex items-center gap-3 mb-4">
           <div
@@ -191,15 +205,15 @@
             </svg>
           </div>
           <div>
-            <p class="text-xs uppercase tracking-wide text-slate-500">Thông báo</p>
-            <p class="text-sm text-slate-600">{{ formatTime(focusedNotification.created_at) }}</p>
+            <p class="text-xs uppercase tracking-wide" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Thông báo</p>
+            <p class="text-sm" :class="isDark ? 'text-slate-400' : 'text-slate-600'">{{ formatTime(focusedNotification.created_at) }}</p>
           </div>
         </div>
 
-        <h3 class="text-lg font-semibold text-slate-900">
+        <h3 class="text-lg font-semibold" :class="isDark ? 'text-slate-100' : 'text-slate-900'">
           {{ focusedNotification.title }}
         </h3>
-        <p class="mt-4 text-sm leading-relaxed text-slate-700 whitespace-pre-line">
+        <p class="mt-4 text-sm leading-relaxed whitespace-pre-line" :class="isDark ? 'text-slate-300' : 'text-slate-700'">
           {{ focusedNotification.message }}
         </p>
 
@@ -207,14 +221,16 @@
           <button
             v-if="!focusedNotification.is_read"
             type="button"
-            class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            class="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition"
+            :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-300 text-slate-700 hover:bg-slate-50'"
             @click="markAsRead(focusedNotification.id)"
           >
             Đánh dấu đã đọc
           </button>
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white transition"
+            :class="isDark ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-900 hover:bg-slate-800'"
             @click="closeExpanded"
           >
             Đóng
@@ -223,11 +239,16 @@
       </div>
     </div>
   </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
+import { useThemeStore } from '@/store/theme.store'
+
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 // ===== TYPES =====
 interface Notification {

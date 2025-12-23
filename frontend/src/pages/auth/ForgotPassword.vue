@@ -2,9 +2,9 @@
   <div class="space-y-6">
     <div class="text-center">
       <div
-        class="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 animate-bounce-slow"
+        class="mx-auto w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-full flex items-center justify-center mb-4 animate-bounce-slow border border-cyan-500/30"
       >
-        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -13,8 +13,8 @@
           />
         </svg>
       </div>
-      <h3 class="text-xl font-bold text-gray-900 mb-2">Quên mật khẩu?</h3>
-      <p class="text-sm text-gray-600">Nhập email của bạn để nhận link đặt lại mật khẩu</p>
+      <h3 class="text-xl font-bold text-white mb-2">Quên mật khẩu?</h3>
+      <p class="text-sm text-gray-400">Nhập email của bạn để nhận link đặt lại mật khẩu</p>
     </div>
 
     <form v-if="status !== 'success'" @submit.prevent="submit" class="space-y-5" autocomplete="off">
@@ -22,7 +22,7 @@
       <div class="form-group">
         <label for="email" class="form-label">
           Email
-          <span class="text-red-500">*</span>
+          <span class="text-red-400">*</span>
         </label>
         <div class="relative">
           <div class="input-icon">
@@ -109,13 +109,13 @@
           email = '';
           touched = false;
         }"
-        class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+        class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 transition"
       >
         Gửi lại email
       </button>
       <RouterLink
         to="/auth/login"
-        class="block w-full rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-center text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+        class="block w-full rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 text-center text-sm font-medium text-cyan-400 hover:bg-cyan-500/20 transition"
       >
         Quay lại đăng nhập
       </RouterLink>
@@ -125,7 +125,7 @@
     <div v-if="status !== 'success'" class="text-center text-sm space-y-2">
       <RouterLink
         to="/auth/login"
-        class="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition group"
+        class="inline-flex items-center gap-1.5 text-gray-400 hover:text-white transition group"
       >
         <svg
           class="w-4 h-4 transition-transform group-hover:-translate-x-0.5"
@@ -186,53 +186,57 @@ async function submit() {
 }
 
 .form-label {
-  @apply block text-sm font-medium text-gray-700;
+  @apply block text-sm font-medium text-gray-300;
 }
 
 .form-input {
-  @apply w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400;
-  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500;
+  @apply w-full pl-11 pr-4 py-3 rounded-xl text-white placeholder-gray-500;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  @apply focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50;
   @apply transition duration-200;
-  @apply disabled:bg-gray-50 disabled:cursor-not-allowed;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 .form-input:hover:not(:disabled) {
-  @apply border-gray-300;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .input-icon {
   @apply absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10;
 }
 
-.form-error {
-  @apply text-xs text-red-600 mt-1.5 flex items-start gap-1.5;
+.input-icon svg {
+  @apply text-gray-500;
 }
 
-/* Primary Button — Purple gradient */
+.form-error {
+  @apply text-xs text-red-400 mt-1.5 flex items-start gap-1.5;
+}
+
+/* Primary Button — Cyan to Purple gradient */
 .btn-primary {
   width: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0.75rem 1.5rem !important;
-  border-radius: 0.75rem !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  padding: 0.875rem 1.5rem !important;
+  border-radius: 0.875rem !important;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%) !important;
   color: white !important;
-  font-weight: 600 !important;
-  transition: all 0.2s !important;
-  transform-origin: center !important;
-  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
+  font-weight: 700 !important;
+  transition: all 0.3s !important;
+  box-shadow: 0 10px 30px -5px rgba(6, 182, 212, 0.4) !important;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5568d3 0%, #663d8f 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 15px 40px -5px rgba(6, 182, 212, 0.5) !important;
 }
 
 .btn-primary:focus {
   outline: none !important;
-  box-shadow:
-    0 0 0 2px rgba(102, 126, 234, 0.5),
-    0 10px 15px -3px rgba(102, 126, 234, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3), 0 10px 30px -5px rgba(6, 182, 212, 0.4) !important;
 }
 
 .btn-primary:active:not(:disabled) {
@@ -246,13 +250,8 @@ async function submit() {
 
 /* Animations */
 @keyframes bounce-slow {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 .animate-bounce-slow {
   animation: bounce-slow 3s ease-in-out infinite;

@@ -520,11 +520,11 @@ const onSubmit = async () => {
 .form-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #374151;
+  color: #94a3b8;
 }
 
 .required {
-  color: #ef4444;
+  color: #f87171;
 }
 
 .input-wrapper {
@@ -543,37 +543,37 @@ const onSubmit = async () => {
 .icon {
   width: 1rem;
   height: 1rem;
-  color: #9ca3af;
+  color: #64748b;
 }
 
-/* ==== PURPLE THEME INPUT ==== */
+/* ==== DARK THEME INPUT ==== */
 .form-input {
   width: 100%;
   padding: 0.5rem 2.5rem 0.5rem 2.25rem;
-  background: white;
-  border: 2px solid rgba(102, 126, 234, 0.2); /* indigo @ 0.2 */
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.625rem;
   font-size: 0.8125rem;
-  color: #1f2937;
+  color: white;
   transition: all 0.2s;
 }
 
 .form-input::placeholder {
-  color: #9ca3af;
+  color: #64748b;
 }
 
 .form-input:hover {
-  border-color: rgba(102, 126, 234, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea; /* indigo */
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
 }
 
 .form-input.error {
-  border-color: #ef4444;
+  border-color: #f87171;
 }
 
 /* Toggle (show/hide password) */
@@ -586,11 +586,11 @@ const onSubmit = async () => {
   border: none;
   cursor: pointer;
   padding: 0.25rem;
-  color: #9ca3af;
+  color: #64748b;
   transition: color 0.2s;
 }
 .toggle-btn:hover {
-  color: #667eea;
+  color: #06b6d4;
 }
 
 .toggle-icon {
@@ -604,7 +604,7 @@ const onSubmit = async () => {
   align-items: flex-start;
   gap: 0.1875rem;
   font-size: 0.625rem;
-  color: #ef4444;
+  color: #f87171;
   margin-top: 0.125rem;
 }
 .error-icon {
@@ -624,12 +624,12 @@ const onSubmit = async () => {
   align-items: center;
   gap: 0.25rem;
   font-size: 0.625rem;
-  color: #9ca3af;
+  color: #64748b;
   transition: color 0.2s;
 }
 .hint.valid {
-  color: #667eea;
-} /* purple when valid */
+  color: #06b6d4;
+}
 .hint-icon {
   width: 0.75rem;
   height: 0.75rem;
@@ -652,38 +652,38 @@ const onSubmit = async () => {
   width: 0.875rem;
   height: 0.875rem;
   flex-shrink: 0;
-  border: 2px solid rgba(102, 126, 234, 0.4);
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.25rem;
   cursor: pointer;
-  accent-color: #667eea; /* purple */
+  accent-color: #06b6d4;
 }
 
 .terms-text {
   font-size: 0.6875rem;
-  color: #6b7280;
+  color: #94a3b8;
   line-height: 1.35;
 }
 
 .terms-link {
-  color: #667eea;
+  color: #06b6d4;
   font-weight: 700;
   text-decoration: none;
   transition: color 0.2s;
 }
 .terms-link:hover {
-  color: #5568d3;
+  color: #22d3ee;
 }
 
-/* ==== SUBMIT BUTTON – PURPLE GRADIENT ==== */
+/* ==== SUBMIT BUTTON – CYAN TO PURPLE GRADIENT ==== */
 .submit-btn {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-size: 200% 200%;
+  padding: 0.625rem 1rem;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
   color: white;
   font-weight: 700;
   font-size: 0.8125rem;
@@ -691,24 +691,13 @@ const onSubmit = async () => {
   border-radius: 0.625rem;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-  animation: gradient-shift 3s ease infinite;
+  box-shadow: 0 10px 30px -5px rgba(6, 182, 212, 0.4);
   margin-top: 0.25rem;
 }
 
-@keyframes gradient-shift {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
 .submit-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px -5px rgba(6, 182, 212, 0.5);
 }
 
 .submit-btn:active:not(:disabled) {
@@ -726,92 +715,43 @@ const onSubmit = async () => {
   animation: spin 1s linear infinite;
 }
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Footer link */
 .login-link {
   text-align: center;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #94a3b8;
 }
 .login-link-text {
   font-weight: 700;
-  color: #667eea;
+  color: #06b6d4;
   text-decoration: none;
   transition: color 0.2s;
 }
 .login-link-text:hover {
-  color: #5568d3;
+  color: #22d3ee;
 }
 
 /* RESPONSIVE */
 @media (max-width: 640px) {
-  .register-form {
-    gap: 0.5rem;
-  }
-  .form-group {
-    gap: 0.1875rem;
-  }
-  .form-label {
-    font-size: 0.6875rem;
-  }
-  .form-input {
-    padding: 0.4375rem 2.25rem 0.4375rem 2rem;
-    font-size: 0.75rem;
-  }
-  .input-icon {
-    left: 0.5rem;
-  }
-  .icon {
-    width: 0.875rem;
-    height: 0.875rem;
-  }
-  .toggle-btn {
-    right: 0.5rem;
-  }
-  .toggle-icon {
-    width: 0.875rem;
-    height: 0.875rem;
-  }
-  .error-msg {
-    font-size: 0.5625rem;
-  }
-  .error-icon {
-    width: 0.5625rem;
-    height: 0.5625rem;
-  }
-  .hint {
-    font-size: 0.5625rem;
-  }
-  .hint-icon {
-    width: 0.6875rem;
-    height: 0.6875rem;
-  }
-  .terms-text {
-    font-size: 0.625rem;
-  }
-  .submit-btn {
-    padding: 0.4375rem 0.875rem;
-    font-size: 0.75rem;
-  }
-  .spinner {
-    width: 0.875rem;
-    height: 0.875rem;
-  }
-  .login-link {
-    font-size: 0.6875rem;
-  }
-  :global(.toast-notification) {
-    top: 0.75rem;
-    right: 0.75rem;
-    left: 0.75rem;
-    max-width: none;
-  }
+  .register-form { gap: 0.5rem; }
+  .form-group { gap: 0.1875rem; }
+  .form-label { font-size: 0.6875rem; }
+  .form-input { padding: 0.4375rem 2.25rem 0.4375rem 2rem; font-size: 0.75rem; }
+  .input-icon { left: 0.5rem; }
+  .icon { width: 0.875rem; height: 0.875rem; }
+  .toggle-btn { right: 0.5rem; }
+  .toggle-icon { width: 0.875rem; height: 0.875rem; }
+  .error-msg { font-size: 0.5625rem; }
+  .error-icon { width: 0.5625rem; height: 0.5625rem; }
+  .hint { font-size: 0.5625rem; }
+  .hint-icon { width: 0.6875rem; height: 0.6875rem; }
+  .terms-text { font-size: 0.625rem; }
+  .submit-btn { padding: 0.4375rem 0.875rem; font-size: 0.75rem; }
+  .spinner { width: 0.875rem; height: 0.875rem; }
+  .login-link { font-size: 0.6875rem; }
 }
 </style>

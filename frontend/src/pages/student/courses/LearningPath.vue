@@ -1,14 +1,22 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-cyan-50">
+  <div :class="isDark ? 'dark-mode' : 'light-mode'">
+    <!-- Background glow effects for dark mode -->
+    <div v-if="isDark" class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      <div class="absolute top-1/4 -left-32 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-3xl"></div>
+    </div>
+    <div class="min-h-screen relative z-10">
     <div class="mx-auto max-w-6xl px-4 py-8">
       <!-- Header -->
       <div class="mb-6 flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-600 to-sky-600 bg-clip-text text-transparent">Lộ trình học tập</h1>
-          <p class="mt-1 text-slate-600">AI đồng hành cùng con trên hành trình học tập!</p>
+          <p class="mt-1" :class="isDark ? 'text-slate-400' : 'text-slate-600'">AI đồng hành cùng con trên hành trình học tập!</p>
         </div>
         <router-link
-          class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm"
+          class="rounded-xl border px-4 py-2 text-sm font-semibold shadow-sm transition"
+          :class="isDark ? 'border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
           :to="{ name: 'MyCourses' }"
         >
           Khóa học của tôi
@@ -50,50 +58,50 @@
 
       <!-- Progress Overview -->
       <div v-if="!loading" class="mb-6 grid gap-4 sm:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm text-center">
-          <div class="flex h-12 w-12 mx-auto mb-2 items-center justify-center rounded-2xl bg-sky-100">
+        <div class="rounded-2xl border p-4 shadow-sm text-center" :class="isDark ? 'border-white/10 bg-slate-800' : 'border-slate-200 bg-white'">
+          <div class="flex h-12 w-12 mx-auto mb-2 items-center justify-center rounded-2xl" :class="isDark ? 'bg-sky-500/20' : 'bg-sky-100'">
             <svg class="h-6 w-6 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <p class="text-2xl font-bold text-slate-900">{{ overall.courses }}</p>
-          <p class="text-xs text-slate-500">Khóa học</p>
+          <p class="text-2xl font-bold" :class="isDark ? 'text-slate-100' : 'text-slate-900'">{{ overall.courses }}</p>
+          <p class="text-xs" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Khóa học</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm text-center">
-          <div class="flex h-12 w-12 mx-auto mb-2 items-center justify-center rounded-2xl bg-emerald-100">
+        <div class="rounded-2xl border p-4 shadow-sm text-center" :class="isDark ? 'border-white/10 bg-slate-800' : 'border-slate-200 bg-white'">
+          <div class="flex h-12 w-12 mx-auto mb-2 items-center justify-center rounded-2xl" :class="isDark ? 'bg-emerald-500/20' : 'bg-emerald-100'">
             <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <p class="text-2xl font-bold text-emerald-600">{{ overall.completed }}</p>
-          <p class="text-xs text-slate-500">Đã hoàn thành</p>
+          <p class="text-xs" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Đã hoàn thành</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm text-center">
-          <div class="flex h-12 w-12 mx-auto mb-2 items-center justify-center rounded-2xl bg-orange-100">
+        <div class="rounded-2xl border p-4 shadow-sm text-center" :class="isDark ? 'border-white/10 bg-slate-800' : 'border-slate-200 bg-white'">
+          <div class="flex h-12 w-12 mx-auto mb-2 items-center justify-center rounded-2xl" :class="isDark ? 'bg-orange-500/20' : 'bg-orange-100'">
             <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
           <p class="text-2xl font-bold text-sky-600">{{ overall.total - overall.completed }}</p>
-          <p class="text-xs text-slate-500">Bài còn lại</p>
+          <p class="text-xs" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Bài còn lại</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm text-center">
-          <div class="flex h-12 w-12 mx-auto mb-2 items-center justify-center rounded-2xl bg-amber-100">
+        <div class="rounded-2xl border p-4 shadow-sm text-center" :class="isDark ? 'border-white/10 bg-slate-800' : 'border-slate-200 bg-white'">
+          <div class="flex h-12 w-12 mx-auto mb-2 items-center justify-center rounded-2xl" :class="isDark ? 'bg-amber-500/20' : 'bg-amber-100'">
             <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
           <p class="text-2xl font-bold text-amber-600">{{ overall.progress }}%</p>
-          <p class="text-xs text-slate-500">Tiến độ</p>
+          <p class="text-xs" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Tiến độ</p>
         </div>
       </div>
 
       <!-- AI Gợi ý hôm nay -->
-      <div v-if="!loading && todayTasks.length" class="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm">
+      <div v-if="!loading && todayTasks.length" class="mb-6 rounded-2xl border p-5 shadow-sm" :class="isDark ? 'border-amber-500/30 bg-gradient-to-r from-amber-900/30 to-orange-900/30' : 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50'">
         <div class="flex items-center gap-2 mb-4">
           <span class="text-2xl">🤖</span>
-          <h3 class="text-lg font-bold text-amber-800">AI gợi ý cho hôm nay</h3>
-          <span class="ml-auto rounded-full bg-amber-200 px-3 py-1 text-xs font-semibold text-amber-800">
+          <h3 class="text-lg font-bold" :class="isDark ? 'text-amber-400' : 'text-amber-800'">AI gợi ý cho hôm nay</h3>
+          <span class="ml-auto rounded-full px-3 py-1 text-xs font-semibold" :class="isDark ? 'bg-amber-500/30 text-amber-300' : 'bg-amber-200 text-amber-800'">
             {{ todayTasks.length }} bài học
           </span>
         </div>
@@ -101,17 +109,18 @@
           <div
             v-for="(task, idx) in todayTasks"
             :key="task.key"
-            class="flex items-center gap-3 rounded-xl bg-white p-4 border border-amber-100 shadow-sm hover:shadow-md transition-all cursor-pointer"
+            class="flex items-center gap-3 rounded-xl p-4 border shadow-sm hover:shadow-md transition-all cursor-pointer"
+            :class="isDark ? 'bg-slate-800 border-white/10' : 'bg-white border-amber-100'"
             @click="startStep(task.path, task.step)"
           >
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
-              :class="idx === 0 ? 'bg-amber-500 text-white' : 'bg-slate-100'"
+              :class="idx === 0 ? 'bg-amber-500 text-white' : isDark ? 'bg-slate-700' : 'bg-slate-100'"
             >
               {{ idx === 0 ? '🔥' : '📖' }}
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-slate-900 truncate">{{ task.title }}</p>
-              <p class="text-xs text-slate-500 truncate">{{ task.course }}</p>
+              <p class="text-sm font-semibold truncate" :class="isDark ? 'text-slate-100' : 'text-slate-900'">{{ task.title }}</p>
+              <p class="text-xs truncate" :class="isDark ? 'text-slate-400' : 'text-slate-500'">{{ task.course }}</p>
             </div>
             <span class="shrink-0 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white">
               {{ idx === 0 ? 'Bắt đầu' : 'Học' }}
@@ -122,37 +131,37 @@
 
       <!-- Daily Goal & Streak -->
       <div v-if="!loading && dailyGoal.target > 0" class="mb-6 grid gap-4 sm:grid-cols-2">
-        <div class="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 p-5 shadow-sm">
+        <div class="rounded-2xl border p-5 shadow-sm" :class="isDark ? 'border-emerald-500/30 bg-gradient-to-r from-emerald-900/30 to-green-900/30' : 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50'">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-bold text-emerald-800 flex items-center gap-2">
+            <h3 class="text-lg font-bold flex items-center gap-2" :class="isDark ? 'text-emerald-400' : 'text-emerald-800'">
               <span>🎯</span> Mục tiêu hôm nay
             </h3>
             <span class="text-2xl">{{ dailyGoal.completed >= dailyGoal.target ? '🎉' : '💪' }}</span>
           </div>
           <div class="flex items-center gap-3 mb-2">
-            <div class="flex-1 h-3 rounded-full bg-emerald-100 overflow-hidden">
+            <div class="flex-1 h-3 rounded-full overflow-hidden" :class="isDark ? 'bg-emerald-900/50' : 'bg-emerald-100'">
               <div 
                 class="h-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-500"
                 :style="{ width: `${Math.min(100, (dailyGoal.completed / dailyGoal.target) * 100)}%` }"
               ></div>
             </div>
-            <span class="text-sm font-bold text-emerald-700">{{ dailyGoal.completed }}/{{ dailyGoal.target }}</span>
+            <span class="text-sm font-bold" :class="isDark ? 'text-emerald-400' : 'text-emerald-700'">{{ dailyGoal.completed }}/{{ dailyGoal.target }}</span>
           </div>
-          <p class="text-sm text-emerald-600">
+          <p class="text-sm" :class="isDark ? 'text-emerald-400' : 'text-emerald-600'">
             {{ dailyGoal.completed >= dailyGoal.target 
               ? 'Tuyệt vời! Con đã hoàn thành mục tiêu hôm nay! 🌟' 
               : `Còn ${dailyGoal.target - dailyGoal.completed} bài nữa để đạt mục tiêu!` }}
           </p>
         </div>
         
-        <div class="rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-5 shadow-sm relative overflow-hidden">
+        <div class="rounded-2xl border p-5 shadow-sm relative overflow-hidden" :class="isDark ? 'border-orange-500/30 bg-gradient-to-r from-orange-900/30 to-amber-900/30' : 'border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50'">
           <!-- Fire particles background -->
           <div v-if="dailyGoal.streak > 0" class="fire-particles">
             <div v-for="i in 12" :key="i" class="fire-particle" :style="{ '--delay': `${i * 0.15}s`, '--x': `${10 + (i * 7) % 80}%` }"></div>
           </div>
           
           <div class="flex items-center justify-between mb-3 relative z-10">
-            <h3 class="text-lg font-bold text-orange-800 flex items-center gap-2">
+            <h3 class="text-lg font-bold flex items-center gap-2" :class="isDark ? 'text-orange-400' : 'text-orange-800'">
               <span class="mini-fire">
                 <span class="flame f1"></span>
                 <span class="flame f2"></span>
@@ -164,7 +173,7 @@
             </h3>
             <span class="text-3xl font-bold text-orange-600">{{ dailyGoal.streak }}</span>
           </div>
-          <p class="text-sm text-orange-600 relative z-10">
+          <p class="text-sm relative z-10" :class="isDark ? 'text-orange-400' : 'text-orange-600'">>
             {{ dailyGoal.streak > 0 
               ? `${dailyGoal.streak} ngày học liên tiếp! Cố gắng duy trì nhé!` 
               : 'Hãy bắt đầu streak mới hôm nay!' }}
@@ -310,11 +319,12 @@
       <div
         v-if="!loading && showPracticeSection"
         ref="practiceSectionRef"
-        class="mb-6 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 p-5 shadow-sm"
+        class="mb-6 rounded-2xl border p-5 shadow-sm"
+        :class="isDark ? 'border-purple-500/30 bg-gradient-to-r from-purple-900/30 to-pink-900/30' : 'border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50'"
       >
         <div class="flex items-center gap-2 mb-4">
           <span class="text-2xl">📝</span>
-          <h3 class="text-lg font-bold text-purple-800">Bài luyện tập hôm nay</h3>
+          <h3 class="text-lg font-bold" :class="isDark ? 'text-purple-300' : 'text-purple-800'">Bài luyện tập hôm nay</h3>
           <span class="ml-auto">
             <button
               v-if="!showPractice"
@@ -326,13 +336,14 @@
             <button
               v-else
               @click="showPractice = false"
-              class="rounded-full bg-gray-200 px-4 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-300 transition-colors"
+              class="rounded-full px-4 py-1.5 text-xs font-bold transition-colors"
+              :class="isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'"
             >
               Thu gọn
             </button>
           </span>
         </div>
-        <p v-if="!showPractice" class="text-sm text-purple-600 mb-3">
+        <p v-if="!showPractice" class="text-sm mb-3" :class="isDark ? 'text-purple-300' : 'text-purple-600'">
           SmartEdu AI đã chuẩn bị bài tập phù hợp với bạn dựa trên kết quả học tập! 🌟
         </p>
         <AIPractice 
@@ -346,11 +357,11 @@
       </div>
 
       <!-- AI Achievements (Huy hiệu) -->
-      <div v-if="!loading && aiAchievements.length" class="mb-6 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-5 shadow-sm">
+      <div v-if="!loading && aiAchievements.length" class="mb-6 rounded-2xl border p-5 shadow-sm" :class="isDark ? 'border-purple-500/30 bg-gradient-to-r from-purple-900/30 to-indigo-900/30' : 'border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50'">
         <div class="flex items-center gap-2 mb-4">
           <span class="text-2xl">🏆</span>
-          <h3 class="text-lg font-bold text-purple-800">Huy hiệu của con</h3>
-          <span class="ml-auto rounded-full bg-purple-200 px-3 py-1 text-xs font-semibold text-purple-800">
+          <h3 class="text-lg font-bold" :class="isDark ? 'text-purple-300' : 'text-purple-800'">Huy hiệu của con</h3>
+          <span class="ml-auto rounded-full px-3 py-1 text-xs font-semibold" :class="isDark ? 'bg-purple-500/30 text-purple-300' : 'bg-purple-200 text-purple-800'">
             {{ aiAchievements.filter(a => a.unlocked).length }} huy hiệu
           </span>
         </div>
@@ -360,11 +371,11 @@
             :key="achievement.id"
             class="flex items-center gap-2 rounded-xl px-4 py-2 border transition-all"
             :class="achievement.unlocked 
-              ? 'bg-white border-purple-200 shadow-sm' 
-              : 'bg-slate-100 border-slate-200 opacity-50'"
+              ? isDark ? 'bg-slate-800 border-purple-500/30 shadow-sm' : 'bg-white border-purple-200 shadow-sm'
+              : isDark ? 'bg-slate-800/50 border-white/5 opacity-50' : 'bg-slate-100 border-slate-200 opacity-50'"
           >
             <span class="text-2xl">{{ achievement.icon }}</span>
-            <span class="text-sm font-semibold" :class="achievement.unlocked ? 'text-purple-700' : 'text-slate-400'">
+            <span class="text-sm font-semibold" :class="achievement.unlocked ? (isDark ? 'text-purple-300' : 'text-purple-700') : (isDark ? 'text-slate-500' : 'text-slate-400')">
               {{ achievement.name }}
             </span>
           </div>
@@ -373,17 +384,18 @@
 
       <!-- Personalized Paths -->
       <div v-if="loading" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="h-48 animate-pulse rounded-2xl border border-slate-200 bg-white"></div>
+        <div v-for="i in 3" :key="i" class="h-48 animate-pulse rounded-2xl border" :class="isDark ? 'border-white/10 bg-slate-800' : 'border-slate-200 bg-white'"></div>
       </div>
 
       <div v-else-if="personalizedPaths.length" class="space-y-6">
-        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <h3 class="text-lg font-bold flex items-center gap-2" :class="isDark ? 'text-slate-100' : 'text-slate-900'">
           Khóa học của bạn
         </h3>
         <section
           v-for="path in personalizedPaths"
           :key="path.id"
-          class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all"
+          class="rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all"
+          :class="isDark ? 'border-white/10 bg-slate-800' : 'border-slate-200 bg-white'"
         >
           <div class="mb-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -395,8 +407,8 @@
                 </svg>
               </div>
               <div>
-                <h2 class="text-xl font-bold text-slate-900">{{ path.courseTitle }}</h2>
-                <p class="text-sm text-slate-500">
+                <h2 class="text-xl font-bold" :class="isDark ? 'text-slate-100' : 'text-slate-900'">{{ path.courseTitle }}</h2>
+                <p class="text-sm" :class="isDark ? 'text-slate-400' : 'text-slate-500'">
                   {{ path.completedSteps }}/{{ path.totalSteps }} bài · {{ getTimeEstimate(path.totalSteps - path.completedSteps) }}
                 </p>
               </div>
@@ -411,7 +423,7 @@
 
           <!-- Progress bar with milestones -->
           <div class="mb-4">
-            <div class="relative h-3 overflow-hidden rounded-full bg-slate-100">
+            <div class="relative h-3 overflow-hidden rounded-full" :class="isDark ? 'bg-slate-700' : 'bg-slate-100'">
               <div
                 class="h-full rounded-full transition-all duration-500"
                 :class="getProgressBarClass(path.progress)"
@@ -421,40 +433,41 @@
               <div class="absolute inset-0 flex justify-between px-1">
                 <div v-for="m in [25, 50, 75]" :key="m" 
                   class="w-0.5 h-full"
-                  :class="path.progress >= m ? 'bg-white/50' : 'bg-slate-300'"
+                  :class="path.progress >= m ? 'bg-white/50' : isDark ? 'bg-slate-600' : 'bg-slate-300'"
                   :style="{ marginLeft: `${m}%` }"
                 ></div>
               </div>
             </div>
-            <div class="mt-1 flex justify-between text-xs text-slate-500">
+            <div class="mt-1 flex justify-between text-xs" :class="isDark ? 'text-slate-400' : 'text-slate-500'">
               <span>Bắt đầu</span>
               <span>{{ path.progress }}%</span>
             </div>
           </div>
 
           <!-- Next steps with better UI -->
-          <div v-if="path.nextSteps.length" class="mb-4 rounded-xl bg-gradient-to-r from-slate-50 to-sky-50 p-4">
-            <h3 class="mb-3 text-sm font-bold text-slate-700 flex items-center gap-2">
+          <div v-if="path.nextSteps.length" class="mb-4 rounded-xl p-4" :class="isDark ? 'bg-gradient-to-r from-slate-700 to-slate-700/50' : 'bg-gradient-to-r from-slate-50 to-sky-50'">
+            <h3 class="mb-3 text-sm font-bold flex items-center gap-2" :class="isDark ? 'text-slate-200' : 'text-slate-700'">
               <span>🎯</span> Bước tiếp theo
             </h3>
             <div class="space-y-2">
               <div
                 v-for="(step, idx) in path.nextSteps"
                 :key="idx"
-                class="flex items-center gap-3 rounded-lg bg-white p-3 border border-slate-100 hover:border-cyan-200 transition-all cursor-pointer"
+                class="flex items-center gap-3 rounded-lg p-3 border transition-all cursor-pointer"
+                :class="isDark ? 'bg-slate-800 border-white/10 hover:border-cyan-500/50' : 'bg-white border-slate-100 hover:border-cyan-200'"
                 @click="startStep(path, step)"
               >
                 <div
                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold"
-                  :class="step.current ? 'bg-cyan-500 text-white' : 'bg-slate-200 text-slate-600'"
+                  :class="step.current ? 'bg-cyan-500 text-white' : isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600'"
                 >
                   {{ idx + 1 }}
                 </div>
-                <span class="flex-1 text-sm font-medium text-slate-900">{{ step.title }}</span>
+                <span class="flex-1 text-sm font-medium" :class="isDark ? 'text-slate-100' : 'text-slate-900'">{{ step.title }}</span>
                 <span v-if="step.current" class="rounded-lg bg-cyan-500 px-3 py-1 text-xs font-bold text-white">
                   ▶ Học ngay
                 </span>
-                <span v-else class="text-xs text-slate-400">Sắp tới</span>
+                <span v-else class="text-xs" :class="isDark ? 'text-slate-500' : 'text-slate-400'">Sắp tới</span>
               </div>
             </div>
           </div>
@@ -505,7 +518,8 @@
                 🏆 Đánh giá tổng kết
               </button>
               <button
-                class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                class="rounded-xl border px-4 py-2 text-sm font-semibold transition"
+                :class="isDark ? 'border-white/10 text-slate-200 hover:bg-slate-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'"
                 @click="viewFullPath(path)"
               >
                 Xem chi tiết →
@@ -721,6 +735,7 @@
       </div>
     </Teleport>
     
+    </div>
   </div>
 </template>
 
@@ -734,6 +749,10 @@ import AIPractice from '@/components/ai/AIPractice.vue'
 import http from '@/config/axios'
 import { showToast } from '@/utils/toast'
 import { useAuthStore } from '@/store/auth.store'
+import { useThemeStore } from '@/store/theme.store'
+
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 const router = useRouter()
 const route = useRoute()
@@ -1798,5 +1817,13 @@ watch(() => route.path, async (newPath) => {
 
 .streak-btn:active {
   transform: scale(0.98);
+}
+
+/* Dark/Light mode */
+.dark-mode {
+  @apply bg-slate-950;
+}
+.light-mode {
+  @apply bg-gradient-to-br from-sky-50 via-white to-cyan-50;
 }
 </style>

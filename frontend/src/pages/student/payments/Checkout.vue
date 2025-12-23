@@ -1,143 +1,187 @@
 <template>
-  <div class="min-h-screen bg-slate-50 pb-16 pt-8">
-    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 mb-2">Thanh toán</h1>
-        <p class="text-slate-600">Hoàn tất thanh toán để nạp tiền vào tài khoản</p>
-      </div>
+  <div :class="isDark ? 'dark-mode' : 'light-mode'">
+    <!-- Background glow effects for dark mode -->
+    <div v-if="isDark" class="fixed inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute top-1/4 -left-32 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+    </div>
 
-      <div class="grid gap-6 lg:grid-cols-[1fr_400px]">
-        <!-- Main Form -->
-        <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="text-lg font-semibold text-slate-900 mb-4">Thanh toán qua MoMo</h2>
-          <p class="text-sm text-slate-600 mb-6">
-            Chọn gói và bấm nút bên dưới, bạn sẽ được chuyển đến cổng MoMo Collection Link để hoàn tất.
-          </p>
+    <div class="min-h-screen pb-16 pt-8 relative z-10">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold mb-2" :class="isDark ? 'text-white' : 'text-slate-900'">Thanh toán</h1>
+          <p :class="isDark ? 'text-slate-400' : 'text-slate-600'">Hoàn tất thanh toán để nạp tiền vào tài khoản</p>
+        </div>
 
-          <div class="space-y-6">
-            <!-- Description Input -->
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">
-                Nội dung hiển thị khi thanh toán
-              </label>
-              <input
-                v-model="descriptionText"
-                placeholder="Ví dụ: Nạp học phí tháng 11"
-                class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
-              />
-              <p class="mt-1.5 text-xs text-slate-500">
-                Dòng mô tả sẽ xuất hiện trên màn hình xác nhận của MoMo.
-              </p>
-            </div>
+        <div class="grid gap-6 lg:grid-cols-[1fr_400px]">
+          <!-- Main Form -->
+          <section 
+            class="rounded-lg border p-6 shadow-sm"
+            :class="isDark 
+              ? 'border-slate-700/50 bg-slate-800/50 backdrop-blur-sm' 
+              : 'border-slate-200 bg-white'"
+          >
+            <h2 class="text-lg font-semibold mb-4" :class="isDark ? 'text-white' : 'text-slate-900'">Thanh toán qua MoMo</h2>
+            <p class="text-sm mb-6" :class="isDark ? 'text-slate-400' : 'text-slate-600'">
+              Chọn gói và bấm nút bên dưới, bạn sẽ được chuyển đến cổng MoMo Collection Link để hoàn tất.
+            </p>
 
-            <!-- Amount Input -->
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">
-                Số tiền (VND)
-              </label>
-              <input
-                v-model="amountText"
-                @input="onAmountInput(true)"
-                inputmode="numeric"
-                placeholder="Nhập số tiền, ví dụ 215000"
-                class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-right text-lg font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
-              />
-              <p class="mt-1.5 text-xs text-slate-500">
-                <template v-if="selectedPlanId"> Số tiền được cố định từ gói {{ plan }}. </template>
-                <template v-else> Chỉ nhập chữ số. Bạn có thể đặt số tiền tuỳ ý. </template>
-              </p>
-            </div>
-
-            <!-- Summary Display -->
-            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-sm font-medium text-slate-600">Số tiền nạp</span>
-                <span class="text-xl font-bold text-slate-900">{{ vnd(amountNumber) }}</span>
+            <div class="space-y-6">
+              <!-- Description Input -->
+              <div>
+                <label class="block text-sm font-medium mb-2" :class="isDark ? 'text-slate-300' : 'text-slate-700'">
+                  Nội dung hiển thị khi thanh toán
+                </label>
+                <input
+                  v-model="descriptionText"
+                  placeholder="Ví dụ: Nạp học phí tháng 11"
+                  class="w-full rounded-lg border px-4 py-2.5 text-sm transition focus:outline-none focus:ring-2"
+                  :class="isDark 
+                    ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20'
+                    : 'border-slate-300 text-slate-900 focus:border-slate-400 focus:ring-slate-200'"
+                />
+                <p class="mt-1.5 text-xs" :class="isDark ? 'text-slate-500' : 'text-slate-500'">
+                  Dòng mô tả sẽ xuất hiện trên màn hình xác nhận của MoMo.
+                </p>
               </div>
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-slate-600">Gói</span>
-                <span class="text-sm font-semibold text-slate-900">{{ planDisplay }}</span>
+
+              <!-- Amount Input -->
+              <div>
+                <label class="block text-sm font-medium mb-2" :class="isDark ? 'text-slate-300' : 'text-slate-700'">
+                  Số tiền (VND)
+                </label>
+                <input
+                  v-model="amountText"
+                  @input="onAmountInput(true)"
+                  inputmode="numeric"
+                  placeholder="Nhập số tiền, ví dụ 215000"
+                  class="w-full rounded-lg border px-4 py-2.5 text-right text-lg font-semibold transition focus:outline-none focus:ring-2"
+                  :class="isDark 
+                    ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20'
+                    : 'border-slate-300 text-slate-900 focus:border-slate-400 focus:ring-slate-200'"
+                />
+                <p class="mt-1.5 text-xs" :class="isDark ? 'text-slate-500' : 'text-slate-500'">
+                  <template v-if="selectedPlanId"> Số tiền được cố định từ gói {{ plan }}. </template>
+                  <template v-else> Chỉ nhập chữ số. Bạn có thể đặt số tiền tuỳ ý. </template>
+                </p>
+              </div>
+
+              <!-- Summary Display -->
+              <div 
+                class="rounded-lg border p-4"
+                :class="isDark 
+                  ? 'border-slate-600 bg-slate-700/30' 
+                  : 'border-slate-200 bg-slate-50'"
+              >
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-slate-600'">Số tiền nạp</span>
+                  <span class="text-xl font-bold" :class="isDark ? 'text-white' : 'text-slate-900'">{{ vnd(amountNumber) }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-slate-600'">Gói</span>
+                  <span class="text-sm font-semibold" :class="isDark ? 'text-white' : 'text-slate-900'">{{ planDisplay }}</span>
+                </div>
+              </div>
+
+              <!-- Steps -->
+              <div>
+                <h3 class="text-sm font-semibold mb-3" :class="isDark ? 'text-slate-300' : 'text-slate-700'">Các bước thực hiện</h3>
+                <ol class="list-decimal space-y-2 pl-5 text-sm" :class="isDark ? 'text-slate-400' : 'text-slate-600'">
+                  <li>Mở app MoMo hoặc chọn liên kết nạp tiền được chuyển tới.</li>
+                  <li>Kiểm tra thông tin đơn hàng, số tiền và xác nhận nạp tiền.</li>
+                  <li>Sau khi hoàn tất, hệ thống sẽ tự đồng bộ trạng thái.</li>
+                </ol>
+              </div>
+
+              <!-- Submit Button -->
+              <div>
+                <button
+                  type="button"
+                  class="w-full rounded-lg px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                  :class="isDark 
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white hover:from-cyan-600 hover:to-purple-600'
+                    : 'bg-slate-900 text-white hover:bg-slate-800'"
+                  :disabled="!amountNumber || isMomoLoading"
+                  @click="payWithMomo"
+                >
+                  <span v-if="isMomoLoading" class="inline-flex items-center gap-2">
+                    <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    Đang chuyển hướng...
+                  </span>
+                  <span v-else>Thanh toán với MoMo</span>
+                </button>
+                <p class="mt-2 text-xs text-center" :class="isDark ? 'text-slate-500' : 'text-slate-500'">
+                  Bạn sẽ được chuyển đến trang thanh toán an toàn của MoMo.
+                </p>
               </div>
             </div>
+          </section>
 
-            <!-- Steps -->
-            <div>
-              <h3 class="text-sm font-semibold text-slate-700 mb-3">Các bước thực hiện</h3>
-              <ol class="list-decimal space-y-2 pl-5 text-sm text-slate-600">
-                <li>Mở app MoMo hoặc chọn liên kết nạp tiền được chuyển tới.</li>
-                <li>Kiểm tra thông tin đơn hàng, số tiền và xác nhận nạp tiền.</li>
-                <li>Sau khi hoàn tất, hệ thống sẽ tự đồng bộ trạng thái.</li>
-              </ol>
-            </div>
-
-            <!-- Submit Button -->
-            <div>
+          <!-- Summary Sidebar -->
+          <section 
+            class="rounded-lg border p-6 shadow-sm"
+            :class="isDark 
+              ? 'border-slate-700/50 bg-slate-800/50 backdrop-blur-sm' 
+              : 'border-slate-200 bg-white'"
+          >
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-semibold" :class="isDark ? 'text-white' : 'text-slate-900'">Tóm tắt</h2>
               <button
                 type="button"
-                class="w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="!amountNumber || isMomoLoading"
-                @click="payWithMomo"
+                class="text-sm font-medium transition disabled:opacity-50"
+                :class="isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'"
+                :disabled="planLoading"
+                @click="loadPlans"
               >
-                <span v-if="isMomoLoading" class="inline-flex items-center gap-2">
-                  <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  Đang chuyển hướng...
-                </span>
-                <span v-else>Thanh toán với MoMo</span>
+                {{ planLoading ? 'Đang tải...' : 'Làm mới' }}
               </button>
-              <p class="mt-2 text-xs text-slate-500 text-center">
-                Bạn sẽ được chuyển đến trang thanh toán an toàn của MoMo.
-              </p>
             </div>
-          </div>
-        </section>
 
-        <!-- Summary Sidebar -->
-        <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <div class="mb-4 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-slate-900">Tóm tắt</h2>
-            <button
-              type="button"
-              class="text-sm font-medium text-slate-600 hover:text-slate-900 transition disabled:opacity-50"
-              :disabled="planLoading"
-              @click="loadPlans"
+            <div 
+              class="space-y-3 rounded-lg border p-4"
+              :class="isDark 
+                ? 'border-slate-600 bg-slate-700/30' 
+                : 'border-slate-200 bg-slate-50'"
             >
-              {{ planLoading ? 'Đang tải...' : 'Làm mới' }}
-            </button>
-          </div>
-
-          <div class="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-slate-600">Gói</span>
-              <span class="font-semibold text-slate-900">{{ planDisplay }}</span>
-            </div>
-            <div v-if="planDuration" class="flex items-center justify-between text-sm">
-              <span class="text-slate-600">Thời hạn</span>
-              <span class="font-semibold text-slate-900">{{ planDuration }} ngày</span>
-            </div>
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-slate-600">Thành tiền</span>
-              <span class="font-semibold text-slate-900">{{ vnd(amountNumber) }}</span>
-            </div>
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-slate-600">Phí nền tảng</span>
-              <span class="font-semibold text-slate-900">0đ</span>
-            </div>
-            <div class="border-t border-slate-200 pt-3 mt-3">
-              <div class="flex items-center justify-between">
-                <span class="text-base font-semibold text-slate-900">Tổng nạp</span>
-                <span class="text-lg font-bold text-slate-900">{{ vnd(amountNumber) }}</span>
+              <div class="flex items-center justify-between text-sm">
+                <span :class="isDark ? 'text-slate-400' : 'text-slate-600'">Gói</span>
+                <span class="font-semibold" :class="isDark ? 'text-white' : 'text-slate-900'">{{ planDisplay }}</span>
+              </div>
+              <div v-if="planDuration" class="flex items-center justify-between text-sm">
+                <span :class="isDark ? 'text-slate-400' : 'text-slate-600'">Thời hạn</span>
+                <span class="font-semibold" :class="isDark ? 'text-white' : 'text-slate-900'">{{ planDuration }} ngày</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span :class="isDark ? 'text-slate-400' : 'text-slate-600'">Thành tiền</span>
+                <span class="font-semibold" :class="isDark ? 'text-white' : 'text-slate-900'">{{ vnd(amountNumber) }}</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span :class="isDark ? 'text-slate-400' : 'text-slate-600'">Phí nền tảng</span>
+                <span class="font-semibold" :class="isDark ? 'text-white' : 'text-slate-900'">0đ</span>
+              </div>
+              <div class="border-t pt-3 mt-3" :class="isDark ? 'border-slate-600' : 'border-slate-200'">
+                <div class="flex items-center justify-between">
+                  <span class="text-base font-semibold" :class="isDark ? 'text-white' : 'text-slate-900'">Tổng nạp</span>
+                  <span class="text-lg font-bold" :class="isDark ? 'text-cyan-400' : 'text-slate-900'">{{ vnd(amountNumber) }}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div v-if="planFeatures.length" class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
-            <h3 class="text-sm font-semibold text-amber-900 mb-2">Quyền lợi gói</h3>
-            <ul class="list-disc space-y-1 pl-5 text-sm text-amber-800">
-              <li v-for="(feature, idx) in planFeatures" :key="idx">{{ feature }}</li>
-            </ul>
-          </div>
-        </section>
+            <div 
+              v-if="planFeatures.length" 
+              class="mt-6 rounded-lg border p-4"
+              :class="isDark 
+                ? 'border-amber-500/30 bg-amber-500/10' 
+                : 'border-amber-200 bg-amber-50'"
+            >
+              <h3 class="text-sm font-semibold mb-2" :class="isDark ? 'text-amber-400' : 'text-amber-900'">Quyền lợi gói</h3>
+              <ul class="list-disc space-y-1 pl-5 text-sm" :class="isDark ? 'text-amber-300' : 'text-amber-800'">
+                <li v-for="(feature, idx) in planFeatures" :key="idx">{{ feature }}</li>
+              </ul>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   </div>
@@ -147,14 +191,12 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { showToast } from '@/utils/toast'
-
-import {
-  paymentService,
-  type SubscriptionPlan,
-  type MomoInitPayload,
-} from '@/services/payment.service'
+import { useThemeStore } from '@/store/theme.store'
+import { paymentService, type SubscriptionPlan, type MomoInitPayload } from '@/services/payment.service'
 
 const route = useRoute()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 const plans = ref<SubscriptionPlan[]>([])
 const planLoading = ref(false)
@@ -167,15 +209,11 @@ const amountNumber = computed(() => {
   const digits = amountText.value.replace(/[^\d]/g, '')
   return digits ? parseInt(digits, 10) : 0
 })
-const descriptionText = ref(
-  typeof route.query.description === 'string' ? route.query.description : '',
-)
+const descriptionText = ref(typeof route.query.description === 'string' ? route.query.description : '')
 const description = computed(() => descriptionText.value || `Nạp tiền ${plan.value}`)
 const planDisplay = computed(() => plan.value || 'Nạp tiền tuỳ chỉnh')
 
-const selectedPlan = computed(
-  () => plans.value.find((item) => item.id === selectedPlanId.value) || null,
-)
+const selectedPlan = computed(() => plans.value.find((item) => item.id === selectedPlanId.value) || null)
 const planDuration = computed(() => selectedPlan.value?.durationDays ?? null)
 const planFeatures = computed(() => selectedPlan.value?.features ?? [])
 
@@ -215,13 +253,8 @@ function syncPlanWithSelection() {
   }
 }
 
-watch(selectedPlanId, () => {
-  syncPlanWithSelection()
-})
-
-onMounted(() => {
-  loadPlans()
-})
+watch(selectedPlanId, () => { syncPlanWithSelection() })
+onMounted(() => { loadPlans() })
 
 const isMomoLoading = ref(false)
 async function payWithMomo() {
@@ -231,9 +264,7 @@ async function payWithMomo() {
   }
   isMomoLoading.value = true
   try {
-    const payload: MomoInitPayload = {
-      description: description.value,
-    }
+    const payload: MomoInitPayload = { description: description.value }
     if (selectedPlanId.value) payload.planId = selectedPlanId.value
     else payload.amount = amountNumber.value
     payload.flow = 'pay_with_method'
@@ -249,10 +280,7 @@ async function payWithMomo() {
   }
 }
 
-function vnd(n: number) {
-  return n.toLocaleString('vi-VN') + 'đ'
-}
-
+function vnd(n: number) { return n.toLocaleString('vi-VN') + 'đ' }
 function onAmountInput(manual = false) {
   amountText.value = amountText.value.replace(/[^\d]/g, '')
   if (manual) {
@@ -262,3 +290,12 @@ function onAmountInput(manual = false) {
   }
 }
 </script>
+
+<style scoped>
+.dark-mode {
+  @apply bg-slate-950;
+}
+.light-mode {
+  @apply bg-slate-50;
+}
+</style>

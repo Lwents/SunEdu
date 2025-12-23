@@ -1,314 +1,124 @@
 <template>
-  <div class="min-h-screen bg-slate-50">
-    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+  <div class="my-courses" :class="isDark ? 'dark' : 'light'">
+    <div v-if="isDark" class="bg-glow">
+      <div class="glow g1"></div>
+      <div class="glow g2"></div>
+    </div>
+
+    <div class="wrapper">
       <!-- Header -->
-      <div class="mb-8">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-900">Khóa học</h1>
+      <div class="header-card">
+        <div class="header-left">
+          <h1>🎓 Khóa học của tôi</h1>
+          <p>Tiếp tục hành trình học tập của bạn</p>
         </div>
-          <div class="flex gap-3">
-            <router-link
-              class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition"
-              :to="{ name: 'student-learning-path' }"
-            >
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-              Lộ trình
-            </router-link>
-          </div>
+        <router-link class="ai-btn" :to="{ name: 'student-learning-path' }">
+          🧭 Lộ trình AI →
+        </router-link>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <span class="stat-num">{{ mainCoursesCount }}</span>
+          <span class="stat-txt">Tổng khóa học</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-num completed">{{ enrolled.filter(c => c.done).length }}</span>
+          <span class="stat-txt">Đã hoàn thành</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-num learning">{{ enrolled.filter(c => !c.done).length }}</span>
+          <span class="stat-txt">Đang học</span>
         </div>
       </div>
 
-      <!-- Grade selector hero -->
-      <div class="mb-6 rounded-3xl bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 p-1 shadow-xl">
-        <div class="rounded-[22px] bg-white/95 backdrop-blur px-6 py-6 sm:px-8">
-          <div class="max-w-2xl">
-            <p class="text-sm font-semibold uppercase tracking-widest text-sky-600">Chọn lớp học</p>
-            <h2 class="mt-2 text-2xl font-extrabold text-slate-900">Chạm nhẹ để xem ngay khóa học của từng lớp.</h2>
-            <p class="mt-3 text-sm text-slate-600">Mỗi thẻ đại diện cho lớp 1–5, giúp bạn lọc nhanh theo cấp độ phù hợp.</p>
-          </div>
-          <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <button
-              v-for="option in gradeOptions"
-              :key="option.grade"
-              type="button"
-              class="rounded-2xl border p-4 text-left shadow-sm transition focus:outline-none"
-              :class="selectedGrade === option.grade
-                ? 'border-slate-900 bg-slate-100 text-slate-900 shadow'
-                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'"
-              @click="selectGrade(option.grade)"
-            >
-              <p class="text-xs uppercase tracking-wide text-slate-500">Lớp</p>
-              <p class="text-3xl font-black text-slate-900">{{ option.grade }}</p>
-              <p class="text-sm font-semibold text-slate-500">{{ option.label }}</p>
-            </button>
-          </div>
+      <!-- Tabs -->
+      <div class="tabs-bar">
+        <button :class="['tab-btn', { active: activeTab === 'main' }]" @click="activeTab = 'main'">
+          📖 Khóa học của tôi <span class="tab-count">{{ mainCoursesCount }}</span>
+        </button>
+        <button :class="['tab-btn', { active: activeTab === 'supp' }]" @click="activeTab = 'supp'">
+          🔍 Khám phá thêm <span class="tab-count">{{ suppList.length }}</span>
+        </button>
+      </div>
+
+      <!-- Grade Filter -->
+      <div class="grade-bar">
+        <span class="filter-label">Lọc theo lớp:</span>
+        <div class="grade-btns">
+          <button 
+            :class="['grade-btn', { active: selectedGrade === null }]"
+            @click="selectedGrade = null; gradeFilter = null"
+          >Tất cả</button>
+          <button 
+            v-for="g in [1,2,3,4,5]" 
+            :key="g" 
+            :class="['grade-btn', { active: selectedGrade === g }]"
+            @click="toggleGrade(g)"
+          >Lớp {{ g }}</button>
         </div>
       </div>
 
-      <!-- Filters & Tabs -->
-      <!-- Tabs only (removed filters/search) -->
-      <div class="mb-8 rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
-          <div class="flex gap-2">
-            <button
-              class="rounded-lg px-5 py-2.5 text-sm font-semibold transition"
-              :class="activeTab === 'main'
-                ? 'bg-slate-900 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-              @click="activeTab = 'main'"
-            >
-              Khóa học của tôi
-            </button>
-            <button
-              class="rounded-lg px-5 py-2.5 text-sm font-semibold transition"
-              :class="activeTab === 'supp'
-                ? 'bg-slate-900 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-              @click="activeTab = 'supp'"
-            >
-              Khóa học mở rộng
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Main Courses Tab -->
+      <!-- My Courses -->
       <template v-if="activeTab === 'main'">
-        <template v-if="hasMainCourses">
-          <template v-for="section in gradeSections" :key="section.grade">
-            <section
-              v-if="section.courses.length"
-              class="mb-8"
-            >
-            <div class="mb-6 flex items-center justify-between">
-              <div>
-                <h2 class="text-xl font-semibold text-slate-900">
-                  Lớp {{ section.grade }} <span class="text-sm font-normal text-slate-500">({{ section.subtitle }})</span>
-                </h2>
-                <p class="mt-1 text-sm text-slate-600">{{ section.courses.length }} khóa học</p>
+        <div v-if="filteredMain.length" class="courses-grid">
+          <div v-for="c in filteredMain" :key="c.id" class="course-item" @click="openDetail(c.id)">
+            <div class="course-thumb">
+              <img v-if="c.thumbnail && !imageErrors[String(c.id)]" :src="getThumbnailUrl(c.thumbnail)" @error="handleImageError(c.id)" />
+              <div v-else class="thumb-placeholder">📘</div>
+              <div class="progress-badge">{{ Math.round(animatedProgress[String(c.id)] || 0) }}%</div>
+              <button class="play-btn" @click.stop="playFirst(c.id)">▶</button>
+            </div>
+            <div class="course-info">
+              <span class="grade-tag">Lớp {{ c.grade }}</span>
+              <h3>{{ c.title }}</h3>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: (animatedProgress[String(c.id)] || 0) + '%' }"></div>
               </div>
-              <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 border border-amber-200">
-                  <span class="text-lg">🏆</span>
-                  <span class="text-sm font-semibold text-amber-900">
-                    {{ section.trophies.earned }}/{{ section.trophies.total || 5 * section.courses.length }}
-                  </span>
-                </div>
-                <router-link
-                  class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-                  :to="{ name: 'student-catalog', query: { grade: section.grade } }"
-                >
-                  Xem tất cả
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </router-link>
-              </div>
+              <span :class="['status-tag', c.done ? 'done' : 'learning']">
+                {{ c.done ? '✅ Hoàn thành' : '📝 Đang học' }}
+              </span>
             </div>
-
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <article
-                v-for="c in section.courses"
-                :key="c.id"
-                class="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-pointer"
-                @click="openDetail(c.id)"
-              >
-                <div class="relative h-40 overflow-hidden bg-slate-200">
-                  <img
-                    v-if="c.thumbnail && !imageErrors[String(c.id)]"
-                    class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    :src="getThumbnailUrl(c.thumbnail)"
-                    :alt="c.title"
-                    loading="lazy"
-                    @error="handleImageError(c.id)"
-                  />
-                  <div v-else class="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-100">
-                    <svg class="h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span class="text-sm font-medium text-slate-500">Không có ảnh</span>
-                  </div>
-                  <button
-                    type="button"
-                    class="absolute right-3 top-3 inline-flex items-center justify-center rounded-full bg-white/95 p-2.5 text-slate-700 shadow-md transition hover:bg-white"
-                    title="Vào học"
-                    @click.stop="playFirst(c.id)"
-                  >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </button>
-                  <div class="absolute bottom-0 left-0 right-0 bg-black/40 p-3">
-                    <div class="mb-1.5 h-1 overflow-hidden rounded-full bg-white/30">
-                      <div
-                        class="h-full rounded-full bg-white transition-all duration-1000 ease-out"
-                        :style="{ width: `${animatedProgress[String(c.id)] || 0}%` }"
-                      ></div>
-                    </div>
-                    <p class="text-xs font-semibold text-white">{{ Math.round(animatedProgress[String(c.id)] || 0) }}% hoàn thành</p>
-                  </div>
-                </div>
-                <div class="p-4">
-                  <h3 class="mb-3 line-clamp-2 font-semibold text-slate-900">
-                    {{ c.title }}
-                  </h3>
-                  <div class="flex items-center justify-between">
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-                      :class="c.done
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-amber-100 text-amber-700'"
-                    >
-                      <span
-                        class="h-1.5 w-1.5 rounded-full"
-                        :class="c.done ? 'bg-green-500' : 'bg-amber-500'"
-                      ></span>
-                      {{ c.done ? 'Hoàn thành' : 'Đang học' }}
-                    </span>
-                    <div class="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 border border-amber-200">
-                      <span class="text-sm">🏆</span>
-                      <span class="text-xs font-semibold text-amber-900">{{ c.score }}</span>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </section>
-          </template>
-        </template>
-
-        <div v-else class="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-16 text-center">
-          <div class="mx-auto max-w-md">
-            <div class="mx-auto mb-4 h-20 w-20 rounded-full bg-slate-200 flex items-center justify-center">
-              <svg class="h-10 w-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-slate-900">Chưa có khóa học nào</h3>
-            <p class="mt-2 text-sm text-slate-600">Bắt đầu khám phá các khóa học mới ngay hôm nay!</p>
-            <button
-              type="button"
-              class="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-              @click="router.push({ name: 'student-catalog' })"
-            >
-              Khám phá khóa học
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </button>
           </div>
+        </div>
+        <div v-else class="empty-box">
+          <span class="empty-icon">📚</span>
+          <h3>Chưa có khóa học</h3>
+          <p>Hãy khám phá và đăng ký khóa học mới!</p>
+          <button class="explore-btn" @click="router.push({ name: 'student-catalog' })">🚀 Khám phá ngay</button>
         </div>
       </template>
 
-      <!-- Supplementary Courses Tab -->
+      <!-- Explore -->
       <template v-else>
-        <section v-if="suppList.length" class="mb-8">
-          <div class="mb-6 flex items-center justify-between">
-            <div>
-              <h2 class="text-xl font-semibold text-slate-900">Khóa học bổ trợ</h2>
-              <p class="mt-1 text-sm text-slate-600">{{ suppList.length }} khóa học</p>
+        <div v-if="suppList.length" class="courses-grid">
+          <div v-for="s in suppList" :key="s.id" class="course-item supp">
+            <div class="course-thumb">
+              <img v-if="s.thumbnail" :src="getThumbnailUrl(s.thumbnail)" />
+              <div v-else class="thumb-placeholder">📗</div>
+              <span class="price-tag" :class="(Number(s.price)||0) === 0 ? 'free' : ''">
+                {{ (Number(s.price)||0) === 0 ? 'Miễn phí' : formatPrice(s.price) }}
+              </span>
             </div>
-            <router-link
-              class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-              :to="{ name: 'student-catalog' }"
-            >
-              Tìm thêm
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </router-link>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <article
-              v-for="s in suppList"
-              :key="s.id"
-              class="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
-            >
-              <div class="relative h-40 overflow-hidden bg-slate-200">
-                <img 
-                  v-if="s.thumbnail" 
-                  class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  :src="getThumbnailUrl(s.thumbnail)" 
-                  :alt="s.title" 
-                  loading="lazy"
-                  @error="handleImageError"
-                />
-                <div v-else class="flex h-full w-full items-center justify-center">
-                  <svg class="h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <span
-                  v-if="getDisplayTag(s)"
-                  class="absolute left-3 top-3 rounded bg-white/95 px-2.5 py-1 text-xs font-semibold text-slate-900 shadow"
-                >
-                  {{ getDisplayTag(s) }}
-                </span>
-                <div
-                  class="absolute right-3 top-3 rounded px-2.5 py-1 text-xs font-semibold shadow"
-                  :class="(Number(s.price) || 0) === 0
-                    ? 'bg-green-500 text-white'
-                    : 'bg-amber-500 text-white'"
-                >
-                  {{ (Number(s.price) || 0) === 0 ? 'Miễn phí' : formatPrice(s.price) }}
-                </div>
+            <div class="course-info">
+              <span class="grade-tag">Lớp {{ s.grade }}</span>
+              <h3>{{ s.title }}</h3>
+              <div class="action-btns">
+                <button class="btn-outline" @click="openDetail(s.id)">Chi tiết</button>
+                <button class="btn-primary" @click="enroll(s.id)">Đăng ký</button>
               </div>
-              <div class="p-4 space-y-3">
-                <h3 class="line-clamp-2 font-semibold text-slate-900">
-                  {{ s.title }}
-                </h3>
-                <p class="text-sm text-slate-600">Phù hợp {{ toLevelLabel(s.grade) }}</p>
-                <div class="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    type="button"
-                    class="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="openDetail(s.id)"
-                  >
-                    Xem chi tiết
-                  </button>
-                  <button
-                    type="button"
-                    class="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-                    @click="enroll(s.id)"
-                  >
-                    Tham gia
-                  </button>
-                </div>
-              </div>
-            </article>
+            </div>
           </div>
-        </section>
+        </div>
+        <div v-else class="empty-box">
+          <span class="empty-icon">🔎</span>
+          <h3>Không có khóa học phù hợp</h3>
+          <p>Thử thay đổi bộ lọc</p>
+        </div>
       </template>
 
-      <!-- Empty State -->
-      <div
-        v-if="(activeTab === 'main' && mainCoursesCount === 0) || (activeTab === 'supp' && !suppList.length)"
-        class="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-16 text-center"
-      >
-        <div class="mx-auto max-w-md">
-          <div class="mx-auto mb-4 h-20 w-20 rounded-full bg-slate-200 flex items-center justify-center">
-            <svg class="h-10 w-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-slate-900">Không có khóa học phù hợp</h3>
-          <p class="mt-2 text-sm text-slate-600">Hãy thử thay đổi bộ lọc hoặc tìm kiếm khác</p>
-        </div>
-      </div>
-
-      <!-- Error Message -->
-      <div v-if="err" class="rounded-lg border border-red-200 bg-red-50 p-4">
-        <div class="flex items-start gap-3">
-          <svg class="h-5 w-5 shrink-0 text-red-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-          </svg>
-          <p class="font-medium text-red-900">{{ err }}</p>
-        </div>
-      </div>
+      <div v-if="err" class="error-msg">⚠️ {{ err }}</div>
     </div>
   </div>
 </template>
@@ -318,298 +128,311 @@ import { computed, ref, onMounted, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { courseService, type CourseSummary, type CourseDetail, type StudentMyCourse, type ID } from '@/services/course.service'
 import { resolveMediaUrl } from '@/utils/media'
+import { useThemeStore } from '@/store/theme.store'
 
 const router = useRouter()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 const imageErrors = reactive<Record<string, boolean>>({})
 
-/* Tabs */
 const activeTab = ref<'main'|'supp'>('main')
-
-/* Tìm kiếm / lọc (đã bỏ UI filter, giữ state tối thiểu) */
-const q = ref('')
 const gradeFilter = ref<number | null>(null)
-const open = ref(false)
-function setGradeFilter(option: number | null){
-  gradeFilter.value = option
-  selectedGrade.value = option
-  open.value = false
-}
-
+const selectedGrade = ref<number | null>(null)
 const err = ref('')
 
-/* Grade selector */
-const gradeOrder = [1, 2, 3, 4, 5] as const
-const gradeOptions = gradeOrder.map((grade) => ({
-  grade,
-  label: ''
-}))
-const gradeFilterOptions = [null, ...gradeOrder]
-const selectedGrade = ref<number | null>(null)
-function selectGrade(grade: number) {
-  if (selectedGrade.value === grade) {
-    selectedGrade.value = null
-    gradeFilter.value = null
-  } else {
-    selectedGrade.value = grade
-    gradeFilter.value = grade
-  }
-  activeTab.value = 'main'
+function toggleGrade(g: number) {
+  if (selectedGrade.value === g) { selectedGrade.value = null; gradeFilter.value = null }
+  else { selectedGrade.value = g; gradeFilter.value = g }
 }
 
-/* Animation */
 const animatedProgress = ref<Record<string, number>>({})
-const mainCoursesCount = computed(() => gradeSections.value.reduce((sum, section) => sum + section.courses.length, 0))
 
-function animateProgress(courseId: string, target: number, duration = 1000) {
-  const start = 0
-  const startTime = Date.now()
-  
-  function update() {
-    const elapsed = Date.now() - startTime
-    const progress = Math.min(elapsed / duration, 1)
-    const current = start + (target - start) * easeOutCubic(progress)
-    
-    animatedProgress.value[courseId] = current
-    
-    if (progress < 1) {
-      requestAnimationFrame(update)
-    } else {
-      animatedProgress.value[courseId] = target
-    }
+function animateProgress(id: string, target: number) {
+  const start = Date.now()
+  const update = () => {
+    const p = Math.min((Date.now() - start) / 800, 1)
+    animatedProgress.value[id] = target * (1 - Math.pow(1 - p, 3))
+    if (p < 1) requestAnimationFrame(update)
+    else animatedProgress.value[id] = target
   }
-  
   requestAnimationFrame(update)
 }
 
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3)
-}
-
-/* ====== LOAD COURSES FROM SERVICE ====== */
-type EnrolledItem = {
-  id: ID
-  title: string
-  grade: number
-  subject?: string
-  teacherName?: string
-  lessonsCount?: number
-  enrollments?: number
-  thumbnail?: string
-  price?: number
-  progress: number
-  done: boolean
-  score: string
-  tag?: string
-}
-
+type EnrolledItem = { id: ID; title: string; grade: number; thumbnail?: string; progress: number; done: boolean }
 type SuggestionItem = CourseSummary & { tag?: string }
 
 const enrolled = ref<EnrolledItem[]>([])
 const suggestions = ref<SuggestionItem[]>([])
 const detailsMap = ref(new Map<string, CourseDetail>())
 
-function toLevelLabel(grade: number) { return grade <= 2 ? 'Khối 1–2' : 'Khối 3–5' }
+function clamp(v?: number | null) { return typeof v === 'number' && !isNaN(v) ? Math.max(0, Math.min(100, Math.round(v))) : 0 }
+function toGrade(v: any): number { const n = Number(v); return !isNaN(n) && n >= 1 && n <= 5 ? n : 1 }
 
-function calcScore(progress: number) {
-  const earned = Math.max(0, Math.min(5, Math.round(progress / 20)))
-  return `${earned}/5`
-}
-
-function clampProgress(value?: number | null) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return 0
-  return Math.max(0, Math.min(100, Math.round(value)))
-}
-
-function toGradeNumber(value: StudentMyCourse['grade']): number {
-  const num = Number(value)
-  if (!Number.isNaN(num) && num >= 1 && num <= 5) return num
-  if (typeof value === 'string') {
-    const match = value.match(/\d/)
-    if (match) {
-      const parsed = Number(match[0])
-      if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 5) return parsed
-    }
-  }
-  return 1
-}
-
-function normalizeEnrolledCourse(course: StudentMyCourse): EnrolledItem {
-  const grade = toGradeNumber(course.grade)
-  const progress = clampProgress(course.progress)
-  const id = (course.id ?? '') as ID
-  return {
-    id,
-    title: course.title || 'Khóa học',
-    grade,
-    subject: course.subject || '',
-    teacherName: course.teacherName || '',
-    lessonsCount: course.lessonsCount || 0,
-    enrollments: course.enrollments || 0,
-    thumbnail: course.thumbnail,
-    price: course.price ?? 0,
-    progress,
-    done: course.done ?? progress >= 100,
-    score: calcScore(progress),
-    tag: (course.subject || '').toUpperCase()
-  }
+function normalize(c: StudentMyCourse): EnrolledItem {
+  const progress = clamp(c.progress)
+  return { id: c.id as ID, title: c.title || 'Khóa học', grade: toGrade(c.grade), thumbnail: c.thumbnail, progress, done: c.done ?? progress >= 100 }
 }
 
 async function load() {
   try {
     err.value = ''
-    const [myCourses, catalog] = await Promise.all([
-      courseService.myCourses(),
-      courseService.list({
-        page: 1,
-        pageSize: 20,
-        status: 'published',
-        sortBy: 'updatedAt',
-        sortDir: 'descending'
-      })
-    ])
-
-    enrolled.value = (myCourses.all || []).map(normalizeEnrolledCourse)
-    suggestions.value = (catalog.items || []).map((item) => ({
-      ...item,
-      price: Number((item as any).price) || 0,
-      tag: item.subject?.toUpperCase?.()
-    }))
-    
-    // Animate progress bars and trophies
+    const [my, cat] = await Promise.all([courseService.myCourses(), courseService.list({ page: 1, pageSize: 20, status: 'published' })])
+    enrolled.value = (my.all || []).map(normalize)
+    suggestions.value = (cat.items || []).map(i => ({ ...i, price: Number((i as any).price) || 0 }))
     await nextTick()
-    enrolled.value.forEach((c) => {
-      animateProgress(String(c.id), c.progress)
-    })
-    
-  } catch (e: any) {
-    err.value = e?.message || String(e)
-  }
+    enrolled.value.forEach(c => animateProgress(String(c.id), c.progress))
+  } catch (e: any) { err.value = e?.message || String(e) }
 }
 
-/* ====== FILTERING ====== */
 const filteredMain = computed(() => {
   let arr = enrolled.value.slice()
-  if (q.value) {
-    const key = q.value.toLowerCase()
-    arr = arr.filter(x => x.title.toLowerCase().includes(key))
-  }
-  if (gradeFilter.value) {
-    arr = arr.filter((x) => x.grade === gradeFilter.value)
-  }
+  if (gradeFilter.value) arr = arr.filter(x => x.grade === gradeFilter.value)
   return arr
 })
-function parseScore(s: string){ const [a,b] = s.split('/').map(n=>parseInt(n)); return { earned: a||0, total: b||0 } }
-function sumTrophies(list: EnrolledItem[]){ return list.reduce((acc,c)=>{ const s=parseScore(c.score); acc.earned+=s.earned; acc.total+=s.total; return acc }, {earned:0,total:0}) }
-const gradeSections = computed(() => {
-  return gradeOrder.map((grade) => {
-    const courses = filteredMain.value.filter((c) => c.grade === grade)
-    return {
-      grade,
-      title: `Lớp ${grade}`,
-      subtitle: grade <= 2 ? 'Cơ bản' : 'Nâng cao',
-      courses,
-      trophies: sumTrophies(courses),
-    }
-  })
-})
-const hasMainCourses = computed(() => gradeSections.value.some((section) => section.courses.length > 0))
 
-/** Supp tab */
-const enrolledIdSet = computed(() => new Set(enrolled.value.map(c => String(c.id))))
+const mainCoursesCount = computed(() => filteredMain.value.length)
+const enrolledIds = computed(() => new Set(enrolled.value.map(c => String(c.id))))
+
 const suppList = computed(() => {
-  let arr = suggestions.value
-    .filter(c => !enrolledIdSet.value.has(String(c.id)))
-    .map(c => ({ ...c, tag: c.tag || 'Bổ trợ' }))
-  if (gradeFilter.value) arr = arr.filter((s) => s.grade === gradeFilter.value)
-  if (q.value){
-    const key=q.value.toLowerCase()
-    arr = arr.filter(s => s.title.toLowerCase().includes(key) || (s.tag||'').toLowerCase().includes(key))
-  }
+  let arr = suggestions.value.filter(c => !enrolledIds.value.has(String(c.id)))
+  if (gradeFilter.value) arr = arr.filter(s => s.grade === gradeFilter.value)
   return arr
 })
 
-/* ====== ACTIONS ====== */
-function openDetail(id: number | string){
-  if (router.hasRoute('student-course-detail')) router.push({ name:'student-course-detail', params:{ id } })
-  else router.push(`/student/courses/${id}`)
-}
+function openDetail(id: number | string) { router.push({ name: 'student-course-detail', params: { id } }) }
 
-async function playFirst(id: number | string){
+async function playFirst(id: number | string) {
   let d = detailsMap.value.get(String(id))
-  if (!d) {
-    d = await courseService.detail(id)
-    detailsMap.value.set(String(id), d)
-  }
+  if (!d) { d = await courseService.detail(id); detailsMap.value.set(String(id), d) }
   const first = d.sections?.[0]?.lessons?.[0]?.id
-  if (!first) return openDetail(id)
-  if (router.hasRoute('student-course-player'))
-    router.push({ name:'student-course-player', params:{ id, lessonId: first } })
-  else
-    router.push(`/student/courses/${id}/player/${first}`)
+  if (first) router.push({ name: 'student-course-player', params: { id, lessonId: first } })
+  else openDetail(id)
 }
 
-
-async function enroll(id: number | string){
+async function enroll(id: number | string) {
   try {
-    const course = await courseService.detail(id)
-    const price = Number(course.price) || 0
-    
-    // Nếu khóa học miễn phí, enroll trực tiếp
-    if (price === 0) {
-      try {
-        await courseService.enroll(id)
-        await load() // Reload danh sách
-        // Sau khi enroll thành công, tự động mở khóa học để xem
-        playFirst(id)
-      } catch (e: any) {
-        alert(e?.message || 'Đăng ký khóa học thất bại')
-      }
-    } else {
-      // Nếu có phí, thêm vào giỏ hàng
-      if (router.hasRoute('student-payments-cart')) {
-        router.push({ name: 'student-payments-cart', query: { add: String(id) } })
-      } else {
-        router.push({ path: '/student/payments/cart', query: { add: String(id) } })
-      }
-    }
-  } catch (e: any) {
-    alert(e?.message || 'Không thể đăng ký khóa học')
-  }
+    const c = await courseService.detail(id)
+    if ((Number(c.price) || 0) === 0) { await courseService.enroll(id); await load(); playFirst(id) }
+    else router.push({ name: 'student-payments-cart', query: { add: String(id) } })
+  } catch (e: any) { alert(e?.message || 'Lỗi') }
 }
 
-const getThumbnailUrl = (thumbnail?: string) => resolveMediaUrl(thumbnail)
-
-function handleImageError(courseId: string | number) {
-  imageErrors[String(courseId)] = true
-}
-
-function formatPrice(price?: number | string): string {
-  if (!price || price === 0 || price === '0') return 'Miễn phí'
-  const numPrice = typeof price === 'string' ? parseFloat(price) : price
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(numPrice)
-}
-
-// Kiểm tra xem string có phải là UUID không
-function isUUID(str: string | null | undefined): boolean {
-  if (!str || typeof str !== 'string') return false
-  // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  return uuidRegex.test(str)
-}
-
-// Lấy tag để hiển thị, không hiển thị UUID
-function getDisplayTag(course: any): string | null {
-  // Nếu tag là UUID, không hiển thị
-  if (course.tag && !isUUID(course.tag)) {
-    return course.tag
-  }
-  // Nếu có grade, hiển thị "Lớp X"
-  if (course.grade) {
-    return `Lớp ${course.grade}`
-  }
-  // Mặc định là "Bổ trợ"
-  return 'Bổ trợ'
+const getThumbnailUrl = (t?: string) => resolveMediaUrl(t)
+function handleImageError(id: string | number) { imageErrors[String(id)] = true }
+function formatPrice(p?: number | string): string {
+  if (!p) return 'Miễn phí'
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(p))
 }
 
 onMounted(load)
 </script>
+
+<style scoped>
+.my-courses { min-height: 100vh; position: relative; }
+.my-courses.dark { background: #0f172a; }
+.my-courses.light { background: #f1f5f9; }
+
+.bg-glow { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.glow { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.3; }
+.g1 { top: -50px; left: -50px; width: 300px; height: 300px; background: #06b6d4; }
+.g2 { bottom: -50px; right: -50px; width: 250px; height: 250px; background: #8b5cf6; }
+
+.wrapper { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 20px 16px; }
+
+/* Header */
+.header-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px; border-radius: 16px; margin-bottom: 16px; }
+.dark .header-card { background: rgba(30,41,59,0.7); border: 1px solid rgba(255,255,255,0.1); }
+.light .header-card { background: #fff; border: 1px solid #e2e8f0; }
+
+.header-left h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+.dark .header-left h1 { color: #fff; }
+.light .header-left h1 { color: #1e293b; }
+.header-left p { font-size: 13px; margin: 0; }
+.dark .header-left p { color: #94a3b8; }
+.light .header-left p { color: #64748b; }
+
+.ai-btn { padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; transition: all 0.2s; white-space: nowrap; }
+.dark .ai-btn { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
+.light .ai-btn { background: #1e293b; color: #fff; }
+.ai-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+/* Stats */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat-box { padding: 16px; border-radius: 12px; text-align: center; }
+.dark .stat-box { background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.08); }
+.light .stat-box { background: #fff; border: 1px solid #e2e8f0; }
+
+.stat-num { display: block; font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+.dark .stat-num { color: #22d3ee; }
+.light .stat-num { color: #6366f1; }
+.stat-num.completed { color: #22c55e; }
+.stat-num.learning { color: #f59e0b; }
+.stat-txt { font-size: 11px; font-weight: 500; }
+.dark .stat-txt { color: #94a3b8; }
+.light .stat-txt { color: #64748b; }
+
+/* Control Bar - Tabs & Filter Combined */
+.control-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px; border-radius: 14px; margin-bottom: 16px; }
+.dark .control-bar { background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.08); }
+.light .control-bar { background: #fff; border: 1px solid #e2e8f0; }
+
+/* Tabs Bar */
+.tabs-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.tab-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+.dark .tab-btn { background: rgba(30,41,59,0.6); color: #64748b; border: 1px solid rgba(255,255,255,0.08); }
+.light .tab-btn { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
+.tab-btn:hover { }
+.dark .tab-btn:hover { color: #e2e8f0; border-color: rgba(255,255,255,0.15); }
+.light .tab-btn:hover { color: #1e293b; border-color: #cbd5e1; }
+.tab-btn.active { }
+.dark .tab-btn.active { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; border-color: transparent; }
+.light .tab-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+.tab-count { padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+.dark .tab-count { background: rgba(255,255,255,0.15); }
+.light .tab-count { background: rgba(0,0,0,0.08); }
+.tab-btn.active .tab-count { background: rgba(255,255,255,0.25); }
+
+/* Grade Bar */
+.grade-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.dark .grade-bar { background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.06); }
+.light .grade-bar { background: #fff; border: 1px solid #e2e8f0; }
+
+.filter-label { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.dark .filter-label { color: #94a3b8; }
+.light .filter-label { color: #64748b; }
+
+.grade-btns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.grade-btn { padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.dark .grade-btn { background: rgba(255,255,255,0.05); color: #94a3b8; }
+.light .grade-btn { background: #f1f5f9; color: #64748b; }
+.grade-btn:hover { transform: translateY(-1px); }
+.dark .grade-btn:hover { color: #22d3ee; background: rgba(6,182,212,0.15); }
+.light .grade-btn:hover { color: #6366f1; background: #e0e7ff; }
+.grade-btn.active { }
+.dark .grade-btn.active { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
+.light .grade-btn.active { background: #1e293b; color: #fff; }
+
+/* Filter - unused */
+.filter-section { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; }
+.dark .filter-section { background: rgba(30,41,59,0.5); }
+.light .filter-section { background: #fff; border: 1px solid #e2e8f0; }
+
+.filter-label { font-size: 12px; font-weight: 600; }
+.dark .filter-label { color: #94a3b8; }
+.light .filter-label { color: #64748b; }
+
+.filter-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-btn { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; }
+.dark .filter-btn { background: rgba(255,255,255,0.05); color: #94a3b8; }
+.light .filter-btn { background: #f1f5f9; color: #64748b; }
+.filter-btn:hover { transform: translateY(-1px); }
+.dark .filter-btn:hover { background: rgba(6,182,212,0.2); color: #22d3ee; }
+.light .filter-btn:hover { background: #e0e7ff; color: #6366f1; }
+.filter-btn.active { }
+.dark .filter-btn.active { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
+.light .filter-btn.active { background: #1e293b; color: #fff; }
+
+/* Tabs */
+.tabs-row { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab-btn { flex: 1; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+.dark .tab-btn { background: rgba(30,41,59,0.5); color: #64748b; }
+.light .tab-btn { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
+.tab-btn:hover { }
+.dark .tab-btn:hover { color: #e2e8f0; }
+.light .tab-btn:hover { color: #1e293b; }
+.tab-btn.active { }
+.dark .tab-btn.active { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
+.light .tab-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+
+/* Courses Grid */
+.courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+
+.course-item { border-radius: 14px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
+.dark .course-item { background: rgba(30,41,59,0.7); border: 1px solid rgba(255,255,255,0.08); }
+.light .course-item { background: #fff; border: 1px solid #e2e8f0; }
+.course-item:hover { transform: translateY(-4px); }
+.dark .course-item:hover { border-color: rgba(6,182,212,0.3); box-shadow: 0 8px 24px rgba(6,182,212,0.1); }
+.light .course-item:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+.course-thumb { position: relative; height: 120px; overflow: hidden; }
+.dark .course-thumb { background: rgba(255,255,255,0.05); }
+.light .course-thumb { background: #f1f5f9; }
+.course-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 32px; opacity: 0.4; }
+
+.progress-badge { position: absolute; bottom: 8px; left: 8px; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.dark .progress-badge { background: rgba(0,0,0,0.7); color: #22d3ee; }
+.light .progress-badge { background: rgba(255,255,255,0.95); color: #6366f1; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+.play-btn { position: absolute; bottom: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+.dark .play-btn { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
+.light .play-btn { background: #1e293b; color: #fff; }
+.play-btn:hover { transform: scale(1.1); }
+
+.price-tag { position: absolute; top: 8px; right: 8px; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; background: #f59e0b; color: #fff; }
+.price-tag.free { background: #22c55e; }
+
+.course-info { padding: 12px; }
+.grade-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-bottom: 6px; }
+.dark .grade-tag { background: rgba(6,182,212,0.15); color: #22d3ee; }
+.light .grade-tag { background: #dbeafe; color: #2563eb; }
+
+.course-info h3 { font-size: 13px; font-weight: 600; margin: 0 0 8px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dark .course-info h3 { color: #fff; }
+.light .course-info h3 { color: #1e293b; }
+
+.progress-bar { height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.dark .progress-bar { background: rgba(255,255,255,0.1); }
+.light .progress-bar { background: #e2e8f0; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+.dark .progress-fill { background: linear-gradient(90deg, #06b6d4, #8b5cf6); }
+.light .progress-fill { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+
+.status-tag { font-size: 11px; font-weight: 600; }
+.status-tag.done { color: #22c55e; }
+.status-tag.learning { color: #f59e0b; }
+
+.action-btns { display: flex; gap: 6px; margin-top: 8px; }
+.btn-outline, .btn-primary { flex: 1; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-outline { }
+.dark .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #94a3b8; }
+.light .btn-outline { background: transparent; border: 1px solid #e2e8f0; color: #64748b; }
+.btn-outline:hover { }
+.dark .btn-outline:hover { border-color: #22d3ee; color: #22d3ee; }
+.light .btn-outline:hover { border-color: #6366f1; color: #6366f1; }
+.btn-primary { border: none; }
+.dark .btn-primary { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
+.light .btn-primary { background: #1e293b; color: #fff; }
+
+/* Empty */
+.empty-box { text-align: center; padding: 40px 20px; border-radius: 16px; }
+.dark .empty-box { background: rgba(30,41,59,0.4); border: 2px dashed rgba(255,255,255,0.1); }
+.light .empty-box { background: #fff; border: 2px dashed #e2e8f0; }
+.empty-icon { font-size: 40px; display: block; margin-bottom: 12px; }
+.empty-box h3 { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+.dark .empty-box h3 { color: #fff; }
+.light .empty-box h3 { color: #1e293b; }
+.empty-box p { font-size: 13px; margin: 0 0 16px; }
+.dark .empty-box p { color: #64748b; }
+.light .empty-box p { color: #64748b; }
+.explore-btn { padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
+.dark .explore-btn { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
+.light .explore-btn { background: #1e293b; color: #fff; }
+
+.error-msg { padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+
+@media (max-width: 640px) {
+  .wrapper { padding: 16px 12px; }
+  .header-card { flex-direction: column; text-align: center; }
+  .ai-btn { width: 100%; text-align: center; }
+  .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-num { font-size: 20px; }
+  .filter-section { flex-direction: column; align-items: flex-start; }
+  .tabs-row { flex-direction: column; }
+  .courses-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
+@media (max-width: 400px) {
+  .courses-grid { grid-template-columns: 1fr; }
+}
+</style>
