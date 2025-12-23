@@ -461,7 +461,7 @@
                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold"
                   :class="step.current ? 'bg-cyan-500 text-white' : isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600'"
                 >
-                  {{ idx + 1 }}
+                  {{ Number(idx) + 1 }}
                 </div>
                 <span class="flex-1 text-sm font-medium" :class="isDark ? 'text-slate-100' : 'text-slate-900'">{{ step.title }}</span>
                 <span v-if="step.current" class="rounded-lg bg-cyan-500 px-3 py-1 text-xs font-bold text-white">
@@ -614,19 +614,19 @@
                   v-for="(choice, idx) in currentQuestion.choices"
                   :key="idx"
                   class="w-full text-left rounded-xl border-2 p-4 transition-all"
-                  :class="assessmentAnswers[currentQuestion.id] === idx 
+                  :class="assessmentAnswers[currentQuestion.id] === Number(idx) 
                     ? 'border-purple-500 bg-purple-50' 
                     : 'border-slate-200 hover:border-purple-300 hover:bg-purple-50/50'"
-                  @click="selectAnswer(currentQuestion.id, idx)"
+                  @click="selectAnswer(currentQuestion.id, Number(idx))"
                 >
                   <div class="flex items-center gap-3">
                     <div 
                       class="w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold"
-                      :class="assessmentAnswers[currentQuestion.id] === idx 
+                      :class="assessmentAnswers[currentQuestion.id] === Number(idx) 
                         ? 'border-purple-500 bg-purple-500 text-white' 
                         : 'border-slate-300'"
                     >
-                      {{ assessmentAnswers[currentQuestion.id] === idx ? '✓' : String.fromCharCode(65 + idx) }}
+                      {{ assessmentAnswers[currentQuestion.id] === Number(idx) ? '✓' : String.fromCharCode(65 + Number(idx)) }}
                     </div>
                     <span class="text-slate-700">{{ choice }}</span>
                   </div>
@@ -704,7 +704,7 @@
                   class="flex items-center gap-3 rounded-xl bg-slate-50 p-3"
                 >
                   <div class="w-8 h-8 rounded-lg bg-purple-500 text-white flex items-center justify-center font-bold text-sm">
-                    {{ idx + 1 }}
+                    {{ Number(idx) + 1 }}
                   </div>
                   <div>
                     <p class="font-semibold text-slate-900">{{ lesson.title }}</p>

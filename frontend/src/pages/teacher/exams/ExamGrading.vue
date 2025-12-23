@@ -242,7 +242,7 @@
                         ? 'bg-amber-600 text-white'
                         : 'bg-slate-300 text-slate-700'"
                     >
-                      {{ String.fromCharCode(65 + cIdx) }}
+                      {{ String.fromCharCode(65 + Number(cIdx)) }}
                     </span>
                     <span class="flex-1 text-sm text-slate-700">{{ choice.text }}</span>
                     <span v-if="isCorrectChoice(q, choice)" class="text-emerald-600 font-semibold">✓</span>

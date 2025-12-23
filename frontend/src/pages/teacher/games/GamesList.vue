@@ -219,7 +219,7 @@
                   class="rounded-xl border border-slate-200 bg-slate-50 p-4"
                 >
                   <div class="flex items-start justify-between mb-3">
-                    <span class="text-sm font-semibold text-slate-500">Câu {{ idx + 1 }}</span>
+                    <span class="text-sm font-semibold text-slate-500">Câu {{ Number(idx) + 1 }}</span>
                     <button class="text-sm font-semibold text-red-600 hover:text-red-500" @click="removeQuestion(idx)">Xóa</button>
                   </div>
                   <input
@@ -241,7 +241,7 @@
                         v-model="q.options[oidx]"
                         type="text"
                         class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                        :placeholder="`Đáp án ${oidx + 1}`"
+                        :placeholder="`Đáp án ${Number(oidx) + 1}`"
                       />
                     </div>
                   </div>
@@ -255,7 +255,7 @@
                   class="rounded-xl border border-slate-200 bg-slate-50 p-4"
                 >
                   <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm font-semibold text-slate-500">Cặp {{ idx + 1 }}</span>
+                    <span class="text-sm font-semibold text-slate-500">Cặp {{ Number(idx) + 1 }}</span>
                     <button class="text-sm font-semibold text-red-600 hover:text-red-500" @click="removeQuestion(idx)">Xóa</button>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
