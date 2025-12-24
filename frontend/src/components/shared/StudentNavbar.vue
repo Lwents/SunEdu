@@ -11,7 +11,7 @@
           to="/student/dashboard" 
           class="inline-block transition hover:opacity-80"
         >
-          <LogoSmartEdu :size="90" />
+          <LogoSunnyEdu :size="75" />
         </RouterLink>
       </div>
 
@@ -20,31 +20,36 @@
         <li v-for="item in menu" :key="item.path">
           <RouterLink
             :to="item.path"
-            class="rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300"
+            class="relative px-4 py-2.5 text-sm font-medium transition-colors duration-200"
             :class="getMenuClass(item.path)"
           >
             {{ item.label }}
+            <span
+              v-if="isActive(item.path)"
+              class="absolute left-3 right-3 -bottom-1 h-0.5 rounded-full"
+              :class="isDark ? 'bg-cyan-400' : 'bg-slate-900'"
+            ></span>
           </RouterLink>
         </li>
       </ul>
 
       <!-- Right side actions -->
       <div class="flex items-center gap-3">
-        <!-- Theme Toggle -->
+        <!-- Theme Toggle Switch -->
         <button
           @click="toggleTheme"
-          class="p-2 rounded-xl transition-all duration-300"
-          :class="isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-700'"
+          class="theme-switch"
           :title="isDark ? 'Chuyển sang Light Mode' : 'Chuyển sang Dark Mode'"
         >
-          <!-- Sun icon (show in dark mode) -->
-          <svg v-if="isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-          </svg>
-          <!-- Moon icon (show in light mode) -->
-          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-          </svg>
+          <div class="switch-track" :class="isDark ? 'dark' : 'light'">
+            <svg class="switch-icon sun" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 7a5 5 0 100 10 5 5 0 000-10zM12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg class="switch-icon moon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+            <div class="switch-thumb" :class="{ active: isDark }"></div>
+          </div>
         </button>
 
         <!-- Notification Bell Component -->
@@ -164,11 +169,16 @@
             v-for="item in menu"
             :key="item.path"
             :to="item.path"
-            class="block rounded-xl px-4 py-3 text-base font-medium transition"
+            class="relative block px-4 py-3 text-base font-medium transition-colors duration-200"
             :class="getMenuClass(item.path)"
             @click="open = false"
           >
             {{ item.label }}
+            <span
+              v-if="isActive(item.path)"
+              class="absolute left-4 right-4 -bottom-1 h-0.5 rounded-full"
+              :class="isDark ? 'bg-cyan-400' : 'bg-slate-900'"
+            ></span>
           </RouterLink>
         </div>
       </div>
@@ -189,7 +199,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
 import { useThemeStore } from '@/store/theme.store'
 import { onClickOutside } from '@vueuse/core'
-import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
+import LogoSunnyEdu from '@/components/ui/LogoSunnyEdu.vue'
 import ConfirmLogout from '@/components/ui/ConfirmLogout.vue'
 import NotificationBell from '@/components/shared/NotificationBell.vue'
 import { getAvatarSrc } from '@/utils/avatar'
@@ -247,12 +257,12 @@ function isActive(path: string) {
 function getMenuClass(path: string) {
   if (isActive(path)) {
     return isDark.value
-      ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white'
-      : 'bg-slate-800 text-white shadow-sm'
+      ? 'text-cyan-200'
+      : 'text-slate-900'
   }
-  return isDark.value 
-    ? 'text-gray-300 hover:text-white hover:bg-white/10' 
-    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+  return isDark.value
+    ? 'text-gray-300 hover:text-white'
+    : 'text-gray-700 hover:text-gray-900'
 }
 
 function handleAvatarError(event: Event) {
@@ -295,3 +305,91 @@ onMounted(() => {
   }
 })
 </script>
+
+
+<style scoped>
+/* Theme Switch */
+.theme-switch {
+  padding: 4px;
+  border-radius: 20px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.switch-track {
+  width: 52px;
+  height: 28px;
+  border-radius: 14px;
+  position: relative;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+}
+
+.switch-track.dark {
+  background: linear-gradient(135deg, #1e3a5f, #0f172a);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.switch-track.light {
+  background: linear-gradient(135deg, #87ceeb, #60a5fa);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.switch-icon {
+  width: 14px;
+  height: 14px;
+  z-index: 1;
+  transition: all 0.3s;
+}
+
+.switch-icon.sun {
+  color: #fbbf24;
+}
+
+.switch-track.dark .switch-icon.sun {
+  opacity: 0.4;
+}
+
+.switch-track.light .switch-icon.sun {
+  opacity: 1;
+}
+
+.switch-icon.moon {
+  color: #e2e8f0;
+}
+
+.switch-track.dark .switch-icon.moon {
+  opacity: 1;
+}
+
+.switch-track.light .switch-icon.moon {
+  opacity: 0.4;
+}
+
+.switch-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: all 0.3s cubic-bezier(0.68, -0.15, 0.27, 1.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.switch-track.light .switch-thumb {
+  background: linear-gradient(135deg, #fff, #fef3c7);
+}
+
+.switch-track.dark .switch-thumb {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.switch-thumb.active {
+  left: 27px;
+}
+</style>

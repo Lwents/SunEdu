@@ -1,16 +1,17 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 sm:p-6">
+  <div class="min-h-screen p-4 sm:p-6" :class="isDark ? 'bg-slate-950' : 'bg-slate-50'">
     <div class="mx-auto max-w-4xl">
-      <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-200 p-6">
+      <section class="rounded-xl border shadow-sm" :class="isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-white border-slate-200'">
+        <div class="flex items-center justify-between border-b p-6" :class="isDark ? 'border-white/5' : 'border-slate-200'">
           <div>
-            <h2 class="text-xl font-bold text-slate-800">Hồ sơ giảng viên</h2>
-            <p class="mt-1 text-sm text-slate-500">
+            <h2 class="text-xl font-bold" :class="isDark ? 'text-white' : 'text-slate-800'">Hồ sơ giảng viên</h2>
+            <p class="mt-1 text-sm" :class="isDark ? 'text-gray-400' : 'text-slate-500'">
               Cập nhật thông tin cá nhân và giới thiệu của bạn.
             </p>
           </div>
           <button
-            class="shrink-0 whitespace-nowrap rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:py-1.5 sm:text-sm"
+            class="shrink-0 whitespace-nowrap rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:py-1.5 sm:text-sm"
+            :class="isDark ? 'border-slate-700 text-gray-300 hover:bg-white/5' : 'border-slate-300 text-slate-600 hover:bg-slate-100'"
             @click="resetForm"
             :disabled="loading || !isDirty"
           >
@@ -211,7 +212,8 @@
         <div
           ref="limitCard"
           tabindex="-1"
-          class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-2xl outline-none"
+          class="w-full max-w-md rounded-xl border p-4 shadow-2xl outline-none"
+          :class="isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'"
         >
           <div class="mb-2 flex items-center gap-2">
             <svg
@@ -228,11 +230,11 @@
                 d="M12 9v3m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
               />
             </svg>
-            <h3 id="limit-title" class="text-base font-bold text-slate-800">Không thể tải ảnh</h3>
+            <h3 id="limit-title" class="text-base font-bold" :class="isDark ? 'text-white' : 'text-slate-800'">Không thể tải ảnh</h3>
           </div>
-          <div class="mb-3 text-sm text-slate-800">
+          <div class="mb-3 text-sm" :class="isDark ? 'text-gray-300' : 'text-slate-800'">
             <p>{{ limitModal.message }}</p>
-            <small class="mt-1 block text-slate-500">Vui lòng chọn tệp PNG/JPG ≤ 5MB.</small>
+            <small class="mt-1 block" :class="isDark ? 'text-gray-500' : 'text-slate-500'">Vui lòng chọn tệp PNG/JPG ≤ 5MB.</small>
           </div>
           <div class="flex justify-end">
             <button
@@ -253,11 +255,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
+import { useThemeStore } from '@/store/theme.store'
 import { authService, type AuthUser } from '@/services/auth.service'
 import { getAvatarSrc } from '@/utils/avatar'
 import { showToast } from '@/utils/toast'
 
 const auth = useAuthStore()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 const user = computed<AuthUser | null>(() => auth.user)
 
 /** constants */

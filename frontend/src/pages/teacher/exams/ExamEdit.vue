@@ -1,6 +1,6 @@
 <!-- src/pages/teacher/exams/ExamEdit.vue -->
 <template>
-  <div class="min-h-screen w-full overflow-x-hidden bg-slate-50">
+  <div class="min-h-screen w-full overflow-x-hidden" :class="isDark ? 'bg-slate-950' : 'bg-slate-50'">
     <main class="w-full mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 md:px-10 md:py-8">
       <!-- Header -->
       <div class="mb-5 flex items-center justify-between">
@@ -424,9 +424,12 @@ import { courseService, type CourseSummary } from '@/services/course.service'
 import { useAuthStore } from '@/store/auth.store'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
+import { useThemeStore } from '@/store/theme.store'
 
 const router = useRouter()
 const route = useRoute()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 const examId = computed(() => {
   const id = route.params.id
   // ID can be UUID (string) or number, keep as string for UUID compatibility

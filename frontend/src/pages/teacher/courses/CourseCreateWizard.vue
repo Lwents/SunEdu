@@ -14,10 +14,10 @@
               :class="[
                 'flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition',
                 currentStep > index
-                  ? 'border-slate-900 bg-slate-900 text-white'
+                  ? (isDark ? 'border-cyan-500 bg-cyan-600 text-white' : 'border-slate-900 bg-slate-900 text-white')
                   : currentStep === index
-                  ? 'border-slate-900 bg-white text-slate-900'
-                  : 'border-slate-300 bg-white text-slate-400'
+                  ? (isDark ? 'border-cyan-500 bg-slate-800 text-cyan-400' : 'border-slate-900 bg-white text-slate-900')
+                  : (isDark ? 'border-slate-600 bg-slate-800 text-slate-500' : 'border-slate-300 bg-white text-slate-400')
               ]"
             >
               <svg
@@ -35,19 +35,19 @@
               <p
                 :class="[
                   'text-sm font-medium',
-                  currentStep >= index ? 'text-gray-900' : 'text-gray-500'
+                  currentStep >= index ? (isDark ? 'text-white' : 'text-gray-900') : (isDark ? 'text-gray-500' : 'text-gray-500')
                 ]"
               >
                 {{ step.title }}
               </p>
-              <p class="text-xs text-gray-500">{{ step.description }}</p>
+              <p :class="isDark ? 'text-gray-500' : 'text-gray-500'" class="text-xs">{{ step.description }}</p>
             </div>
           </div>
-          <div v-if="index < steps.length - 1" class="mx-4 hidden sm:block flex-1 h-0.5 bg-gray-300">
+          <div v-if="index < steps.length - 1" :class="isDark ? 'bg-slate-700' : 'bg-gray-300'" class="mx-4 hidden sm:block flex-1 h-0.5">
             <div
               :class="[
                 'h-full transition-all duration-300',
-                currentStep > index ? 'bg-slate-900' : 'bg-slate-300'
+                currentStep > index ? (isDark ? 'bg-cyan-500' : 'bg-slate-900') : (isDark ? 'bg-slate-700' : 'bg-slate-300')
               ]"
               :style="{ width: currentStep > index ? '100%' : '0%' }"
             ></div>
@@ -57,14 +57,14 @@
     </div>
 
     <!-- Step Content -->
-    <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg mx-auto max-w-5xl w-full">
+    <div :class="isDark ? 'bg-slate-900/50 border-slate-700' : 'border-slate-200 bg-white shadow-lg'" class="rounded-2xl border p-8 mx-auto max-w-5xl w-full">
       <!-- Step 1: Thông tin cơ bản -->
       <div v-if="currentStep === 0" class="space-y-6 max-w-3xl mx-auto w-full">
-        <h2 class="text-2xl font-bold text-gray-900 text-center">Thông tin cơ bản</h2>
+        <h2 :class="isDark ? 'text-white' : 'text-gray-900'" class="text-2xl font-bold text-center">Thông tin cơ bản</h2>
         
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2 max-w-2xl mx-auto w-full">
           <div class="md:col-span-2">
-            <label class="mb-2 block text-sm font-semibold text-gray-700">
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">
               Tên khoá học <span class="text-rose-600">*</span>
             </label>
             <input
@@ -74,7 +74,9 @@
                 'w-full rounded-lg border px-4 py-2.5 focus:ring-2 transition',
                 showTitleError
                   ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-100'
-                  : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'
+                  : isDark 
+                    ? 'bg-slate-800 border-slate-700 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20'
+                    : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'
               ]"
               placeholder="Ví dụ: Luyện thi Toán lớp 3"
               required
@@ -84,10 +86,11 @@
           </div>
 
           <div>
-            <label class="mb-2 block text-sm font-semibold text-gray-700">Môn học</label>
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">Môn học</label>
             <select
               v-model="form.subject"
-              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              :class="isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-cyan-500' : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'"
+              class="w-full rounded-lg border px-4 py-2.5 focus:ring-2"
             >
               <option value="math">Toán</option>
               <option value="vietnamese">Tiếng Việt</option>
@@ -98,10 +101,11 @@
           </div>
 
           <div>
-            <label class="mb-2 block text-sm font-semibold text-gray-700">Khối lớp</label>
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">Khối lớp</label>
             <select
               v-model.number="form.grade"
-              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              :class="isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-cyan-500' : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'"
+              class="w-full rounded-lg border px-4 py-2.5 focus:ring-2"
             >
               <option :value="1">Lớp 1</option>
               <option :value="2">Lớp 2</option>
@@ -111,41 +115,44 @@
             </select>
           </div>
 
-          <div>
-            <label class="mb-2 block text-sm font-semibold text-gray-700">Giá khóa học (VNĐ)</label>
+          <div class="md:col-span-2">
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">Giá khóa học (VNĐ)</label>
             <input
               v-model.number="form.price"
               type="number"
               min="0"
               step="1000"
-              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              :class="isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-gray-500 focus:border-cyan-500' : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'"
+              class="w-full rounded-lg border px-4 py-2.5 focus:ring-2"
               placeholder="0"
             />
-            <p class="mt-1 text-xs text-gray-500">Nhập 0 để khóa học miễn phí</p>
+            <p :class="isDark ? 'text-gray-500' : 'text-gray-500'" class="mt-1 text-xs">Nhập 0 để khóa học miễn phí</p>
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-2 block text-sm font-semibold text-gray-700">Giới thiệu chi tiết</label>
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">Giới thiệu chi tiết</label>
             <textarea
               v-model.trim="form.introduction"
               rows="6"
-              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              :class="isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-gray-500 focus:border-cyan-500' : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'"
+              class="w-full rounded-lg border px-4 py-2.5 focus:ring-2"
               placeholder="Giới thiệu chi tiết về khóa học..."
             ></textarea>
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-2 block text-sm font-semibold text-gray-700">Mô tả ngắn</label>
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">Mô tả ngắn</label>
             <textarea
               v-model.trim="form.description"
               rows="3"
-              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              :class="isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-gray-500 focus:border-cyan-500' : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'"
+              class="w-full rounded-lg border px-4 py-2.5 focus:ring-2"
               placeholder="Mô tả ngắn gọn về khóa học"
             ></textarea>
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-2 block text-sm font-semibold text-gray-700">Ảnh khoá học (tuỳ chọn)</label>
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">Ảnh khoá học (tuỳ chọn)</label>
             <div class="flex items-center gap-4">
               <input
                 ref="thumbnailInput"
@@ -156,12 +163,13 @@
               />
               <button
                 type="button"
-                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                :class="isDark ? 'border-slate-600 text-gray-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+                class="rounded-lg border px-4 py-2 text-sm font-medium"
                 @click="thumbnailInput?.click()"
               >
                 Chọn ảnh
               </button>
-              <span v-if="thumbnailFile" class="text-sm text-gray-600">
+              <span v-if="thumbnailFile" :class="isDark ? 'text-gray-400' : 'text-gray-600'" class="text-sm">
                 {{ thumbnailFile.name }}
               </span>
               <img
@@ -171,7 +179,7 @@
                 class="h-20 w-32 rounded-lg object-cover border"
               />
             </div>
-            <p class="mt-2 text-xs text-gray-500">JPG/PNG, tối đa 5MB.</p>
+            <p :class="isDark ? 'text-gray-500' : 'text-gray-500'" class="mt-2 text-xs">JPG/PNG, tối đa 5MB.</p>
           </div>
 
         </div>
@@ -180,40 +188,43 @@
       <!-- Step 2: Nội dung khóa học -->
       <div v-if="currentStep === 1" class="space-y-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">Nội dung khóa học</h2>
+          <h2 :class="isDark ? 'text-white' : 'text-gray-900'" class="text-2xl font-bold">Nội dung khóa học</h2>
           <button
             type="button"
-            class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            :class="isDark ? 'bg-cyan-600 hover:bg-cyan-500' : 'bg-slate-900 hover:bg-slate-800'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-white"
             @click="showAddModule = true"
           >
             + Thêm chương
           </button>
         </div>
 
-        <p class="text-sm text-gray-600">
+        <p :class="isDark ? 'text-gray-400' : 'text-gray-600'" class="text-sm">
           Tạo các chương và bài học cho khóa học. Bạn có thể thêm sau khi tạo khóa học.
         </p>
 
-        <div v-if="modules.length === 0" class="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-          <p class="text-gray-500">Chưa có chương nào. Nhấn "+ Thêm chương" để bắt đầu.</p>
+        <div v-if="modules.length === 0" :class="isDark ? 'border-slate-600 bg-slate-800/50' : 'border-gray-300 bg-gray-50'" class="rounded-xl border-2 border-dashed p-12 text-center">
+          <p :class="isDark ? 'text-gray-400' : 'text-gray-500'">Chưa có chương nào. Nhấn "+ Thêm chương" để bắt đầu.</p>
         </div>
 
         <div v-else class="space-y-4">
           <div
             v-for="(module, mIdx) in modules"
             :key="module.id || mIdx"
-            class="rounded-xl border border-gray-200 bg-white p-4"
+            :class="isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-white'"
+            class="rounded-xl border p-4"
           >
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-3">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 font-bold text-sm">
+                <div :class="isDark ? 'bg-slate-700 text-cyan-400' : 'bg-slate-100 text-slate-700'" class="flex h-8 w-8 items-center justify-center rounded-lg font-bold text-sm">
                   {{ mIdx + 1 }}
                 </div>
                 <div>
                   <input
                     v-model="module.title"
                     type="text"
-                    class="text-base font-semibold text-gray-900 border-none bg-transparent focus:outline-none focus:ring-2 focus:ring-slate-200 rounded px-2"
+                    :class="isDark ? 'text-white focus:ring-cyan-500/20' : 'text-gray-900 focus:ring-slate-200'"
+                    class="text-base font-semibold border-none bg-transparent focus:outline-none focus:ring-2 rounded px-2"
                     placeholder="Tên chương"
                     @blur="updateModuleTitle(mIdx)"
                   />
@@ -222,14 +233,16 @@
               <div class="flex items-center gap-2">
                 <button
                   type="button"
-                  class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  :class="isDark ? 'border-slate-600 text-gray-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+                  class="rounded-lg border px-3 py-1.5 text-xs font-medium"
                   @click="showAddLesson(mIdx)"
                 >
                   + Bài học
                 </button>
                 <button
                   type="button"
-                  class="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                  :class="isDark ? 'border-rose-500/30 text-rose-400 hover:bg-rose-500/10' : 'border-rose-200 text-rose-700 hover:bg-rose-50'"
+                  class="rounded-lg border px-3 py-1.5 text-xs font-medium"
                   @click="removeModule(mIdx)"
                 >
                   Xóa
@@ -240,18 +253,20 @@
               <div
                 v-for="(lesson, lIdx) in module.lessons"
                 :key="lesson.id || lIdx"
-                class="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"
+                :class="isDark ? 'bg-slate-700/50' : 'bg-gray-50'"
+                class="flex items-center justify-between rounded-lg px-3 py-2"
               >
                 <div class="flex items-center gap-3 flex-1 min-w-0">
-                  <span class="text-sm font-medium text-gray-500 shrink-0">{{ mIdx + 1 }}.{{ lIdx + 1 }}</span>
+                  <span :class="isDark ? 'text-gray-400' : 'text-gray-500'" class="text-sm font-medium shrink-0">{{ mIdx + 1 }}.{{ lIdx + 1 }}</span>
                   <input
                     v-model="lesson.title"
                     type="text"
-                    class="text-sm text-gray-900 border-none bg-transparent focus:outline-none focus:ring-2 focus:ring-slate-200 rounded px-2 flex-1 min-w-0"
+                    :class="isDark ? 'text-white focus:ring-cyan-500/20' : 'text-gray-900 focus:ring-slate-200'"
+                    class="text-sm border-none bg-transparent focus:outline-none focus:ring-2 rounded px-2 flex-1 min-w-0"
                     placeholder="Tên bài học"
                     @blur="updateLessonTitle(mIdx, lIdx)"
                   />
-                  <div v-if="lesson.video_url || lesson.video_file" class="shrink-0 flex items-center gap-1 text-xs text-slate-600">
+                  <div v-if="lesson.video_url || lesson.video_file" :class="isDark ? 'text-cyan-400' : 'text-slate-600'" class="shrink-0 flex items-center gap-1 text-xs">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
@@ -261,21 +276,23 @@
                 <div class="flex items-center gap-2">
                   <button
                     type="button"
-                    class="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                    :class="isDark ? 'border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10' : 'border-blue-200 text-blue-700 hover:bg-blue-50'"
+                    class="rounded-lg border px-2 py-1 text-xs font-medium"
                     @click="editLesson(mIdx, lIdx)"
                   >
                     Sửa
                   </button>
                   <button
                     type="button"
-                    class="rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                    :class="isDark ? 'border-rose-500/30 text-rose-400 hover:bg-rose-500/10' : 'border-rose-200 text-rose-700 hover:bg-rose-50'"
+                    class="rounded-lg border px-2 py-1 text-xs font-medium"
                     @click="removeLesson(mIdx, lIdx)"
                   >
                     Xóa
                   </button>
                 </div>
               </div>
-              <div v-if="!module.lessons.length" class="text-sm text-gray-400 italic px-3 py-2">
+              <div v-if="!module.lessons.length" :class="isDark ? 'text-gray-500' : 'text-gray-400'" class="text-sm italic px-3 py-2">
                 Chưa có bài học
               </div>
             </div>
@@ -316,10 +333,11 @@
       </div>
 
       <!-- Navigation Buttons -->
-      <div class="mt-8 flex items-center justify-between gap-4 border-t border-gray-200 pt-6">
+      <div :class="isDark ? 'border-slate-700' : 'border-gray-200'" class="mt-8 flex items-center justify-between gap-4 border-t pt-6">
         <button
           type="button"
-          class="rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          :class="isDark ? 'border-slate-600 text-gray-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+          class="rounded-lg border px-6 py-2.5 font-semibold disabled:opacity-50"
           @click="handleBack"
         >
           Quay lại
@@ -329,7 +347,8 @@
           <button
             v-if="currentStep < steps.length - 1"
             type="button"
-            class="rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+            :class="isDark ? 'bg-cyan-600 hover:bg-cyan-500' : 'bg-slate-900 hover:bg-slate-800'"
+            class="rounded-lg px-6 py-2.5 font-semibold text-white disabled:opacity-50"
             :disabled="!canProceed"
             @click="goNext"
           >
@@ -338,7 +357,8 @@
         <button
             v-else
           type="button"
-            class="flex min-w-[160px] items-center justify-center rounded-lg bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+            :class="isDark ? 'bg-cyan-600 hover:bg-cyan-500' : 'bg-slate-900 hover:bg-slate-800'"
+            class="flex min-w-[160px] items-center justify-center rounded-lg px-6 py-2.5 font-semibold text-white disabled:opacity-50"
             :disabled="submitting || !canSubmit"
             @click="submit"
         >
@@ -354,20 +374,22 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="showAddModule = false"
     >
-      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h3 class="mb-4 text-lg font-bold">Thêm chương mới</h3>
+      <div :class="isDark ? 'bg-slate-900' : 'bg-white shadow-xl'" class="w-full max-w-md rounded-2xl p-6">
+        <h3 :class="isDark ? 'text-white' : 'text-gray-900'" class="mb-4 text-lg font-bold">Thêm chương mới</h3>
         <input
           v-model.trim="newModuleTitle"
           type="text"
-          class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+          :class="isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-gray-500 focus:border-cyan-500' : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'"
+          class="w-full rounded-lg border px-4 py-2 focus:ring-2"
           :placeholder="`Chương ${modules.length + 1}`"
           @keyup.enter="addModule"
         />
-        <p class="mt-2 text-xs text-gray-500">Để trống để tự động đặt tên "Chương {{ modules.length + 1 }}"</p>
+        <p :class="isDark ? 'text-gray-500' : 'text-gray-500'" class="mt-2 text-xs">Để trống để tự động đặt tên "Chương {{ modules.length + 1 }}"</p>
         <div class="mt-4 flex justify-end gap-3">
           <button
             type="button"
-            class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            :class="isDark ? 'border-slate-600 text-gray-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            class="rounded-lg border px-4 py-2 text-sm font-medium"
             @click="showAddModule = false; newModuleTitle = ''"
           >
             Hủy
@@ -389,19 +411,20 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto"
       @click.self="cancelAddLesson"
     >
-      <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl my-8">
-        <h3 class="mb-4 text-lg font-bold">{{ editingLessonIdx !== null ? 'Sửa bài học' : 'Thêm bài học mới' }}</h3>
+      <div :class="isDark ? 'bg-slate-900' : 'bg-white shadow-xl'" class="w-full max-w-2xl rounded-2xl p-6 my-8">
+        <h3 :class="isDark ? 'text-white' : 'text-gray-900'" class="mb-4 text-lg font-bold">{{ editingLessonIdx !== null ? 'Sửa bài học' : 'Thêm bài học mới' }}</h3>
         
         <div class="space-y-4">
           <!-- Tên bài học -->
           <div>
-            <label class="mb-2 block text-sm font-semibold text-gray-700">
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">
               Tên bài học <span class="text-rose-600">*</span>
             </label>
             <input
               v-model.trim="newLessonTitle"
               type="text"
-              class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              :class="isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-gray-500 focus:border-cyan-500' : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'"
+              class="w-full rounded-lg border px-4 py-2 focus:ring-2"
               placeholder="Ví dụ: Bài 1: Giới thiệu về số tự nhiên"
               @keyup.enter="addLesson"
             />
@@ -409,7 +432,7 @@
 
           <!-- Loại nội dung -->
           <div>
-            <label class="mb-2 block text-sm font-semibold text-gray-700">
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">
               Loại nội dung <span class="text-rose-600">*</span>
             </label>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -421,7 +444,9 @@
                   'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition',
                   newLessonContentType === option.value
                     ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
-                    : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'
+                    : isDark 
+                      ? 'border-slate-600 bg-slate-800 text-gray-300 hover:bg-slate-700'
+                      : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'
                 ]"
                 @click="newLessonContentType = option.value as any"
               >
@@ -433,19 +458,19 @@
 
           <!-- Video URL hoặc File (chỉ hiện khi chọn video) -->
           <div v-if="newLessonContentType === 'video'">
-            <label class="mb-2 block text-sm font-semibold text-gray-700">
+            <label :class="isDark ? 'text-gray-300' : 'text-gray-700'" class="mb-2 block text-sm font-semibold">
               Video bài học (tùy chọn)
             </label>
             <div class="space-y-3">
               <!-- Tab chọn: URL hoặc File -->
-              <div class="flex gap-2 border-b border-gray-200">
+              <div :class="isDark ? 'border-slate-700' : 'border-gray-200'" class="flex gap-2 border-b">
                 <button
                   type="button"
                   :class="[
                     'px-4 py-2 text-sm font-medium border-b-2 transition',
                     newLessonVideoType === 'url'
-                      ? 'border-slate-900 text-slate-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      ? (isDark ? 'border-cyan-500 text-cyan-400' : 'border-slate-900 text-slate-900')
+                      : (isDark ? 'border-transparent text-gray-500 hover:text-gray-300' : 'border-transparent text-gray-500 hover:text-gray-700')
                   ]"
                   @click="newLessonVideoType = 'url'"
                 >
@@ -456,8 +481,8 @@
                   :class="[
                     'px-4 py-2 text-sm font-medium border-b-2 transition',
                     newLessonVideoType === 'file'
-                      ? 'border-slate-900 text-slate-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      ? (isDark ? 'border-cyan-500 text-cyan-400' : 'border-slate-900 text-slate-900')
+                      : (isDark ? 'border-transparent text-gray-500 hover:text-gray-300' : 'border-transparent text-gray-500 hover:text-gray-700')
                   ]"
                   @click="newLessonVideoType = 'file'"
                 >
@@ -470,10 +495,11 @@
                 <input
                   v-model.trim="newLessonVideoUrl"
                   type="url"
-                  class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                  :class="isDark ? 'bg-slate-800 border-slate-600 text-white placeholder-gray-500 focus:border-cyan-500' : 'border-slate-300 focus:border-slate-900 focus:ring-slate-200'"
+                  class="w-full rounded-lg border px-4 py-2 focus:ring-2"
                   placeholder="https://www.youtube.com/watch?v=... hoặc link video trực tiếp"
                 />
-                <p class="mt-1 text-xs text-gray-500">
+                <p :class="isDark ? 'text-gray-500' : 'text-gray-500'" class="mt-1 text-xs">
                   Nhập link YouTube, Vimeo hoặc link video trực tiếp
                 </p>
               </div>
@@ -490,12 +516,13 @@
                 <div class="flex items-center gap-3">
                   <button
                     type="button"
-                    class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    :class="isDark ? 'border-slate-600 text-gray-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+                    class="rounded-lg border px-4 py-2 text-sm font-medium"
                     @click="newLessonVideoFileInput?.click()"
                   >
                     Chọn video
                   </button>
-                  <span v-if="newLessonVideoFile" class="text-sm text-gray-600 flex-1 truncate">
+                  <span v-if="newLessonVideoFile" :class="isDark ? 'text-gray-400' : 'text-gray-600'" class="text-sm flex-1 truncate">
                     {{ newLessonVideoFile.name }}
                   </span>
                   <button
@@ -945,8 +972,11 @@ import { courseService } from '@/services/course.service'
 import { contentService } from '@/services/content.service'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
+import { useThemeStore } from '@/store/theme.store'
 
 const router = useRouter()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 const steps = [
   { title: 'Thông tin cơ bản', description: 'Điền thông tin khóa học' },
@@ -962,7 +992,8 @@ const form = ref({
   grade: 3,
   price: 0,
   introduction: '',
-  description: ''
+  description: '',
+  status: 'draft'
 })
 const titleTouched = ref(false)
 const titleError = computed(() => {
@@ -1240,11 +1271,12 @@ function onPickThumbnail(e: Event) {
   const file = input.files?.[0]
   if (!file) return
   if (!file.type.startsWith('image/')) {
-    showToast('Vui lòng chọn file ảnh', 'warning')
+    showToast('Vui lòng chọn file ảnh (JPG/PNG).', 'warning')
     return
   }
   if (file.size > 5 * 1024 * 1024) {
-    showToast('Ảnh tối đa 5MB', 'warning')
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1)
+    showToast(`File ảnh tối đa 5MB. File của bạn: ${sizeMb} MB`, 'warning')
     input.value = ''
     return
   }
@@ -1513,6 +1545,11 @@ async function submit() {
     showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'warning')
     return
   }
+  const totalLessons = modules.value.reduce((sum, module) => sum + module.lessons.length, 0)
+  if (totalLessons < 1) {
+    showToast('Khóa học cần ít nhất 1 bài học.', 'warning')
+    return
+  }
   submitting.value = true
   try {
     // Tạo khóa học
@@ -1578,6 +1615,16 @@ async function submit() {
         }
       } catch (e) {
         console.error('Error creating module:', e)
+      }
+    }
+
+    // Xuất bản nếu chọn trạng thái "Đã xuất bản"
+    if (form.value.status === 'published') {
+      try {
+        await courseService.publishCourse(courseId)
+      } catch (publishErr: any) {
+        console.warn('Tạo thành công nhưng publish thất bại:', publishErr)
+        showToast('Đã tạo khóa học, nhưng không thể xuất bản tự động.', 'warning')
       }
     }
 

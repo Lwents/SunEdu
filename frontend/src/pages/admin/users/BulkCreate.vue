@@ -1,127 +1,110 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 sm:p-6">
-    <div class="mx-auto max-w-4xl">
-      <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="border-b border-slate-200 p-6">
-          <h2 class="text-xl font-bold text-slate-800">Tạo tài khoản hàng loạt</h2>
-          <p class="mt-1 text-sm text-slate-500">
+  <div class="bulk-create-page">
+    <div class="container">
+      <section class="form-card">
+        <div class="card-header">
+          <h2 class="card-title">📋 Tạo tài khoản hàng loạt</h2>
+          <p class="card-desc">
             Tạo nhiều tài khoản học sinh theo mã khóa (ví dụ: K72, A23)
           </p>
         </div>
 
-        <form class="space-y-6 p-6" @submit.prevent="onGenerate">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">
-                Mã khóa <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model.trim="form.cohortCode"
-                type="text"
-                placeholder="Ví dụ: K72, A23"
-                class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                required
-              />
-              <p class="mt-1 text-xs text-slate-500">
-                Mã khóa sẽ được chuyển thành số đầu tiên. K=72, A=01, B=02, ...
-              </p>
-            </div>
+        <form class="form-body" @submit.prevent="onGenerate">
+          <div class="form-group">
+            <label class="form-label">
+              Mã khóa <span class="required">*</span>
+            </label>
+            <input
+              v-model.trim="form.cohortCode"
+              type="text"
+              placeholder="Ví dụ: K72, A23"
+              class="form-input"
+              required
+            />
+            <p class="form-hint">
+              Mã khóa sẽ được chuyển thành số đầu tiên. K=72, A=01, B=02, ...
+            </p>
+          </div>
 
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">
-                Số lượng tài khoản <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model.number="form.count"
-                type="number"
-                min="1"
-                max="100"
-                placeholder="1-100"
-                class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                required
-              />
-            </div>
+          <div class="form-group">
+            <label class="form-label">
+              Số lượng tài khoản <span class="required">*</span>
+            </label>
+            <input
+              v-model.number="form.count"
+              type="number"
+              min="1"
+              max="100"
+              placeholder="1-100"
+              class="form-input"
+              required
+            />
+          </div>
 
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">
-                Mật khẩu
-              </label>
-              <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
-                Mỗi tài khoản sẽ được gán <b>ngẫu nhiên 8 ký tự</b> gồm chữ và số. Admin có thể tải file CSV sau khi tạo để gửi cho học sinh.
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">
-                Vai trò
-              </label>
-              <select
-                v-model="form.role"
-                class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="student">Học sinh</option>
-                <option value="teacher">Giáo viên</option>
-              </select>
+          <div class="form-group">
+            <label class="form-label">Mật khẩu</label>
+            <div class="info-box">
+              Mỗi tài khoản sẽ được gán <b>ngẫu nhiên 8 ký tự</b> gồm chữ và số. Admin có thể tải file CSV sau khi tạo để gửi cho học sinh.
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-200">
+          <div class="form-group">
+            <label class="form-label">Vai trò</label>
+            <select v-model="form.role" class="form-input">
+              <option value="student">Học sinh</option>
+              <option value="teacher">Giáo viên</option>
+            </select>
+          </div>
+
+          <div class="form-actions">
             <button
               type="submit"
-              class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="btn-primary"
               :disabled="loading || !isValid"
             >
               {{ loading ? 'Đang tạo...' : 'Tạo tài khoản' }}
             </button>
           </div>
 
-          <div v-if="success" class="rounded-lg bg-green-50 border border-green-200 p-4 space-y-3">
-            <p class="text-sm font-medium text-green-800">
+          <div v-if="success" class="success-box">
+            <p class="success-title">
               ✓ Đã tạo {{ result.created }} tài khoản thành công!
             </p>
-          <div class="flex items-center gap-3 flex-wrap">
-            <p class="text-xs text-green-700 flex-1 min-w-[200px]">Danh sách kèm mật khẩu. Hãy lưu lại ngay hoặc xuất CSV.</p>
-                <button
-                  type="button"
-                  class="rounded border border-green-500 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-100"
-                  @click="exportCsv"
-                >
-                  Xuất CSV
-                </button>
-                <button
-                  type="button"
-                  class="rounded border border-blue-500 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"
-                  @click="handleConfirm"
-                >
-                  Xác nhận
-                </button>
-                <button
-                  type="button"
-                  class="rounded border border-rose-500 px-3 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50"
-                  @click="rollbackAccounts"
-                  :disabled="rollbacking"
-                >
-                  {{ rollbacking ? 'Đang hủy…' : 'Hủy tạo' }}
-                </button>
-              </div>
-            <div v-if="result.accounts.length" class="mt-3 space-y-3">
-              <p class="text-xs font-medium text-green-700 mb-2">Danh sách tài khoản:</p>
-              <div class="max-h-60 overflow-y-auto bg-white rounded border border-green-200 p-3">
-                <table class="w-full text-xs">
+            <div class="success-actions">
+              <p class="success-hint">Danh sách kèm mật khẩu. Hãy lưu lại ngay hoặc xuất CSV.</p>
+              <button type="button" class="btn-outline-green" @click="exportCsv">
+                Xuất CSV
+              </button>
+              <button type="button" class="btn-outline-blue" @click="handleConfirm">
+                Xác nhận
+              </button>
+              <button
+                type="button"
+                class="btn-outline-red"
+                @click="rollbackAccounts"
+                :disabled="rollbacking"
+              >
+                {{ rollbacking ? 'Đang hủy…' : 'Hủy tạo' }}
+              </button>
+            </div>
+            <div v-if="result.accounts.length" class="accounts-list">
+              <p class="list-title">Danh sách tài khoản:</p>
+              <div class="table-wrapper">
+                <table class="accounts-table">
                   <thead>
-                    <tr class="border-b border-green-100">
-                      <th class="text-left py-1 px-2">Username</th>
-                      <th class="text-left py-1 px-2">Email</th>
-                      <th class="text-left py-1 px-2">Mật khẩu</th>
-                      <th class="text-left py-1 px-2">Vai trò</th>
+                    <tr>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Mật khẩu</th>
+                      <th>Vai trò</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="acc in result.accounts" :key="acc.username" class="border-b border-green-50">
-                      <td class="py-1 px-2 font-mono">{{ acc.username }}</td>
-                      <td class="py-1 px-2">{{ acc.email }}</td>
-                      <td class="py-1 px-2 font-mono">{{ acc.password }}</td>
-                      <td class="py-1 px-2">{{ acc.role }}</td>
+                    <tr v-for="acc in result.accounts" :key="acc.username">
+                      <td class="font-mono">{{ acc.username }}</td>
+                      <td>{{ acc.email }}</td>
+                      <td class="font-mono">{{ acc.password }}</td>
+                      <td>{{ acc.role }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -272,3 +255,392 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.bulk-create-page {
+  padding: 24px;
+  min-height: 100%;
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.form-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+.card-desc {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 8px 0 0;
+}
+
+.form-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.form-input::placeholder {
+  color: #64748b;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.info-box {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.info-box b {
+  color: #22d3ee;
+}
+
+.form-actions {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Success Box */
+.success-box {
+  padding: 20px;
+  border-radius: 12px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.success-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #22c55e;
+  margin: 0 0 12px;
+}
+
+.success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.success-hint {
+  flex: 1;
+  min-width: 200px;
+  font-size: 12px;
+  color: #86efac;
+  margin: 0;
+}
+
+.btn-outline-green,
+.btn-outline-blue,
+.btn-outline-red {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.btn-outline-green {
+  border: 1px solid #22c55e;
+  color: #22c55e;
+}
+
+.btn-outline-green:hover {
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.btn-outline-blue {
+  border: 1px solid #3b82f6;
+  color: #3b82f6;
+}
+
+.btn-outline-blue:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.btn-outline-red {
+  border: 1px solid #ef4444;
+  color: #ef4444;
+}
+
+.btn-outline-red:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.btn-outline-red:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Accounts List */
+.accounts-list {
+  margin-top: 16px;
+}
+
+.list-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #86efac;
+  margin: 0 0 8px;
+}
+
+.table-wrapper {
+  max-height: 240px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.accounts-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+
+.accounts-table th,
+.accounts-table td {
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.accounts-table th {
+  color: #86efac;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+  font-weight: 600;
+}
+
+.accounts-table td {
+  color: #e2e8f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.accounts-table tr:last-child td {
+  border-bottom: none;
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+/* Native Select Dark Mode */
+select.form-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+select.form-input option {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 8px 12px;
+}
+
+/* Number Input Spinner Dark Mode */
+input[type="number"].form-input {
+  -moz-appearance: textfield;
+}
+
+input[type="number"].form-input::-webkit-outer-spin-button,
+input[type="number"].form-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Show custom spinner buttons */
+.form-group:has(input[type="number"]) {
+  position: relative;
+}
+
+/* ============================================== */
+/* Light Mode Overrides                          */
+/* ============================================== */
+html:not(.dark) .form-card {
+  background: #fff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+html:not(.dark) .card-header {
+  border-color: #e2e8f0;
+}
+
+html:not(.dark) .card-title {
+  color: #1e293b;
+}
+
+html:not(.dark) .card-desc {
+  color: #64748b;
+}
+
+html:not(.dark) .form-label {
+  color: #334155;
+}
+
+html:not(.dark) .form-input {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}
+
+html:not(.dark) .form-input::placeholder {
+  color: #94a3b8;
+}
+
+html:not(.dark) .form-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+html:not(.dark) .form-hint {
+  color: #64748b;
+}
+
+html:not(.dark) .info-box {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+html:not(.dark) .info-box b {
+  color: #0ea5e9;
+}
+
+html:not(.dark) .form-actions {
+  border-color: #e2e8f0;
+}
+
+html:not(.dark) .btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+}
+
+html:not(.dark) select.form-input option {
+  background: #fff;
+  color: #1e293b;
+}
+
+/* Success box in light mode */
+html:not(.dark) .success-box {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+html:not(.dark) .success-title {
+  color: #16a34a;
+}
+
+html:not(.dark) .success-hint {
+  color: #15803d;
+}
+
+html:not(.dark) .list-title {
+  color: #15803d;
+}
+
+html:not(.dark) .table-wrapper {
+  background: #f8fafc;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+html:not(.dark) .accounts-table th {
+  color: #15803d;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+html:not(.dark) .accounts-table td {
+  color: #334155;
+  border-color: #e2e8f0;
+}
+</style>

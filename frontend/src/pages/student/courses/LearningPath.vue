@@ -344,7 +344,7 @@
           </span>
         </div>
         <p v-if="!showPractice" class="text-sm mb-3" :class="isDark ? 'text-purple-300' : 'text-purple-600'">
-          SmartEdu AI đã chuẩn bị bài tập phù hợp với bạn dựa trên kết quả học tập! 🌟
+          SunnyEdu AI đã chuẩn bị bài tập phù hợp với bạn dựa trên kết quả học tập! 🌟
         </p>
         <AIPractice 
           v-if="showPractice"
@@ -818,7 +818,7 @@ const authStore = useAuthStore()
 const streakStorageKey = computed(() => {
   const user = authStore.user
   const suffix = user?.id || user?.email || 'guest'
-  return `smartedu_last_celebrated_streak_${suffix}`
+  return `sunnyedu_last_celebrated_streak_${suffix}`
 })
 const restoringStreak = ref(false)
 const creatingExercise = ref(false) // Trạng thái đang tạo bài tập cải thiện

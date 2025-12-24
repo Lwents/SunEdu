@@ -17,21 +17,6 @@
           <el-button type="warning" plain v-if="tx.status === 'Succeeded'" @click="promptRefund"
             >Hoàn tiền</el-button
           >
-          <el-button type="danger" plain v-if="tx.status !== 'Disputed'" @click="openDispute"
-            >Tranh chấp</el-button
-          >
-          <el-dropdown v-if="tx.status === 'Disputed'">
-            <el-button type="primary">
-              Xử lý tranh chấp
-              <i class="el-icon--right i-ep-arrow-down"></i>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="resolve('won')">Thắng</el-dropdown-item>
-                <el-dropdown-item @click="resolve('lost')">Thua</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
         </div>
       </div>
     </div>
@@ -118,19 +103,6 @@
         <el-button type="primary" :loading="doing.refund" @click="doRefund">Xác nhận</el-button>
       </template>
     </el-dialog>
-
-    <el-dialog v-model="disputeDialog" title="Đánh dấu tranh chấp" width="420px">
-      <el-input
-        v-model="disputeNote"
-        type="textarea"
-        :rows="3"
-        placeholder="Ghi chú / bằng chứng (tuỳ chọn)"
-      />
-      <template #footer>
-        <el-button @click="disputeDialog = false">Đóng</el-button>
-        <el-button type="danger" :loading="doing.dispute" @click="doDispute">Đánh dấu</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -163,9 +135,7 @@ const tx = reactive<TxDetail>({
 const refundDialog = ref(false)
 const refundAmount = ref('')
 const refundReason = ref('')
-const disputeDialog = ref(false)
-const disputeNote = ref('')
-const doing = reactive({ refund: false, dispute: false, resolve: false })
+const doing = reactive({ refund: false })
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString('vi-VN') : '')
 const money = (v: number) =>
@@ -226,36 +196,6 @@ async function doRefund() {
     showToast(error?.message || 'Không thể hoàn tiền', 'error')
   } finally {
     doing.refund = false
-  }
-}
-
-function openDispute() {
-  disputeNote.value = ''
-  disputeDialog.value = true
-}
-async function doDispute() {
-  doing.dispute = true
-  try {
-    await paymentService.markDispute(tx.id, disputeNote.value)
-    showToast('Đã đánh dấu tranh chấp', 'warning')
-    disputeDialog.value = false
-    load()
-  } catch (error: any) {
-    showToast(error?.message || 'Không thể đánh dấu tranh chấp', 'error')
-  } finally {
-    doing.dispute = false
-  }
-}
-async function resolve(result: 'won' | 'lost') {
-  doing.resolve = true
-  try {
-    await paymentService.resolveDispute(tx.id, result)
-    showToast(result === 'won' ? 'Đã thắng tranh chấp' : 'Đã thua tranh chấp', 'info')
-    load()
-  } catch (error: any) {
-    showToast(error?.message || 'Không xử lý được tranh chấp', 'error')
-  } finally {
-    doing.resolve = false
   }
 }
 

@@ -1,0 +1,546 @@
+/* Teacher Dark Mode Styles */
+/* Apply to all teacher pages */
+
+/* ============================================== */
+/* CRITICAL: Prevent white flash on navigation   */
+/* These rules apply IMMEDIATELY via html.dark   */
+/* before Vue components mount                   */
+/* ============================================== */
+html.dark .teacher-page {
+    background-color: #020617 !important; /* slate-950 */
+}
+
+html.dark .teacher-page > main {
+    background-color: #020617 !important; /* slate-950 */
+}
+
+/* Base background */
+html.dark [class*="bg-slate-50"],
+html.dark [class*="bg-gray-50"] {
+    background-color: #0f172a !important;
+}
+
+/* Cards */
+html.dark .teacher-page .bg-white,
+html.dark .teacher-page [class*="bg-white"] {
+    background-color: rgba(15, 23, 42, 0.8) !important; /* slate-900 with opacity */
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Specific card styling for rounded cards */
+html.dark .teacher-page .rounded-2xl.bg-white,
+html.dark .teacher-page .rounded-xl.bg-white {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+}
+
+/* Text colors */
+html.dark .teacher-page,
+html.dark .teacher-page .text-slate-900,
+html.dark .teacher-page .text-gray-900 {
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-page .text-slate-700,
+html.dark .teacher-page .text-gray-700,
+html.dark .teacher-page .text-slate-600,
+html.dark .teacher-page .text-gray-600 {
+    color: #94a3b8 !important;
+}
+
+html.dark .teacher-page .text-slate-500,
+html.dark .teacher-page .text-gray-500,
+html.dark .teacher-page .text-slate-400,
+html.dark .teacher-page .text-gray-400 {
+    color: #64748b !important;
+}
+
+/* Borders */
+html.dark .teacher-page .border-slate-200,
+html.dark .teacher-page .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .teacher-page .border-slate-300,
+html.dark .teacher-page .border-gray-300 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Backgrounds */
+html.dark .teacher-page .bg-slate-100,
+html.dark .teacher-page .bg-gray-100 {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Hover states */
+html.dark .teacher-page .hover\:bg-slate-50:hover,
+html.dark .teacher-page .hover\:bg-gray-50:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .teacher-page .hover\:bg-slate-100:hover,
+html.dark .teacher-page .hover\:bg-gray-100:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Inputs */
+html.dark .teacher-page input,
+html.dark .teacher-page textarea,
+html.dark .teacher-page select {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-page input::placeholder,
+html.dark .teacher-page textarea::placeholder {
+    color: #64748b !important;
+}
+
+html.dark .teacher-page input:focus,
+html.dark .teacher-page textarea:focus,
+html.dark .teacher-page select:focus {
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2) !important;
+}
+
+/* Search shells - keep input transparent to avoid double backgrounds */
+html.dark .teacher-page .search-shell input.search-input {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+html.dark .teacher-page .search-shell input.search-input:focus {
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Primary buttons - only target actual buttons */
+html.dark .teacher-page button.bg-slate-900 {
+    background-color: #22d3ee !important;
+}
+
+html.dark .teacher-page button.bg-slate-900:hover,
+html.dark .teacher-page button.hover\:bg-slate-800:hover {
+    background-color: #06b6d4 !important;
+}
+
+/* Modal */
+html.dark .teacher-page .bg-white.rounded-2xl,
+html.dark .teacher-page [class*="rounded-2xl"].bg-white {
+    background-color: #1e293b !important;
+}
+
+/* Ring/Shadow */
+html.dark .teacher-page .ring-black\/5,
+html.dark .teacher-page [class*="ring-black"] {
+    --tw-ring-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Tables */
+html.dark .teacher-page table {
+    background-color: transparent !important;
+}
+
+html.dark .teacher-page th {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    color: #94a3b8 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .teacher-page td {
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-page tr:hover td {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Tabs */
+html.dark .teacher-page [role="tablist"] {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .teacher-page [role="tab"] {
+    color: #94a3b8 !important;
+}
+
+html.dark .teacher-page [role="tab"][aria-selected="true"],
+html.dark .teacher-page [role="tab"].active {
+    color: #22d3ee !important;
+    background-color: rgba(34, 211, 238, 0.1) !important;
+}
+
+/* Badges/Tags */
+html.dark .teacher-page .rounded-full.bg-slate-100,
+html.dark .teacher-page .rounded-full.bg-gray-100 {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+}
+
+/* Status badges */
+html.dark .teacher-page .bg-green-100 {
+    background-color: rgba(34, 197, 94, 0.15) !important;
+    color: #22c55e !important;
+}
+
+html.dark .teacher-page .bg-yellow-100 {
+    background-color: rgba(251, 191, 36, 0.15) !important;
+    color: #fbbf24 !important;
+}
+
+html.dark .teacher-page .bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+}
+
+html.dark .teacher-page .bg-blue-100 {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    color: #3b82f6 !important;
+}
+
+/* Scrollbar */
+html.dark .teacher-page ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+html.dark .teacher-page ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+html.dark .teacher-page ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+html.dark .teacher-page ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Empty states */
+html.dark .teacher-page .text-center.text-sm.text-slate-500 {
+    color: #64748b !important;
+}
+
+/* Dividers */
+html.dark .teacher-page .divide-slate-200 > * + *,
+html.dark .teacher-page .divide-gray-200 > * + * {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Charts - SVG */
+html.dark .teacher-page svg text {
+    fill: #94a3b8 !important;
+}
+
+/* Dropdown menus */
+html.dark .teacher-page [role="menu"],
+html.dark .teacher-page [role="listbox"] {
+    background-color: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .teacher-page [role="menuitem"],
+html.dark .teacher-page [role="option"] {
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-page [role="menuitem"]:hover,
+html.dark .teacher-page [role="option"]:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ============================================== */
+/* Input Number Spinner Buttons                  */
+/* ============================================== */
+html.dark .teacher-page input[type="number"]::-webkit-inner-spin-button,
+html.dark .teacher-page input[type="number"]::-webkit-outer-spin-button {
+    filter: invert(1);
+}
+
+html.dark .el-input-number__decrease,
+html.dark .el-input-number__increase {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+}
+
+html.dark .el-input-number__decrease:hover,
+html.dark .el-input-number__increase:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #22d3ee !important;
+}
+
+html.dark .el-input-number .el-input__wrapper {
+    background: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+html.dark .el-input-number .el-input__inner {
+    color: #e2e8f0 !important;
+}
+
+/* ============================================== */
+/* Select Dropdown for Teacher Pages             */
+/* ============================================== */
+html.dark .teacher-page .el-select .el-input__wrapper,
+html.dark .teacher-page .el-select-v2 .el-input__wrapper {
+    background: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+html.dark .teacher-page .el-select .el-input__inner,
+html.dark .teacher-page .el-select-v2 .el-input__inner {
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-page .el-select .el-input__suffix,
+html.dark .teacher-page .el-select-v2 .el-input__suffix {
+    color: #64748b !important;
+}
+
+/* Select dropdown popup - rendered in body */
+html.dark .el-select-dropdown {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-select-dropdown__item {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-select-dropdown__item:hover,
+html.dark .el-select-dropdown__item.hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .el-select-dropdown__item.is-selected,
+html.dark .el-select-dropdown__item.selected {
+    color: #22d3ee !important;
+    background: rgba(6, 182, 212, 0.1) !important;
+}
+
+html.dark .el-select-dropdown__item.is-disabled {
+    color: #475569 !important;
+}
+
+/* Native select element */
+html.dark .teacher-page select option {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+}
+
+/* ============================================== */
+/* Form Labels and Text                          */
+/* ============================================== */
+html.dark .teacher-page label {
+    color: #94a3b8 !important;
+}
+
+html.dark .teacher-page .el-form-item__label {
+    color: #94a3b8 !important;
+}
+
+html.dark .teacher-page .el-form-item__error {
+    color: #ef4444 !important;
+}
+
+/* Help text */
+html.dark .teacher-page .text-xs.text-slate-400,
+html.dark .teacher-page .text-sm.text-slate-400 {
+    color: #64748b !important;
+}
+
+
+/* ============================================== */
+/* LessonEdit Page Specific Styles               */
+/* ============================================== */
+
+/* Gray backgrounds in forms */
+html.dark .teacher-page .bg-gray-50 {
+    background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+/* Cyan badges */
+html.dark .teacher-page .bg-cyan-100 {
+    background-color: rgba(6, 182, 212, 0.15) !important;
+    color: #22d3ee !important;
+}
+
+html.dark .teacher-page .bg-cyan-50 {
+    background-color: rgba(6, 182, 212, 0.1) !important;
+}
+
+/* Text colors for LessonEdit */
+html.dark .teacher-page .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-page .text-cyan-700 {
+    color: #22d3ee !important;
+}
+
+html.dark .teacher-page .text-cyan-600 {
+    color: #06b6d4 !important;
+}
+
+/* Border colors */
+html.dark .teacher-page .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .teacher-page .border-gray-300 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .teacher-page .border-cyan-500 {
+    border-color: #06b6d4 !important;
+}
+
+/* Hover states */
+html.dark .teacher-page .hover\:bg-gray-50:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .teacher-page .hover\:bg-cyan-50:hover {
+    background-color: rgba(6, 182, 212, 0.1) !important;
+}
+
+/* Radio and checkbox */
+html.dark .teacher-page input[type="radio"],
+html.dark .teacher-page input[type="checkbox"] {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html.dark .teacher-page input[type="radio"]:checked,
+html.dark .teacher-page input[type="checkbox"]:checked {
+    background-color: #06b6d4 !important;
+    border-color: #06b6d4 !important;
+}
+
+/* Modal overlay */
+html.dark .teacher-page .bg-black\/50 {
+    background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Dashed borders */
+html.dark .teacher-page .border-dashed {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* File input */
+html.dark .teacher-page input[type="file"] {
+    color: #94a3b8 !important;
+}
+
+html.dark .teacher-page input[type="file"]::file-selector-button {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+}
+
+/* Loading skeleton */
+html.dark .teacher-page .animate-pulse {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ============================================== */
+/* Ensure immediate dark background on navigate  */
+/* ============================================== */
+html.dark .teacher-page {
+    background-color: #020617 !important;
+}
+
+/* ============================================== */
+/* Teacher modals (teleport to body)              */
+/* ============================================== */
+html.dark .teacher-modal {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color-scheme: dark;
+}
+
+html.dark .teacher-modal.bg-white,
+html.dark .teacher-modal .bg-white,
+html.dark .teacher-modal [class*="bg-white"] {
+    background-color: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .teacher-modal .bg-slate-50 {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+}
+
+html.dark .teacher-modal .bg-slate-100 {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .teacher-modal .text-slate-900 {
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-modal .text-slate-700,
+html.dark .teacher-modal .text-slate-600 {
+    color: #94a3b8 !important;
+}
+
+html.dark .teacher-modal .text-slate-500,
+html.dark .teacher-modal .text-slate-400 {
+    color: #64748b !important;
+}
+
+html.dark .teacher-modal .border-slate-200 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .teacher-modal .border-slate-300 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .teacher-modal .hover\:bg-slate-50:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .teacher-modal input,
+html.dark .teacher-modal textarea,
+html.dark .teacher-modal select {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-modal select option {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .teacher-modal input::placeholder,
+html.dark .teacher-modal textarea::placeholder {
+    color: #64748b !important;
+}
+
+html.dark .teacher-modal button.bg-slate-900 {
+    background-color: #22d3ee !important;
+}
+
+html.dark .teacher-modal button.bg-slate-900:hover,
+html.dark .teacher-modal button.hover\:bg-slate-800:hover {
+    background-color: #06b6d4 !important;
+}
+
+html.dark .teacher-modal input[type="radio"],
+html.dark .teacher-modal input[type="checkbox"] {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html.dark .teacher-modal input[type="radio"]:checked,
+html.dark .teacher-modal input[type="checkbox"]:checked {
+    background-color: #06b6d4 !important;
+    border-color: #06b6d4 !important;
+}

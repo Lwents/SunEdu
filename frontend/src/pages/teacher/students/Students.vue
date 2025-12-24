@@ -1,20 +1,22 @@
 <template>
-  <div class="min-h-screen w-full overflow-x-hidden bg-slate-50">
+  <div class="students-page min-h-screen w-full overflow-x-hidden" :class="pageClass">
     <main class="w-full mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 md:px-10">
       <!-- Header -->
       <div class="mb-4 sm:mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-xl font-semibold sm:text-2xl">Học viên của tôi</h1>
+        <h1 :class="titleClass" class="text-xl font-semibold sm:text-2xl">Học viên của tôi</h1>
       </div>
 
       <!-- Tools -->
-      <div class="mb-5 grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-4">
+      <div :class="filterPanelClass" class="mb-5 rounded-3xl border p-4 sm:p-5">
+        <div class="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-4">
         <!-- Search -->
         <div class="md:col-span-2">
           <label class="sr-only">Tìm kiếm</label>
-          <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+          <div :class="controlShellClass" class="search-shell flex items-center gap-2 rounded-2xl border px-3 py-2.5">
             <svg
               viewBox="0 0 24 24"
-              class="h-5 w-5 shrink-0 text-slate-400"
+              class="h-5 w-5 shrink-0"
+              :class="iconClass"
               fill="none"
               stroke="currentColor"
               aria-hidden="true"
@@ -26,7 +28,7 @@
               v-model.trim="q"
               type="text"
               placeholder="Tìm tên, username, email…"
-              class="w-full bg-transparent outline-none text-sm sm:text-base"
+              :class="['search-input', controlInputClass]"
               @input="onChanged(true)"
             />
           </div>
@@ -34,13 +36,13 @@
 
         <!-- Course Filter -->
         <div class="select-wrap">
-          <select v-model="selectedCourseId" class="select-base" @change="onChanged(true)">
+          <select v-model="selectedCourseId" :class="selectClass" @change="onChanged(true)">
             <option value="">Tất cả khóa học</option>
             <option v-for="course in courses" :key="course.id" :value="course.id">
               {{ course.title }}
             </option>
           </select>
-          <span class="select-chevron" aria-hidden="true">
+          <span class="select-chevron" :class="iconClass" aria-hidden="true">
             <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
               <path
                 fill-rule="evenodd"
@@ -53,11 +55,11 @@
 
         <!-- Sort -->
         <div class="select-wrap">
-          <select v-model="sortBy" class="select-base" @change="onChanged(true)">
+          <select v-model="sortBy" :class="selectClass" @change="onChanged(true)">
             <option value="name">Tên (A→Z)</option>
             <option value="courses">Số khóa học</option>
           </select>
-          <span class="select-chevron" aria-hidden="true">
+          <span class="select-chevron" :class="iconClass" aria-hidden="true">
             <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
               <path
                 fill-rule="evenodd"
@@ -68,43 +70,48 @@
           </span>
         </div>
       </div>
+      </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="py-16 text-center text-slate-500">Đang tải…</div>
+      <div v-if="loading" class="py-16 text-center" :class="subtleTextClass">Đang tải…</div>
 
       <!-- List -->
       <div v-else class="grid grid-cols-1 gap-3">
         <article
           v-for="student in filteredList"
           :key="student.id"
-          class="flex flex-wrap items-center gap-3 sm:gap-4 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 hover:shadow-sm transition"
+          :class="listCardClass"
+          class="flex flex-wrap items-center gap-3 sm:gap-4 rounded-2xl border p-3 sm:p-4 transition"
         >
           <img
             :src="getStudentAvatar(student)"
             :alt="student.name"
-            class="h-12 w-12 rounded-full object-cover border-2 border-slate-200"
+            class="h-12 w-12 rounded-full object-cover border-2"
+            :class="avatarClass"
           />
 
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <h3 class="truncate font-semibold text-slate-900">{{ student.name }}</h3>
-              <span class="truncate text-xs text-slate-500">@{{ student.username }}</span>
+              <h3 class="truncate font-semibold" :class="titleClass">{{ student.name }}</h3>
+              <span class="truncate text-xs" :class="subtleTextClass">@{{ student.username }}</span>
               <span
                 v-if="student.courses.length > 0"
-                class="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-xs font-semibold text-cyan-700"
+                :class="badgeClass"
+                class="rounded-full border px-2 py-0.5 text-xs font-semibold"
               >
                 {{ student.courses.length }} khóa học
               </span>
             </div>
 
-            <div class="mt-1 truncate text-xs sm:text-sm text-slate-600">
+            <div class="mt-1 truncate text-xs sm:text-sm" :class="subtleTextClass">
               {{ student.email }}
             </div>
           </div>
 
           <div class="flex w-full sm:w-auto shrink-0 gap-2">
             <button
-              class="flex-1 sm:flex-none rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-slate-50"
+              class="flex-1 sm:flex-none rounded-xl border px-4 py-2 text-sm font-semibold transition"
+              :class="actionBtnClass"
               @click="openFeedback(student.id)"
             >
               Phản hồi
@@ -114,16 +121,16 @@
 
         <div v-if="!filteredList.length && !loading" class="mt-10 text-center">
           <div class="mx-auto max-w-md">
-            <div class="mx-auto mb-4 h-20 w-20 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-              <svg class="h-10 w-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div :class="emptyIconClass" class="mx-auto mb-4 h-20 w-20 rounded-full flex items-center justify-center">
+              <svg class="h-10 w-10" :class="emptyIconColorClass" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <h3 class="text-lg font-bold text-gray-900">Không có học viên</h3>
-            <p class="mt-2 text-sm text-gray-600">
+            <h3 class="text-lg font-bold" :class="titleClass">Không có học viên</h3>
+            <p class="mt-2 text-sm" :class="subtleTextClass">
               {{ error || 'Hiện tại chưa có học viên nào tham gia các khóa học của bạn.' }}
             </p>
-            <p v-if="!error" class="mt-1 text-xs text-gray-500">
+            <p v-if="!error" class="mt-1 text-xs" :class="subtleTextClass">
               Học viên sẽ xuất hiện ở đây sau khi họ đăng ký vào các khóa học của bạn.
             </p>
           </div>
@@ -131,15 +138,16 @@
       </div>
 
       <!-- Error Message -->
-      <div v-if="error && !loading" class="mt-4 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 p-5 shadow-lg">
+      <div v-if="error && !loading" :class="errorCardClass" class="mt-4 rounded-2xl border p-5 shadow-lg">
         <div class="flex items-start gap-3">
-          <svg class="h-5 w-5 shrink-0 text-rose-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="h-5 w-5 shrink-0 mt-0.5" :class="errorIconClass" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
           </svg>
           <div class="flex-1">
-            <p class="font-semibold text-rose-900">{{ error }}</p>
+            <p class="font-semibold" :class="errorTextClass">{{ error }}</p>
             <button
-              class="mt-2 text-sm text-rose-700 underline hover:text-rose-900"
+              class="mt-2 text-sm underline"
+              :class="errorLinkClass"
               @click="fetchList"
             >
               Thử lại
@@ -155,20 +163,22 @@
           v-if="isCompact"
           class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
         >
-          <div class="text-sm text-slate-600">
+          <div class="text-sm" :class="subtleTextClass">
             Tổng {{ total }} • Trang {{ page }} / {{ totalPages || 1 }}
           </div>
           <div class="flex items-center gap-2">
             <button
               class="rounded-xl border px-3 py-2 text-sm disabled:opacity-50"
+              :class="pagerBtnClass"
               :disabled="page <= 1"
               @click="go(page - 1)"
             >
               Trước
             </button>
-            <span class="text-sm text-slate-600">Trang {{ page }} / {{ totalPages || 1 }}</span>
+            <span class="text-sm" :class="subtleTextClass">Trang {{ page }} / {{ totalPages || 1 }}</span>
             <button
               class="rounded-xl border px-3 py-2 text-sm disabled:opacity-50"
+              :class="pagerBtnClass"
               :disabled="page >= totalPages"
               @click="go(page + 1)"
             >
@@ -176,12 +186,12 @@
             </button>
 
             <div class="select-wrap ml-1">
-              <select v-model.number="pageSize" class="select-base h-9" @change="onChanged(true)">
+              <select v-model.number="pageSize" :class="pagerSelectClass" @change="onChanged(true)">
                 <option :value="10">10 / trang</option>
                 <option :value="20">20 / trang</option>
                 <option :value="50">50 / trang</option>
               </select>
-              <span class="select-chevron" aria-hidden="true">
+              <span class="select-chevron" :class="iconClass" aria-hidden="true">
                 <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
                   <path
                     fill-rule="evenodd"
@@ -196,12 +206,13 @@
 
         <!-- Full on ≥ md -->
         <div v-else class="flex items-center justify-between">
-          <div class="text-sm text-slate-600">
+          <div class="text-sm" :class="subtleTextClass">
             Tổng {{ total }} • Trang {{ page }} / {{ totalPages || 1 }}
           </div>
           <div class="flex items-center gap-2">
             <button
               class="rounded-xl border px-3 py-2 text-sm disabled:opacity-50"
+              :class="pagerBtnClass"
               :disabled="page <= 1"
               @click="go(page - 1)"
             >
@@ -209,10 +220,10 @@
             </button>
 
             <div class="select-wrap">
-              <select v-model.number="page" class="select-base h-10 w-[92px]" @change="go(page)">
+              <select v-model.number="page" :class="[pagerSelectClass, 'h-10 w-[92px]']" @change="go(page)">
                 <option v-for="p in Math.max(totalPages, 1)" :key="p" :value="p">{{ p }}</option>
               </select>
-              <span class="select-chevron" aria-hidden="true">
+              <span class="select-chevron" :class="iconClass" aria-hidden="true">
                 <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
                   <path
                     fill-rule="evenodd"
@@ -225,6 +236,7 @@
 
             <button
               class="rounded-xl border px-3 py-2 text-sm disabled:opacity-50"
+              :class="pagerBtnClass"
               :disabled="page >= totalPages"
               @click="go(page + 1)"
             >
@@ -232,12 +244,12 @@
             </button>
 
             <div class="select-wrap ml-1">
-              <select v-model.number="pageSize" class="select-base h-10" @change="onChanged(true)">
+              <select v-model.number="pageSize" :class="[pagerSelectClass, 'h-10']" @change="onChanged(true)">
                 <option :value="10">10 / trang</option>
                 <option :value="20">20 / trang</option>
                 <option :value="50">50 / trang</option>
               </select>
-              <span class="select-chevron" aria-hidden="true">
+              <span class="select-chevron" :class="iconClass" aria-hidden="true">
                 <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
                   <path
                     fill-rule="evenodd"
@@ -260,8 +272,11 @@ import { useRouter } from 'vue-router'
 import { teacherService, type TeacherStudent } from '@/services/teacher.service'
 import { courseService } from '@/services/course.service'
 import { getAvatarSrc } from '@/utils/avatar'
+import { useThemeStore } from '@/store/theme.store'
 
 const router = useRouter()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 const loading = ref(false)
 const list = ref<TeacherStudent[]>([])
@@ -333,6 +348,61 @@ const filteredList = computed(() => {
   return arr
 })
 
+const pageClass = computed(() => isDark.value ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900')
+const titleClass = computed(() => isDark.value ? 'text-white' : 'text-slate-900')
+const subtleTextClass = computed(() => isDark.value ? 'text-slate-400' : 'text-slate-600')
+const iconClass = computed(() => isDark.value ? 'text-slate-500' : 'text-slate-400')
+const filterPanelClass = computed(() => isDark.value
+  ? 'border-slate-800/80 bg-slate-900/60 shadow-[0_10px_30px_rgba(6,10,20,0.35)]'
+  : 'border-slate-200 bg-white shadow-sm'
+)
+const controlShellClass = computed(() => isDark.value ? 'border-slate-800/80 bg-slate-950/60' : 'border-slate-200 bg-white')
+const controlInputClass = computed(() => [
+  'w-full bg-transparent outline-none text-sm sm:text-base',
+  isDark.value ? 'text-slate-100 placeholder-slate-500' : 'text-slate-700 placeholder-slate-400'
+])
+const selectClass = computed(() => [
+  'select-base transition-colors focus:ring-2',
+  isDark.value
+    ? 'border-slate-800/80 bg-slate-950/60 text-slate-100 focus:border-cyan-400 focus:ring-cyan-500/20'
+    : 'border-slate-200 bg-white text-slate-700 focus:border-slate-400 focus:ring-slate-200'
+])
+const listCardClass = computed(() => isDark.value
+  ? 'border-slate-800/80 bg-slate-900/50 hover:border-slate-700/80 hover:shadow-[0_12px_28px_rgba(8,15,30,0.35)]'
+  : 'border-slate-200 bg-white hover:shadow-sm'
+)
+const avatarClass = computed(() => isDark.value ? 'border-slate-700' : 'border-slate-200')
+const badgeClass = computed(() => isDark.value
+  ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200'
+  : 'border-cyan-200 bg-cyan-50 text-cyan-700'
+)
+const actionBtnClass = computed(() => isDark.value
+  ? 'border-slate-700 bg-slate-900/70 text-slate-200 hover:bg-slate-800'
+  : 'border-slate-300 bg-white text-gray-700 hover:bg-slate-50'
+)
+const emptyIconClass = computed(() => isDark.value
+  ? 'bg-slate-900/70 border border-slate-800/80'
+  : 'bg-gradient-to-br from-slate-100 to-slate-200'
+)
+const emptyIconColorClass = computed(() => isDark.value ? 'text-slate-500' : 'text-slate-400')
+const errorCardClass = computed(() => isDark.value
+  ? 'border-rose-500/30 bg-rose-500/10'
+  : 'border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50'
+)
+const errorIconClass = computed(() => isDark.value ? 'text-rose-300' : 'text-rose-600')
+const errorTextClass = computed(() => isDark.value ? 'text-rose-100' : 'text-rose-900')
+const errorLinkClass = computed(() => isDark.value ? 'text-rose-200 hover:text-rose-100' : 'text-rose-700 hover:text-rose-900')
+const pagerBtnClass = computed(() => isDark.value
+  ? 'border-slate-700 bg-slate-900/70 text-slate-200 hover:bg-slate-800'
+  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+)
+const pagerSelectClass = computed(() => [
+  'select-base transition-colors focus:ring-2',
+  isDark.value
+    ? 'border-slate-700 bg-slate-900/70 text-slate-200 focus:border-cyan-400 focus:ring-cyan-500/20'
+    : 'border-slate-300 bg-white text-slate-700 focus:border-slate-400 focus:ring-slate-200'
+])
+
 function onChanged(resetPage = false) {
   if (resetPage) page.value = 1
   debouncedFetch()
@@ -395,8 +465,8 @@ onMounted(() => {
 .select-base {
   width: 100%;
   border-radius: 1rem; /* rounded-2xl */
-  border: 1px solid #e5e7eb; /* slate-200 */
-  background: #fff;
+  border: 1px solid transparent;
+  background: transparent;
   padding: 0 2.5rem 0 0.75rem; /* pr-10 + pl-3 */
   height: 40px; /* h-10 */
   font-size: 0.875rem; /* text-sm */
@@ -411,10 +481,5 @@ onMounted(() => {
 } /* old Edge/IE */
 .select-base:focus {
   outline: none;
-  border-color: #7dd3fc; /* sky-300 */
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.28);
 }
-.select-base:hover {
-  border-color: #cbd5e1;
-} /* slate-300 */
 </style>

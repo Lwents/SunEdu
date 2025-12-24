@@ -1222,7 +1222,7 @@ class AITutorVideoQuestionView(APIView):
         }
         
         # Build prompt đặc biệt cho câu hỏi về video với ngữ cảnh timestamp
-        video_prompt = f"""Bạn là trợ lý học tập AI của SmartEdu.
+        video_prompt = f"""Bạn là trợ lý học tập AI của SunnyEdu.
 
 Học sinh đang xem video bài học "{lesson_title or video_title}" tại thời điểm {timestamp_str} ({time_label}).
 

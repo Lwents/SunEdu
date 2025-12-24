@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 pb-16 pt-10">
+  <div class="min-h-screen pb-16 pt-10" :class="isDark ? 'bg-slate-950' : 'bg-slate-50'">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="mb-8 flex items-center justify-between">
@@ -109,7 +109,7 @@
     <!-- Create/Edit Modal -->
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div class="w-full max-w-3xl rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="teacher-modal w-full max-w-3xl rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
           <div class="sticky top-0 bg-white border-b border-slate-200 p-5 flex items-center justify-between">
             <h2 class="text-xl font-bold text-slate-900">
               {{ editingGame ? 'Chỉnh sửa trò chơi' : 'Tạo trò chơi mới' }}
@@ -314,7 +314,7 @@
     <!-- AI Dialog -->
     <Teleport to="body">
       <div v-if="showAIDialog" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="teacher-modal w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-slate-900">Tạo câu hỏi bằng AI</h3>
             <button class="text-slate-400 hover:text-slate-600" @click="showAIDialog = false">✕</button>
@@ -365,7 +365,7 @@
     <!-- Stats Modal -->
     <Teleport to="body">
       <div v-if="showStatsModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="teacher-modal w-full max-w-2xl rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
           <div class="sticky top-0 bg-white border-b border-slate-200 p-5 flex items-center justify-between">
             <h2 class="text-xl font-bold text-slate-900">Thống kê trò chơi</h2>
             <button class="text-slate-400 hover:text-slate-600" @click="showStatsModal = false">✕</button>
@@ -407,9 +407,13 @@
               <div class="space-y-2">
                 <div v-for="(count, range) in statsData.score_distribution" :key="range" class="flex items-center gap-3">
                   <span class="text-sm text-slate-600 w-16">{{ range }}%</span>
-                  <div class="flex-1 h-6 bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      class="h-full bg-slate-900 rounded-full transition-all"
+                  <div
+                    class="flex-1 h-6 rounded-full overflow-hidden"
+                    :class="isDark ? 'bg-slate-800/80 border border-slate-700/60' : 'bg-slate-100'"
+                  >
+                    <div
+                      class="h-full rounded-full transition-all"
+                      :class="isDark ? 'bg-cyan-400/80 shadow-[0_0_10px_rgba(34,211,238,0.35)]' : 'bg-slate-900'"
                       :style="{ width: `${statsData.total_plays ? (count / statsData.total_plays * 100) : 0}%` }"
                     ></div>
                   </div>
@@ -463,8 +467,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { teacherGameService } from '@/services/game.service'
 import { showToast } from '@/utils/toast'
+import { useThemeStore } from '@/store/theme.store'
 
 const loading = ref(true)
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 const saving = ref(false)
 const modalLoading = ref(false)
 const aiGenerating = ref(false)

@@ -3,9 +3,9 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>SmartEdu - Nền tảng học tập thông minh cho học sinh tiểu học</title>
+  <title>SunnyEdu - Nền tảng học tập thông minh cho học sinh tiểu học</title>
   <meta name="description"
-    content="SmartEdu là nền tảng học tập trực tuyến dành cho học sinh tiểu học với bài học tương tác, trò chơi giáo dục và lộ trình học thông minh giúp bé tiến bộ mỗi ngày." />
+    content="SunnyEdu là nền tảng học tập trực tuyến dành cho học sinh tiểu học với bài học tương tác, trò chơi giáo dục và lộ trình học thông minh giúp bé tiến bộ mỗi ngày." />
   <!-- <link rel="icon" href="/frontend/public/favicon.png"> -->
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -14,6 +14,34 @@
   <link rel="shortcut icon" href="/favicon.png">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Prevent dark mode flash - apply theme immediately before page renders -->
+  <script>
+    (function() {
+      try {
+        var theme = localStorage.getItem('theme');
+        // Default to dark if no theme set (match theme.store.ts logic)
+        if (theme === 'dark' || !theme) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    /* Critical CSS to prevent flash */
+    html.dark { background-color: #020617; }
+    html.dark body { background-color: #020617; color: #e2e8f0; }
+    html.dark .teacher-page,
+    html.dark .teacher-page main,
+    html.dark .teacher-page > div { background-color: #020617 !important; }
+    html:not(.dark) { background-color: #f8fafc; }
+    html:not(.dark) body { background-color: #f8fafc; }
+    /* Prevent transition flash on initial load */
+    html.dark * { transition: none !important; }
+    html.dark.loaded * { transition: all 0.3s ease !important; }
+  </style>
 
 </head>
 <script src="https://unpkg.com/feather-icons"></script>
@@ -21,9 +49,9 @@
 {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "SmartEdu",
-  "url": "https://smartedu.fit",
-  "logo": "https://smartedu.fit/favicon.png",
+  "name": "SunnyEdu",
+  "url": "https://sunnyedu.fit",
+  "logo": "https://sunnyedu.fit/favicon.png",
   "sameAs": [
     "https://www.facebook.com/tu.chu.46680",
     "https://www.youtube.com/@T%C3%BAnguy%E1%BB%85nanh-tuna2004"

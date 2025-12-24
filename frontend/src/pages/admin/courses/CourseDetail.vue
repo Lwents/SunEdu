@@ -21,7 +21,7 @@
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h2 class="truncate text-xl font-semibold text-gray-800">{{ detail.title }}</h2>
-              <el-tag size="small">Lớp {{ detail.grade }}</el-tag>
+              <el-tag size="small" type="info">Lớp {{ detail.grade }}</el-tag>
               <el-tag size="small" type="info">{{ subjectName(detail.subject) }}</el-tag>
               <el-tag size="small" :type="statusTagType(detail.status)">{{
                 statusLabel(detail.status)
@@ -53,7 +53,7 @@
           >
           <el-button v-if="detail.status === 'published'" @click="unpublish">Gỡ</el-button>
 
-          <el-button v-if="detail.status !== 'archived'" type="warning" plain @click="archive"
+          <el-button v-if="detail.status !== 'archived'" type="warning" class="archive-btn" @click="archive"
             >Lưu trữ</el-button
           >
           <el-button v-else type="info" plain @click="restore">Khôi phục</el-button>
@@ -270,3 +270,16 @@ async function restore() {
 onMounted(load)
 watch(() => route.params.id, load)
 </script>
+
+<style scoped>
+.archive-btn {
+  background: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #fff !important;
+}
+
+.archive-btn:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+}
+</style>

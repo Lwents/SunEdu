@@ -1,13 +1,11 @@
 <template>
-  <div class="h-screen w-screen overflow-hidden transition-colors duration-300" :class="isDark ? 'bg-slate-950' : 'bg-gray-50'">
-    <div class="flex h-full flex-col">
-      <header class="sticky top-0 z-20">
-        <StudentNavbar />
-      </header>
-      <main class="min-h-0 flex-1 overflow-y-auto">
-        <router-view />
-      </main>
-    </div>
+  <div class="min-h-screen w-full" :class="isDark ? 'bg-slate-950' : 'bg-gray-50'">
+    <header class="sticky top-0 z-20">
+      <StudentNavbar />
+    </header>
+    <main class="w-full" :class="isDark ? 'bg-slate-950' : 'bg-gray-50'">
+      <router-view />
+    </main>
   </div>
 </template>
 

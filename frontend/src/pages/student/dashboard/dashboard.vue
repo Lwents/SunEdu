@@ -185,6 +185,7 @@ import { useRouter } from 'vue-router'
 import { courseService, type CourseSummary } from '@/services/course.service'
 import { useExamStore } from '@/store/exam.store'
 import { useThemeStore } from '@/store/theme.store'
+import { aiLearningService } from '@/services/ai-learning.service'
 
 type CourseCard = CourseSummary & { progress: number; done: boolean }
 
@@ -198,7 +199,7 @@ const hour = new Date().getHours()
 const greetingText = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'
 
 // Stats
-const stats = reactive({ courses: 0, completed: 0, exams: 0, streak: 5, xp: 120 })
+const stats = reactive({ courses: 0, completed: 0, exams: 0, streak: 0, xp: 120 })
 const now = new Date()
 const weekDays = computed(() => {
   // Hiển thị 7 ô, với số ô có lửa = min(streak, 7)
@@ -206,6 +207,18 @@ const weekDays = computed(() => {
   const streakCount = Math.min(stats.streak, 7)
   return [0, 1, 2, 3, 4, 5, 6].map(i => i < streakCount)
 })
+
+// Fetch streak from AI learning service
+async function fetchStreak() {
+  try {
+    const data = await aiLearningService.getAnalysis()
+    if (data.daily_goal) {
+      stats.streak = data.daily_goal.streak ?? 0
+    }
+  } catch {
+    // Ignore streak fetch errors - keep default 0
+  }
+}
 
 // Courses
 const courses = ref<CourseCard[]>([])
@@ -240,7 +253,7 @@ function openExamDetail(id: number | string) {
 }
 
 onMounted(async () => {
-  await fetchCourses()
+  await Promise.all([fetchCourses(), fetchStreak()])
   try { await examStore.fetchExams(); stats.exams = exams.value.length } catch {}
 })
 </script>

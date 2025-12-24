@@ -16,6 +16,7 @@ from content.models import Course, Enrollment, LessonProgress, Subject
 from activities.models import TeacherFeedback
 from custom_account.models import UserModel
 from progress.models import UserProgress, UserLessonProgress
+from ai_personalization.models import LearningEvent
 
 
 class AdminRevenueReportView(APIView):
@@ -363,13 +364,30 @@ class AdminLearningReportView(APIView):
             else:
                 avg_score = 0
             
-            # Calculate average time spent (placeholder - need actual time tracking)
-            avg_time_spent = 38  # Placeholder
+            # Calculate average time spent from LearningEvent
+            # Get all learning events with time_spent in detail
+            avg_time_spent = 0
+            try:
+                # Get unique users who have learning events
+                unique_users = LearningEvent.objects.values('user').distinct().count()
+                
+                if unique_users > 0:
+                    # Sum all time_spent from events (more efficient)
+                    total_time = 0
+                    for event in LearningEvent.objects.only('detail').iterator():
+                        if event.detail and isinstance(event.detail, dict):
+                            total_time += event.detail.get('time_spent', 0)
+                    
+                    # Convert seconds to minutes and calculate average per user
+                    if total_time > 0:
+                        avg_time_spent = round(total_time / unique_users / 60, 0)
+            except Exception:
+                avg_time_spent = 0
             
             return Response({
                 'avgCompletion': round(float(avg_completion), 2),
                 'avgScore': round(float(avg_score), 2),
-                'avgTimeSpentMin': avg_time_spent
+                'avgTimeSpentMin': int(avg_time_spent)
             }, status=status.HTTP_200_OK)
         elif report_type == 'completion':
             # Get completion rates by date (time series)

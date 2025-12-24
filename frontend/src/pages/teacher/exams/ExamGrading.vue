@@ -1,6 +1,6 @@
 <!-- src/pages/teacher/exams/ExamGrading.vue -->
 <template>
-  <div class="min-h-screen w-full overflow-x-hidden bg-slate-50">
+  <div class="min-h-screen w-full overflow-x-hidden" :class="isDark ? 'bg-slate-950' : 'bg-slate-50'">
     <main class="w-full mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 md:px-10 md:py-8">
       <!-- Header -->
       <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -9,7 +9,7 @@
         <!-- Tools -->
         <div class="grid grid-cols-1 gap-2 sm:auto-cols-fr sm:grid-flow-col">
           <label class="sr-only" for="search">Tìm theo tên/lớp</label>
-          <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2">
+          <div class="search-shell flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2">
             <svg viewBox="0 0 24 24" class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" aria-hidden="true">
               <circle cx="11" cy="11" r="8" stroke-width="2" />
               <path d="M21 21l-4.3-4.3" stroke-width="2" />
@@ -19,7 +19,7 @@
               v-model.trim="q"
               type="text"
               placeholder="Tìm theo tên/lớp…"
-              class="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+              class="search-input w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
               @input="debouncedFilter()"
             />
           </div>
@@ -301,6 +301,7 @@
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { showToast } from '@/utils/toast'
+import { useThemeStore } from '@/store/theme.store'
 
 type RowStatus = 'pending' | 'submitted'
 type Row = {
@@ -314,6 +315,8 @@ type Row = {
 }
 
 const route = useRoute()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 // Helper function to parse ID from route params (supports both UUID and number)
 function parseId(paramId: string | string[]): string | number {

@@ -101,7 +101,19 @@
         </el-table-column>
         <el-table-column prop="status" label="Trạng thái" width="130" align="center">
           <template #default="{ row }">
-            <el-tag size="small" :type="statusTagType(row.status)">{{ row.status }}</el-tag>
+            <span 
+              class="status-badge"
+              :class="{
+                'status-succeeded': row.status === 'Succeeded',
+                'status-pending': row.status === 'Pending',
+                'status-processing': row.status === 'Processing',
+                'status-failed': row.status === 'Failed',
+                'status-refunded': row.status === 'Refunded',
+                'status-disputed': row.status === 'Disputed'
+              }"
+            >
+              {{ row.status }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="Thời gian" min-width="170">
@@ -110,17 +122,15 @@
 
         <el-table-column fixed="right" width="180">
           <template #default="{ row }">
-            <div class="flex justify-end gap-2">
-              <el-button size="small" @click="goDetail(row)">Xem</el-button>
-              <el-button
-                size="small"
-                type="warning"
-                plain
+            <div class="action-buttons">
+              <button class="action-btn btn-view" @click="goDetail(row)">Xem</button>
+              <button
                 v-if="row.status === 'Succeeded'"
+                class="action-btn btn-refund"
                 @click="promptRefund(row)"
               >
                 Hoàn tiền
-              </el-button>
+              </button>
             </div>
           </template>
         </el-table-column>
@@ -284,3 +294,185 @@ async function promptRefund(row: TxSummary) {
 
 onMounted(fetch)
 </script>
+
+<style scoped>
+/* Dark Mode Base Styles */
+.space-y-4 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* KPI Cards */
+.grid-cols-2 > div,
+.grid-cols-4 > div,
+.md\:grid-cols-4 > div {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.grid-cols-2 .text-xs,
+.grid-cols-4 .text-xs,
+.md\:grid-cols-4 .text-xs {
+  color: #94a3b8;
+}
+
+.grid-cols-2 .text-2xl,
+.grid-cols-4 .text-2xl,
+.md\:grid-cols-4 .text-2xl {
+  color: #e2e8f0;
+}
+
+/* Table Card */
+.rounded-lg.bg-white {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+.font-medium.text-gray-800 {
+  color: #e2e8f0 !important;
+}
+
+.text-gray-500 {
+  color: #64748b !important;
+}
+
+/* Light Mode Overrides */
+html:not(.dark) .grid-cols-2 > div,
+html:not(.dark) .grid-cols-4 > div,
+html:not(.dark) .md\:grid-cols-4 > div {
+  background: #fff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+html:not(.dark) .grid-cols-2 .text-xs,
+html:not(.dark) .grid-cols-4 .text-xs,
+html:not(.dark) .md\:grid-cols-4 .text-xs {
+  color: #64748b;
+}
+
+html:not(.dark) .grid-cols-2 .text-2xl,
+html:not(.dark) .grid-cols-4 .text-2xl,
+html:not(.dark) .md\:grid-cols-4 .text-2xl {
+  color: #1e293b;
+}
+
+html:not(.dark) .rounded-lg.bg-white {
+  background: #fff !important;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+html:not(.dark) .text-gray-600 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .font-medium.text-gray-800 {
+  color: #1e293b !important;
+}
+
+html:not(.dark) .text-gray-500 {
+  color: #64748b !important;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-succeeded {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.status-pending {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.status-processing {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.status-failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.status-refunded {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.status-disputed {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+
+.btn-view {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+}
+
+.btn-view:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-refund {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.btn-refund:hover {
+  background: rgba(251, 191, 36, 0.25);
+}
+
+/* Light Mode for buttons */
+html:not(.dark) .btn-view {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+html:not(.dark) .btn-view:hover {
+  background: #f1f5f9;
+}
+
+html:not(.dark) .btn-refund {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #d97706;
+}
+</style>

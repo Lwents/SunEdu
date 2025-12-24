@@ -10,7 +10,7 @@
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-slate-950/70 border-b border-white/10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
-        <LogoSmartEdu :size="64" class="w-16 sm:w-[90px]" />
+        <LogoSunnyEdu :size="64" class="w-16 sm:w-[90px]" />
         <nav class="hidden lg:flex items-center space-x-8">
           <a v-for="item in navItems" :key="item.id" :href="'#' + item.id"
             class="text-gray-300 hover:text-white font-medium transition-all duration-300 hover:scale-105"
@@ -42,7 +42,7 @@
           <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
             <span class="text-white">Học tập</span><br>
             <span class="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">thông minh</span><br>
-            <span class="text-white">cùng SMARTEDU</span>
+            <span class="text-white">cùng SUNNYEDU</span>
           </h1>
           
           <p class="text-lg sm:text-xl text-gray-400 leading-relaxed max-w-xl">
@@ -68,25 +68,29 @@
             </button>
           </div>
 
+
           <div class="flex items-center gap-8 pt-8">
-            <div v-for="stat in heroStats" :key="stat.label" class="text-center">
-              <div class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">{{ stat.value }}</div>
+            <div v-for="stat in heroStats" :key="stat.label" class="text-center group cursor-default">
+              <div class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent group-hover:scale-110 transition-transform">
+                <span class="counter" :data-target="stat.target">0</span>{{ stat.suffix }}
+              </div>
               <div class="text-sm text-gray-500">{{ stat.label }}</div>
             </div>
           </div>
         </div>
 
-        <div class="relative">
+        <div class="relative hidden lg:block">
           <div class="relative w-full aspect-square max-w-lg mx-auto flex items-center justify-center">
-            <div class="isometric-container">
-              <div class="isometric-card bg-gradient-to-br from-cyan-500 to-purple-600 w-64 h-64 rounded-3xl shadow-2xl flex items-center justify-center p-1">
-                <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&h=600&fit=crop" alt="Happy children learning" class="w-full h-full object-cover rounded-2xl"/>
-              </div>
-              <div class="absolute -top-8 -right-8 w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-xl shadow-orange-500/30 flex items-center justify-center text-3xl animate-bounce-slow">🎮</div>
-              <div class="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl shadow-xl shadow-green-500/30 flex items-center justify-center text-2xl animate-bounce-slow">📚</div>
-              <div class="absolute top-1/2 -right-12 w-14 h-14 bg-gradient-to-br from-pink-400 to-rose-500 rounded-lg shadow-xl shadow-pink-500/30 flex items-center justify-center text-xl animate-bounce-slow">⭐</div>
-              <div class="absolute -top-4 left-1/4 w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shadow-xl shadow-cyan-500/30 flex items-center justify-center text-lg animate-bounce-slow">🏆</div>
+            <!-- Floating decorative elements -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-64 h-64 rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 blur-3xl animate-pulse"></div>
             </div>
+            <div class="absolute -top-8 -right-8 w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl shadow-2xl shadow-orange-500/40 flex items-center justify-center text-4xl animate-bounce-slow">🎮</div>
+            <div class="absolute -bottom-6 -left-6 w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-2xl shadow-green-500/40 flex items-center justify-center text-3xl animate-bounce-slow" style="animation-delay: 0.5s">📚</div>
+            <div class="absolute top-1/2 -right-12 w-18 h-18 bg-gradient-to-br from-pink-400 to-rose-500 rounded-xl shadow-2xl shadow-pink-500/40 flex items-center justify-center text-2xl animate-bounce-slow" style="animation-delay: 1s">⭐</div>
+            <div class="absolute -top-4 left-1/4 w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl shadow-2xl shadow-cyan-500/40 flex items-center justify-center text-2xl animate-bounce-slow" style="animation-delay: 1.5s">🏆</div>
+            <div class="absolute bottom-1/4 right-1/4 w-14 h-14 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-lg shadow-2xl shadow-purple-500/40 flex items-center justify-center text-xl animate-bounce-slow" style="animation-delay: 2s">🚀</div>
+            <div class="absolute top-1/3 left-0 w-12 h-12 bg-gradient-to-br from-red-400 to-pink-500 rounded-lg shadow-xl shadow-red-500/30 flex items-center justify-center text-lg animate-bounce-slow" style="animation-delay: 0.8s">❤️</div>
           </div>
         </div>
       </div>
@@ -116,7 +120,7 @@
             <span class="text-purple-400 font-medium text-sm">✨ Tính năng nổi bật</span>
           </div>
           <h2 class="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4">
-            Tại sao chọn <span class="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">SMARTEDU</span>?
+            Tại sao chọn <span class="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">SUNNYEDU</span>?
           </h2>
           <p class="text-lg text-gray-400 max-w-2xl mx-auto">Nền tảng học tập toàn diện với công nghệ AI</p>
         </div>
@@ -274,7 +278,7 @@
       <div class="absolute top-1/2 left-1/4 w-24 h-24 bg-pink-500/20 rounded-full blur-xl animate-float-fast"></div>
       <div class="max-w-4xl mx-auto text-center relative z-10">
         <h2 class="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-6">Sẵn sàng bắt đầu hành trình học tập?</h2>
-        <p class="text-xl text-gray-300 mb-10">Tham gia cùng hàng nghìn phụ huynh và học sinh đã tin tưởng SMARTEDU</p>
+        <p class="text-xl text-gray-300 mb-10">Tham gia cùng hàng nghìn phụ huynh và học sinh đã tin tưởng SUNNYEDU</p>
         <div class="flex flex-wrap justify-center gap-4">
           <router-link to="/auth/login">
             <button class="px-10 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-2xl font-bold text-lg hover:shadow-[0_0_40px_rgba(6,182,212,0.5)] hover:scale-105 transition-all duration-300">Đăng nhập ngay</button>
@@ -289,7 +293,7 @@
       <div class="max-w-7xl mx-auto">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div class="col-span-2 md:col-span-1">
-            <LogoSmartEdu :size="64" class="mb-4" />
+            <LogoSunnyEdu :size="64" class="mb-4" />
             <p class="text-gray-400 text-sm">Nền tảng học tập trực tuyến hàng đầu dành cho học sinh tiểu học.</p>
           </div>
           <div>
@@ -323,7 +327,7 @@
           </div>
         </div>
         <div class="border-t border-white/10 pt-8 text-center">
-          <p class="text-gray-500 text-sm">© 2025 SMARTEDU. All rights reserved.</p>
+          <p class="text-gray-500 text-sm">© 2025 SUNNYEDU. All rights reserved.</p>
         </div>
       </div>
     </footer>
@@ -337,7 +341,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
+import LogoSunnyEdu from '@/components/ui/LogoSunnyEdu.vue'
 
 const showScrollTop = ref(false)
 
@@ -349,9 +353,9 @@ const navItems = [
 ]
 
 const heroStats = [
-  { value: '5,000+', label: 'Học sinh' },
-  { value: '1,000+', label: 'Bài học' },
-  { value: '4.9⭐', label: 'Đánh giá' },
+  { target: 5000, suffix: '+', label: 'Học sinh' },
+  { target: 1000, suffix: '+', label: 'Bài học' },
+  { target: 4.9, suffix: '⭐', label: 'Đánh giá' },
 ]
 
 const stats = ref([
@@ -395,9 +399,9 @@ const testimonialStats = ref([
 ])
 
 const testimonialsRow1 = ref([
-  { name: 'Chị Ngọc Anh', role: 'Phụ huynh bé Minh Anh - Lớp 3', text: 'Con tôi rất thích học trên SMARTEDU. Điểm Toán của con đã cải thiện rõ rệt!', initial: 'N', avatarBg: 'bg-gradient-to-br from-cyan-500 to-blue-600 shadow-cyan-500/30', rating: 5 },
+  { name: 'Chị Ngọc Anh', role: 'Phụ huynh bé Minh Anh - Lớp 3', text: 'Con tôi rất thích học trên SUNNYEDU. Điểm Toán của con đã cải thiện rõ rệt!', initial: 'N', avatarBg: 'bg-gradient-to-br from-cyan-500 to-blue-600 shadow-cyan-500/30', rating: 5 },
   { name: 'Anh Tuấn Minh', role: 'Phụ huynh bé Hà My - Lớp 4', text: 'Giao diện đẹp, nội dung chất lượng. Con tự giác học mỗi ngày.', initial: 'T', avatarBg: 'bg-gradient-to-br from-purple-500 to-pink-600 shadow-purple-500/30', rating: 5 },
-  { name: 'Cô Thanh Hương', role: 'Giáo viên tiểu học', text: 'SMARTEDU là công cụ hỗ trợ tuyệt vời cho việc giảng dạy!', initial: 'H', avatarBg: 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/30', rating: 5 },
+  { name: 'Cô Thanh Hương', role: 'Giáo viên tiểu học', text: 'SUNNYEDU là công cụ hỗ trợ tuyệt vời cho việc giảng dạy!', initial: 'H', avatarBg: 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/30', rating: 5 },
   { name: 'Chị Mai Lan', role: 'Phụ huynh bé Bảo An - Lớp 2', text: 'Con học rất vui, các trò chơi giáo dục hấp dẫn.', initial: 'M', avatarBg: 'bg-gradient-to-br from-pink-500 to-rose-600 shadow-pink-500/30', rating: 5 },
 ])
 
@@ -405,7 +409,32 @@ const scrollToSection = (id) => document.getElementById(id)?.scrollIntoView({ be
 const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 const handleScroll = () => { showScrollTop.value = window.scrollY > 500 }
 
-onMounted(() => window.addEventListener('scroll', handleScroll))
+// Counter animation function
+const animateCounters = () => {
+  const counters = document.querySelectorAll('.counter')
+  counters.forEach(counter => {
+    const target = parseFloat(counter.getAttribute('data-target'))
+    const isDecimal = target % 1 !== 0
+    const duration = 2000
+    const steps = 60
+    const increment = target / steps
+    let current = 0
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= target) {
+        counter.textContent = isDecimal ? target.toFixed(1) : target.toLocaleString()
+        clearInterval(timer)
+      } else {
+        counter.textContent = isDecimal ? current.toFixed(1) : Math.floor(current).toLocaleString()
+      }
+    }, duration / steps)
+  })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+  setTimeout(animateCounters, 500)
+})
 onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 </script>
 
