@@ -1,6 +1,6 @@
 <!-- src/pages/teacher/exams/ExamReports.vue -->
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen" :class="isDark ? 'bg-slate-950' : 'bg-gray-50'">
     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="mb-6">
@@ -33,7 +33,7 @@
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
         <!-- Search -->
           <div class="lg:col-span-2">
-            <div class="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2">
+            <div class="search-shell flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2">
               <svg viewBox="0 0 24 24" class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor">
               <circle cx="11" cy="11" r="8" stroke-width="2" />
               <path d="M21 21l-4.3-4.3" stroke-width="2" />
@@ -42,7 +42,7 @@
               v-model.trim="q"
               type="text"
                 placeholder="Tìm theo tên đề/khóa học…"
-                class="w-full bg-transparent outline-none text-sm"
+                class="search-input w-full bg-transparent outline-none text-sm"
               @input="debouncedFetch"
             />
           </div>
@@ -266,6 +266,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useThemeStore } from '@/store/theme.store'
 
 /** ===== Types ===== */
 type ExamStatus = 'published' | 'scheduled' | 'draft'
@@ -285,6 +286,8 @@ type ReportRow = {
 
 /** ===== Router ===== */
 const router = useRouter()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 /** ===== Filters & paging ===== */
 const q = ref('')

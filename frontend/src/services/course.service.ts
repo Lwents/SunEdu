@@ -281,7 +281,7 @@ export const courseService = {
     const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
     return api.patch(endpoint, payload)
   },
-  
+
   // DELETE
   // DELETE /content|admin/courses/:id/ - xoá khoá học
   async delete(id: ID, useAdminEndpoint = false): Promise<void> {
@@ -289,7 +289,7 @@ export const courseService = {
     const endpoint = useAdminEndpoint ? `/admin/courses/${id}/` : `/content/courses/${id}/`
     await api.delete(endpoint)
   },
-  
+
   // ENROLL (student only)
   // POST /content/courses/:courseId/enroll/ - đăng ký khoá học
   async enroll(courseId: ID): Promise<{ success: boolean }> {
@@ -314,7 +314,7 @@ export const courseService = {
   unpublish(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/unpublish/`) },
   archive(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/archive/`) },
   restore(id: ID) { return USE_MOCK ? Promise.resolve({ ok: true }) : api.post(`/admin/courses/${id}/restore/`) },
-  
+
   // STATUS / ACTIONS (Teacher - use content endpoint)
   // Giáo viên tự publish/unpublish/khôi phục qua content endpoint
   async publishCourse(id: ID): Promise<any> {
@@ -363,7 +363,27 @@ export const courseService = {
     const users = data.results || data || []
     return users.map((u: any) => ({ id: u.id, name: u.email || u.username }))
   },
+
+  // Hardcoded subjects fallback
   subjects(): { label: string; value: Subject }[] {
     return SUBJECTS.map((s) => ({ value: s, label: subjectLabel(s) }))
+  },
+
+  // GET /content/subjects/ - lấy danh sách môn học từ API
+  async listSubjects(): Promise<{ label: string; value: string }[]> {
+    if (USE_MOCK) {
+      return SUBJECTS.map((s) => ({ value: s, label: subjectLabel(s) }))
+    }
+    try {
+      const { data } = await api.get('/content/subjects/')
+      const subjects = data.results || data || []
+      return subjects.map((s: any) => ({
+        value: s.slug || s.id,
+        label: s.title || s.name || s.slug
+      }))
+    } catch {
+      // Fallback to hardcoded if API fails
+      return SUBJECTS.map((s) => ({ value: s, label: subjectLabel(s) }))
+    }
   },
 }

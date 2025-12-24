@@ -199,12 +199,6 @@
             >Ghi nhớ đăng nhập</span
           >
         </label>
-        <RouterLink
-          to="/auth/forgot-password"
-          class="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition"
-        >
-          Quên mật khẩu?
-        </RouterLink>
       </div>
 
       <!-- Submit Button -->
@@ -294,16 +288,6 @@
       <span class="ml-3 font-medium">{{ loadingGoogle ? 'Đang kết nối...' : 'Google' }}</span>
     </button> -->
 
-    <!-- Register Link -->
-    <p class="text-center text-sm text-gray-400">
-      Chưa có tài khoản?
-      <RouterLink
-        to="/auth/register"
-        class="font-medium text-cyan-400 hover:text-cyan-300 transition"
-      >
-        Đăng ký ngay
-      </RouterLink>
-    </p>
   </div>
 </template>
 
@@ -441,9 +425,10 @@ const onSubmit = async () => {
 }
 
 .form-input {
-  @apply w-full pl-11 pr-4 py-3 rounded-xl text-white placeholder-gray-500;
+  @apply w-full pl-11 pr-4 py-3.5 text-white placeholder-gray-500;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50px;
   @apply focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50;
   @apply transition duration-200;
 }
@@ -470,8 +455,8 @@ const onSubmit = async () => {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0.875rem 1.5rem !important;
-  border-radius: 0.875rem !important;
+  padding: 1rem 2rem !important;
+  border-radius: 50px !important;
   background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%) !important;
   color: white !important;
   font-weight: 700 !important;

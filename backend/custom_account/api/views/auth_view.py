@@ -43,7 +43,7 @@ class RegisterView(RoleBasedOutputMixin, APIView):
         except DomainError as e: # <-- Catch DomainError
             # Catch the custom domain error from your service
             return Response(
-                {"error": str(e)}, # Use the error message from the exception
+                {"detail": str(e)}, # Use "detail" for consistency with other APIs
                 status=status.HTTP_400_BAD_REQUEST
             )
 

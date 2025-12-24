@@ -1,6 +1,6 @@
 <!-- src/pages/teacher/students/Feedback.vue -->
 <template>
-  <div class="min-h-screen w-full overflow-x-hidden bg-slate-50">
+  <div class="min-h-screen w-full overflow-x-hidden" :class="isDark ? 'bg-slate-950' : 'bg-slate-50'">
     <main class="w-full mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 md:px-10">
       <!-- Header -->
       <div class="mb-4 sm:mb-5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
@@ -18,7 +18,7 @@
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <!-- Left: student list -->
         <section class="lg:col-span-1 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="mb-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+          <div class="search-shell mb-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
             <svg
               viewBox="0 0 24 24"
               class="h-5 w-5 text-slate-400"
@@ -32,7 +32,7 @@
             <input
               v-model.trim="q"
               placeholder="Tìm học sinh…"
-              class="w-full bg-transparent outline-none text-sm"
+              class="search-input w-full bg-transparent outline-none text-sm"
               @input="debouncedFilter"
             />
           </div>
@@ -183,6 +183,7 @@ import { teacherService } from '@/services/teacher.service'
 import { showToast } from '@/utils/toast'
 import { resolveMediaUrl } from '@/utils/media'
 import { getAvatarSrc } from '@/utils/avatar'
+import { useThemeStore } from '@/store/theme.store'
 
 type StudentRow = {
   id: number
@@ -198,6 +199,8 @@ type StudentRow = {
 
 const route = useRoute()
 const router = useRouter()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 const q = ref('')
 const selectedId = ref<number | null>(route.query.id ? Number(route.query.id) : null)

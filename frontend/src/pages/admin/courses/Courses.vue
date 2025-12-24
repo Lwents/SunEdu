@@ -1,76 +1,61 @@
 <template>
-  <div class="space-y-4">
-    <!-- Toolbar -->
-    <div class="grid grid-cols-1 gap-3 md:grid-cols-4 xl:grid-cols-6 items-start">
-      <el-input
-        v-model="query.q"
-        clearable
-        placeholder="Tìm tên / mã / giáo viên"
-        @clear="applyFilters"
-        @keyup.enter="applyFilters"
-        class="md:col-span-2 xl:col-span-2 w-full"
-      >
-        <template #prefix>🔎</template>
-      </el-input>
+  <div class="courses-page">
+    <!-- Filter Bar -->
+    <div class="filter-card">
+      <div class="filter-grid">
+        <el-input
+          v-model="query.q"
+          clearable
+          placeholder="🔎 Tìm tên / mã / giáo viên"
+          @clear="applyFilters"
+          @keyup.enter="applyFilters"
+          class="filter-search"
+        />
 
-      <el-select v-model="query.grade" clearable placeholder="Lớp" @change="applyFilters">
-        <el-option v-for="g in [1, 2, 3, 4, 5]" :key="g" :label="`Lớp ${g}`" :value="g" />
-      </el-select>
+        <el-select v-model="query.grade" clearable placeholder="Lớp" @change="applyFilters">
+          <el-option v-for="g in [1, 2, 3, 4, 5]" :key="g" :label="`Lớp ${g}`" :value="g" />
+        </el-select>
 
-      <el-select v-model="query.subject" clearable placeholder="Môn" @change="applyFilters">
-        <el-option v-for="s in subjects" :key="s.value" :label="s.label" :value="s.value" />
-      </el-select>
+        <el-select v-model="query.subject" clearable placeholder="Môn" @change="applyFilters">
+          <el-option v-for="s in subjects" :key="s.value" :label="s.label" :value="s.value" />
+        </el-select>
 
-      <el-select
-        v-model="query.teacherId"
-        clearable
-        filterable
-        placeholder="Giáo viên"
-        @change="applyFilters"
-      >
-        <el-option v-for="t in teachers" :key="t.id" :label="t.name" :value="t.id" />
-      </el-select>
+        <el-select
+          v-model="query.teacherId"
+          clearable
+          filterable
+          placeholder="Giáo viên"
+          @change="applyFilters"
+        >
+          <el-option v-for="t in teachers" :key="t.id" :label="t.name" :value="t.id" />
+        </el-select>
 
-      <el-select
-        v-model="query.status"
-        clearable
-        placeholder="Trạng thái"
-        @change="applyFilters"
-        class="xl:col-span-1"
-      >
-        <el-option label="Bản nháp" value="draft" />
-        <el-option label="Chờ duyệt" value="pending_review" />
-        <el-option label="Đã xuất bản" value="published" />
-        <el-option label="Từ chối" value="rejected" />
-        <el-option label="Lưu trữ" value="archived" />
-      </el-select>
 
-      <div class="md:col-span-2 xl:col-span-2 min-w-0">
+
         <el-date-picker
           v-model="dateRange"
           type="daterange"
           unlink-panels
-          range-separator="–"
-          start-placeholder="Tạo từ"
-          end-placeholder="đến"
+          range-separator="→"
+          start-placeholder="Từ ngày"
+          end-placeholder="Đến ngày"
           value-format="YYYY-MM-DD"
-          class="w-full"
           @change="applyDateRange"
+          class="filter-date"
         />
-      </div>
 
-      <div class="md:col-span-2 xl:col-span-1 flex items-center gap-2 md:justify-end">
-        <el-button @click="resetFilters">Xoá lọc</el-button>
-        <el-button type="primary" plain @click="applyFilters">Lọc</el-button>
+        <div class="filter-actions">
+          <el-button @click="resetFilters">Xoá lọc</el-button>
+          <el-button type="primary" @click="applyFilters">Lọc</el-button>
+        </div>
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="rounded-lg bg-white p-4 ring-1 ring-black/5">
-      <div class="mb-3 flex items-center justify-between">
-        <div class="text-sm text-gray-600">Tổng: {{ total }}</div>
-        <div class="flex items-center gap-2">
-          <el-button @click="goApproval">Hàng chờ duyệt</el-button>
+    <!-- Table Card -->
+    <div class="table-card">
+      <div class="table-header">
+        <span class="total-count">Tổng: {{ total }}</span>
+        <div class="header-actions">
           <el-button type="primary" @click="refresh" :loading="loading">Tải lại</el-button>
         </div>
       </div>
@@ -92,22 +77,17 @@
 
         <el-table-column prop="title" label="Khoá học" min-width="240" show-overflow-tooltip>
           <template #default="{ row }">
-            <div
-              class="font-medium text-gray-800 hover:text-blue-600 cursor-pointer"
-              @click="goDetail(row)"
-            >
+            <div class="course-title" @click="goDetail(row)">
               {{ row.title }}
             </div>
-            <div class="text-xs text-gray-500">GV: {{ row.teacherName }}</div>
+            <div class="course-teacher">GV: {{ row.teacherName }}</div>
           </template>
         </el-table-column>
 
         <el-table-column label="Lớp/Môn" width="160">
           <template #default="{ row }">
-            <div class="text-sm">Lớp {{ row.grade }}</div>
-            <div class="text-xs text-gray-500 truncate">
-              {{ subjectDisplay(row) || '—' }}
-            </div>
+            <div class="grade-text">Lớp {{ row.grade }}</div>
+            <div class="subject-text">{{ subjectDisplay(row) || '—' }}</div>
           </template>
         </el-table-column>
 
@@ -116,60 +96,64 @@
 
         <el-table-column prop="status" label="Trạng thái" width="140" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusTagType(row.status)" size="small">{{
-              statusLabel(row.status)
-            }}</el-tag>
+            <span 
+              class="status-badge"
+              :class="{
+                'status-draft': row.status === 'draft',
+                'status-pending': row.status === 'pending_review',
+                'status-published': row.status === 'published',
+                'status-rejected': row.status === 'rejected',
+                'status-archived': row.status === 'archived'
+              }"
+            >
+              {{ statusLabel(row.status) }}
+            </span>
           </template>
         </el-table-column>
 
         <el-table-column prop="updatedAt" label="Cập nhật" min-width="160">
-          <template #default="{ row }">{{ fmtDate(row.updatedAt) }}</template>
+          <template #default="{ row }">
+            <span class="date-text">{{ fmtDate(row.updatedAt) }}</span>
+          </template>
         </el-table-column>
 
-        <el-table-column fixed="right" label="" width="250">
+        <el-table-column fixed="right" label="" width="280">
           <template #default="{ row }">
-            <div class="flex gap-2 justify-end">
-              <el-button size="small" @click="goDetail(row)">Xem</el-button>
-              <el-button
+            <div class="action-buttons">
+              <button class="action-btn btn-view" @click="goDetail(row)">Xem</button>
+              <button
                 v-if="row.status !== 'published' && row.status !== 'archived'"
-                size="small"
-                type="success"
-                plain
+                class="action-btn btn-publish"
                 @click="publish(row)"
-                >Xuất bản</el-button
-              >
-              <el-button v-if="row.status === 'published'" size="small" @click="unpublish(row)"
-                >Gỡ</el-button
-              >
-              <el-button
+              >Xuất bản</button>
+              <button 
+                v-if="row.status === 'published'" 
+                class="action-btn btn-unpublish" 
+                @click="unpublish(row)"
+              >Gỡ</button>
+              <button
                 v-if="row.status !== 'archived'"
-                size="small"
-                type="warning"
-                plain
+                class="action-btn btn-archive"
                 @click="archive(row)"
-                >Lưu trữ</el-button
-              >
-              <el-button v-else size="small" type="info" plain @click="restore(row)"
-                >Khôi phục</el-button
-              >
+              >Lưu trữ</button>
+              <button 
+                v-else 
+                class="action-btn btn-restore" 
+                @click="restore(row)"
+              >Khôi phục</button>
             </div>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="mt-3 flex justify-end">
+      <div class="table-footer">
         <el-pagination
           background
           layout="total, prev, pager, next"
           :total="total"
           :current-page="page"
           :page-size="pageSize"
-          @current-change="
-            (p: number) => {
-              page = p
-              fetch()
-            }
-          "
+          @current-change="(p: number) => { page = p; fetch() }"
         />
       </div>
     </div>
@@ -192,7 +176,7 @@ import {
 
 const router = useRouter()
 
-const subjects = courseService.subjects()
+const subjects = ref<{ label: string; value: string }[]>(courseService.subjects())
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const teachers = ref<{ id: number | string; name: string }[]>([])
 const items = ref<CourseSummary[]>([])
@@ -213,7 +197,7 @@ const query = reactive<PageParams>({
 const dateRange = ref<[string, string] | null>(null)
 
 function subjectName(s: Subject) {
-  return subjects.find((x) => x.value === s)?.label || s
+  return subjects.value.find((x: any) => x.value === s)?.label || s
 }
 function subjectDisplay(row: Partial<CourseSummary> & Record<string, any>) {
   const fromBackend =
@@ -374,6 +358,11 @@ onMounted(async () => {
   } catch (error: any) {
     showToast(error?.message || 'Không tải được danh sách giáo viên', 'warning')
   }
+  try {
+    subjects.value = await courseService.listSubjects()
+  } catch (error: any) {
+    console.warn('Could not load subjects from API:', error?.message)
+  }
 })
 
 const placeholderThumb =
@@ -381,33 +370,333 @@ const placeholderThumb =
 </script>
 
 <style scoped>
+.courses-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Filter Card */
+.filter-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.filter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.filter-grid > * {
+  flex: 1;
+  min-width: 140px;
+}
+
+.filter-search {
+  flex: 2;
+  min-width: 200px;
+}
+
+.filter-date {
+  flex: 2;
+  min-width: 240px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+/* Table Card */
+.table-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.total-count {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Thumbnail */
 .thumb-box {
   position: relative;
   width: 72px;
   height: 48px;
   border-radius: 8px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .thumb-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
 .thumb-badge {
   position: absolute;
   bottom: 4px;
   left: 4px;
   right: 4px;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
-  font-size: 10px;
+  font-size: 9px;
   padding: 2px 4px;
   border-radius: 4px;
   text-align: center;
-  line-height: 1.2;
+}
+
+/* Course Info */
+.course-title {
+  font-weight: 500;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.course-title:hover {
+  color: #22d3ee;
+}
+
+.course-teacher {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.grade-text {
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+.subject-text {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-text {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-draft {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.status-pending {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.status-published {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.status-rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.status-archived {
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+.action-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.btn-view {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+}
+
+.btn-view:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-publish {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.btn-publish:hover {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.btn-unpublish {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.btn-unpublish:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.btn-archive {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.btn-archive:hover {
+  background: rgba(251, 191, 36, 0.25);
+}
+
+.btn-restore {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.btn-restore:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filter-search {
+    grid-column: span 1;
+  }
+  
+  .action-buttons {
+    flex-wrap: wrap;
+  }
+}
+
+/* ============================================== */
+/* Light Mode Overrides                          */
+/* ============================================== */
+html:not(.dark) .filter-card,
+html:not(.dark) .table-card {
+  background: #fff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+html:not(.dark) .total-count {
+  color: #64748b;
+}
+
+html:not(.dark) .thumb-box {
+  background: #f1f5f9;
+}
+
+html:not(.dark) .course-title {
+  color: #1e293b;
+}
+
+html:not(.dark) .course-title:hover {
+  color: #0ea5e9;
+}
+
+html:not(.dark) .course-teacher,
+html:not(.dark) .subject-text {
+  color: #64748b;
+}
+
+html:not(.dark) .grade-text {
+  color: #334155;
+}
+
+html:not(.dark) .date-text {
+  color: #64748b;
+}
+
+html:not(.dark) .btn-view {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+html:not(.dark) .btn-view:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+html:not(.dark) .btn-publish {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #16a34a;
+}
+
+html:not(.dark) .btn-unpublish {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #dc2626;
+}
+
+html:not(.dark) .btn-archive {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #d97706;
+}
+
+html:not(.dark) .btn-restore {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
 }
 </style>

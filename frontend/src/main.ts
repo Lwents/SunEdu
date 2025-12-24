@@ -20,6 +20,8 @@ import App from './App.vue'
 import router from '@/router'
 import 'element-plus/dist/index.css'
 import '@/styles/tailwind.css'
+import '@/styles/element-dark.css'
+import '@/styles/teacher-dark.css'
 import { Toaster } from 'vue-sonner'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
@@ -43,3 +45,8 @@ app.use(ElementPlus)
 app.component('Toaster', Toaster)
 
 app.use(router).mount('#app')
+
+// Enable transitions after initial render to prevent flash
+requestAnimationFrame(() => {
+  document.documentElement.classList.add('loaded')
+})

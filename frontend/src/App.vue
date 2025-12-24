@@ -25,6 +25,16 @@ import router from '@/router'
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
+// Initialize theme immediately to add 'dark' class to html
+import { useThemeStore } from '@/store/theme.store'
+const themeStore = useThemeStore()
+// Force re-apply theme class on mount
+if (themeStore.isDark) {
+  document.documentElement.classList.add('dark')
+} else {
+  document.documentElement.classList.remove('dark')
+}
+
 // Khởi tạo/làm tươi hồ sơ ngay khi app boot
 authStore.init().catch(() => {
   /* ignore */

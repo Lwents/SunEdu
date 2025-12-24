@@ -1,5 +1,5 @@
 <template>
-  <div class="container-wrapper">
+  <div class="container-wrapper" :class="isDark ? 'theme-dark' : ''">
     <h1 class="page-title">Tạo khoá học mới</h1>
 
     <form @submit.prevent="submit" class="course-form">
@@ -31,19 +31,6 @@
           </select>
         </label>
 
-        <label class="form-field">
-          <span class="label-text">Mức độ</span>
-          <select v-model="f.level" class="input-field">
-            <option value="basic">Cơ bản</option>
-            <option value="advanced">Nâng cao</option>
-          </select>
-        </label>
-        
-        <label class="form-field">
-          <span class="label-text">Số bài học</span>
-          <input v-model.number="f.lessonsCount" type="number" min="1" class="input-field" placeholder="Số lượng bài học" />
-        </label>
-
         <div class="form-field md:col-span-2">
           <span class="label-text">Ảnh khoá học (tuỳ chọn)</span>
           <div class="file-upload-area">
@@ -61,18 +48,10 @@
           <p v-if="coverErr" class="error-text">{{ coverErr }}</p>
         </div>
 
-        <label class="form-field">
+        <label class="form-field md:col-span-2">
           <span class="label-text">Giá khóa học (VNĐ)</span>
           <input v-model.number="f.price" type="number" min="0" step="1000" class="input-field" placeholder="0" />
           <p class="hint-text">Nhập 0 để khóa học miễn phí</p>
-        </label>
-        
-        <label class="form-field md:col-span-2">
-          <span class="label-text">Trạng thái</span>
-          <select v-model="f.status" class="input-field">
-            <option value="draft">Nháp</option>
-            <option value="published">Đã xuất bản</option>
-          </select>
         </label>
 
         <label class="form-field md:col-span-2">
@@ -81,8 +60,8 @@
         </label>
 
         <label class="form-field md:col-span-2">
-          <span class="label-text">Giới thiệu chi tiết <b class="text-rose-600">*</b></span>
-          <textarea v-model.trim="f.introduction" rows="8" class="input-field resize-y" placeholder="Giới thiệu chi tiết về khóa học (sẽ hiển thị ở trang chi tiết khóa học)" required></textarea>
+          <span class="label-text">Giới thiệu chi tiết</span>
+          <textarea v-model.trim="f.introduction" rows="8" class="input-field resize-y" placeholder="Giới thiệu chi tiết về khóa học (sẽ hiển thị ở trang chi tiết khóa học)"></textarea>
           <p class="hint-text">Nội dung này sẽ hiển thị ở trang chi tiết khóa học cho học sinh</p>
         </label>
       </div>
@@ -100,26 +79,25 @@
 <script setup lang="ts">
 import { reactive, ref, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { courseService, type CourseDetail, type Grade, type Level, type CourseStatus, type Subject } from '@/services/course.service'
+import { courseService, type CourseDetail, type Grade, type Subject } from '@/services/course.service'
 import { showToast } from '@/utils/toast'
+import { useThemeStore } from '@/store/theme.store'
 
 const router = useRouter()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 /** Form theo schema service */
 const f = reactive<Partial<CourseDetail> & {
-  lessonsCount?: number
   price?: number
   introduction?: string
 }>({
   title: '',
   subject: 'math' as Subject,
   grade: 3 as Grade,
-  level: 'basic' as Level,
   description: '',
   introduction: '',
   price: 0,
-  lessonsCount: 24,
-  status: 'draft' as CourseStatus
 })
 
 /* ---------- ẢNH KHOÁ HỌC ---------- */
@@ -133,8 +111,8 @@ function onPickCover(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
-  if (!file.type.startsWith('image/')) { coverErr.value = 'Vui lòng chọn file ảnh (JPG/PNG).'; input.value=''; return }
-  if (file.size > 5 * 1024 * 1024) { coverErr.value = 'Ảnh tối đa 5MB.'; input.value=''; return }
+  if (!file.type.startsWith('image/')) { coverErr.value = 'Vui lòng chọn file ảnh (JPG/PNG).'; input.value = ''; return }
+  if (file.size > 5 * 1024 * 1024) { coverErr.value = 'Ảnh tối đa 5MB.'; input.value = ''; return }
   coverFile.value = file
   if (coverPreview.value) URL.revokeObjectURL(coverPreview.value)
   coverPreview.value = URL.createObjectURL(file)
@@ -146,11 +124,11 @@ onBeforeUnmount(() => {
 })
 
 const submitting = ref(false)
-const canSubmit = computed(() => Boolean(f.title && f.introduction))
+const canSubmit = computed(() => Boolean(f.title))
 
 async function submit() {
   if (!canSubmit.value) {
-    showToast('Vui lòng điền đầy đủ Tên khoá học và Giới thiệu chi tiết.', 'warning')
+    showToast('Vui lòng điền Tên khoá học.', 'warning')
     return
   }
   submitting.value = true
@@ -169,13 +147,11 @@ async function submit() {
       fd.append('thumbnail', coverFile.value)
     }
 
-    // Gọi API với FormData
     const response = await courseService.create(fd as any)
     const courseId = (response as any)?.id
 
     showToast('Đã tạo khoá học thành công!', 'success')
     
-    // Redirect sang trang edit với ID mới
     if (courseId) {
       router.push({ name: 'teacher-course-edit', params: { id: courseId } })
     } else {
@@ -185,7 +161,7 @@ async function submit() {
     const errorMsg = e?.response?.data?.detail || e?.message || 'Tạo khoá học thất bại.'
     showToast(errorMsg, 'error')
   } finally {
-    submitting.value = false;
+    submitting.value = false
   }
 }
 </script>
@@ -247,7 +223,7 @@ textarea.input-field {
 }
 
 .image-preview {
-  @apply h-48; /* Increased height for better preview */
+  @apply h-48;
 }
 
 .video-preview {
@@ -291,6 +267,55 @@ textarea.input-field {
          font-semibold text-gray-700 shadow-sm hover:bg-gray-100 
          focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
          transition duration-200 ease-in-out;
+}
+
+/* Dark theme overrides */
+.theme-dark .page-title {
+  @apply text-gray-100;
+}
+
+.theme-dark .course-form {
+  @apply bg-slate-900/60 border-slate-800;
+}
+
+.theme-dark .label-text {
+  @apply text-gray-300;
+}
+
+.theme-dark .input-field {
+  @apply bg-slate-800 border-slate-700 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-cyan-500/30;
+}
+
+.theme-dark .btn-secondary {
+  @apply border-slate-600 text-gray-200 hover:bg-slate-800 focus:ring-cyan-500/40;
+}
+
+.theme-dark .file-info {
+  @apply text-gray-400;
+}
+
+.theme-dark .hint-text {
+  @apply text-gray-400;
+}
+
+.theme-dark .form-actions {
+  @apply border-slate-800;
+}
+
+.theme-dark .btn-cancel {
+  @apply border-slate-600 bg-slate-900 text-gray-200 hover:bg-slate-800;
+}
+
+.theme-dark .video-list {
+  @apply bg-slate-800 border-slate-700;
+}
+
+.theme-dark .video-item {
+  @apply text-gray-300;
+}
+
+.theme-dark .video-size {
+  @apply text-gray-400;
 }
 
 /* Responsive adjustments */

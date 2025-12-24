@@ -1,6 +1,9 @@
 <!-- src/components/navbar/TeacherNavbar.vue -->
 <template>
-  <nav class="sticky top-0 z-50 h-14 sm:h-16 bg-white border-b border-slate-200 shadow-sm">
+  <nav 
+    class="sticky top-0 z-50 h-14 sm:h-16 backdrop-blur-xl border-b transition-colors duration-300"
+    :class="isDark ? 'bg-slate-950/80 border-white/5' : 'bg-white/90 border-slate-200'"
+  >
     <div class="mx-auto flex h-full max-w-7xl items-center justify-between px-3 sm:px-4 lg:px-8">
       <!-- Logo -->
       <div class="flex items-center gap-3">
@@ -8,7 +11,7 @@
           to="/teacher/dashboard"
           class="inline-block transition hover:opacity-80"
         >
-          <LogoSmartEdu :size="90" />
+          <LogoSunnyEdu :size="90" />
         </RouterLink>
       </div>
 
@@ -17,18 +20,38 @@
         <li v-for="item in menu" :key="item.path">
           <RouterLink
             :to="item.path"
-            class="rounded-lg px-4 py-2.5 text-sm font-medium transition"
-            :class="isActive(item.path) 
-              ? 'bg-slate-900 text-white' 
-              : 'text-slate-700 hover:bg-slate-100'"
+            class="relative px-4 py-2.5 text-sm font-medium transition-colors duration-200"
+            :class="getMenuClass(item.path)"
           >
             {{ item.label }}
+            <span
+              v-if="isActive(item.path)"
+              class="absolute left-3 right-3 -bottom-1 h-0.5 rounded-full"
+              :class="isDark ? 'bg-cyan-400' : 'bg-slate-900'"
+            ></span>
           </RouterLink>
         </li>
       </ul>
 
       <!-- Right side actions -->
       <div class="flex items-center gap-3">
+        <!-- Theme Toggle Switch -->
+        <button
+          @click="toggleTheme"
+          class="theme-switch"
+          :title="isDark ? 'Chuyển sang Light Mode' : 'Chuyển sang Dark Mode'"
+        >
+          <div class="switch-track" :class="isDark ? 'dark' : 'light'">
+            <svg class="switch-icon sun" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 7a5 5 0 100 10 5 5 0 000-10zM12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg class="switch-icon moon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+            <div class="switch-thumb" :class="{ active: isDark }"></div>
+          </div>
+        </button>
+
         <!-- Notification Bell Component for Teacher -->
         <NotificationBell :user-id="auth.user?.id" role="teacher" />
         
@@ -36,10 +59,12 @@
         <div class="relative" ref="avatarWrapper">
           <button
             @click="avatarOpen = !avatarOpen"
-            class="flex items-center gap-2 transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-slate-200 rounded-lg"
+            class="flex items-center gap-2 transition hover:opacity-80 focus:outline-none focus:ring-2 rounded-lg"
+            :class="isDark ? 'focus:ring-cyan-500/50' : 'focus:ring-slate-200'"
           >
             <img
-              class="h-10 w-10 rounded-full object-cover border-2 border-slate-200 aspect-square"
+              class="h-10 w-10 rounded-full object-cover border-2 aspect-square"
+              :class="isDark ? 'border-cyan-500/50' : 'border-slate-200'"
               :src="avatarSrc"
               alt="avatar"
               @error="handleAvatarError"
@@ -57,19 +82,21 @@
           >
             <div
               v-if="avatarOpen"
-              class="absolute right-0 z-30 mt-2 w-56 rounded-lg border border-slate-200 bg-white shadow-lg p-2"
+              class="absolute right-0 z-30 mt-2 w-56 rounded-lg border shadow-lg p-2"
+              :class="isDark ? 'border-white/10 bg-slate-900/95' : 'border-slate-200 bg-white'"
             >
               <!-- User info -->
-              <div class="px-3 py-3 border-b border-slate-200 mb-2">
-                <p class="text-sm font-semibold text-slate-900">{{ displayName }}</p>
-                <p class="text-xs text-slate-500 truncate mt-0.5">{{ displayEmail }}</p>
+              <div class="px-3 py-3 border-b mb-2" :class="isDark ? 'border-white/10' : 'border-slate-200'">
+                <p class="text-sm font-semibold" :class="isDark ? 'text-white' : 'text-slate-900'">{{ displayName }}</p>
+                <p class="text-xs truncate mt-0.5" :class="isDark ? 'text-gray-400' : 'text-slate-500'">{{ displayEmail }}</p>
               </div>
 
               <!-- Menu items -->
               <div class="py-1 space-y-1">
                 <RouterLink
                   to="/teacher/account/profile"
-                  class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition"
+                  class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition"
+                  :class="isDark ? 'text-gray-300 hover:bg-white/10 hover:text-white' : 'text-slate-700 hover:bg-slate-50'"
                   @click="avatarOpen = false"
                 >
                   <svg
@@ -90,7 +117,8 @@
 
                 <button
                   @click="showConfirm = true"
-                  class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                  class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition"
+                  :class="isDark ? 'text-red-400 hover:bg-red-500/10' : 'text-red-600 hover:bg-red-50'"
                 >
                   <svg
                     class="h-5 w-5"
@@ -116,10 +144,11 @@
         <div class="md:hidden">
           <button
             @click="open = !open"
-            class="p-2 rounded-lg hover:bg-slate-100 transition"
+            class="p-2 rounded-lg transition"
+            :class="isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'"
             aria-label="Mở menu"
           >
-            <svg class="h-6 w-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="h-6 w-6" :class="isDark ? 'text-gray-300' : 'text-slate-700'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 v-if="!open"
                 stroke-linecap="round"
@@ -152,22 +181,24 @@
       <div
         v-if="open"
         ref="mobileMenuWrapper"
-        class="md:hidden border-t border-slate-200 bg-white"
+        class="md:hidden border-t backdrop-blur-xl"
+        :class="isDark ? 'border-white/5 bg-slate-950/95' : 'border-slate-200 bg-white/95'"
       >
         <div class="space-y-1 px-3 py-3">
           <RouterLink
             v-for="item in menu"
             :key="item.path"
             :to="item.path"
-            class="block rounded-lg px-4 py-3 text-base font-medium transition"
-            :class="
-              isActive(item.path)
-                ? 'bg-slate-900 text-white'
-                : 'text-slate-700 hover:bg-slate-50'
-            "
+            class="relative block px-4 py-3 text-base font-medium transition-colors duration-200"
+            :class="getMenuClass(item.path)"
             @click="open = false"
           >
             {{ item.label }}
+            <span
+              v-if="isActive(item.path)"
+              class="absolute left-4 right-4 -bottom-1 h-0.5 rounded-full"
+              :class="isDark ? 'bg-cyan-400' : 'bg-slate-900'"
+            ></span>
           </RouterLink>
         </div>
       </div>
@@ -186,15 +217,20 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.store'
+import { useThemeStore } from '@/store/theme.store'
 import { onClickOutside } from '@vueuse/core'
-import LogoSmartEdu from '@/components/ui/LogoSmartEdu.vue'
+import LogoSunnyEdu from '@/components/ui/LogoSunnyEdu.vue'
 import ConfirmLogout from '@/components/ui/ConfirmLogout.vue'
 import NotificationBell from '@/components/shared/NotificationBell.vue'
 import { getAvatarSrc } from '@/utils/avatar'
 
 const auth = useAuthStore()
+const themeStore = useThemeStore()
 const route = useRoute()
 const router = useRouter()
+
+const isDark = computed(() => themeStore.isDark)
+const toggleTheme = () => themeStore.toggleTheme()
 
 const open = ref(false)
 const avatarOpen = ref(false)
@@ -242,6 +278,17 @@ function isActive(path: string) {
   return route.path.startsWith(path)
 }
 
+function getMenuClass(path: string) {
+  if (isActive(path)) {
+    return isDark.value
+      ? 'text-cyan-200'
+      : 'text-slate-900'
+  }
+  return isDark.value
+    ? 'text-gray-300 hover:text-white'
+    : 'text-gray-700 hover:text-gray-900'
+}
+
 function handleAvatarError(event: Event) {
   const img = event.target as HTMLImageElement
   // Fallback to default avatar
@@ -277,3 +324,91 @@ async function handleLogout() {
   }
 }
 </script>
+
+
+<style scoped>
+/* Theme Switch */
+.theme-switch {
+  padding: 4px;
+  border-radius: 20px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.switch-track {
+  width: 52px;
+  height: 28px;
+  border-radius: 14px;
+  position: relative;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+}
+
+.switch-track.dark {
+  background: linear-gradient(135deg, #1e3a5f, #0f172a);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.switch-track.light {
+  background: linear-gradient(135deg, #87ceeb, #60a5fa);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.switch-icon {
+  width: 14px;
+  height: 14px;
+  z-index: 1;
+  transition: all 0.3s;
+}
+
+.switch-icon.sun {
+  color: #fbbf24;
+}
+
+.switch-track.dark .switch-icon.sun {
+  opacity: 0.4;
+}
+
+.switch-track.light .switch-icon.sun {
+  opacity: 1;
+}
+
+.switch-icon.moon {
+  color: #e2e8f0;
+}
+
+.switch-track.dark .switch-icon.moon {
+  opacity: 1;
+}
+
+.switch-track.light .switch-icon.moon {
+  opacity: 0.4;
+}
+
+.switch-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: all 0.3s cubic-bezier(0.68, -0.15, 0.27, 1.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.switch-track.light .switch-thumb {
+  background: linear-gradient(135deg, #fff, #fef3c7);
+}
+
+.switch-track.dark .switch-thumb {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.switch-thumb.active {
+  left: 27px;
+}
+</style>

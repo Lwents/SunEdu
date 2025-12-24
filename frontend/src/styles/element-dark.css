@@ -1,0 +1,708 @@
+/* Element Plus Dark Mode Overrides for Admin */
+/* These styles target popups/popovers that render in body */
+
+/* ============================================== */
+/* Element Plus CSS Variables for Dark Mode      */
+/* ============================================== */
+html.dark {
+    --el-color-primary: #06b6d4;
+    --el-color-primary-light-3: rgba(6, 182, 212, 0.3);
+    --el-color-primary-light-5: rgba(6, 182, 212, 0.5);
+    --el-color-primary-light-7: rgba(6, 182, 212, 0.7);
+    --el-color-primary-light-8: rgba(6, 182, 212, 0.8);
+    --el-color-primary-light-9: rgba(6, 182, 212, 0.9);
+    --el-color-primary-dark-2: #0891b2;
+    
+    --el-bg-color: #1e293b;
+    --el-bg-color-page: #0f172a;
+    --el-bg-color-overlay: #1e293b;
+    
+    --el-text-color-primary: #e2e8f0;
+    --el-text-color-regular: #cbd5e1;
+    --el-text-color-secondary: #94a3b8;
+    --el-text-color-placeholder: #64748b;
+    --el-text-color-disabled: #475569;
+    
+    --el-border-color: rgba(255, 255, 255, 0.15);
+    --el-border-color-light: rgba(255, 255, 255, 0.1);
+    --el-border-color-lighter: rgba(255, 255, 255, 0.08);
+    --el-border-color-extra-light: rgba(255, 255, 255, 0.05);
+    --el-border-color-dark: rgba(255, 255, 255, 0.2);
+    --el-border-color-darker: rgba(255, 255, 255, 0.25);
+    
+    --el-fill-color: rgba(255, 255, 255, 0.08);
+    --el-fill-color-light: rgba(255, 255, 255, 0.05);
+    --el-fill-color-lighter: rgba(255, 255, 255, 0.03);
+    --el-fill-color-extra-light: rgba(255, 255, 255, 0.02);
+    --el-fill-color-dark: rgba(255, 255, 255, 0.12);
+    --el-fill-color-darker: rgba(255, 255, 255, 0.16);
+    --el-fill-color-blank: #1e293b;
+    
+    --el-box-shadow: 0 12px 32px 4px rgba(0, 0, 0, 0.36), 0 8px 20px rgba(0, 0, 0, 0.72);
+    --el-box-shadow-light: 0 0 12px rgba(0, 0, 0, 0.48);
+    --el-box-shadow-lighter: 0 0 6px rgba(0, 0, 0, 0.36);
+    --el-box-shadow-dark: 0 16px 48px 16px rgba(0, 0, 0, 0.72), 0 12px 32px rgba(0, 0, 0, 0.64), 0 8px 16px -8px rgba(0, 0, 0, 0.48);
+    
+    --el-mask-color: rgba(0, 0, 0, 0.8);
+    --el-mask-color-extra-light: rgba(0, 0, 0, 0.3);
+}
+
+/* Date Picker Popup */
+html.dark .el-picker__popper,
+html.dark .el-date-picker,
+html.dark .el-date-range-picker,
+html.dark .el-picker-panel,
+html.dark .el-picker-panel__body-wrapper,
+html.dark .el-date-range-picker__content {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-date-picker__header,
+html.dark .el-date-range-picker__header,
+html.dark .el-date-picker__header-label,
+html.dark .el-picker-panel__icon-btn {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-date-table th {
+    color: #64748b !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark .el-date-table td {
+    color: #94a3b8 !important;
+}
+
+html.dark .el-date-table td.available:hover {
+    color: #22d3ee !important;
+}
+
+html.dark .el-date-table td.today span {
+    color: #22d3ee !important;
+}
+
+html.dark .el-date-table td.current:not(.disabled) span,
+html.dark .el-date-table td.start-date span,
+html.dark .el-date-table td.end-date span {
+    background: linear-gradient(135deg, #06b6d4, #8b5cf6) !important;
+    color: #fff !important;
+}
+
+html.dark .el-date-table td.in-range div,
+html.dark .el-date-table td.in-range div:hover {
+    background: rgba(6, 182, 212, 0.2) !important;
+}
+
+html.dark .el-date-table td.disabled div {
+    color: #475569 !important;
+}
+
+html.dark .el-picker-panel__sidebar {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .el-picker-panel__shortcut {
+    color: #94a3b8 !important;
+}
+
+html.dark .el-picker-panel__shortcut:hover {
+    color: #22d3ee !important;
+}
+
+html.dark .el-picker-panel__link-btn {
+    color: #22d3ee !important;
+}
+
+html.dark .el-time-spinner__item {
+    color: #94a3b8 !important;
+}
+
+html.dark .el-time-spinner__item.is-active {
+    color: #fff !important;
+}
+
+html.dark .el-time-panel {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Year/Month table */
+html.dark .el-year-table td,
+html.dark .el-month-table td {
+    color: #94a3b8 !important;
+}
+
+html.dark .el-year-table td.current:not(.disabled) .cell,
+html.dark .el-month-table td.current:not(.disabled) .cell {
+    background: linear-gradient(135deg, #06b6d4, #8b5cf6) !important;
+    color: #fff !important;
+}
+
+/* Select Dropdown Popup */
+html.dark .el-select__popper,
+html.dark .el-select-dropdown {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-select-dropdown__item {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-select-dropdown__item:hover,
+html.dark .el-select-dropdown__item.hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .el-select-dropdown__item.is-selected,
+html.dark .el-select-dropdown__item.selected {
+    color: #22d3ee !important;
+    background: rgba(6, 182, 212, 0.1) !important;
+}
+
+html.dark .el-select-dropdown__item.is-disabled {
+    color: #475569 !important;
+}
+
+/* Popper/Tooltip */
+html.dark .el-popper,
+html.dark .el-popper.is-light {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-popper__arrow::before {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Message Box */
+html.dark .el-message-box {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-message-box__title {
+    color: #fff !important;
+}
+
+html.dark .el-message-box__content {
+    color: #e2e8f0 !important;
+}
+
+/* Popover */
+html.dark .el-popover.el-popper {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-popover__title {
+    color: #fff !important;
+}
+
+/* Dropdown Menu */
+html.dark .el-dropdown-menu {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-dropdown-menu__item {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-dropdown-menu__item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #22d3ee !important;
+}
+
+/* Notification / Message */
+html.dark .el-notification {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-notification__title {
+    color: #fff !important;
+}
+
+html.dark .el-notification__content {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-message {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-message__content {
+    color: #e2e8f0 !important;
+}
+
+/* Cascader Popup */
+html.dark .el-cascader__dropdown {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-cascader-menu {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .el-cascader-node__label {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-cascader-node:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Autocomplete Popup */
+html.dark .el-autocomplete-suggestion {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-autocomplete-suggestion li {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-autocomplete-suggestion li:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ============================================== */
+/* Additional Component Overrides                */
+/* ============================================== */
+
+/* Pagination Select (20/page dropdown) */
+html.dark .el-pagination .el-select .el-input__wrapper,
+html.dark .el-pagination__sizes .el-input__wrapper {
+    background: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+html.dark .el-pagination .el-select .el-input__inner,
+html.dark .el-pagination__sizes .el-input__inner {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-pagination .el-pager li {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #94a3b8 !important;
+    border: none !important;
+}
+
+html.dark .el-pagination .el-pager li:hover {
+    color: #22d3ee !important;
+}
+
+html.dark .el-pagination .el-pager li.is-active {
+    background: linear-gradient(135deg, #06b6d4, #8b5cf6) !important;
+    color: #fff !important;
+}
+
+html.dark .el-pagination button {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #94a3b8 !important;
+}
+
+html.dark .el-pagination button:disabled {
+    color: #475569 !important;
+}
+
+html.dark .el-pagination__total {
+    color: #94a3b8 !important;
+}
+
+html.dark .el-pagination__jump {
+    color: #94a3b8 !important;
+}
+
+html.dark .el-pagination__editor .el-input__wrapper {
+    background: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+/* Input with focus state */
+html.dark .el-input__wrapper.is-focus,
+html.dark .el-input__wrapper:focus-within {
+    box-shadow: 0 0 0 1px #22d3ee inset !important;
+}
+
+/* Button plain variants */
+html.dark .el-button.is-plain:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger) {
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-button.is-plain:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Checkbox */
+html.dark .el-checkbox__label {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-checkbox__inner {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html.dark .el-checkbox.is-checked .el-checkbox__inner {
+    background: #06b6d4 !important;
+    border-color: #06b6d4 !important;
+}
+
+/* Radio */
+html.dark .el-radio__label {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-radio__inner {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html.dark .el-radio.is-checked .el-radio__inner {
+    background: #06b6d4 !important;
+    border-color: #06b6d4 !important;
+}
+
+/* Switch */
+html.dark .el-switch__core {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .el-switch.is-checked .el-switch__core {
+    background: #06b6d4 !important;
+    border-color: #06b6d4 !important;
+}
+
+/* Divider */
+html.dark .el-divider {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .el-divider__text {
+    background: #0f172a !important;
+    color: #64748b !important;
+}
+
+/* Empty State */
+html.dark .el-empty__description {
+    color: #64748b !important;
+}
+
+/* Steps */
+html.dark .el-step__title {
+    color: #94a3b8 !important;
+}
+
+html.dark .el-step__title.is-process {
+    color: #22d3ee !important;
+}
+
+html.dark .el-step__title.is-finish {
+    color: #22c55e !important;
+}
+
+html.dark .el-step__description {
+    color: #64748b !important;
+}
+
+/* Collapse */
+html.dark .el-collapse-item__header {
+    background: transparent !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .el-collapse-item__wrap {
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .el-collapse-item__content {
+    color: #94a3b8 !important;
+}
+
+/* Breadcrumb */
+html.dark .el-breadcrumb__inner {
+    color: #94a3b8 !important;
+}
+
+html.dark .el-breadcrumb__inner.is-link:hover {
+    color: #22d3ee !important;
+}
+
+html.dark .el-breadcrumb__separator {
+    color: #475569 !important;
+}
+
+/* Alert */
+html.dark .el-alert--info.is-light {
+    background: rgba(6, 182, 212, 0.1) !important;
+    color: #22d3ee !important;
+}
+
+html.dark .el-alert--success.is-light {
+    background: rgba(34, 197, 94, 0.1) !important;
+    color: #22c55e !important;
+}
+
+html.dark .el-alert--warning.is-light {
+    background: rgba(251, 191, 36, 0.1) !important;
+    color: #fbbf24 !important;
+}
+
+html.dark .el-alert--error.is-light {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+}
+
+/* Progress */
+html.dark .el-progress__text {
+    color: #e2e8f0 !important;
+}
+
+/* Skeleton */
+html.dark .el-skeleton__item {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%) !important;
+}
+
+/* ============================================== */
+/* Button Styles for Dark Mode                   */
+/* ============================================== */
+
+/* Default button (non-type) */
+html.dark .el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info) {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info):hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #fff !important;
+}
+
+/* Small button overrides */
+html.dark .el-button--small:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info) {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-button--small:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info):hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #fff !important;
+}
+
+/* Disabled button */
+html.dark .el-button.is-disabled,
+html.dark .el-button.is-disabled:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #475569 !important;
+}
+
+/* Table cell text */
+html.dark .el-table__cell,
+html.dark .el-table .cell {
+    color: #e2e8f0 !important;
+}
+
+/* Table fixed column background */
+html.dark .el-table__fixed-right,
+html.dark .el-table__fixed-right .el-table__cell {
+    background: #1e293b !important;
+}
+
+html.dark .el-table__fixed-right-patch {
+    background: #1e293b !important;
+}
+
+/* ============================================== */
+/* Browser Autofill Override for Dark Mode       */
+/* ============================================== */
+
+/* Chrome/Safari autofill */
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus,
+html.dark input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #1e293b inset !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
+    box-shadow: 0 0 0 1000px #1e293b inset !important;
+    caret-color: #e2e8f0 !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+
+html.dark .el-input__inner:-webkit-autofill,
+html.dark .el-input__inner:-webkit-autofill:hover,
+html.dark .el-input__inner:-webkit-autofill:focus,
+html.dark .el-input__inner:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #1e293b inset !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
+    box-shadow: 0 0 0 1000px #1e293b inset !important;
+}
+
+/* Input wrapper with autofill */
+html.dark .el-input__wrapper:has(input:-webkit-autofill) {
+    background: #1e293b !important;
+}
+
+
+/* ============================================== */
+/* Primary Plain Button for Dark Mode            */
+/* ============================================== */
+html.dark .el-button--primary.is-plain {
+    background: rgba(6, 182, 212, 0.1) !important;
+    border-color: rgba(6, 182, 212, 0.5) !important;
+    color: #22d3ee !important;
+}
+
+html.dark .el-button--primary.is-plain:hover {
+    background: rgba(6, 182, 212, 0.2) !important;
+    border-color: #22d3ee !important;
+    color: #22d3ee !important;
+}
+
+/* Date Picker / Range Editor Input for Dark Mode */
+html.dark .el-date-editor,
+html.dark .el-range-editor {
+    --el-input-bg-color: rgba(255, 255, 255, 0.05) !important;
+    --el-input-border-color: rgba(255, 255, 255, 0.1) !important;
+    --el-input-text-color: #e2e8f0 !important;
+    --el-input-placeholder-color: #64748b !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .el-date-editor.el-input__wrapper,
+html.dark .el-date-editor .el-input__wrapper,
+html.dark .el-range-editor.el-input__wrapper,
+html.dark .el-input__wrapper.el-range-editor {
+    background: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+html.dark .el-date-editor .el-input__inner,
+html.dark .el-range-editor .el-range-input,
+html.dark .el-range-input {
+    color: #e2e8f0 !important;
+    background: transparent !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+html.dark .el-range-editor .el-range-input::placeholder,
+html.dark .el-range-input::placeholder {
+    color: #64748b !important;
+    -webkit-text-fill-color: #64748b !important;
+}
+
+html.dark .el-range-editor .el-range-separator,
+html.dark .el-range-separator {
+    color: #64748b !important;
+}
+
+html.dark .el-date-editor .el-input__icon,
+html.dark .el-range-editor .el-input__icon,
+html.dark .el-input__prefix-inner,
+html.dark .el-input__suffix-inner {
+    color: #64748b !important;
+}
+
+/* Range Editor specific - ensure background */
+html.dark .el-range-editor.is-active,
+html.dark .el-range-editor:focus-within {
+    box-shadow: 0 0 0 1px #22d3ee inset !important;
+}
+
+html.dark .el-range-editor:hover:not(.is-active) {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset !important;
+}
+
+
+/* ============================================== */
+/* Input Number Spinner Buttons for Dark Mode    */
+/* ============================================== */
+html.dark .el-input-number__decrease,
+html.dark .el-input-number__increase {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+}
+
+html.dark .el-input-number__decrease:hover:not(.is-disabled),
+html.dark .el-input-number__increase:hover:not(.is-disabled) {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #22d3ee !important;
+}
+
+html.dark .el-input-number__decrease.is-disabled,
+html.dark .el-input-number__increase.is-disabled {
+    color: #475569 !important;
+}
+
+html.dark .el-input-number .el-input__wrapper {
+    background: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+html.dark .el-input-number .el-input__inner {
+    color: #e2e8f0 !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+/* Native number input spinner */
+html.dark input[type="number"]::-webkit-inner-spin-button,
+html.dark input[type="number"]::-webkit-outer-spin-button {
+    filter: invert(0.8);
+}
+
+/* ============================================== */
+/* Select V2 (Virtual Select) for Dark Mode      */
+/* ============================================== */
+html.dark .el-select-v2 .el-input__wrapper {
+    background: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+html.dark .el-select-v2 .el-input__inner {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-select-v2__placeholder {
+    color: #64748b !important;
+}
+
+html.dark .el-select-v2-dropdown {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-select-v2-dropdown__option-item {
+    color: #e2e8f0 !important;
+}
+
+html.dark .el-select-v2-dropdown__option-item:hover,
+html.dark .el-select-v2-dropdown__option-item.is-hovering {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .el-select-v2-dropdown__option-item.is-selected {
+    color: #22d3ee !important;
+    background: rgba(6, 182, 212, 0.1) !important;
+}

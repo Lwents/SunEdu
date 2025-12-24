@@ -1,6 +1,6 @@
 <!-- src/pages/teacher/exams/Exams.vue -->
 <template>
-  <div class="min-h-screen w-full overflow-x-hidden bg-slate-50">
+  <div class="min-h-screen w-full overflow-x-hidden" :class="isDark ? 'bg-slate-950' : 'bg-slate-50'">
     <main class="w-full mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 md:px-10 md:py-8">
       <!-- Header -->
       <div class="mb-4 sm:mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -17,7 +17,7 @@
       <div class="mb-5 grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-3">
         <!-- Search -->
         <div class="md:col-span-2">
-          <label class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+          <label class="search-shell flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
             <svg viewBox="0 0 24 24" class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" aria-hidden="true">
               <circle cx="11" cy="11" r="8" stroke-width="2" />
               <path d="M21 21l-4.3-4.3" stroke-width="2" />
@@ -26,7 +26,7 @@
               v-model.trim="q"
               type="text"
               placeholder="Tìm đề theo tên/khoá…"
-              class="w-full bg-transparent outline-none text-sm sm:text-base"
+              class="search-input w-full bg-transparent outline-none text-sm sm:text-base"
               @input="debouncedFetch"
             />
           </label>
@@ -195,6 +195,7 @@ import { computed, onMounted, onBeforeUnmount, onActivated, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from '@/utils/toast'
 import { showConfirm } from '@/utils/confirm'
+import { useThemeStore } from '@/store/theme.store'
 
 /** ===== Types ===== */
 type ExamStatus = 'published' | 'draft' | 'scheduled'
@@ -212,6 +213,8 @@ type ExamRow = {
 
 /** ===== Router ===== */
 const router = useRouter()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 /** ===== State (filters + paging) ===== */
 const q = ref('')

@@ -1,6 +1,6 @@
 <!-- src/pages/teacher/exams/ExamDetail.vue -->
 <template>
-  <div class="min-h-screen w-full overflow-x-hidden bg-slate-50">
+  <div class="min-h-screen w-full overflow-x-hidden" :class="isDark ? 'bg-slate-950' : 'bg-slate-50'">
     <!-- Đang tải -->
     <main v-if="loading" class="mx-auto max-w-screen-md px-6 py-16">
       <div class="mb-4 h-7 w-64 animate-pulse rounded bg-slate-200"></div>
@@ -203,6 +203,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useThemeStore } from '@/store/theme.store'
 
 /** View models */
 type ExamStatus = 'published' | 'scheduled' | 'draft'
@@ -233,6 +234,8 @@ type QVM = {
 /** Router & state */
 const route = useRoute()
 const router = useRouter()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 // Helper function to parse ID from route params
 function parseId(paramId: string | string[]): string | number {

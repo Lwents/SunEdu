@@ -491,7 +491,22 @@ const onSubmit = async () => {
     showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success')
     router.push('/auth/login')
   } catch (e: any) {
-    showToast(e?.message || 'Đăng ký thất bại', 'error')
+    // Lấy thông tin lỗi chi tiết từ response
+    const data = e?.response?.data || {}
+    const detail = data.detail || data.error || data.message || e?.message || ''
+    
+    // Hiển thị thông báo lỗi cụ thể
+    if (detail.includes('Username already taken')) {
+      showToast('Tên đăng nhập đã tồn tại', 'error')
+    } else if (detail.includes('Email already taken')) {
+      showToast('Email đã được sử dụng', 'error')
+    } else if (detail.includes('Phone already taken')) {
+      showToast('Số điện thoại đã được sử dụng', 'error')
+    } else if (detail.includes('already exists')) {
+      showToast('Tài khoản đã tồn tại', 'error')
+    } else {
+      showToast(detail || 'Đăng ký thất bại', 'error')
+    }
   } finally {
     loading.value = false
   }

@@ -2,8 +2,8 @@
   <div v-if="show" class="nav">
     <img 
       :src="logo" 
-      alt="SmartEdu Logo" 
-      class="logo-smartedu"
+      alt="SunnyEdu Logo" 
+      class="logo-sunnyedu"
       :style="{ 
         height: computedHeight,
         transform: `scale(${scale})`
@@ -14,10 +14,10 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import logo from '@/assets/images/demologo.png'
+import logo from '@/assets/images/logo3.png'
 
 const props = defineProps({
-  size: { type: Number, default: 56 },
+  size: { type: Number, default: 24 },
   scale: { type: Number, default: 1 },
   show: { type: Boolean, default: true },
 })
@@ -42,7 +42,7 @@ const computedHeight = computed(() => {
   align-items: center;
   overflow: visible;
 }
-.logo-smartedu {
+.logo-sunnyedu {
   width: auto;
   transform-origin: left center;
   transition: transform 0.2s ease;

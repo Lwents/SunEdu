@@ -42,7 +42,8 @@ class AdminTransactionListView(APIView):
             queryset = queryset.filter(status=status_filter.lower())
 
         if gateway:
-            queryset = queryset.filter(metadata__gateway=gateway)
+            # Case-insensitive gateway filter
+            queryset = queryset.filter(metadata__gateway__iexact=gateway)
 
         if user_id:
             queryset = queryset.filter(user_id=user_id)
@@ -257,7 +258,7 @@ class AdminTransactionExportView(APIView):
         if status_filter:
             queryset = queryset.filter(status=status_filter.lower())
         if gateway:
-            queryset = queryset.filter(metadata__gateway=gateway)
+            queryset = queryset.filter(metadata__gateway__iexact=gateway)
         if from_date:
             queryset = queryset.filter(created_at__gte=from_date)
         if to_date:

@@ -56,11 +56,11 @@ class AdminCourseListView(APIView):
                 queryset = queryset.filter(published=False)
             # Add more status filters as needed
 
-        # Note: Course model doesn't have created_at field, so we skip date filtering for now
-        # if from_date:
-        #     queryset = queryset.filter(created_at__gte=from_date)
-        # if to_date:
-        #     queryset = queryset.filter(created_at__lte=to_date)
+        # Date filtering using created_on field
+        if from_date:
+            queryset = queryset.filter(created_on__gte=from_date)
+        if to_date:
+            queryset = queryset.filter(created_on__lte=to_date)
 
         # Annotate with counts
         queryset = queryset.annotate(

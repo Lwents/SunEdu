@@ -17,7 +17,7 @@ from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 # System prompts cho AI Tutor
-TUTOR_SYSTEM_PROMPT = """Bạn là trợ lý học tập AI của SmartEdu - nền tảng học tập thông minh cho học sinh Việt Nam.
+TUTOR_SYSTEM_PROMPT = """Bạn là trợ lý học tập AI của SunnyEdu - nền tảng học tập thông minh cho học sinh Việt Nam.
 
 NGUYÊN TẮC QUAN TRỌNG:
 1. Luôn dùng ngôn ngữ đơn giản, dễ hiểu
@@ -36,7 +36,7 @@ PHONG CÁCH:
 - Khi học sinh sai: "Gần đúng rồi! Để mình gợi ý nhé..."
 """
 
-HINT_SYSTEM_PROMPT = """Bạn là trợ lý học tập AI của SmartEdu. Nhiệm vụ: Đưa ra GỢI Ý để học sinh tự tìm đáp án.
+HINT_SYSTEM_PROMPT = """Bạn là trợ lý học tập AI của SunnyEdu. Nhiệm vụ: Đưa ra GỢI Ý để học sinh tự tìm đáp án.
 
 QUY TẮC GỢI Ý:
 1. KHÔNG BAO GIỜ nói đáp án trực tiếp
@@ -130,8 +130,8 @@ class AITutorEngine:
         headers = {
             "Authorization": f"Bearer {self.openrouter_api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://smartedu.local",
-            "X-Title": "SmartEdu AI Tutor",
+            "HTTP-Referer": "https://sunnyedu.local",
+            "X-Title": "SunnyEdu AI Tutor",
         }
         
         payload = {
@@ -729,7 +729,7 @@ Dùng ngôn ngữ thân thiện, có emoji, phù hợp trẻ {5 + student_grade}
 CHỈ trả về tin nhắn, không có gì khác."""
 
         messages = [
-            {"role": "system", "content": "Bạn là trợ lý học tập AI của SmartEdu - thân thiện với học sinh Việt Nam."},
+            {"role": "system", "content": "Bạn là trợ lý học tập AI của SunnyEdu - thân thiện với học sinh Việt Nam."},
             {"role": "user", "content": prompt}
         ]
         

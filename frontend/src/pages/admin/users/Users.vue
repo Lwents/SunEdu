@@ -1,104 +1,99 @@
 <template>
-  <div>
-    <!-- Header + actions -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="space-y-1">
-        <h2 class="text-lg font-semibold text-gray-800">Quản lý người dùng</h2>
-        <p class="text-sm text-gray-500">Tìm kiếm, lọc, tạo/sửa, khoá và reset mật khẩu</p>
+  <div class="users-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-info">
+        <h2 class="page-title">👥 Quản lý người dùng</h2>
+        <p class="page-desc">Tìm kiếm, lọc, tạo/sửa, khoá và reset mật khẩu</p>
       </div>
-      <div class="flex items-center gap-2">
-        <el-button type="primary" @click="openCreate">Tạo người dùng</el-button>
+      <div class="header-actions">
+        <el-button type="primary" @click="openCreate">
+          <span class="btn-icon">+</span> Tạo người dùng
+        </el-button>
+        <router-link to="/admin/users/bulk-create">
+          <el-button type="success">
+            📋 Tạo hàng loạt
+          </el-button>
+        </router-link>
         <el-button @click="exportCsv" :loading="loadingExport">Export CSV</el-button>
       </div>
     </div>
 
-    <!-- Toolbar -->
-    <div class="grid grid-cols-1 gap-3 md:grid-cols-4 xl:grid-cols-6 items-start">
-      <el-input
-        v-model="query.q"
-        clearable
-        placeholder="Tìm theo tên / email / username"
-        @clear="applyFilters"
-        @keyup.enter="applyFilters"
-        @input="debouncedSearch"
-        class="md:col-span-2 xl:col-span-2 w-full"
-      >
-        <template #prefix>🔎</template>
-      </el-input>
+    <!-- Filter Bar -->
+    <div class="filter-card">
+      <div class="filter-grid">
+        <el-input
+          v-model="query.q"
+          clearable
+          placeholder="🔎 Tìm theo tên / email / username"
+          @clear="applyFilters"
+          @keyup.enter="applyFilters"
+          @input="debouncedSearch"
+          class="filter-search"
+        />
 
-      <el-select
-        v-model="query.role"
-        clearable
-        placeholder="Vai trò"
-        @change="applyFilters"
-        class="w-full"
-      >
-        <el-option label="Giáo viên" value="instructor" />
-        <el-option label="Học sinh" value="student" />
-      </el-select>
+        <el-select
+          v-model="query.role"
+          clearable
+          placeholder="Vai trò"
+          @change="applyFilters"
+        >
+          <el-option label="Giáo viên" value="instructor" />
+          <el-option label="Học sinh" value="student" />
+        </el-select>
 
-      <el-select
-        v-model="query.status"
-        clearable
-        placeholder="Trạng thái"
-        @change="applyFilters"
-        class="w-full"
-      >
-        <el-option label="Hoạt động" value="active" />
-        <el-option label="Tạm khoá" value="locked" />
-        <el-option label="Cấm vĩnh viễn" value="banned" />
-      </el-select>
+        <el-select
+          v-model="query.status"
+          clearable
+          placeholder="Trạng thái"
+          @change="applyFilters"
+        >
+          <el-option label="Hoạt động" value="active" />
+          <el-option label="Tạm khoá" value="locked" />
+          <el-option label="Cấm vĩnh viễn" value="banned" />
+        </el-select>
 
-      <!-- Bọc DatePicker để nó co đúng, chiếm 2 cột ở md/xl -->
-      <div class="md:col-span-2 xl:col-span-2 min-w-0">
         <el-date-picker
           v-model="dateRange"
           type="daterange"
           unlink-panels
-          range-separator="–"
-          start-placeholder="Tạo từ"
-          end-placeholder="đến"
+          range-separator="→"
+          start-placeholder="Từ ngày"
+          end-placeholder="Đến ngày"
           value-format="YYYY-MM-DD"
-          class="w-full"
-          :style="{ width: '100%' }"
           @change="applyDateRange"
+          class="filter-date"
         />
-      </div>
 
-      <!-- Action buttons: full width ở mobile, 2 cột ở md, 1 cột ở xl -->
-      <div class="md:col-span-2 xl:col-span-1 flex items-center gap-2 md:justify-end">
-        <el-button @click="resetFilters">Xoá lọc</el-button>
-        <el-button type="primary" plain @click="applyFilters">Lọc</el-button>
+        <div class="filter-actions">
+          <el-button @click="resetFilters">Xoá lọc</el-button>
+          <el-button type="primary" @click="applyFilters">Lọc</el-button>
+        </div>
       </div>
     </div>
 
-    <!-- Bulk actions -->
-    <div class="flex items-center justify-between">
-      <div class="text-sm text-gray-500">
-        Đã chọn: <b>{{ selection.length }}</b>
-      </div>
-      <div class="flex items-center gap-2">
-        <el-dropdown trigger="click">
-          <el-button :disabled="selection.length === 0">
-            Thao tác hàng loạt
-            <el-icon class="i-ep-arrow-down ml-1" />
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item @click="bulkChangeRole">Đổi vai trò…</el-dropdown-item>
-              <el-dropdown-item @click="bulkLock">Khoá</el-dropdown-item>
-              <el-dropdown-item @click="bulkUnlock">Mở khoá</el-dropdown-item>
-              <el-dropdown-item divided @click="bulkBan" class="text-red-600">
-                Cấm vĩnh viễn
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
+    <!-- Bulk Actions Bar -->
+    <div class="bulk-bar">
+      <span class="selection-count">Đã chọn: <strong>{{ selection.length }}</strong></span>
+      <el-dropdown trigger="click" :disabled="selection.length === 0">
+        <el-button :disabled="selection.length === 0">
+          Thao tác hàng loạt ▾
+        </el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item @click="bulkChangeRole">Đổi vai trò…</el-dropdown-item>
+            <el-dropdown-item @click="bulkLock">Khoá</el-dropdown-item>
+            <el-dropdown-item @click="bulkUnlock">Mở khoá</el-dropdown-item>
+            <el-dropdown-item divided @click="bulkBan" class="text-danger">
+              Cấm vĩnh viễn
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
 
-    <!-- Table -->
-    <div class="rounded-lg bg-white p-3 ring-1 ring-black/5">
+    <!-- Table Card -->
+    <div class="table-card">
       <el-table
         :data="rows"
         v-loading="loading"
@@ -107,29 +102,30 @@
         @sort-change="onSortChange"
         :default-sort="defaultSort"
       >
-        <!-- Empty state (searchUS_19) -->
+        <!-- Empty state -->
         <template #empty>
-          <div class="flex flex-col items-center justify-center py-10 text-gray-500">
-            <svg class="h-12 w-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="empty-state">
+            <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
-            <p class="text-sm font-medium">Không có dữ liệu</p>
-            <p class="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc tạo người dùng mới</p>
+            <p class="empty-title">Không có dữ liệu</p>
+            <p class="empty-desc">Thử thay đổi bộ lọc hoặc tạo người dùng mới</p>
           </div>
         </template>
+        
         <el-table-column type="selection" width="44" />
 
         <el-table-column label="Người dùng" min-width="260">
           <template #default="{ row }">
-            <div class="flex items-center gap-3">
-              <img
-                :src="getUserAvatar(row)"
-                class="h-9 w-9 rounded-full object-cover"
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img 
+                :src="getUserAvatar(row)" 
                 alt="avatar"
+                style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;"
               />
-              <div class="min-w-0">
-                <div class="truncate font-medium text-gray-800">{{ row.name }}</div>
-                <div class="truncate text-xs text-gray-500">{{ row.email }}</div>
+              <div style="display: flex; flex-direction: column; min-width: 0;">
+                <span style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ row.name }}</span>
+                <span style="font-size: 12px; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ row.email }}</span>
               </div>
             </div>
           </template>
@@ -139,46 +135,43 @@
 
         <el-table-column label="Vai trò" width="120">
           <template #default="{ row }">
-            <el-tag
-              :type="
-                row.role === 'admin' ? 'danger' : row.role === 'instructor' ? 'warning' : 'success'
-              "
-              size="small"
-              round
+            <span 
+              class="role-badge"
+              :class="{
+                'role-admin': row.role === 'admin',
+                'role-instructor': row.role === 'instructor',
+                'role-student': row.role === 'student'
+              }"
             >
               {{ roleLabel(row.role) }}
-            </el-tag>
+            </span>
           </template>
         </el-table-column>
 
         <el-table-column label="Trạng thái" width="130">
           <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small" round>
+            <span 
+              class="status-badge"
+              :class="{
+                'status-active': row.status === 'active',
+                'status-locked': row.status === 'locked',
+                'status-banned': row.status === 'banned'
+              }"
+            >
               {{ statusLabel(row.status) }}
-            </el-tag>
+            </span>
           </template>
         </el-table-column>
-
-        <!-- <el-table-column
-          prop="lastLoginAt"
-          label="Lần đăng nhập cuối"
-          min-width="170"
-          sortable="custom"
-        >
-          <template #default="{ row }">
-            <span class="text-gray-700">{{ fmtDate(row.lastLoginAt) || '—' }}</span>
-          </template>
-        </el-table-column> -->
 
         <el-table-column prop="createdAt" label="Ngày tạo" min-width="150" sortable="custom">
           <template #default="{ row }">
-            {{ fmtDate(row.createdAt) }}
+            <span style="font-size: 13px; opacity: 0.8;">{{ fmtDate(row.createdAt) }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column fixed="right" label="Hành động" width="260">
+        <el-table-column fixed="right" label="Hành động" width="240">
           <template #default="{ row }">
-            <div class="flex flex-wrap items-center gap-1">
+            <div style="display: flex; gap: 6px; flex-wrap: nowrap; align-items: center;">
               <el-button size="small" @click="openEdit(row)">Sửa</el-button>
               <el-button size="small" @click="gotoDetail(row)">Chi tiết</el-button>
               <el-button size="small" type="danger" @click="deleteUser(row)">Xóa</el-button>
@@ -188,7 +181,7 @@
       </el-table>
 
       <!-- Pagination -->
-      <div class="mt-3 flex items-center justify-end">
+      <div class="table-footer">
         <el-pagination
           background
           layout="total, sizes, prev, pager, next"
@@ -763,14 +756,238 @@ watch(
 </script>
 
 <style scoped>
-/* Optional: icon space placeholder (Element Plus icon class used above) */
-.i-ep-arrow-down::before {
-  content: '▾';
-  display: inline-block;
+.users-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-/* tránh DatePicker giữ width cứng */
-/* .el-date-editor.el-input,
-.el-date-editor.el-input__wrapper {
+
+/* Page Header */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.page-desc {
+  font-size: 14px;
+  margin: 4px 0 0;
+  opacity: 0.7;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+/* Filter Card */
+.filter-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.filter-search {
+  grid-column: span 2;
+}
+
+.filter-date {
   width: 100% !important;
-} */
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Bulk Bar */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.selection-count {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.text-danger {
+  color: #ef4444 !important;
+}
+
+/* Table Card */
+.table-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+}
+
+.table-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.empty-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.empty-desc {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 4px;
+}
+
+/* User Cell */
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 12px;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-text {
+  font-size: 13px;
+}
+
+.action-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filter-search {
+    grid-column: span 1;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+  }
+}
+
+/* Role Badges */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.role-admin {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.role-instructor {
+  background: rgba(251, 191, 36, 0.15);
+  color: #f59e0b;
+}
+
+.role-student {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.status-locked {
+  background: rgba(251, 191, 36, 0.15);
+  color: #f59e0b;
+}
+
+.status-banned {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
 </style>

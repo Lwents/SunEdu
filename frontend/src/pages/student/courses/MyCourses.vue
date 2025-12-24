@@ -20,15 +20,15 @@
       <!-- Stats Row -->
       <div class="stats-row">
         <div class="stat-box">
-          <span class="stat-num">{{ mainCoursesCount }}</span>
+          <span class="stat-num">{{ filteredMain.length }}</span>
           <span class="stat-txt">Tổng khóa học</span>
         </div>
         <div class="stat-box">
-          <span class="stat-num completed">{{ enrolled.filter(c => c.done).length }}</span>
+          <span class="stat-num completed">{{ filteredMain.filter(c => c.done).length }}</span>
           <span class="stat-txt">Đã hoàn thành</span>
         </div>
         <div class="stat-box">
-          <span class="stat-num learning">{{ enrolled.filter(c => !c.done).length }}</span>
+          <span class="stat-num learning">{{ filteredMain.filter(c => !c.done).length }}</span>
           <span class="stat-txt">Đang học</span>
         </div>
       </div>
@@ -186,7 +186,7 @@ async function load() {
 
 const filteredMain = computed(() => {
   let arr = enrolled.value.slice()
-  if (gradeFilter.value) arr = arr.filter(x => x.grade === gradeFilter.value)
+  if (gradeFilter.value) arr = arr.filter(x => Number(x.grade) === gradeFilter.value)
   return arr
 })
 
@@ -195,7 +195,7 @@ const enrolledIds = computed(() => new Set(enrolled.value.map(c => String(c.id))
 
 const suppList = computed(() => {
   let arr = suggestions.value.filter(c => !enrolledIds.value.has(String(c.id)))
-  if (gradeFilter.value) arr = arr.filter(s => s.grade === gradeFilter.value)
+  if (gradeFilter.value) arr = arr.filter(s => Number(s.grade) === gradeFilter.value)
   return arr
 })
 
@@ -229,7 +229,7 @@ onMounted(load)
 
 <style scoped>
 .my-courses { min-height: 100vh; position: relative; }
-.my-courses.dark { background: #0f172a; }
+.my-courses.dark { background: #020617; }
 .my-courses.light { background: #f1f5f9; }
 
 .bg-glow { position: fixed; inset: 0; pointer-events: none; z-index: 0; }

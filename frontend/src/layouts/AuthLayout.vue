@@ -1,218 +1,247 @@
 <template>
   <div class="auth-layout">
-    <!-- Background with 3D Elements -->
-    <div class="bg-canvas">
-      <div class="gradient-orb orb-1"></div>
-      <div class="gradient-orb orb-2"></div>
-      <div class="gradient-orb orb-3"></div>
-      <div class="floating-shape shape-1"></div>
-      <div class="floating-shape shape-2"></div>
-      <div class="floating-shape shape-3"></div>
+    <!-- Animated Background -->
+    <div class="bg-wrapper">
+      <div class="gradient-sphere sphere-1"></div>
+      <div class="gradient-sphere sphere-2"></div>
+      <div class="gradient-sphere sphere-3"></div>
+      <div class="particles">
+        <div v-for="n in 20" :key="n" class="particle" :style="getParticleStyle(n)"></div>
+      </div>
+      <div class="grid-overlay"></div>
     </div>
 
     <!-- Home Button -->
-    <router-link to="/" class="home-button">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-      </svg>
-      <span class="home-text">Trang chủ</span>
+    <router-link to="/" class="home-btn">
+      <div class="home-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+      </div>
+      <span>Trang chủ</span>
     </router-link>
 
-    <!-- Main Container -->
-    <div class="content-wrapper">
-      <!-- Sliding Auth Container -->
-      <div v-if="isLoginOrRegister" class="auth-container" :class="{ 'register-mode': isRegisterPage }">
-        <!-- Left Panel - Login -->
-        <div class="form-panel left-panel">
-          <div class="form-wrapper">
-            <div class="brand-header">
-              <h2 class="form-title">Đăng nhập</h2>
-              <p class="form-subtitle">Chào mừng trở lại! Tiếp tục hành trình học tập</p>
+    <!-- Main Content -->
+    <div class="auth-content">
+      <!-- Glass Card -->
+      <div class="auth-card">
+        <!-- Left Side - Branding -->
+        <div class="brand-side">
+          <div class="brand-content">
+            <!-- Logo Animation -->
+            <div class="logo-wrapper">
+              <div class="logo-glow"></div>
+              <div class="logo-icon">
+                <svg viewBox="0 0 48 48" fill="none">
+                  <defs>
+                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#06b6d4" />
+                      <stop offset="100%" stop-color="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M24 4L4 14v20l20 10 20-10V14L24 4z" fill="url(#logoGrad)" opacity="0.2"/>
+                  <path d="M24 4L4 14l20 10 20-10L24 4z" fill="url(#logoGrad)"/>
+                  <path d="M4 14v20l20 10V24L4 14z" fill="url(#logoGrad)" opacity="0.7"/>
+                  <path d="M44 14v20l-20 10V24l20-10z" fill="url(#logoGrad)" opacity="0.5"/>
+                </svg>
+              </div>
             </div>
-            <Login v-if="route.path === '/auth/login'" />
+
+            <h1 class="brand-title">SunnyEdu</h1>
+            <p class="brand-tagline">Nền tảng học tập thông minh</p>
+
+            <!-- Features -->
+            <div class="features">
+              <div class="feature-item">
+                <div class="feature-icon">📚</div>
+                <span>Khóa học chất lượng</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">🎯</div>
+                <span>Học theo lộ trình</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">🤖</div>
+                <span>AI thông minh</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Decorative Elements -->
+          <div class="brand-decoration">
+            <div class="deco-circle deco-1"></div>
+            <div class="deco-circle deco-2"></div>
+            <div class="deco-line deco-3"></div>
           </div>
         </div>
 
-        <!-- Right Panel - Register -->
-        <div class="form-panel right-panel">
-          <div class="form-wrapper">
-            <div class="brand-header">
-              <h2 class="form-title">Đăng ký</h2>
-              <p class="form-subtitle">Tạo tài khoản để bắt đầu học tập</p>
+        <!-- Right Side - Form -->
+        <div class="form-side">
+          <div class="form-container">
+            <!-- Form Header -->
+            <div class="form-header">
+              <h2 class="form-title">{{ pageTitle }}</h2>
+              <p class="form-subtitle">{{ pageSubtitle }}</p>
             </div>
-            <Register v-if="route.path === '/auth/register'" />
-          </div>
-        </div>
 
-        <!-- Sliding Overlay -->
-        <div class="overlay-container">
-          <div class="overlay">
-            <div class="overlay-panel overlay-left">
-              <div class="overlay-content">
-                <div class="overlay-icon">👋</div>
-                <h2 class="overlay-title">Chào mừng trở lại!</h2>
-                <p class="overlay-text">Đăng nhập để tiếp tục hành trình học tập của bạn</p>
-                <button class="overlay-btn" @click="switchToLogin">
-                  <span>Đăng nhập</span>
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                  </svg>
-                </button>
-              </div>
+            <!-- Dynamic Form Content -->
+            <div class="form-content">
+              <router-view />
             </div>
-            <div class="overlay-panel overlay-right">
-              <div class="overlay-content">
-                <div class="overlay-icon">🚀</div>
-                <h2 class="overlay-title">Chào bạn mới!</h2>
-                <p class="overlay-text">Tạo tài khoản để bắt đầu học tập cùng SmartEdu</p>
-                <button class="overlay-btn" @click="switchToRegister">
-                  <span>Đăng ký ngay</span>
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                  </svg>
-                </button>
-              </div>
+
+            <!-- Forgot Password Link (only on login) -->
+            <div v-if="isLoginPage" class="forgot-link">
+              <router-link to="/auth/forgot-password" class="link-button">
+                <svg class="link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+                <span>Quên mật khẩu?</span>
+              </router-link>
             </div>
+
           </div>
         </div>
       </div>
 
-      <!-- Simple Card for Other Pages -->
-      <div v-else class="simple-auth-card">
-        <div class="brand-header">
-          <h2 class="form-title">{{ route.meta.title }}</h2>
-        </div>
-        <router-view />
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import Login from '@/pages/auth/Login.vue'
-import Register from '@/pages/auth/Register.vue'
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const router = useRouter()
 
-const isLoginOrRegister = computed(() => 
-  route.path === '/auth/login' || route.path === '/auth/register'
-)
-const isRegisterPage = computed(() => route.path === '/auth/register')
+const isLoginPage = computed(() => route.path === '/auth/login')
 
-function switchToLogin() { router.push('/auth/login') }
-function switchToRegister() { router.push('/auth/register') }
+const pageTitle = computed(() => {
+  switch (route.path) {
+    case '/auth/login': return 'Đăng nhập'
+    case '/auth/register': return 'Đăng ký'
+    case '/auth/forgot-password': return 'Quên mật khẩu'
+    case '/auth/reset-password': return 'Đặt lại mật khẩu'
+    default: return route.meta.title || 'Xác thực'
+  }
+})
+
+const pageSubtitle = computed(() => {
+  switch (route.path) {
+    case '/auth/login': return 'Chào mừng trở lại! Tiếp tục hành trình học tập'
+    case '/auth/register': return 'Tạo tài khoản để bắt đầu học tập'
+    case '/auth/forgot-password': return 'Nhập email để khôi phục mật khẩu'
+    case '/auth/reset-password': return 'Tạo mật khẩu mới cho tài khoản'
+    default: return ''
+  }
+})
+
+function getParticleStyle(n: number) {
+  const size = Math.random() * 4 + 2
+  const left = Math.random() * 100
+  const delay = Math.random() * 5
+  const duration = Math.random() * 10 + 10
+  return {
+    width: `${size}px`,
+    height: `${size}px`,
+    left: `${left}%`,
+    animationDelay: `${delay}s`,
+    animationDuration: `${duration}s`
+  }
+}
 </script>
 
 <style scoped>
 .auth-layout {
   min-height: 100vh;
   width: 100%;
-  position: relative;
-  overflow: hidden;
-  background: #0f172a;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #0a0e1a;
+  position: relative;
+  overflow: hidden;
   padding: 2rem;
 }
 
 /* Background */
-.bg-canvas {
+.bg-wrapper {
   position: absolute;
   inset: 0;
-  z-index: 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  overflow: hidden;
 }
 
-.gradient-orb {
+.gradient-sphere {
   position: absolute;
   border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.5;
+  filter: blur(80px);
 }
 
-.orb-1 {
-  top: 10%;
-  left: -10%;
+.sphere-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, transparent 70%);
+  top: -200px;
+  left: -200px;
+  animation: pulse 8s ease-in-out infinite;
+}
+
+.sphere-2 {
   width: 500px;
   height: 500px;
-  background: linear-gradient(135deg, #06b6d4, #3b82f6);
-  animation: float-slow 8s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+  bottom: -150px;
+  right: -150px;
+  animation: pulse 10s ease-in-out infinite reverse;
 }
 
-.orb-2 {
-  bottom: 10%;
-  right: -10%;
+.sphere-3 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
-  animation: float-medium 6s ease-in-out infinite;
-}
-
-.orb-3 {
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, transparent 70%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 600px;
-  height: 600px;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  opacity: 0.3;
+  animation: pulse 12s ease-in-out infinite;
 }
 
-.floating-shape {
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+.grid-overlay {
   position: absolute;
-  border-radius: 20px;
-  opacity: 0.1;
-  background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
 }
 
-.shape-1 {
-  top: 15%;
-  right: 15%;
-  width: 80px;
-  height: 80px;
-  transform: rotate(45deg);
-  animation: float-slow 10s ease-in-out infinite;
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.shape-2 {
-  bottom: 20%;
-  left: 10%;
-  width: 60px;
-  height: 60px;
-  transform: rotate(12deg);
-  animation: float-medium 8s ease-in-out infinite;
+.particle {
+  position: absolute;
+  background: rgba(6, 182, 212, 0.6);
+  border-radius: 50%;
+  bottom: -10px;
+  animation: float-up linear infinite;
 }
 
-.shape-3 {
-  top: 60%;
-  right: 25%;
-  width: 40px;
-  height: 40px;
-  transform: rotate(-12deg);
-  animation: float-fast 6s ease-in-out infinite;
-}
-
-@keyframes float-slow {
-  0%, 100% { transform: translateY(0) rotate(45deg); }
-  50% { transform: translateY(-30px) rotate(45deg); }
-}
-
-@keyframes float-medium {
-  0%, 100% { transform: translateY(0) rotate(12deg); }
-  50% { transform: translateY(-20px) rotate(12deg); }
-}
-
-@keyframes float-fast {
-  0%, 100% { transform: translateY(0) rotate(-12deg); }
-  50% { transform: translateY(-15px) rotate(-12deg); }
+@keyframes float-up {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
 }
 
 /* Home Button */
-.home-button {
+.home-btn {
   position: fixed;
   top: 2rem;
   left: 2rem;
@@ -220,245 +249,351 @@ function switchToRegister() { router.push('/auth/register') }
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1.25rem;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
-  border-radius: 50px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
   color: white;
   font-weight: 600;
-  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.home-button:hover {
+.home-btn:hover {
   background: rgba(6, 182, 212, 0.2);
   border-color: rgba(6, 182, 212, 0.3);
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.2);
+  box-shadow: 0 10px 40px rgba(6, 182, 212, 0.2);
 }
 
-/* Content */
-.content-wrapper {
+.home-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.home-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Main Content */
+.auth-content {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 1000px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 1100px;
 }
 
-/* Auth Container */
-.auth-container {
-  position: relative;
-  width: 100%;
-  min-height: 600px;
+/* Auth Card */
+.auth-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 650px;
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
   box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.5),
-    0 0 100px rgba(6, 182, 212, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  animation: fadeInScale 0.6s ease-out;
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 25px 80px rgba(0, 0, 0, 0.5),
+    0 0 100px rgba(6, 182, 212, 0.1);
+  animation: card-appear 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.95) translateY(20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+@keyframes card-appear {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-/* Form Panels */
-.form-panel {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  width: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 2.5rem;
-  transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  z-index: 2;
-  background: rgba(15, 23, 42, 0.8);
-}
-
-.left-panel { left: 0; }
-.right-panel { right: 0; transform: translateX(100%); }
-
-.auth-container.register-mode .left-panel { transform: translateX(-100%); }
-.auth-container.register-mode .right-panel { transform: translateX(0); }
-
-.form-wrapper {
-  width: 100%;
-  max-width: 380px;
-}
-
-/* Brand Header */
-.brand-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.form-title {
-  font-size: 1.75rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #06b6d4, #8b5cf6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.form-subtitle {
-  font-size: 0.875rem;
-  color: #94a3b8;
-}
-
-/* Overlay */
-.overlay-container {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 50%;
-  height: 100%;
-  overflow: hidden;
-  transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  z-index: 100;
-}
-
-.auth-container.register-mode .overlay-container {
-  transform: translateX(-100%);
-}
-
-.overlay {
+/* Brand Side */
+.brand-side {
   position: relative;
-  width: 200%;
-  height: 100%;
-  left: -100%;
-  background: linear-gradient(135deg, #0e7490 0%, #1e1b4b 50%, #0f172a 100%);
-  transform: translateX(0);
-  transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.auth-container.register-mode .overlay {
-  transform: translateX(50%);
-}
-
-.overlay-panel {
-  position: absolute;
-  top: 0;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  padding: 3rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 50%;
-  height: 100%;
-  transition: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  overflow: hidden;
 }
 
-.overlay-left {
-  left: 0;
-  transform: translateX(-20%);
-  opacity: 0;
-}
-
-.overlay-right {
-  right: 0;
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.auth-container.register-mode .overlay-left {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.auth-container.register-mode .overlay-right {
-  transform: translateX(20%);
-  opacity: 0;
-}
-
-.overlay-content {
+.brand-content {
+  position: relative;
+  z-index: 1;
   text-align: center;
-  color: white;
-  padding: 2rem;
 }
 
-.overlay-icon {
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
-  animation: bounce 2s ease-in-out infinite;
+.logo-wrapper {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 2rem;
 }
 
-@keyframes bounce {
+.logo-glow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, transparent 70%);
+  filter: blur(20px);
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.logo-icon {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  animation: float 4s ease-in-out infinite;
+}
+
+.logo-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
 
-.overlay-title {
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.brand-tagline {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
+  margin-bottom: 3rem;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.2);
+  transform: translateX(5px);
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+}
+
+/* Brand Decoration */
+.brand-decoration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.deco-circle {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.deco-1 {
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  right: -100px;
+  animation: spin 30s linear infinite;
+}
+
+.deco-2 {
+  width: 200px;
+  height: 200px;
+  bottom: -50px;
+  left: -50px;
+  animation: spin 20s linear infinite reverse;
+}
+
+.deco-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.3), transparent);
+  height: 1px;
+}
+
+.deco-3 {
+  width: 100%;
+  bottom: 30%;
+  animation: slide 5s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slide {
+  0%, 100% { opacity: 0.3; transform: translateX(-20%); }
+  50% { opacity: 0.8; transform: translateX(20%); }
+}
+
+/* Form Side */
+.form-side {
+  padding: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 26, 0.8);
+}
+
+.form-container {
+  width: 100%;
+  max-width: 380px;
+}
+
+.form-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.form-title {
   font-size: 2rem;
   font-weight: 800;
-  margin-bottom: 1rem;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.75rem;
 }
 
-.overlay-text {
-  font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 2rem;
-  opacity: 0.9;
+.form-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
 }
 
-.overlay-btn {
+.form-content {
+  animation: form-fade 0.5s ease;
+}
+
+@keyframes form-fade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Forgot Password Link */
+.forgot-link {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.link-button {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
-  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
-  backdrop-filter: blur(10px);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 100px;
+  color: #a78bfa;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: 0 10px 30px -5px rgba(6, 182, 212, 0.4);
 }
 
-.overlay-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 40px -5px rgba(6, 182, 212, 0.5);
+.link-button:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
 }
 
-/* Simple Auth Card */
-.simple-auth-card {
+.link-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Bottom Wave */
+.bottom-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  pointer-events: none;
+}
+
+.bottom-wave svg {
   width: 100%;
-  max-width: 480px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 3rem 2.5rem;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-  animation: fadeInScale 0.6s ease-out;
+  height: 100%;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .auth-container { min-height: 500px; }
-  .form-panel { width: 100%; padding: 2rem 1.5rem; }
-  .overlay-container { display: none; }
-  .home-button { top: 1rem; left: 1rem; padding: 0.5rem 1rem; }
-  .home-text { display: none; }
+@media (max-width: 900px) {
+  .auth-card {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .brand-side {
+    display: none;
+  }
+
+  .form-side {
+    padding: 2.5rem;
+  }
 }
 
-@media (max-width: 640px) {
-  .auth-layout { padding: 1rem; }
-  .auth-container { border-radius: 24px; }
-  .form-panel { padding: 1.5rem 1.25rem; }
+@media (max-width: 480px) {
+  .auth-layout {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    border-radius: 24px;
+  }
+
+  .form-side {
+    padding: 2rem 1.5rem;
+  }
+
+  .home-btn {
+    top: 1rem;
+    left: 1rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .home-btn span {
+    display: none;
+  }
 }
 </style>

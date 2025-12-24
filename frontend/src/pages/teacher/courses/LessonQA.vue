@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-6xl p-6">
+  <div class="lesson-qa mx-auto max-w-6xl p-6" :class="isDark ? 'lesson-qa--dark' : ''">
     <!-- Header -->
     <div class="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm">
       <div class="flex items-start gap-4">
@@ -316,15 +316,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/config/axios'
 import { showToast } from '@/utils/toast'
 import { courseService, type CourseDetail } from '@/services/course.service'
 import { contentService } from '@/services/content.service'
 import { getAvatarSrc } from '@/utils/avatar'
+import { useThemeStore } from '@/store/theme.store'
 
 const route = useRoute()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 const initialLessonId = (route.params as any).lessonId || route.query.lessonId || ''
 const questions = ref<any[]>([])
 const loading = ref(false)
@@ -581,5 +584,20 @@ function getYouTubeEmbedUrl(url: string): string {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.lesson-qa--dark .from-white,
+.lesson-qa--dark .from-slate-50,
+.lesson-qa--dark .from-slate-100,
+.lesson-qa--dark .from-blue-50 {
+  --tw-gradient-from: rgba(15, 23, 42, 0.95) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.lesson-qa--dark .to-white,
+.lesson-qa--dark .to-slate-50,
+.lesson-qa--dark .to-slate-200,
+.lesson-qa--dark .to-blue-50 {
+  --tw-gradient-to: rgba(15, 23, 42, 0.75) !important;
 }
 </style>
