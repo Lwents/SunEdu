@@ -28,12 +28,13 @@
               <div class="input-wrapper">
                 <input
                   :type="show.current ? 'text' : 'password'"
-                  v-model.trim="pwd.current"
+                  v-model="currentPasswordModel"
                   autocomplete="current-password"
                   placeholder="Nhập mật khẩu hiện tại"
                   @blur="touched.current = true"
                   class="form-input"
                   :class="{ 'has-error': touched.current && errs.current }"
+                  :maxlength="MAX_PASSWORD_LENGTH"
                 />
                 <button type="button" class="toggle-btn" @click="show.current = !show.current">
                   <svg v-if="show.current" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -56,12 +57,13 @@
               <div class="input-wrapper">
                 <input
                   :type="show.new1 ? 'text' : 'password'"
-                  v-model.trim="pwd.new1"
+                  v-model="newPasswordModel"
                   autocomplete="new-password"
-                  placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+                  placeholder="Nhập mật khẩu mới (6-12 ký tự)"
                   @blur="touched.new1 = true"
                   class="form-input"
                   :class="{ 'has-error': touched.new1 && errs.new1 }"
+                  :maxlength="MAX_PASSWORD_LENGTH"
                 />
                 <button type="button" class="toggle-btn" @click="show.new1 = !show.new1">
                   <svg v-if="show.new1" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -84,12 +86,13 @@
               <div class="input-wrapper">
                 <input
                   :type="show.new2 ? 'text' : 'password'"
-                  v-model.trim="pwd.new2"
+                  v-model="confirmPasswordModel"
                   autocomplete="new-password"
                   placeholder="Nhập lại mật khẩu mới"
                   @blur="touched.new2 = true"
                   class="form-input"
                   :class="{ 'has-error': touched.new2 && errs.new2 }"
+                  :maxlength="MAX_PASSWORD_LENGTH"
                 />
                 <button type="button" class="toggle-btn" @click="show.new2 = !show.new2">
                   <svg v-if="show.new2" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -174,10 +177,31 @@ const auth = useAuthStore()
 const themeStore = useThemeStore()
 const isDark = computed(() => themeStore.isDark)
 
+const MAX_PASSWORD_LENGTH = 12
+const clampPassword = (value: string) => String(value ?? '').trim().slice(0, MAX_PASSWORD_LENGTH)
+
 const goProfile = () => router.push({ name: 'student-profile' })
 const goParent = () => router.push({ name: 'student-parent' })
 
 const pwd = reactive({ current: '', new1: '', new2: '' })
+const currentPasswordModel = computed({
+  get: () => pwd.current,
+  set: (value) => {
+    pwd.current = clampPassword(value)
+  },
+})
+const newPasswordModel = computed({
+  get: () => pwd.new1,
+  set: (value) => {
+    pwd.new1 = clampPassword(value)
+  },
+})
+const confirmPasswordModel = computed({
+  get: () => pwd.new2,
+  set: (value) => {
+    pwd.new2 = clampPassword(value)
+  },
+})
 const show = reactive({ current: false, new1: false, new2: false })
 const touched = reactive({ current: false, new1: false, new2: false, otp: false })
 const errs = reactive<{ current: string; new1: string; new2: string; otp: string }>({ current: '', new1: '', new2: '', otp: '' })

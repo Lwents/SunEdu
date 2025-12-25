@@ -72,9 +72,10 @@
               <label for="name" class="text-sm font-medium text-slate-700">Họ tên</label>
               <input
                 id="name"
-                v-model.trim="form.name"
+                v-model="nameModel"
                 class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-slate-800 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="Nguyễn Văn A"
+                :maxlength="MAX_FULLNAME_LENGTH"
               />
               <p v-if="errors.name" class="mt-1 text-xs text-red-600" aria-live="polite">
                 {{ errors.name }}
@@ -267,7 +268,10 @@ const user = computed<AuthUser | null>(() => auth.user)
 
 /** constants */
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_FULLNAME_LENGTH = 25
 const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (5MB)'
+
+const clampName = (value: string) => value.trim().slice(0, MAX_FULLNAME_LENGTH)
 
 /** fallback - dựa vào gender và role */
 const fallback120 = computed(() => {
@@ -280,7 +284,7 @@ const fallback120 = computed(() => {
 
 /** form state */
 const original = reactive({
-  name: user.value?.name ?? '',
+  name: clampName(user.value?.name ?? ''),
   email: user.value?.email ?? '',
   phone: user.value?.phone ?? '',
   title: (user.value as any)?.title ?? '',
@@ -289,6 +293,16 @@ const original = reactive({
   avatar: user.value?.avatar ?? '',
 })
 const form = reactive({ ...original })
+const nameModel = computed({
+  get: () => form.name,
+  set: (value) => {
+    const trimmedValue = String(value ?? '').trim()
+    if (trimmedValue.length >= MAX_FULLNAME_LENGTH && form.name.length < MAX_FULLNAME_LENGTH) {
+      showToast(`Tối đa ${MAX_FULLNAME_LENGTH} ký tự.`, 'warning')
+    }
+    form.name = clampName(trimmedValue)
+  },
+})
 const errors = reactive<{ [k: string]: string }>({})
 const loading = ref(false)
 const saved = ref(false)
@@ -344,7 +358,7 @@ async function loadProfile() {
     const updatedUser: AuthUser = {
       ...(auth.user ?? {}),
       id: (auth.user as AuthUser | null)?.id ?? profile.id ?? 0,
-      name: profile.fullName || profile.name || auth.user?.name || '',
+      name: clampName(profile.fullName || profile.name || auth.user?.name || ''),
       email: profile.email || auth.user?.email || '',
       phone: profile.phone || auth.user?.phone,
       role: (auth.user as AuthUser | null)?.role ?? 'instructor',
@@ -356,7 +370,7 @@ async function loadProfile() {
     auth.user = updatedUser
     auth.persist()
     Object.assign(original, {
-      name: updatedUser.name ?? '',
+      name: clampName(updatedUser.name ?? ''),
       email: updatedUser.email ?? '',
       phone: updatedUser.phone ?? '',
       title: (updatedUser as any)?.title ?? '',
