@@ -1,10 +1,14 @@
 // src/config/axios.ts
 import axios from 'axios'
 
-// Default API base depends on environment: use local backend during dev, public API in prod.
-const DEFAULT_API_URL = import.meta.env.DEV ? 'http://localhost:8000' : 'https://api.smartedu.click'
+// Default API base depends on environment: use local backend during dev, same-origin in prod.
+const DEFAULT_API_URL = import.meta.env.DEV ? 'http://localhost:8000' : ''
 const rawApiUrl = (import.meta.env.VITE_API_URL ?? '').toString().trim()
-const apiUrl = (rawApiUrl || DEFAULT_API_URL).replace(/\/+$/, '')
+const resolvedApiUrl =
+  rawApiUrl ||
+  DEFAULT_API_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : '')
+const apiUrl = resolvedApiUrl.replace(/\/+$/, '')
 
 const normalizePrefix = (value?: string) => {
   const cleaned = (value ?? '').trim().replace(/^\/+|\/+$/g, '')
@@ -13,8 +17,10 @@ const normalizePrefix = (value?: string) => {
 
 const apiPrefix = `/${normalizePrefix(import.meta.env.VITE_API_PREFIX)}`
 
+const baseURL = apiUrl ? `${apiUrl}${apiPrefix}` : apiPrefix
+
 const http = axios.create({
-  baseURL: `${apiUrl}${apiPrefix}`,
+  baseURL,
   timeout: 90000, // 90 giây - đủ cho AI API
   headers: { 'Content-Type': 'application/json' },
 })

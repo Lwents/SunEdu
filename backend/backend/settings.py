@@ -35,7 +35,6 @@ SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-prod")
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
 DEFAULT_ALLOWED_HOSTS = [
-    "api.smartedu.click",
     "smartedu.click",
     "www.smartedu.click",
     "localhost",
@@ -44,7 +43,6 @@ DEFAULT_ALLOWED_HOSTS = [
 DEFAULT_FRONTEND_ORIGINS = [
     "https://smartedu.click",
     "https://www.smartedu.click",
-    "https://api.smartedu.click",
 ]
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*" if DEBUG else "") or (

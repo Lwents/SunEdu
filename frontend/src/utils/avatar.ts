@@ -49,9 +49,11 @@ export function getAvatarSrc(
   role?: Role
 ): string {
   // Determine API base for resolving relative media paths
-  const apiBase =
-    (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '') ||
-    (import.meta.env.DEV ? 'http://localhost:8000' : 'https://api.smartedu.click')
+  const rawApiBase =
+    (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').toString().trim()
+  const fallbackApiBase =
+    import.meta.env.DEV ? 'http://localhost:8000' : (typeof window !== 'undefined' ? window.location.origin : '')
+  const apiBase = (rawApiBase || fallbackApiBase).replace(/\/+$/, '')
 
   // If user has uploaded avatar, use it
   if (userAvatar) {
@@ -68,7 +70,7 @@ export function getAvatarSrc(
     const cleanPath = userAvatar.startsWith('/') ? userAvatar.slice(1) : userAvatar
     // If it starts with 'media/', use as is, otherwise prepend 'media/'
     const mediaPath = cleanPath.startsWith('media/') ? cleanPath : `media/${cleanPath}`
-    return `${apiBase}/${mediaPath}`
+    return apiBase ? `${apiBase}/${mediaPath}` : `/${mediaPath}`
   }
 
   // Use default avatar based on gender and role
