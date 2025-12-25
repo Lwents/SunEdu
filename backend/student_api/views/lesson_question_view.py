@@ -13,6 +13,8 @@ from django.conf import settings
 from content.models import Lesson
 from activities.models import Notification, LessonQuestion, LessonQuestionReply, LessonQuestionReport
 from django.contrib.auth import get_user_model
+from django.http import StreamingHttpResponse
+import json
 
 
 def avatar_for(user, request):
@@ -504,9 +506,9 @@ class StudentLessonQuestionAIAnswerView(APIView):
             return Response({"detail": f"Không tìm thấy câu hỏi: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
         
         # Lấy API key
-        api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", "")
+        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
-            return Response({"detail": "AI chưa được cấu hình"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response({"detail": "OpenRouter API chưa được cấu hình"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         
         # Lấy context từ bài học
         lesson_context = self._get_lesson_context(lesson)
@@ -517,74 +519,58 @@ class StudentLessonQuestionAIAnswerView(APIView):
         # Tạo prompt với lịch sử hội thoại
         prompt = self._build_prompt(question.content, lesson_context, lesson, conversation_history)
         
-        # Gọi Gemini API trước (ổn định hơn), fallback sang DeepSeek nếu lỗi
-        model = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
-        ai_response = self._call_gemini_api(api_key, model, prompt)
-        if ai_response.get("error"):
-            # Gemini lỗi -> thử DeepSeek
-            ai_response = self._call_deepseek_api(prompt)
+        # Gọi trực tiếp OpenRouter với stream=True
         
-        if ai_response.get("error"):
-            return Response({"detail": ai_response["error"]}, status=status.HTTP_502_BAD_GATEWAY)
-        
-        ai_text = ai_response.get("text", "")
-        if not ai_text:
-            return Response({"detail": "AI không thể trả lời câu hỏi này"}, status=status.HTTP_502_BAD_GATEWAY)
-        
-        # Loại bỏ markdown formatting (**, ##, etc.) để dễ đọc cho học sinh
-        ai_text = self._clean_markdown(ai_text)
-        
-        # Tạo reply từ AI (sử dụng system user hoặc teacher)
-        User = get_user_model()
-        ai_user = User.objects.filter(username="AI_Assistant").first()
-        if not ai_user:
-            # Tạo AI user nếu chưa có
+        # Generator function để stream response
+        def stream_response_generator():
+            full_content = []
+            
+            # 1. Yield start signal (optional, for frontend readiness)
+            # yield json.dumps({"status": "start"}) + "\n"
+
             try:
-                ai_user = User.objects.create_user(
-                    username="AI_Assistant",
-                    email="ai@sunedu.local",
-                    password=None,  # No password - cannot login
-                    is_active=False,  # Không cho phép đăng nhập
-                    role="admin",  # Role để phân biệt
-                )
-            except Exception as e:
-                # Nếu không tạo được user, sử dụng giáo viên của khóa học
-                course = question.lesson.module.course if question.lesson.module else None
-                ai_user = getattr(course, "owner", None)
+                # Call OpenRouter with stream
+                for chunk in self._call_openrouter_stream(prompt):
+                    if chunk:
+                        full_content.append(chunk)
+                        # Yield chunk data to client
+                        yield json.dumps({"chunk": chunk}) + "\n"
+                
+                # Stream finished
+                ai_text = "".join(full_content)
+                ai_text = self._clean_markdown(ai_text)
+                
+                # 2. Save to DB
+                User = get_user_model()
+                ai_user = User.objects.filter(username="AI_Assistant").first()
                 if not ai_user:
-                    return Response({"detail": f"Không thể tạo AI user: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Tạo reply
-        try:
-            reply = LessonQuestionReply.objects.create(
-                question=question,
-                user=ai_user,
-                content=ai_text,
-                is_teacher=False,  # Đánh dấu là AI, không phải giáo viên
-            )
-        except Exception as e:
-            return Response({"detail": f"Không thể lưu câu trả lời AI: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Refresh và trả về
-        try:
-            question.refresh_from_db()
-            return Response({
-                "item": serialize_question(question, user=request.user, request=request),
-                "ai_reply": {
-                    "id": str(reply.id),
-                    "content": ai_text,
-                    "model": ai_response.get("model", model),
-                }
-            }, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            # Vẫn trả về thành công nếu chỉ lỗi serialize
-            return Response({
-                "ai_reply": {
-                    "id": str(reply.id),
-                    "content": ai_text,
-                    "model": ai_response.get("model", model),
-                }
-            }, status=status.HTTP_201_CREATED)
+                    try:
+                        ai_user = User.objects.create_user(
+                            username="AI_Assistant",
+                            email="ai@sunedu.local",
+                            password=None,
+                            is_active=False,
+                            role="admin",
+                        )
+                    except:
+                        course = question.lesson.module.course if question.lesson.module else None
+                        ai_user = getattr(course, "owner", None)
+                
+                if ai_user and ai_text:
+                    reply = LessonQuestionReply.objects.create(
+                        question=question,
+                        user=ai_user,
+                        content=ai_text,
+                        is_teacher=False,
+                    )
+                    # Yield final success message with ID
+                    yield json.dumps({"done": True, "reply_id": str(reply.id)}) + "\n"
+                    
+            except Exception as e:
+                print(f"Streaming error: {e}")
+                yield json.dumps({"error": str(e)}) + "\n"
+
+        return StreamingHttpResponse(stream_response_generator(), content_type="application/x-ndjson")
     
     def _get_lesson_context(self, lesson):
         """Lấy nội dung bài học để làm context cho AI"""
@@ -824,94 +810,52 @@ Trả lời bằng tiếng Việt (văn bản thuần túy, không markdown):"""
         
         return text.strip()
     
-    def _call_gemini_api(self, api_key, model, prompt):
-        """Gọi Gemini API, fallback sang DeepSeek nếu lỗi"""
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    def _call_openrouter_stream(self, prompt):
+        """Gọi OpenRouter API với chế độ stream"""
+        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            yield "OpenRouter API chưa được cấu hình"
+            return
         
-        try:
-            resp = http_requests.post(
-                url,
-                json={
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"maxOutputTokens": 1500},
-                },
-                timeout=60,
-            )
-            
-            if resp.status_code == 200:
-                data = resp.json()
-                candidates = data.get("candidates", [])
-                if candidates:
-                    text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    if text and text.strip():
-                        return {"text": text.strip(), "model": model}
-                # Gemini không trả về kết quả -> thử DeepSeek
-                return self._call_deepseek_api(prompt)
-            
-            if resp.status_code == 429:
-                # Gemini quá tải -> fallback sang DeepSeek
-                deepseek_result = self._call_deepseek_api(prompt)
-                if not deepseek_result.get("error"):
-                    return deepseek_result
-                # DeepSeek cũng lỗi hoặc chưa cấu hình
-                return {"error": "AI đang quá tải (429). Vui lòng thử lại sau."}
-            
-            # Lỗi khác từ Gemini -> thử DeepSeek
-            return self._call_deepseek_api(prompt)
-            
-        except Exception as e:
-            # Gemini lỗi kết nối -> thử DeepSeek
-            deepseek_result = self._call_deepseek_api(prompt)
-            if not deepseek_result.get("error"):
-                return deepseek_result
-            return {"error": f"Lỗi kết nối cả 2 AI: {str(e)}"}
-    
-    def _call_deepseek_api(self, prompt):
-        """Gọi DeepSeek API (OpenRouter) làm fallback"""
-        # DeepSeek API key qua OpenRouter
-        deepseek_api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
-        if not deepseek_api_key:
-            return {"error": "DeepSeek API chưa được cấu hình"}
-        
-        deepseek_model = os.getenv("DEEPSEEK_MODEL") or "deepseek/deepseek-chat-v3-0324"
-        
+        model = os.getenv("OPENROUTER_MODEL") or os.getenv("DEEPSEEK_MODEL") or "openai/gpt-4o"
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {deepseek_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://sunnyedu.local",
             "X-Title": "SunnyEdu AI Assistant",
         }
         
         try:
-            resp = http_requests.post(
+            with http_requests.post(
                 url,
                 headers=headers,
                 json={
-                    "model": deepseek_model,
+                    "model": model,
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 1500,
+                    "stream": True,
                 },
+                stream=True,
                 timeout=60,
-            )
-            
-            if resp.status_code == 200:
-                data = resp.json()
-                try:
-                    text = data.get("choices", [])[0].get("message", {}).get("content", "")
-                    if text and text.strip():
-                        return {"text": text.strip(), "model": deepseek_model}
-                    return {"error": "DeepSeek trả về nội dung rỗng"}
-                except (IndexError, KeyError, TypeError) as e:
-                    return {"error": f"Lỗi parse DeepSeek: {str(e)}"}
-            
-            # Xử lý lỗi
-            try:
-                error_data = resp.json()
-                error_msg = error_data.get("error", {}).get("message", f"Lỗi {resp.status_code}")
-            except:
-                error_msg = f"Lỗi DeepSeek API {resp.status_code}"
-            return {"error": error_msg}
-            
+            ) as resp:
+                if resp.status_code != 200:
+                    yield f"Error {resp.status_code}"
+                    return
+
+                for line in resp.iter_lines():
+                    if line:
+                        line = line.decode("utf-8")
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                data_json = json.loads(data_str)
+                                content = data_json.get("choices", [])[0].get("delta", {}).get("content", "")
+                                if content:
+                                    yield content
+                            except:
+                                pass
         except Exception as e:
-            return {"error": f"Lỗi kết nối DeepSeek: {str(e)}"}
+            yield f"Stream Error: {str(e)}"

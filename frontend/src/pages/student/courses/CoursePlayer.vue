@@ -558,32 +558,32 @@
     <transition name="slide">
       <div
         v-if="qaOpen"
-        class="fixed inset-y-0 right-0 z-50 flex w-[90vw] max-w-md flex-col shadow-2xl sm:w-[400px]"
+        class="fixed top-14 sm:top-16 bottom-0 right-0 z-50 flex w-[90vw] max-w-md flex-col shadow-2xl sm:w-[400px] overflow-hidden"
         :class="isDark ? 'bg-slate-900' : 'bg-white'"
       >
-        <!-- Header -->
+        <!-- Header - Fixed at top -->
         <div 
-          class="flex items-center justify-between px-4 py-4 shadow-sm"
-          :class="isDark ? 'bg-slate-800 border-b border-slate-700' : 'bg-white border-b border-slate-200'"
+          class="flex-shrink-0 flex items-center justify-between px-4 py-4 shadow-lg"
+          :class="isDark ? 'bg-gradient-to-r from-slate-800 to-slate-900 border-b border-slate-700' : 'bg-gradient-to-r from-orange-50 to-white border-b border-slate-200'"
         >
           <div class="flex items-center gap-3 min-w-0">
             <div 
-              class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-lg"
+              class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl shadow-lg"
               :class="isDark ? 'bg-gradient-to-br from-cyan-500 to-purple-500' : 'bg-gradient-to-br from-orange-500 to-orange-600'"
             >
-              <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
             <div class="min-w-0">
-              <p 
-                class="text-[10px] font-bold uppercase tracking-wider"
+              <h2 
+                class="text-base font-bold tracking-wide"
                 :class="isDark ? 'text-cyan-400' : 'text-orange-600'"
-              >HỎI ĐÁP BÀI HỌC</p>
-              <h3 
-                class="text-sm font-bold truncate"
-                :class="isDark ? 'text-white' : 'text-slate-900'"
-              >{{ currentLesson?.title || '—' }}</h3>
+              >HỎI ĐÁP BÀI HỌC</h2>
+              <p 
+                class="text-xs font-medium truncate mt-0.5"
+                :class="isDark ? 'text-slate-400' : 'text-slate-600'"
+              >{{ currentLessonTitle || currentLesson?.title || '—' }}</p>
             </div>
           </div>
           <button
@@ -591,49 +591,12 @@
             :class="isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'"
             @click="toggleQA(false)"
           >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <!-- Input Area -->
-        <div 
-          class="px-4 py-3 shadow-sm"
-          :class="isDark ? 'bg-slate-800 border-b border-slate-700' : 'bg-white border-b border-slate-200'"
-        >
-          <textarea
-            v-model="questionText"
-            rows="2"
-            class="w-full rounded-xl border-2 px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2"
-            :class="isDark 
-              ? 'border-slate-600 bg-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20' 
-              : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-orange-400 focus:ring-orange-100'"
-            placeholder="Nhập bình luận mới..."
-          ></textarea>
-          <div class="mt-2 flex items-center justify-between">
-            <span 
-              v-if="questionText.length > 0" 
-              class="text-xs"
-              :class="isDark ? 'text-slate-500' : 'text-slate-400'"
-            >{{ questionText.length }} ký tự</span>
-            <span v-else></span>
-            <button
-              class="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-              :class="isDark 
-                ? 'bg-gradient-to-r from-cyan-500 to-purple-500 shadow-cyan-500/30' 
-                : 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-orange-200'"
-              :disabled="sendingQuestion || !canSendQuestion"
-              @click="submitQuestion()"
-            >
-              <span v-if="sendingQuestion" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-              <svg v-else class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-              Đăng bình luận
-            </button>
-          </div>
-        </div>
 
         <!-- Comments List -->
         <div 
@@ -852,7 +815,7 @@
 
                   <!-- Replies -->
                   <div 
-                    v-if="q.replies && q.replies.length > 0" 
+                    v-if="(q.replies && q.replies.length > 0) || streamingReplies[q.id]" 
                     class="mt-3 space-y-2 border-t pt-3"
                     :class="isDark ? 'border-slate-700' : 'border-slate-100'"
                   >
@@ -868,10 +831,13 @@
                         <!-- Reply Avatar -->
                         <div class="relative flex-shrink-0">
                           <div 
-                            class="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm ring-2 ring-white transition-all group-hover/reply:ring-blue-200"
-                            :class="rep.is_teacher 
-                              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
-                              : (rep.user === 'AI_Assistant' ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white' : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700')"
+                            class="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm ring-2 transition-all"
+                            :class="[
+                              isDark ? 'ring-slate-700 group-hover/reply:ring-cyan-500/30' : 'ring-white group-hover/reply:ring-blue-200',
+                              rep.is_teacher 
+                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
+                                : (rep.user === 'AI_Assistant' ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white' : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700')
+                            ]"
                           >
                             <!-- AI Avatar -->
                             <span v-if="rep.user === 'AI_Assistant'" class="text-sm">🤖</span>
@@ -892,12 +858,20 @@
                               {{ rep.is_teacher ? 'GV' : getInitials(rep.user) || 'HS' }}
                             </span>
                           </div>
-                          <div v-if="rep.user === 'AI_Assistant'" class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 ring-2 ring-white shadow-sm">
+                          <div 
+                            v-if="rep.user === 'AI_Assistant'" 
+                            class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 ring-2 shadow-sm"
+                            :class="isDark ? 'ring-slate-800' : 'ring-white'"
+                          >
                             <svg class="h-2.5 w-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                             </svg>
                           </div>
-                          <div v-else-if="rep.is_teacher" class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white shadow-sm">
+                          <div 
+                            v-else-if="rep.is_teacher" 
+                            class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 ring-2 shadow-sm"
+                            :class="isDark ? 'ring-slate-800' : 'ring-white'"
+                          >
                             <svg class="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
@@ -913,17 +887,31 @@
                         <div class="flex-1 min-w-0">
                           <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
-                              <span class="text-xs font-bold" :class="rep.is_teacher ? 'text-blue-700' : (rep.user === 'AI_Assistant' ? 'text-purple-700' : 'text-slate-700')">
+                              <span 
+                                class="text-xs font-bold" 
+                                :class="isDark 
+                                  ? (rep.is_teacher ? 'text-sky-400' : (rep.user === 'AI_Assistant' ? 'text-violet-400' : 'text-slate-300'))
+                                  : (rep.is_teacher ? 'text-blue-700' : (rep.user === 'AI_Assistant' ? 'text-purple-700' : 'text-slate-700'))"
+                              >
                                 {{ rep.is_teacher ? '👨‍🏫 Giáo viên' : (rep.user === 'AI_Assistant' ? '🤖 Trợ lý AI' : rep.user || 'Học sinh') }}
                               </span>
-                              <span v-if="rep.user === 'AI_Assistant'" class="rounded-full bg-gradient-to-r from-purple-100 to-indigo-100 px-1.5 py-0.5 text-xs font-semibold text-purple-700">AI</span>
-                              <span v-else-if="rep.is_owner" class="rounded-full bg-orange-100 px-1.5 py-0.5 text-xs font-semibold text-orange-700">Bạn</span>
+                              <span 
+                                v-if="rep.user === 'AI_Assistant'" 
+                                class="rounded-full px-1.5 py-0.5 text-xs font-semibold"
+                                :class="isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700'"
+                              >AI</span>
+                              <span 
+                                v-else-if="rep.is_owner" 
+                                class="rounded-full px-1.5 py-0.5 text-xs font-semibold"
+                                :class="isDark ? 'bg-cyan-500/20 text-cyan-400' : 'bg-orange-100 text-orange-700'"
+                              >Bạn</span>
                         </div>
                         <div class="flex items-center gap-2">
-                          <span class="text-xs text-slate-400">{{ formatDateTimeShort(rep.created_at) }}</span>
+                          <span :class="isDark ? 'text-slate-500' : 'text-slate-400'" class="text-xs">{{ formatDateTimeShort(rep.created_at) }}</span>
                           <div class="relative">
                                 <button
-                                  class="flex h-6 w-6 items-center justify-center rounded text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600"
+                                  :class="isDark ? 'text-slate-500 hover:bg-slate-700 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'"
+                                  class="flex h-6 w-6 items-center justify-center rounded transition-all"
                                   @click="toggleReplyMenu(rep.id)"
                                 >
                                   <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -933,12 +921,26 @@
                                 <transition name="fade">
                                   <div
                                     v-if="replyMenu[rep.id]"
-                                    class="absolute right-0 top-full z-10 mt-2 min-w-[140px] rounded-xl border border-slate-200 bg-white py-2 shadow-xl"
+                                    :class="isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'"
+                                    class="absolute right-0 top-full z-10 mt-2 min-w-[140px] rounded-xl border py-2 shadow-xl"
                                     @click.stop
                                   >
-                                    <button v-if="rep.is_owner" class="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" @click="startEditReply(rep); replyMenu[rep.id]=false">✏️ Sửa</button>
-                                    <button v-if="rep.is_owner" class="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" @click="deleteReply(rep.id, q.id); replyMenu[rep.id]=false">🗑️ Xóa</button>
-                                    <button v-if="!rep.is_owner" class="w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50" @click="openReport(null, rep.id); replyMenu[rep.id]=false">🚨 Báo cáo</button>
+                                    <button 
+                                      v-if="rep.is_owner" 
+                                      :class="isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50'"
+                                      class="w-full px-4 py-2 text-left text-sm" 
+                                      @click="startEditReply(rep); replyMenu[rep.id]=false"
+                                    >✏️ Sửa</button>
+                                    <button 
+                                      v-if="rep.is_owner" 
+                                      class="w-full px-4 py-2 text-left text-sm text-rose-500 hover:bg-rose-500/10" 
+                                      @click="deleteReply(rep.id, q.id); replyMenu[rep.id]=false"
+                                    >🗑️ Xóa</button>
+                                    <button 
+                                      v-if="!rep.is_owner" 
+                                      class="w-full px-4 py-2 text-left text-sm text-amber-500 hover:bg-amber-500/10" 
+                                      @click="openReport(null, rep.id); replyMenu[rep.id]=false"
+                                    >🚨 Báo cáo</button>
                             </div>
                                 </transition>
                           </div>
@@ -950,7 +952,10 @@
                         <textarea
                           v-model="editingReply.draft"
                           rows="2"
-                              class="w-full rounded-lg border-2 border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-all focus:border-orange-400 focus:outline-none focus:ring-4 focus:ring-orange-100"
+                          :class="isDark 
+                            ? 'border-slate-600 bg-slate-700 text-white focus:border-cyan-500 focus:ring-cyan-500/20' 
+                            : 'border-slate-200 bg-white text-slate-900 focus:border-orange-400 focus:ring-orange-100'"
+                          class="w-full rounded-lg border-2 px-3 py-2 text-sm transition-all focus:outline-none focus:ring-4"
                         ></textarea>
                         <div class="flex gap-2">
                               <button
@@ -960,7 +965,8 @@
                             Lưu
                           </button>
                               <button
-                                class="rounded-lg border-2 border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
+                                :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'"
+                                class="rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
                                 @click="cancelEditReply"
                               >
                             Hủy
@@ -969,13 +975,15 @@
                       </div>
                           
                           <!-- Reply Text -->
-                          <p v-else class="mt-2 text-sm leading-relaxed text-slate-800 whitespace-pre-line">{{ rep.content }}</p>
+                          <p v-else :class="isDark ? 'text-slate-200' : 'text-slate-800'" class="mt-2 text-sm leading-relaxed whitespace-pre-line">{{ rep.content }}</p>
                           
                           <!-- Reply Actions -->
                           <div class="mt-3 flex items-center gap-3">
                         <button
                               class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-all"
-                              :class="rep.reacted ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-600'"
+                              :class="rep.reacted 
+                                ? (isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-600') 
+                                : (isDark ? 'bg-slate-700 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400' : 'bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-600')"
                           :disabled="reacting[rep.id]"
                           @click="toggleReaction(rep.id)"
                         >
@@ -993,15 +1001,24 @@
                               </svg>
                               Chat tiếp
                             </button>
-                            <button v-if="rep.is_owner" class="text-xs font-semibold text-sky-600 hover:underline" @click="startEditReply(rep)">Sửa</button>
-                            <button v-if="rep.is_owner" class="text-xs font-semibold text-rose-600 hover:underline" @click="deleteReply(rep.id, q.id)">Xóa</button>
-                            <button class="text-xs font-semibold text-amber-600 hover:underline" @click="openReport(null, rep.id)">Báo cáo</button>
+                            <button v-if="rep.is_owner" :class="isDark ? 'text-sky-400' : 'text-sky-600'" class="text-xs font-semibold hover:underline" @click="startEditReply(rep)">Sửa</button>
+                            <button v-if="rep.is_owner" class="text-xs font-semibold text-rose-500 hover:underline" @click="deleteReply(rep.id, q.id)">Xóa</button>
+                            <button :class="isDark ? 'text-amber-400' : 'text-amber-600'" class="text-xs font-semibold hover:underline" @click="openReport(null, rep.id)">Báo cáo</button>
                           </div>
                           
                           <!-- AI Chat Box -->
                           <transition name="slide-down">
-                            <div v-if="aiChatBox[`${q.id}-${rep.id}`]" class="mt-3 space-y-2 rounded-xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-3">
-                              <div class="flex items-center gap-2 text-xs font-semibold text-purple-700">
+                            <div 
+                              v-if="aiChatBox[`${q.id}-${rep.id}`]" 
+                              class="mt-3 space-y-2 rounded-xl border-2 p-3"
+                              :class="isDark 
+                                ? 'border-violet-500/30 bg-gradient-to-br from-violet-900/30 to-indigo-900/30' 
+                                : 'border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50'"
+                            >
+                              <div 
+                                class="flex items-center gap-2 text-xs font-semibold"
+                                :class="isDark ? 'text-violet-400' : 'text-purple-700'"
+                              >
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
@@ -1010,12 +1027,16 @@
                               <textarea
                                 v-model="aiChatDrafts[`${q.id}-${rep.id}`]"
                                 rows="2"
-                                class="w-full rounded-lg border-2 border-purple-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-100"
+                                :class="isDark 
+                                  ? 'border-slate-600 bg-slate-800 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20' 
+                                  : 'border-purple-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-400 focus:ring-purple-100'"
+                                class="w-full rounded-lg border-2 px-3 py-2 text-sm transition-all focus:outline-none focus:ring-4"
                                 placeholder="Nhập câu hỏi tiếp theo cho AI..."
                               ></textarea>
                               <div class="flex justify-end gap-2">
                                 <button
-                                  class="rounded-lg border-2 border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
+                                  :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'"
+                                  class="rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
                                   @click="toggleAIChatBox(q.id, rep.id)"
                                 >
                                   Hủy
@@ -1039,18 +1060,55 @@
                       </div>
                     </div>
 
+                    <!-- Streaming Reply -->
+                    <div
+                      v-if="streamingReplies[q.id]"
+                      class="group/reply rounded-lg p-2.5 transition-all"
+                      :class="isDark 
+                        ? 'bg-slate-800/50 border border-slate-700' 
+                        : 'bg-slate-50 border border-slate-100'"
+                    >
+                      <div class="flex items-start gap-3">
+                        <div class="relative flex-shrink-0">
+                          <div class="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm ring-2 ring-white bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
+                            <span class="text-sm">🤖</span>
+                          </div>
+                          <div class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 ring-2 ring-white shadow-sm">
+                            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-white"></span>
+                          </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold" :class="isDark ? 'text-violet-400' : 'text-purple-700'">🤖 Trợ lý AI</span>
+                            <span class="rounded-full px-1.5 py-0.5 text-xs font-semibold" :class="isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700'">Đang trả lời...</span>
+                          </div>
+                          <p :class="isDark ? 'text-slate-200' : 'text-slate-800'" class="mt-2 text-sm leading-relaxed whitespace-pre-line">{{ streamingReplies[q.id] }}<span class="inline-block w-1 h-4 ml-1 align-middle bg-current animate-pulse"></span></p>
+                        </div>
+                      </div>
+                    </div>
+
                   <!-- Reply Box -->
                   <transition name="slide-down">
-                    <div v-if="replyBox[q.id]" class="mt-4 space-y-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-4">
+                    <div 
+                      v-if="replyBox[q.id]" 
+                      class="mt-4 space-y-3 rounded-xl border-2 border-dashed p-4"
+                      :class="isDark 
+                        ? 'border-slate-600 bg-slate-800/50' 
+                        : 'border-slate-200 bg-slate-50'"
+                    >
                       <textarea
                         v-model="replyDrafts[q.id]"
                         rows="2"
-                        class="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-4 focus:ring-orange-100"
+                        :class="isDark 
+                          ? 'border-slate-600 bg-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20' 
+                          : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-orange-400 focus:ring-orange-100'"
+                        class="w-full rounded-xl border-2 px-4 py-3 text-sm transition-all focus:outline-none focus:ring-4"
                         placeholder="Viết phản hồi của bạn..."
                       ></textarea>
                       <div class="flex justify-end gap-2">
                         <button
-                          class="rounded-xl border-2 border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
+                          :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'"
+                          class="rounded-xl border-2 px-4 py-2 text-sm font-semibold transition-all active:scale-95"
                           @click="toggleReplyBox(q.id)"
                         >
                           Hủy
@@ -1072,6 +1130,44 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div 
+          class="flex-shrink-0 px-4 py-3 shadow-sm"
+          :class="isDark ? 'bg-slate-800 border-t border-slate-700' : 'bg-white border-t border-slate-200'"
+        >
+          <textarea
+            v-model="questionText"
+            rows="2"
+            class="w-full rounded-xl border-2 px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2"
+            :class="isDark 
+              ? 'border-slate-600 bg-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20' 
+              : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-orange-400 focus:ring-orange-100'"
+            placeholder="Nhập bình luận mới..."
+          ></textarea>
+          <div class="mt-2 flex items-center justify-between">
+            <span 
+              v-if="questionText.length > 0" 
+              class="text-xs"
+              :class="isDark ? 'text-slate-500' : 'text-slate-400'"
+            >{{ questionText.length }} ký tự</span>
+            <span v-else></span>
+            <button
+              class="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+              :class="isDark 
+                ? 'bg-gradient-to-r from-cyan-500 to-purple-500 shadow-cyan-500/30' 
+                : 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-orange-200'"
+              :disabled="sendingQuestion || !canSendQuestion"
+              @click="submitQuestion()"
+            >
+              <span v-if="sendingQuestion" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+              <svg v-else class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+              Đăng bình luận
+            </button>
           </div>
         </div>
       </div>
@@ -1334,7 +1430,13 @@
                 <p v-if="msg.timestamp && msg.role === 'user'" class="text-[10px] sm:text-xs mb-1 text-white/70">
                   Tại {{ msg.timestamp }}
                 </p>
-                <p class="text-xs sm:text-sm whitespace-pre-line">{{ msg.content }}</p>
+                <p v-if="msg.content" class="text-xs sm:text-sm whitespace-pre-line">{{ msg.content }}</p>
+                <!-- Typing indicator inside bubble -->
+                <div v-else-if="msg.role === 'ai'" class="flex items-center gap-1 py-1 px-1">
+                  <div class="h-1.5 w-1.5 rounded-full animate-bounce bg-current" style="animation-delay: 0ms"></div>
+                  <div class="h-1.5 w-1.5 rounded-full animate-bounce bg-current" style="animation-delay: 150ms"></div>
+                  <div class="h-1.5 w-1.5 rounded-full animate-bounce bg-current" style="animation-delay: 300ms"></div>
+                </div>
               </div>
 
               <!-- User Avatar -->
@@ -1349,38 +1451,7 @@
             </div>
 
             <!-- Loading -->
-            <div v-if="aiVideoAsking" class="flex gap-2 sm:gap-3 justify-start">
-              <div class="flex-shrink-0">
-                <div 
-                  class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full animate-pulse shadow-lg"
-                  :class="isDark ? 'bg-gradient-to-br from-cyan-400 to-blue-500 shadow-cyan-500/30' : 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-orange-200'"
-                >
-                  <span class="text-base sm:text-xl">☀️</span>
-                </div>
-              </div>
-              <div 
-                class="rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3"
-                :class="isDark ? 'bg-slate-800' : 'bg-slate-100'"
-              >
-                <div class="flex items-center gap-1.5 sm:gap-2">
-                  <div 
-                    class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full animate-bounce"
-                    :class="isDark ? 'bg-cyan-400' : 'bg-purple-500'"
-                    style="animation-delay: 0ms"
-                  ></div>
-                  <div 
-                    class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full animate-bounce"
-                    :class="isDark ? 'bg-cyan-400' : 'bg-purple-500'"
-                    style="animation-delay: 150ms"
-                  ></div>
-                  <div 
-                    class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full animate-bounce"
-                    :class="isDark ? 'bg-cyan-400' : 'bg-purple-500'"
-                    style="animation-delay: 300ms"
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <!-- Loading removed (streaming handles this) -->
           </div>
 
           <!-- Input -->
@@ -2773,6 +2844,7 @@ const avatarErrors = reactive<Record<string, boolean>>({})
 const askingAI = reactive<Record<string, boolean>>({})
 const aiChatBox = reactive<Record<string, boolean>>({})
 const aiChatDrafts = reactive<Record<string, string>>({})
+const streamingReplies = reactive<Record<string, string>>({})
 
 // AI Video Question - Hỏi AI về đoạn video đang xem
 const aiVideoModalOpen = ref(false)
@@ -2846,6 +2918,13 @@ async function submitAIVideoQuestion() {
   aiVideoAsking.value = true
   aiVideoQuestion.value = ''
   
+  // Placeholder cho câu trả lời AI
+  const aiMessageIndex = aiVideoConversation.value.push({
+    role: 'ai',
+    content: '', // Placeholder content (empty for streaming)
+    timestamp: timestampStr
+  }) - 1
+  
   try {
     const currentLessonId = currentLesson.value?.id
     const currentLessonIdStr = currentLessonId ? String(currentLessonId) : null
@@ -2853,42 +2932,66 @@ async function submitAIVideoQuestion() {
     // Kiểm tra xem có chuyển sang bài học mới không
     const isNewLesson = currentLessonIdStr && currentLessonIdStr !== currentAILessonId.value
     if (isNewLesson) {
-      // Clear conversation khi chuyển bài học mới
-      aiVideoConversation.value = []
-      currentAILessonId.value = currentLessonIdStr
-    } else if (!currentAILessonId.value && currentLessonIdStr) {
-      currentAILessonId.value = currentLessonIdStr
+        // ... (Logic clear history - handled by backend flag usually but here frontend checks)
+        // Note: Logic above simple check, kept similar
+    }
+
+    const token = localStorage.getItem('accessToken')
+    let apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
+    // Ensure apiBase ends with /api if it doesn't already (common in local dev)
+    if (!apiBase.endsWith('/api')) {
+      apiBase += '/api'
     }
     
-    const { data } = await api.post('/student/ai/tutor/video-question/', {
-      lesson_id: currentLessonId,
-      question: question,
-      timestamp: timestamp,
-      video_title: currentLesson.value?.title || course.value?.title || '',
-      clear_history: isNewLesson  // Gửi flag để clear history ở backend
-    }, { timeout: 60000 })
+    const response = await fetch(`${apiBase}/student/ai/tutor/video-question/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        lesson_id: currentLessonId,
+        question: question,
+        timestamp: timestamp,
+        video_title: currentLesson.value?.title || course.value?.title || '',
+        clear_history: isNewLesson || (currentLessonIdStr && currentLessonIdStr !== currentAILessonId.value)
+      })
+    })
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     
-    if (data.success && data.message) {
-      aiVideoResponse.value = data.message
-      aiVideoConversation.value.push({
-        role: 'ai',
-        content: data.message,
-        timestamp: timestampStr
-      })
-    } else {
-      aiVideoResponse.value = 'AI không thể trả lời câu hỏi này. Hãy thử lại nhé! 🌟'
-      aiVideoConversation.value.push({
-        role: 'ai',
-        content: aiVideoResponse.value
-      })
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('Response body is not readable')
+    
+    // First chunk received, clear placeholder
+    aiVideoConversation.value[aiMessageIndex].content = ''
+    
+    const decoder = new TextDecoder()
+    
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n')
+      
+      for (const line of lines) {
+        if (!line.trim()) continue
+        try {
+          const data = JSON.parse(line)
+          if (data.chunk) {
+            aiVideoConversation.value[aiMessageIndex].content += data.chunk
+          }
+        } catch (e) { }
+      }
     }
+    
+    // Update currentAILessonId after success
+    if (currentLessonIdStr) currentAILessonId.value = currentLessonIdStr
+    
   } catch (e: any) {
     console.error('AI Video Question error:', e)
-    aiVideoResponse.value = 'Có lỗi xảy ra. Hãy thử lại sau nhé! 🌟'
-    aiVideoConversation.value.push({
-      role: 'ai',
-      content: aiVideoResponse.value
-    })
+    aiVideoConversation.value[aiMessageIndex].content = 'Có lỗi xảy ra. Hãy thử lại sau nhé! 🌟'
   } finally {
     aiVideoAsking.value = false
   }
@@ -3149,28 +3252,83 @@ async function deleteQuestion(id: string) {
   }
 }
 
-async function askAI(questionId: string) {
-  if (askingAI[questionId]) return
+async function streamAIResponse(questionId: string, url: string, params: any) {
   askingAI[questionId] = true
+  streamingReplies[questionId] = '' // Init streaming buffer
+  
   try {
-    // Tăng timeout vì AI có thể mất thời gian để phản hồi
-    const { data } = await api.post(`/student/lesson-questions/${questionId}/ai-answer/`, {}, { timeout: 60000 })
-    showToast('AI đã trả lời câu hỏi của bạn!', 'success')
+    const token = localStorage.getItem('accessToken') // Get directly from localStorage
+    let apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
+    
+    // Intelligent URL Construction:
+    // If the incoming 'url' already starts with '/api', we shouldn't duplicate it in apiBase.
+    if (url.startsWith('/api')) {
+       if (apiBase.endsWith('/api')) {
+          apiBase = apiBase.slice(0, -4) // Remove trailing /api from base
+       }
+    } else {
+       // If 'url' doesn't have /api, ensure apiBase has it
+       if (!apiBase.endsWith('/api')) {
+          apiBase += '/api'
+       }
+    }
+    
+    const response = await fetch(`${apiBase}${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(params)
+    })
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('Response body is not readable')
+    
+    const decoder = new TextDecoder()
+    
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n')
+      
+      for (const line of lines) {
+        if (!line.trim()) continue
+        try {
+          const data = JSON.parse(line)
+          if (data.chunk) {
+            streamingReplies[questionId] += data.chunk
+          } else if (data.done) {
+            // Finished
+          } else if (data.error) {
+            console.error('Stream error:', data.error)
+          }
+        } catch (e) {
+          // Ignore parse errors for partial chunks
+        }
+      }
+    }
+    
+    showToast('AI đã trả lời!', 'success')
     await loadQuestions()
   } catch (e: any) {
-    console.error('AI answer error:', e)
-    let msg = 'AI không thể trả lời lúc này'
-    if (e?.code === 'ECONNABORTED' || e?.message?.includes('timeout')) {
-      msg = 'AI đang xử lý quá lâu, vui lòng thử lại sau'
-    } else if (e?.response?.data?.detail) {
-      msg = e.response.data.detail
-    } else if (e?.message) {
-      msg = e.message
-    }
-    showToast(msg, 'error')
+    console.error('StreamAI error:', e)
+    showToast('AI không thể trả lời lúc này', 'error')
   } finally {
     askingAI[questionId] = false
+    streamingReplies[questionId] = '' // Clear content after reload
   }
+}
+
+async function askAI(questionId: string) {
+  if (askingAI[questionId]) return
+  await streamAIResponse(questionId, `/api/student/lesson-questions/${questionId}/ai-answer/`, {})
 }
 
 function toggleAIChatBox(questionId: string, replyId: string) {
@@ -3188,30 +3346,23 @@ async function continueAIChat(questionId: string, replyId: string) {
   
   askingAI[questionId] = true
   try {
-    // Gửi câu hỏi mới như một reply, sau đó gọi AI trả lời
-    // Gửi flag is_ai_interaction để không gửi thông báo cho giáo viên
+    // 1. Post user reply first
     await api.post(`/student/lesson-questions/${questionId}/reply/`, { 
       content,
       is_ai_interaction: true 
     })
     
-    // Gọi AI trả lời câu hỏi mới
-    await api.post(`/student/lesson-questions/${questionId}/ai-answer/`, {}, { timeout: 60000 })
-    
+    // Refresh to show user reply
+    await loadQuestions()
     aiChatDrafts[key] = ''
     aiChatBox[key] = false
-    showToast('AI đã trả lời!', 'success')
-    await loadQuestions()
+    
+    // 2. Stream AI answer (same endpoint, context will include new reply)
+    await streamAIResponse(questionId, `/api/student/lesson-questions/${questionId}/ai-answer/`, {})
+    
   } catch (e: any) {
     console.error('Continue AI chat error:', e)
-    let msg = 'AI không thể trả lời lúc này'
-    if (e?.response?.data?.detail) {
-      msg = e.response.data.detail
-    } else if (e?.message) {
-      msg = e.message
-    }
-    showToast(msg, 'error')
-  } finally {
+    showToast('Gửi câu hỏi thất bại', 'error')
     askingAI[questionId] = false
   }
 }

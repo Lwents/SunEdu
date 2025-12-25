@@ -10,7 +10,12 @@ from django.core.cache import cache
 import logging
 
 from ..ai_tutor import ai_tutor
+from ..ai_tutor import ai_tutor
 from ..models import LearningEvent
+from django.http import StreamingHttpResponse
+import json
+import os
+import requests as http_requests
 
 logger = logging.getLogger(__name__)
 
@@ -890,13 +895,13 @@ class AITutorVideoQuestionView(APIView):
         # Ưu tiên các segments gần timestamp hơn (±30 giây đầu tiên) nhưng vẫn lấy đủ context
         # Hỗ trợ video dài hơn 1 giờ - target_timestamp có thể > 3600 giây
         
-        # Khoảng ưu tiên: ±30 giây (gần timestamp nhất)
-        priority_start = max(0, target_timestamp - 30)
-        priority_end = target_timestamp + 30
+        # Khoảng ưu tiên: ±150 giây (2.5 phút) - Đủ để bao quát một bài hát
+        priority_start = max(0, target_timestamp - 150)
+        priority_end = target_timestamp + 150
         
-        # Khoảng mở rộng: ±90 giây (để có đủ context nhận diện bài hát, hook, điệp khúc)
-        extended_start = max(0, target_timestamp - 90)
-        extended_end = target_timestamp + 90
+        # Khoảng mở rộng: ±300 giây (5 phút) - Rất rộng
+        extended_start = max(0, target_timestamp - 300)
+        extended_end = target_timestamp + 300
         
         priority_segments = []
         extended_segments = []
@@ -906,10 +911,10 @@ class AITutorVideoQuestionView(APIView):
             seg_center = (seg['start'] + seg['end']) / 2
             distance = abs(seg_center - target_timestamp)
             
-            # Segment trong khoảng ưu tiên (±30 giây) - lấy tất cả
+            # Segment trong khoảng ưu tiên (±150 giây) - lấy tất cả
             if seg['start'] <= priority_end and seg['end'] >= priority_start:
                 priority_segments.append((distance, seg))
-            # Segment trong khoảng mở rộng (±90 giây) nhưng không trong khoảng ưu tiên
+            # Segment trong khoảng mở rộng (±300 giây) nhưng không trong khoảng ưu tiên
             elif seg['start'] <= extended_end and seg['end'] >= extended_start:
                 extended_segments.append((distance, seg))
         
@@ -917,15 +922,14 @@ class AITutorVideoQuestionView(APIView):
         priority_segments.sort(key=lambda x: x[0])
         extended_segments.sort(key=lambda x: x[0])
         
-        # Ưu tiên lấy từ khoảng ±30 giây trước, sau đó mở rộng để có đủ context
+        # Ưu tiên lấy từ khoảng ±150 giây trước, sau đó mở rộng để có đủ context
         selected_segments = []
         
-        # Lấy TẤT CẢ segments trong khoảng ưu tiên (±30 giây)
+        # Lấy TẤT CẢ segments trong khoảng ưu tiên
         for _, seg in priority_segments:
             selected_segments.append(seg)
         
-        # Lấy thêm từ khoảng mở rộng (±90 giây) để có đủ context nhận diện bài hát
-        # Ưu tiên các segments gần timestamp hơn (trong ±60 giây trước, sau đó mở rộng)
+        # Lấy thêm từ khoảng mở rộng (±300 giây) để có đủ context nhận diện bài hát
         for _, seg in extended_segments:
             if seg not in selected_segments:
                 selected_segments.append(seg)
@@ -934,8 +938,8 @@ class AITutorVideoQuestionView(APIView):
             # Combine các segments đã chọn, giữ nguyên thứ tự thời gian
             selected_segments.sort(key=lambda x: x['start'])
             combined_text = ' '.join([seg['text'] for seg in selected_segments])
-            # Tăng lên 6000 ký tự để có đủ context nhận diện bài hát (hook, điệp khúc, lời bài hát đầy đủ)
-            return combined_text[:6000]
+            # Tăng lên 10000 ký tự để chứa đủ 5-10 phút hội thoại
+            return combined_text[:10000]
         
         return None
     
@@ -988,6 +992,66 @@ class AITutorVideoQuestionView(APIView):
                 shutil.rmtree(temp_dir, ignore_errors=True)
             return None
     
+    
+    def _call_openrouter_stream(self, prompt, context_msg=None):
+        """Gọi OpenRouter API với chế độ stream"""
+        # Load API key explicitly if not loaded
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            yield "OpenRouter API chưa được cấu hình"
+            return
+        
+        model = os.getenv("OPENROUTER_MODEL") or os.getenv("DEEPSEEK_MODEL") or "openai/gpt-4o"
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://sunnyedu.local",
+            "X-Title": "SunnyEdu AI Assistant",
+        }
+        
+        messages = []
+        if context_msg:
+             messages.append({"role": "system", "content": context_msg})
+        messages.append({"role": "user", "content": prompt})
+
+        try:
+            with http_requests.post(
+                url,
+                headers=headers,
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "max_tokens": 1500,
+                    "stream": True,
+                },
+                stream=True,
+                timeout=60,
+            ) as resp:
+                if resp.status_code != 200:
+                    yield f"Error {resp.status_code}"
+                    return
+
+                for line in resp.iter_lines():
+                    if line:
+                        line = line.decode("utf-8")
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                data_json = json.loads(data_str)
+                                content = data_json.get("choices", [])[0].get("delta", {}).get("content", "")
+                                if content:
+                                    yield content
+                            except:
+                                pass
+        except Exception as e:
+            yield f"Stream Error: {str(e)}"
+
     def post(self, request):
         from content.models import Lesson
         
@@ -1082,7 +1146,7 @@ class AITutorVideoQuestionView(APIView):
                     )
                     if transcript_at_timestamp:
                         # Đảm bảo transcript tại timestamp này có đủ context để nhận diện bài hát
-                        lesson_context += f"[NỘI DUNG VIDEO TẠI {timestamp_str} (±90 giây, ưu tiên ±30 giây) - LỜI BÀI HÁT TẠI THỜI ĐIỂM NÀY]:\n{transcript_at_timestamp}\n"
+                        lesson_context += f"[NỘI DUNG VIDEO TẠI {timestamp_str} (±5 PHÚT, ưu tiên sát thời điểm này) - LỜI BÀI HÁT TẠI THỜI ĐIỂM NÀY]:\n{transcript_at_timestamp}\n"
                         # Cập nhật format timestamp trong message
                         time_label = "giờ:phút:giây" if hours > 0 else "phút:giây"
                         lesson_context += f"\nLƯU Ý: Đây là nội dung TẠI {timestamp_str} ({time_label}). Nếu học sinh hỏi về bài hát tại thời điểm này, bạn PHẢI nhận biết từ lời bài hát ở trên.\n"
@@ -1230,9 +1294,9 @@ Câu hỏi của học sinh: "{question}"
 
 {f'Khóa học: {course_title}' if course_title else ''}
 
-{f'THÔNG TIN VỀ BÀI HÁT (nếu có):\n{song_info}' if song_info else ''}
+{f'THÔNG TIN VỀ BÀI HÁT (nếu có):\\n{song_info}' if song_info else ''}
 
-{f'NGỮ CẢNH VIDEO (nội dung tại {timestamp_str} ±90 giây, ưu tiên ±30 giây - LỜI BÀI HÁT):\n{lesson_context[:8000]}' if lesson_context else 'Không có transcript video. Hãy trả lời dựa trên kiến thức chung về chủ đề này.'}
+{f'NGỮ CẢNH VIDEO (nội dung tại {timestamp_str} ±5 PHÚT, ưu tiên sát thời điểm này - LỜI BÀI HÁT):\\n{lesson_context[:10000]}' if lesson_context else 'Không có transcript video. Hãy trả lời dựa trên kiến thức chung về chủ đề này.'}
 
 LƯU Ý QUAN TRỌNG:
 - Học sinh đang hỏi về nội dung tại thời điểm {timestamp_str} ({time_label}) trong video
@@ -1262,14 +1326,34 @@ YÊU CẦU TRẢ LỜI (QUAN TRỌNG - PHẢI TUÂN THỦ):
    - KHÔNG được hỏi "em đang tò mò đúng không?", "em muốn biết gì?"
    - TRẢ LỜI NGAY câu hỏi của học sinh, không vòng vo
 
-2. Nếu học sinh hỏi về tên bài hát:
+3. Nếu học sinh chỉ chào hỏi (ví dụ: "hi", "hello", "chào bạn") hoặc nói chuyện phiếm:
+   - CHỈ trào lại ngắn gọn, thân thiện (ví dụ: "Chào bạn! Mình có thể giúp gì cho bạn về video này?").
+   - TUYỆT ĐỐI KHÔNG tóm tắt nội dung video/bài hát.
+   - TUYỆT ĐỐI KHÔNG phân tích hay đưa ra nhận xét về video.
+   - Giữ cuộc trò chuyện ở mức xã giao cho đến khi học sinh hỏi vào nội dung.
+
+4. Nếu học sinh hỏi về tên bài hát:
    - PHẢI CỐ GẮNG NHẬN BIẾT từ lời bài hát trong transcript TẠI {timestamp_str}
    - CHỈ sử dụng transcript được đánh dấu "TẠI {timestamp_str}" - KHÔNG dùng transcript từ timestamp khác
    - QUY TRÌNH NHẬN BIẾT (PHẢI LÀM ĐẦY ĐỦ):
-     a) Đọc KỸ TỪNG CÂU trong lời bài hát ở trên, đặc biệt chú ý các câu lặp lại nhiều lần
-     b) Tìm các câu/đoạn ĐẶC TRƯNG (hook, điệp khúc, câu nổi tiếng) - đây là dấu hiệu quan trọng nhất
-     c) Tìm tên bài hát có thể xuất hiện trong lời (ví dụ: "bài hát tên là...", "đây là bài...", "bài...")
-     d) Tìm tên ca sĩ có thể xuất hiện trong lời
+     a) **Bước 1: KIỂM TRA TIÊU ĐỀ VIDEO/BÀI HỌC**:
+        - Xem tên bài học: "{lesson_title or video_title}"
+        - Nếu tiêu đề chứa tên bài hát/ca sĩ (ví dụ: "MV Sơn Tùng", "Em Của Ngày Hôm Qua", "Cover"), đây là gợi ý QUAN TRỌNG NHẤT.
+        - Dùng tiêu đề để định hướng việc tìm kiếm trong lời bài hát.
+     b) **Bước 2: ĐỌC LỜI BÀI HÁT TẠI {timestamp_str}**:
+        - Đọc KỸ TỪNG CÂU, đặc biệt là các đoạn lặp lại.
+        - So sánh lời này với bài hát tìm thấy ở Bước 1.
+     c) **Bước 3: TÌM CÂU ĐẶC TRƯNG**:
+        - Tìm các câu hát, hook, điệp khúc, tên bài hát trong lời.
+     d) **Bước 4: SO SÁNH VÀ KẾT LUẬN (CHỐNG ẢO GIÁC - QUAN TRỌNG)**:
+        - Nếu lời bài hát khớp với Tiêu đề Video -> **CHẮC CHẮN 100%**.
+        - Nếu không có lời (nhạc dạo) nhưng Tiêu đề Video rõ ràng là tên bài hát (ví dụ: "MV Lạc Trôi") -> Trả lời dựa trên Tiêu đề.
+        - **TRƯỜNG HỢP TIÊU ĐỀ CHUNG CHUNG (Ví dụ: "Bài 1.1", "Chương 1", "Video", "Lesson 1")**:
+          * NẾU KHÔNG CÓ LỜI BÀI HÁT RÕ RÀNG -> **TUYỆT ĐỐI KHÔNG ĐƯỢC ĐOÁN**.
+          * TRẢ LỜI NGAY: "Dạ hiện tại video chưa có lời hoặc nhạc dạo nên mình chưa nhận diện được bài hát ạ. Bạn nghe thêm chút nữa nhé!".
+          * **CẤM TUYỆT ĐỐI**: Không được trả lời là bài "Mình Chia Tay Đi", "Em Gái Mưa", "Sóng Gió"... hay bất kỳ bài nào khác nếu không có lời hát khớp 100%.
+          * Đây là lỗi nghiêm trọng nếu bạn đoán sai.
+     e) Tìm tên ca sĩ có thể xuất hiện trong lời hoặc tiêu đề
      e) SO SÁNH với kiến thức về các bài hát Việt Nam phổ biến:
         - Nhạc trẻ Việt Nam: Sơn Tùng M-TP, Đen Vâu, Đức Phúc, Hương Tràm, Đông Nhi, etc.
         - Nhạc vàng: Chế Linh, Như Quỳnh, Giao Linh, etc.
@@ -1328,56 +1412,63 @@ Trả lời (bắt đầu ngay, không có câu mở đầu):"""
             if isinstance(msg, dict) and 'role' in msg and 'content' in msg:
                 filtered_history.append(msg)
         
-        # Call AI Tutor
-        try:
-            result = ai_tutor.chat(
-                user_message=video_prompt,
-                context=context,
-                conversation_history=filtered_history if filtered_history else [],  # Dùng filtered history
-                student_grade=student_grade
-            )
-        except Exception as e:
-            logger.error(f"AI Video Question error: {e}")
-            result = {
-                'success': True,
-                'message': f"Xin lỗi, AI đang bận! 🌟 Bạn đang hỏi về đoạn video tại {timestamp_str}. Hãy thử lại sau nhé!",
-                'provider': 'fallback'
-            }
+        # Build prompt history string if needed, OR just pass to OpenRouter messages
+        # Here we'll append to messages inside call_stream implicitly via filtered_history if I changed _call logic
+        # But _call_openrouter_stream above only takes context_msg and prompt.
+        # Let's adjust _call_openrouter_stream slightly to accept history or just inject history into prompt/system
         
-        if result['success']:
-            # Update conversation history
-            conversation_history.append({
-                'role': 'user', 
-                'content': f"[Tại {timestamp_str}] {question}"
-            })
-            conversation_history.append({
-                'role': 'assistant', 
-                'content': result['message']
-            })
+        # Generator for streaming
+        def stream_response_generator():
+            full_content = []
             
-            # Keep only last 10 messages for video context
-            conversation_history = conversation_history[-10:]
-            cache.set(cache_key, conversation_history, 1800)  # 30 minutes
+            # Use OpenRouter directly
+            # Construct context message properly
+            # We already have video_prompt which includes context and instructions. Use that as user prompt (or system+user)
+            # Actually video_prompt is very long and instruction-heavy, maybe treat as User message?
             
-            # Log event
             try:
-                LearningEvent.objects.create(
-                    user=request.user,
-                    event_type='ai_video_question',
-                    detail={
-                        'lesson_id': str(lesson_id) if lesson_id else None,
-                        'timestamp': timestamp,
-                        'timestamp_str': timestamp_str,
-                        'question_length': len(question),
-                        'provider': result.get('provider')
-                    }
-                )
+                for chunk in self._call_openrouter_stream(video_prompt):
+                    if chunk:
+                        full_content.append(chunk)
+                        yield json.dumps({"chunk": chunk}) + "\n"
+                        
+                # Finished
+                message = "".join(full_content)
+                
+                # Cache update and Logging (Async-like)
+                if message:
+                     # Update conversation history
+                    conversation_history.append({
+                        'role': 'user', 
+                        'content': f"[Tại {timestamp_str}] {question}"
+                    })
+                    conversation_history.append({
+                        'role': 'assistant', 
+                        'content': message
+                    })
+                    
+                    # Keep only last 10 messages for video context
+                    new_history = conversation_history[-10:]
+                    cache.set(cache_key, new_history, 1800)  # 30 minutes
+                    
+                    # Log event
+                    try:
+                        LearningEvent.objects.create(
+                            user=request.user,
+                            event_type='ai_video_question',
+                            detail={
+                                'lesson_id': str(lesson_id) if lesson_id else None,
+                                'timestamp': timestamp,
+                                'timestamp_str': timestamp_str,
+                                'question_length': len(question),
+                                'provider': 'openrouter_stream'
+                            }
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to log AI video question event: {e}")
+                
             except Exception as e:
-                logger.warning(f"Failed to log AI video question event: {e}")
-        
-        return Response({
-            'success': result['success'],
-            'message': result['message'],
-            'timestamp': timestamp_str,
-            'lesson_id': str(lesson_id) if lesson_id else None
-        })
+                logger.error(f"Streaming error: {e}")
+                yield json.dumps({"error": str(e)}) + "\n"
+
+        return StreamingHttpResponse(stream_response_generator(), content_type="application/x-ndjson")

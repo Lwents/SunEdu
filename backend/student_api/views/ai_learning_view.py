@@ -18,7 +18,6 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.conf import settings
 from django.db.models import Avg, Count, Q, Max
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -114,16 +113,16 @@ def _compute_streak(activity_dates, upto_date, require_activity_on_upto_date=Tru
 
 
 class AIAPIClient:
-    """Client để gọi DeepSeek/Gemini API"""
+    """Client để gọi OpenRouter API"""
     
     @staticmethod
     def call_deepseek(prompt, max_tokens=1024):
-        """Gọi DeepSeek API qua OpenRouter"""
+        """Gọi OpenRouter API"""
         api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
-            return {"error": "DeepSeek API chưa được cấu hình"}
+            return {"error": "OpenRouter API chưa được cấu hình"}
         
-        model = os.getenv("DEEPSEEK_MODEL") or "deepseek/deepseek-chat-v3-0324"
+        model = os.getenv("OPENROUTER_MODEL") or os.getenv("DEEPSEEK_MODEL") or "openai/gpt-4o"
         url = "https://openrouter.ai/api/v1/chat/completions"
         
         headers = {
@@ -150,63 +149,21 @@ class AIAPIClient:
                 text = data.get("choices", [])[0].get("message", {}).get("content", "")
                 if text and text.strip():
                     return {"text": text.strip(), "model": model}
-                return {"error": "DeepSeek trả về nội dung rỗng"}
+                return {"error": "OpenRouter trả về nội dung rỗng"}
             
-            return {"error": f"DeepSeek lỗi {resp.status_code}"}
+            return {"error": f"OpenRouter lỗi {resp.status_code}"}
         except Exception as e:
-            logger.error(f"DeepSeek API error: {e}")
-            return {"error": str(e)}
-    
-    @staticmethod
-    def call_gemini(prompt, max_tokens=1024):
-        """Gọi Gemini API"""
-        api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
-        if not api_key:
-            return {"error": "Gemini API chưa được cấu hình"}
-        
-        model = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-        
-        try:
-            resp = http_requests.post(
-                url,
-                json={
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"maxOutputTokens": max_tokens},
-                },
-                timeout=60,
-            )
-            
-            if resp.status_code == 200:
-                data = resp.json()
-                candidates = data.get("candidates", [])
-                if candidates:
-                    text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    if text and text.strip():
-                        return {"text": text.strip(), "model": model}
-                return {"error": "Gemini trả về nội dung rỗng"}
-            
-            return {"error": f"Gemini lỗi {resp.status_code}"}
-        except Exception as e:
-            logger.error(f"Gemini API error: {e}")
+            logger.error(f"OpenRouter API error: {e}")
             return {"error": str(e)}
     
     @staticmethod
     def call_ai(prompt, max_tokens=1024):
-        """Gọi AI với fallback: DeepSeek -> Gemini"""
-        # Thử DeepSeek trước
+        """Gọi AI qua OpenRouter"""
         result = AIAPIClient.call_deepseek(prompt, max_tokens)
         if not result.get("error"):
             return result
-        
-        logger.warning(f"DeepSeek failed: {result.get('error')}, trying Gemini...")
-        
-        # Fallback sang Gemini
-        result = AIAPIClient.call_gemini(prompt, max_tokens)
-        if not result.get("error"):
-            return result
-        
-        return {"error": "Cả DeepSeek và Gemini đều không khả dụng"}
+
+        return {"error": result.get("error") or "OpenRouter không khả dụng"}
 
 
 class AILearningAnalyzerView(APIView):
