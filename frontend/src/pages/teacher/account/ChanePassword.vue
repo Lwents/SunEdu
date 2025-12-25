@@ -17,10 +17,11 @@
           <div class="relative mt-1">
             <input
               :type="show.current ? 'text' : 'password'"
-              v-model.trim="form.currentPassword"
+              v-model="currentPasswordModel"
               class="w-full rounded-lg border px-3 py-2 pr-12 focus:ring-2 focus:ring-blue-500"
               autocomplete="current-password"
               placeholder="Nhập mật khẩu đang dùng"
+              :maxlength="MAX_PASSWORD_LENGTH"
             />
             <button
               type="button"
@@ -40,10 +41,11 @@
             <div class="relative mt-1">
               <input
                 :type="show.new ? 'text' : 'password'"
-                v-model.trim="form.newPassword"
+                v-model="newPasswordModel"
                 class="w-full rounded-lg border px-3 py-2 pr-12 focus:ring-2 focus:ring-blue-500"
                 autocomplete="new-password"
-                placeholder="Ít nhất 8 ký tự"
+                placeholder="6-12 ký tự"
+                :maxlength="MAX_PASSWORD_LENGTH"
               />
               <button
                 type="button"
@@ -63,10 +65,11 @@
             <div class="relative mt-1">
               <input
                 :type="show.confirm ? 'text' : 'password'"
-                v-model.trim="form.confirmPassword"
+                v-model="confirmPasswordModel"
                 class="w-full rounded-lg border px-3 py-2 pr-12 focus:ring-2 focus:ring-blue-500"
                 autocomplete="new-password"
                 placeholder="Nhập lại mật khẩu mới"
+                :maxlength="MAX_PASSWORD_LENGTH"
               />
               <button
                 type="button"
@@ -164,10 +167,32 @@ import { useAuthStore } from '@/store/auth.store'
 
 const auth = useAuthStore()
 
+const MAX_PASSWORD_LENGTH = 12
+const MIN_PASSWORD_LENGTH = 6
+const clampPassword = (value: string) => String(value ?? '').trim().slice(0, MAX_PASSWORD_LENGTH)
+
 const form = reactive({
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
+})
+const currentPasswordModel = computed({
+  get: () => form.currentPassword,
+  set: (value) => {
+    form.currentPassword = clampPassword(value)
+  },
+})
+const newPasswordModel = computed({
+  get: () => form.newPassword,
+  set: (value) => {
+    form.newPassword = clampPassword(value)
+  },
+})
+const confirmPasswordModel = computed({
+  get: () => form.confirmPassword,
+  set: (value) => {
+    form.confirmPassword = clampPassword(value)
+  },
 })
 const errors = reactive<{ [k: string]: string }>({
   currentPassword: '',
@@ -204,8 +229,8 @@ const validateForm = () => {
     errors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại.'
     ok = false
   }
-  if (form.newPassword.length < 8) {
-    errors.newPassword = 'Mật khẩu mới phải có ít nhất 8 ký tự.'
+  if (form.newPassword.length < MIN_PASSWORD_LENGTH) {
+    errors.newPassword = `Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`
     ok = false
   } else if (form.currentPassword && form.newPassword === form.currentPassword) {
     errors.newPassword = 'Mật khẩu mới trùng mật khẩu cũ.'

@@ -51,7 +51,7 @@
           <div class="form-row">
             <label>Họ và tên <span class="required">*</span></label>
             <div class="input-group">
-              <input v-model.trim="form.fullname" type="text" placeholder="Nhập họ và tên" :class="{ error: errors.fullname }" />
+              <input v-model="fullnameModel" type="text" placeholder="Nhập họ và tên" :maxlength="MAX_FULLNAME_LENGTH" :class="{ error: errors.fullname }" />
               <p v-if="errors.fullname" class="error-text">{{ errors.fullname }}</p>
             </div>
           </div>
@@ -203,7 +203,10 @@ const isDark = computed(() => themeStore.isDark)
 const ready = ref(false)
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
+const MAX_FULLNAME_LENGTH = 25
 const OVER_LIMIT_MSG = 'File ảnh vượt quá dung lượng cho phép (5MB)'
+
+const clampFullname = (value: string) => value.trim().slice(0, MAX_FULLNAME_LENGTH)
 
 function goChangePwd() { router.push({ name: 'student-change-password' }) }
 function goParent() { router.push({ name: 'student-parent' }) }
@@ -243,6 +246,17 @@ function onPickFile(e: Event) {
 }
 
 const form = reactive({ username: '', fullname: '', email: '', emailUpdates: true, gender: 'male', className: '', address: '', city: '', district: '', ward: '' })
+const fullnameModel = computed({
+  get: () => form.fullname,
+  set: (value) => {
+    const rawValue = String(value ?? '')
+    const trimmedValue = rawValue.trim()
+    if (trimmedValue.length >= MAX_FULLNAME_LENGTH && form.fullname.length < MAX_FULLNAME_LENGTH) {
+      showToast(`Tối đa ${MAX_FULLNAME_LENGTH} ký tự.`, 'warning')
+    }
+    form.fullname = clampFullname(trimmedValue)
+  },
+})
 
 const provinces = ref<ProvinceOption[]>([])
 const districts = ref<DistrictOption[]>([])
@@ -295,7 +309,7 @@ async function handleDistrictChanged(code: number | null) {
 
 function applyProfileToForm(profile?: ProfileDetails | null) {
   if (!profile) return
-  form.username = profile.username || profile.name || ''; form.fullname = profile.fullName || profile.name || ''; form.email = profile.email || ''
+  form.username = profile.username || profile.name || ''; form.fullname = clampFullname(profile.fullName || profile.name || ''); form.email = profile.email || ''
   form.gender = (profile.gender as any) || form.gender; form.className = profile.class_name || profile.className || ''; form.emailUpdates = profile.email_updates ?? true
   form.address = profile.address || ''; form.city = profile.city || ''; form.district = profile.district || ''; form.ward = profile.ward || ''
   if (profile.dob) { const [year, month, day] = profile.dob.split('-').map(Number); if (year && month && day) { dob.year = year; dob.month = month; dob.day = day } }
@@ -321,7 +335,22 @@ onMounted(async () => {
 const errors = reactive<{ fullname?: string; email?: string }>({})
 const isEmail = (v: string) => /^\S+@\S+\.\S+$/.test(v)
 
-watch(() => ({ ...form }), () => { if (!ready.value) return; errors.fullname = form.fullname ? '' : 'Vui lòng nhập họ và tên.'; errors.email = form.email && !isEmail(form.email) ? 'Email không hợp lệ.' : '' }, { deep: true })
+watch(
+  () => ({ ...form }),
+  () => {
+    if (!ready.value) return
+    const trimmedFullname = form.fullname.trim()
+    if (!trimmedFullname) {
+      errors.fullname = 'Vui lòng nhập họ và tên.'
+    } else if (trimmedFullname.length > MAX_FULLNAME_LENGTH) {
+      errors.fullname = `Họ và tên tối đa ${MAX_FULLNAME_LENGTH} ký tự.`
+    } else {
+      errors.fullname = ''
+    }
+    errors.email = form.email && !isEmail(form.email) ? 'Email không hợp lệ.' : ''
+  },
+  { deep: true }
+)
 watch(selectedProvinceCode, (code) => { const normalized = typeof code === 'number' && !Number.isNaN(code) ? code : null; handleProvinceChanged(normalized) })
 watch(selectedDistrictCode, (code) => { const normalized = typeof code === 'number' && !Number.isNaN(code) ? code : null; handleDistrictChanged(normalized) })
 watch(selectedWardCode, (code) => { const normalized = typeof code === 'number' && !Number.isNaN(code) ? code : null; if (!normalized) { form.ward = ''; return }; const ward = wards.value.find((w) => w.code === normalized); form.ward = ward?.name || '' })
