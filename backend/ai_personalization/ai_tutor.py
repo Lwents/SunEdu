@@ -1,7 +1,7 @@
 # ai_personalization/ai_tutor.py
 """
 AI Tutor Engine - Trợ lý học tập thông minh cho trẻ cấp 1
-Tích hợp OpenAI GPT / Google Gemini để:
+Tích hợp OpenRouter để:
 - Giải thích bài học đơn giản
 - Gợi ý khi trẻ gặp khó khăn (không cho đáp án)
 - Động viên, khen ngợi
@@ -10,9 +10,7 @@ Tích hợp OpenAI GPT / Google Gemini để:
 import os
 import json
 import logging
-from typing import Optional, Dict, List, Any
-from django.conf import settings
-from django.core.cache import cache
+from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
@@ -54,78 +52,40 @@ VÍ DỤ:
 
 class AITutorEngine:
     """
-    AI Tutor Engine sử dụng Gemini hoặc OpenRouter (DeepSeek)
+    AI Tutor Engine sử dụng OpenRouter
     """
     
     def __init__(self):
-        self.gemini_api_key = os.environ.get('GEMINI_API_KEY')
-        self.openrouter_api_key = os.environ.get('OPENROUTER_API_KEY')
-        self.gemini_model = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash')
-        # Ưu tiên dùng Gemini trước, fallback sang DeepSeek nếu lỗi
-        self.default_provider = 'gemini' if self.gemini_api_key else 'openrouter'
+        self.openrouter_api_key = os.environ.get('OPENROUTER_API_KEY') or os.environ.get('DEEPSEEK_API_KEY')
+        self.openrouter_model = (
+            os.environ.get('OPENROUTER_MODEL')
+            or os.environ.get('DEEPSEEK_MODEL')
+            or 'openai/gpt-4o'
+        )
+        self.default_provider = 'openrouter'
         
         # Log API keys status on init
-        logger.info(f"AI Tutor initialized - Gemini: {'YES' if self.gemini_api_key else 'NO'}, OpenRouter: {'YES' if self.openrouter_api_key else 'NO'}, Default: {self.default_provider}")
+        logger.info(
+            "AI Tutor initialized - OpenRouter: %s, Model: %s",
+            'YES' if self.openrouter_api_key else 'NO',
+            self.openrouter_model,
+        )
         
-    def _call_gemini(self, messages: list) -> str:
-        """Call Google Gemini API directly via REST"""
-        import requests
-        
-        logger.info(f"Calling Gemini API with key: {self.gemini_api_key[:10] if self.gemini_api_key else 'NONE'}...")
-        
-        if not self.gemini_api_key:
-            logger.error("GEMINI_API_KEY not configured")
-            raise Exception("GEMINI_API_KEY not configured")
-        
-        # Build prompt from messages
-        prompt = ""
-        for msg in messages:
-            role = msg.get("role", "user")
-            content = msg.get("content", "")
-            if role == "system":
-                prompt += f"[System]: {content}\n\n"
-            elif role == "user":
-                prompt += f"[User]: {content}\n\n"
-            elif role == "assistant":
-                prompt += f"[Assistant]: {content}\n\n"
-        
-        prompt += "[Assistant]: "
-        
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={self.gemini_api_key}"
-        
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.8,  # Tăng từ 0.7 lên 0.8 để AI sáng tạo hơn trong việc nhận diện bài hát
-                    "maxOutputTokens": 1000,  # Tăng từ 800 lên 1000 để có thể trả lời chi tiết hơn
-                }
-            }
-        
-        response = requests.post(url, json=payload, timeout=30)
-        
-        if response.status_code != 200:
-            logger.error(f"Gemini API error: {response.status_code} - {response.text}")
-            raise Exception(f"Gemini API error: {response.status_code}")
-        
-        data = response.json()
-        
-        try:
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError) as e:
-            logger.error(f"Gemini response parsing error: {e}, data: {data}")
-            raise Exception("Failed to parse Gemini response")
-    
     def _call_openrouter(self, messages: list) -> str:
-        """Call OpenRouter API (DeepSeek, etc.)"""
+        """Call OpenRouter API"""
         import requests
         
-        logger.info(f"Calling OpenRouter API with key: {self.openrouter_api_key[:10] if self.openrouter_api_key else 'NONE'}...")
+        logger.info(
+            "Calling OpenRouter API with key: %s..., model: %s",
+            self.openrouter_api_key[:10] if self.openrouter_api_key else 'NONE',
+            self.openrouter_model,
+        )
         
         if not self.openrouter_api_key:
             raise Exception("OPENROUTER_API_KEY not configured")
         
         url = "https://openrouter.ai/api/v1/chat/completions"
-        model = os.environ.get("DEEPSEEK_MODEL", "deepseek/deepseek-chat-v3-0324")
+        model = self.openrouter_model
         
         headers = {
             "Authorization": f"Bearer {self.openrouter_api_key}",
@@ -171,12 +131,12 @@ class AITutorEngine:
             context: Ngữ cảnh (bài học hiện tại, câu hỏi đang làm, etc.)
             conversation_history: Lịch sử hội thoại
             student_grade: Lớp của học sinh (1-5)
-            provider: 'openai' hoặc 'gemini'
+            provider: 'openrouter'
         
         Returns:
             Dict với response và metadata
         """
-        provider = provider or self.default_provider
+        provider = 'openrouter'
         
         # Build context-aware system prompt
         system_prompt = self._build_system_prompt(context, student_grade)
@@ -189,29 +149,7 @@ class AITutorEngine:
         )
         
         try:
-            # Luôn thử Gemini trước, fallback sang OpenRouter nếu lỗi
-            if provider == 'gemini' or provider == 'auto':
-                try:
-                    response = self._call_gemini(messages)
-                    provider = 'gemini'
-                except Exception as gemini_error:
-                    logger.warning(f"Gemini failed ({gemini_error}), trying OpenRouter...")
-                    if self.openrouter_api_key:
-                        response = self._call_openrouter(messages)
-                        provider = 'openrouter'
-                    else:
-                        raise gemini_error
-            elif provider == 'openrouter':
-                response = self._call_openrouter(messages)
-            else:
-                # Fallback: try gemini first
-                try:
-                    response = self._call_gemini(messages)
-                    provider = 'gemini'
-                except Exception as gemini_error:
-                    logger.warning(f"Gemini failed ({gemini_error}), trying OpenRouter...")
-                    response = self._call_openrouter(messages)
-                    provider = 'openrouter'
+            response = self._call_openrouter(messages)
             
             return {
                 'success': True,
@@ -266,11 +204,7 @@ class AITutorEngine:
         ]
         
         try:
-            # Try gemini first, fallback to openrouter
-            try:
-                response = self._call_gemini(messages)
-            except Exception:
-                response = self._call_openrouter(messages)
+            response = self._call_openrouter(messages)
             
             return {
                 'success': True,
@@ -318,11 +252,7 @@ Yêu cầu:
         ]
         
         try:
-            # Try gemini first, fallback to openrouter
-            try:
-                response = self._call_gemini(messages)
-            except Exception:
-                response = self._call_openrouter(messages)
+            response = self._call_openrouter(messages)
             
             return {
                 'success': True,
@@ -502,7 +432,7 @@ CHỈ trả về JSON, không có text khác."""
         ]
         
         try:
-            response = self._call_openrouter(messages) if self.openrouter_api_key else self._call_gemini(messages)
+            response = self._call_openrouter(messages)
             # Parse JSON từ response
             import re
             json_match = re.search(r'\{[\s\S]*\}', response)
@@ -614,7 +544,7 @@ CHỈ trả về JSON array, không có text khác."""
         ]
         
         try:
-            response = self._call_openrouter(messages) if self.openrouter_api_key else self._call_gemini(messages)
+            response = self._call_openrouter(messages)
             # Parse JSON từ response
             import re
             json_match = re.search(r'\[[\s\S]*\]', response)
@@ -669,7 +599,7 @@ Trả về JSON:
         ]
         
         try:
-            response = self._call_openrouter(messages) if self.openrouter_api_key else self._call_gemini(messages)
+            response = self._call_openrouter(messages)
             import re
             json_match = re.search(r'\{[\s\S]*\}', response)
             if json_match:
@@ -734,7 +664,7 @@ CHỈ trả về tin nhắn, không có gì khác."""
         ]
         
         try:
-            response = self._call_openrouter(messages) if self.openrouter_api_key else self._call_gemini(messages)
+            response = self._call_openrouter(messages)
             
             # Làm sạch response
             suggestion = response.strip()

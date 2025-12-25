@@ -12,7 +12,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
-from django.conf import settings as django_settings
 from django.db.models import Avg, Count, Max
 
 from gamification.models import Game, GameSession
@@ -516,17 +515,12 @@ class TeacherGameAIGenerateView(APIView):
         else:
             prompt = self._build_quiz_prompt(title, subject, grade_level, count, hint)
         
-        # Call Gemini first, fallback to DeepSeek
-        api_key = os.getenv("GEMINI_API_KEY") or getattr(django_settings, "GEMINI_API_KEY", "")
+        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
             return Response({"detail": "AI chưa được cấu hình"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        
-        model = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
-        ai_response = self._call_gemini_api(api_key, model, prompt)
-        
-        if ai_response.get("error"):
-            # Fallback to DeepSeek
-            ai_response = self._call_deepseek_api(prompt)
+
+        model = os.getenv("OPENROUTER_MODEL") or os.getenv("DEEPSEEK_MODEL") or "openai/gpt-4o"
+        ai_response = self._call_openrouter_api(api_key, model, prompt)
         
         if ai_response.get("error"):
             return Response({"detail": ai_response["error"]}, status=status.HTTP_502_BAD_GATEWAY)
@@ -580,32 +574,7 @@ Trả về JSON thuần (KHÔNG có markdown):
   ]
 }}"""
 
-    def _call_gemini_api(self, api_key, model, prompt):
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-        try:
-            resp = requests.post(
-                url,
-                json={
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"maxOutputTokens": 2048},
-                },
-                timeout=60,
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                if text and text.strip():
-                    return {"text": text.strip(), "model": model}
-            return {"error": f"Gemini error {resp.status_code}"}
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def _call_deepseek_api(self, prompt):
-        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
-        if not api_key:
-            return {"error": "DeepSeek chưa được cấu hình"}
-        
-        model = os.getenv("DEEPSEEK_MODEL") or "deepseek/deepseek-chat-v3-0324"
+    def _call_openrouter_api(self, api_key, model, prompt):
         try:
             resp = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
@@ -625,6 +594,6 @@ Trả về JSON thuần (KHÔNG có markdown):
                 text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                 if text and text.strip():
                     return {"text": text.strip(), "model": model}
-            return {"error": f"DeepSeek error {resp.status_code}"}
+            return {"error": f"OpenRouter error {resp.status_code}"}
         except Exception as e:
             return {"error": str(e)}

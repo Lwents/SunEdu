@@ -1,25 +1,32 @@
 <template>
   <div class="ai-practice">
     <!-- Header với phân tích -->
-    <div v-if="analysis" class="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+    <div
+      v-if="analysis"
+      :class="isDark ? 'bg-gradient-to-r from-slate-900/60 to-purple-900/30 border border-white/5' : 'bg-gradient-to-r from-purple-50 to-pink-50'"
+      class="mb-6 rounded-xl p-4"
+    >
       <div class="flex items-start gap-3">
         <div class="text-3xl">🎯</div>
         <div class="flex-1">
-          <h3 class="font-bold text-purple-800 mb-1">AI phân tích</h3>
-          <p class="text-sm text-gray-600">{{ analysis.encouragement }}</p>
+          <h3 :class="isDark ? 'text-purple-200' : 'text-purple-800'" class="mb-1 font-bold">AI phân tích</h3>
+          <p :class="isDark ? 'text-slate-300' : 'text-gray-600'" class="text-sm">{{ analysis.encouragement }}</p>
           
           <!-- Điểm yếu cần cải thiện -->
           <div v-if="analysis.weaknesses?.length" class="mt-3">
-            <p class="text-xs font-medium text-purple-600 mb-2">📚 Cần luyện tập thêm:</p>
+            <p :class="isDark ? 'text-purple-300' : 'text-purple-600'" class="mb-2 text-xs font-medium">📚 Cần luyện tập thêm:</p>
             <div class="flex flex-wrap gap-2">
               <span 
                 v-for="(w, i) in analysis.weaknesses.slice(0, 3)" 
                 :key="i"
                 class="px-2 py-1 text-xs rounded-full"
                 :class="{
-                  'bg-red-100 text-red-700': w.severity === 'high',
-                  'bg-yellow-100 text-yellow-700': w.severity === 'medium',
-                  'bg-blue-100 text-blue-700': w.severity === 'low' || !w.severity
+                  'bg-red-100 text-red-700': w.severity === 'high' && !isDark,
+                  'bg-red-500/20 text-red-200': w.severity === 'high' && isDark,
+                  'bg-yellow-100 text-yellow-700': w.severity === 'medium' && !isDark,
+                  'bg-yellow-500/20 text-yellow-200': w.severity === 'medium' && isDark,
+                  'bg-blue-100 text-blue-700': (w.severity === 'low' || !w.severity) && !isDark,
+                  'bg-blue-500/20 text-blue-200': (w.severity === 'low' || !w.severity) && isDark
                 }"
               >
                 {{ w.topic }}
@@ -29,7 +36,9 @@
           
           <!-- Điểm mạnh -->
           <div v-if="analysis.strengths?.length" class="mt-2">
-            <p class="text-xs font-medium text-green-600">✨ Điểm mạnh: {{ analysis.strengths.join(', ') }}</p>
+            <p :class="isDark ? 'text-emerald-300' : 'text-green-600'" class="text-xs font-medium">
+              ✨ Điểm mạnh: {{ analysis.strengths.join(', ') }}
+            </p>
           </div>
         </div>
       </div>
@@ -38,8 +47,8 @@
     <!-- Nút tạo bài luyện tập -->
     <div v-if="!exercises.length && !loading" class="text-center py-8">
       <div class="text-6xl mb-4">📝</div>
-      <h3 class="text-lg font-bold text-gray-800 mb-2">Bài luyện tập hôm nay</h3>
-      <p class="text-sm text-gray-500 mb-4">
+      <h3 :class="isDark ? 'text-slate-100' : 'text-gray-800'" class="mb-2 text-lg font-bold">Bài luyện tập hôm nay</h3>
+      <p :class="isDark ? 'text-slate-400' : 'text-gray-500'" class="mb-4 text-sm">
         AI sẽ tạo bài tập phù hợp với bạn!
       </p>
       <button
@@ -61,46 +70,52 @@
     <!-- Loading -->
     <div v-if="loading" class="text-center py-8">
       <div class="animate-bounce text-5xl mb-4">🌟</div>
-      <p class="text-gray-500">Đang phân tích kết quả học tập...</p>
+      <p :class="isDark ? 'text-slate-400' : 'text-gray-500'">Đang phân tích kết quả học tập...</p>
     </div>
 
     <!-- Bài tập -->
     <div v-if="exercises.length && !completed" class="space-y-4">
       <!-- Progress -->
       <div class="flex items-center justify-between mb-4">
-        <span class="text-sm font-medium text-gray-600">
+        <span :class="isDark ? 'text-slate-300' : 'text-gray-600'" class="text-sm font-medium">
           Câu {{ currentIndex + 1 }}/{{ exercises.length }}
         </span>
-        <div class="flex-1 mx-4 h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div :class="isDark ? 'bg-slate-800' : 'bg-gray-200'" class="mx-4 h-2 flex-1 rounded-full overflow-hidden">
           <div 
             class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
             :style="{ width: `${((currentIndex) / exercises.length) * 100}%` }"
           ></div>
         </div>
-        <span class="text-sm font-medium text-purple-600">
+        <span :class="isDark ? 'text-purple-300' : 'text-purple-600'" class="text-sm font-medium">
           {{ correctCount }}/{{ currentIndex }} đúng
         </span>
       </div>
 
       <!-- Current Question -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div
+        :class="isDark ? 'bg-slate-900/80 border-white/10 text-slate-100' : 'bg-white border-gray-100 text-gray-800'"
+        class="rounded-xl border p-6 shadow-sm"
+      >
         <div class="flex items-start gap-3 mb-4">
           <span 
             class="px-2 py-1 text-xs rounded-full"
             :class="{
-              'bg-green-100 text-green-700': currentExercise.difficulty === 'easy',
-              'bg-yellow-100 text-yellow-700': currentExercise.difficulty === 'medium',
-              'bg-red-100 text-red-700': currentExercise.difficulty === 'hard'
+              'bg-green-100 text-green-700': currentExercise.difficulty === 'easy' && !isDark,
+              'bg-green-500/20 text-green-200': currentExercise.difficulty === 'easy' && isDark,
+              'bg-yellow-100 text-yellow-700': currentExercise.difficulty === 'medium' && !isDark,
+              'bg-yellow-500/20 text-yellow-200': currentExercise.difficulty === 'medium' && isDark,
+              'bg-red-100 text-red-700': currentExercise.difficulty === 'hard' && !isDark,
+              'bg-red-500/20 text-red-200': currentExercise.difficulty === 'hard' && isDark
             }"
           >
             {{ difficultyLabel }}
           </span>
-          <span class="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">
+          <span :class="isDark ? 'bg-purple-500/20 text-purple-200' : 'bg-purple-100 text-purple-700'" class="rounded-full px-2 py-1 text-xs">
             {{ currentExercise.topic }}
           </span>
         </div>
 
-        <h3 class="text-lg font-medium text-gray-800 mb-6">
+        <h3 :class="isDark ? 'text-slate-100' : 'text-gray-800'" class="mb-6 text-lg font-medium">
           {{ currentExercise.question }}
         </h3>
 
@@ -119,14 +134,27 @@
         </div>
 
         <!-- Explanation (after answer) -->
-        <div v-if="answered" class="mt-6 p-4 rounded-xl" :class="isCorrect ? 'bg-green-50' : 'bg-red-50'">
+        <div
+          v-if="answered"
+          :class="[
+            'mt-6 rounded-xl p-4',
+            isCorrect
+              ? (isDark ? 'bg-green-500/10' : 'bg-green-50')
+              : (isDark ? 'bg-rose-500/10' : 'bg-red-50')
+          ]"
+        >
           <div class="flex items-start gap-3">
             <span class="text-2xl">{{ isCorrect ? '🎉' : '💡' }}</span>
             <div>
-              <p class="font-medium" :class="isCorrect ? 'text-green-700' : 'text-red-700'">
+              <p
+                :class="isCorrect ? (isDark ? 'text-emerald-200' : 'text-green-700') : (isDark ? 'text-rose-200' : 'text-red-700')"
+                class="font-medium"
+              >
                 {{ isCorrect ? 'Đúng rồi! Giỏi quá!' : 'Chưa đúng rồi!' }}
               </p>
-              <p class="text-sm text-gray-600 mt-1">{{ currentExercise.explanation }}</p>
+              <p :class="isDark ? 'text-slate-300' : 'text-gray-600'" class="mt-1 text-sm">
+                {{ currentExercise.explanation }}
+              </p>
             </div>
           </div>
         </div>
@@ -146,28 +174,30 @@
     <!-- Completed -->
     <div v-if="completed" class="text-center py-8">
       <div class="text-6xl mb-4">{{ score >= 80 ? '🏆' : score >= 50 ? '⭐' : '💪' }}</div>
-      <h3 class="text-2xl font-bold text-gray-800 mb-2">Hoàn thành!</h3>
-      <p class="text-4xl font-bold text-purple-600 mb-4">{{ score }}%</p>
-      <p class="text-gray-600 mb-6">
+      <h3 :class="isDark ? 'text-slate-100' : 'text-gray-800'" class="mb-2 text-2xl font-bold">Hoàn thành!</h3>
+      <p :class="isDark ? 'text-purple-300' : 'text-purple-600'" class="mb-4 text-4xl font-bold">{{ score }}%</p>
+      <p :class="isDark ? 'text-slate-300' : 'text-gray-600'" class="mb-6">
         Con đã trả lời đúng {{ correctCount }}/{{ exercises.length }} câu
       </p>
       
       <div class="flex justify-center gap-3 flex-wrap">
         <button
           @click="resetPractice"
-          class="px-6 py-2 bg-gray-100 text-gray-700 rounded-full font-medium hover:bg-gray-200 transition-colors"
+          :class="isDark ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+          class="rounded-full px-6 py-2 font-medium transition-colors"
         >
           🔄 Làm lại
         </button>
         <button
           @click="generateExercises"
-          class="px-6 py-2 bg-purple-500 text-white rounded-full font-medium hover:bg-purple-600 transition-colors"
+          class="rounded-full bg-purple-500 px-6 py-2 font-medium text-white transition-colors hover:bg-purple-600"
         >
           📝 Bài mới
         </button>
         <button
           @click="exitPractice"
-          class="px-6 py-2 bg-white border border-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors"
+          :class="isDark ? 'bg-slate-900 border-white/10 text-slate-200 hover:bg-slate-800' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
+          class="rounded-full border px-6 py-2 font-medium transition-colors"
         >
           ✖ Đóng
         </button>
@@ -180,6 +210,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { aiTutorService, type PracticeExercise, type Weakness } from '@/services/ai-tutor.service'
+import { useThemeStore } from '@/store/theme.store'
 
 const props = defineProps<{
   autoLoad?: boolean
@@ -190,6 +221,9 @@ const emit = defineEmits<{
   (e: 'exercise-answered', correct: boolean): void
   (e: 'exit'): void
 }>()
+
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 
 // State
 const loading = ref(false)
@@ -456,9 +490,16 @@ function clearProgress() {
 }
 
 function getChoiceClass(choice: string) {
+  const dark = isDark.value
+
   if (!answered.value) {
-    return selectedAnswer.value === choice
-      ? 'border-purple-500 bg-purple-50'
+    if (selectedAnswer.value === choice) {
+      return dark
+        ? 'border-purple-400 bg-purple-500/10 text-slate-100'
+        : 'border-purple-500 bg-purple-50'
+    }
+    return dark
+      ? 'border-white/10 bg-slate-900/60 text-slate-100 hover:border-purple-400 hover:bg-purple-500/10'
       : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
   }
   
@@ -466,14 +507,20 @@ function getChoiceClass(choice: string) {
   const correctLetter = currentExercise.value.correct_answer.charAt(0).toUpperCase()
   
   if (choiceLetter === correctLetter) {
-    return 'border-green-500 bg-green-50'
+    return dark
+      ? 'border-green-400 bg-green-500/10 text-emerald-100'
+      : 'border-green-500 bg-green-50'
   }
   
   if (selectedAnswer.value === choice) {
-    return 'border-red-500 bg-red-50'
+    return dark
+      ? 'border-rose-400 bg-rose-500/10 text-rose-100'
+      : 'border-red-500 bg-red-50'
   }
   
-  return 'border-gray-200 opacity-50'
+  return dark
+    ? 'border-white/10 bg-slate-900/40 text-slate-400'
+    : 'border-gray-200 opacity-50'
 }
 
 // Lifecycle

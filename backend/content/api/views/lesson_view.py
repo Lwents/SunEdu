@@ -381,7 +381,7 @@ class LessonTranscribeView(APIView):
             
             if not transcript:
                 return Response(
-                    {"detail": "Không thể tạo transcript. Kiểm tra GEMINI_API_KEY hoặc định dạng video. Đối với YouTube, hệ thống sẽ tự động lấy phụ đề nếu có."},
+                    {"detail": "Không thể tạo transcript. Hiện chỉ hỗ trợ phụ đề YouTube nếu có."},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             

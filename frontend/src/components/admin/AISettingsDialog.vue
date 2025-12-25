@@ -25,21 +25,21 @@
         <el-switch v-model="settings.aiEnabled" />
       </div>
 
-      <!-- Gemini API Key -->
+      <!-- OpenRouter API Key -->
       <div class="setting-item">
         <div class="setting-label">
-          <span class="label-text">GEMINI_API_KEY</span>
-          <span class="label-desc">API key cho Google Gemini</span>
+          <span class="label-text">OPENROUTER_API_KEY</span>
+          <span class="label-desc">API key cho OpenRouter</span>
         </div>
         <el-input
-          v-model="settings.geminiApiKey"
-          :type="showGeminiKey ? 'text' : 'password'"
+          v-model="settings.openrouterApiKey"
+          :type="showOpenrouterKey ? 'text' : 'password'"
           placeholder="Nhập API key..."
           class="api-key-input"
         >
           <template #suffix>
-            <button class="toggle-visibility" @click="showGeminiKey = !showGeminiKey">
-              <svg v-if="showGeminiKey" class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <button class="toggle-visibility" @click="showOpenrouterKey = !showOpenrouterKey">
+              <svg v-if="showOpenrouterKey" class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
               </svg>
               <svg v-else class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -84,11 +84,9 @@
           <span class="label-desc">Chọn model AI sử dụng</span>
         </div>
         <el-select v-model="settings.defaultModel" placeholder="Chọn model" class="model-select">
-          <el-option label="Gemini 2.5 Flash" value="gemini-2.5-flash" />
-          <el-option label="Gemini 2.0 Flash" value="gemini-2.0-flash" />
-          <el-option label="Gemini 1.5 Pro" value="gemini-1.5-pro" />
-          <el-option label="DeepSeek V3" value="deepseek-v3" />
-          <el-option label="DeepSeek Chat" value="deepseek-chat" />
+          <el-option label="GPT-4o" value="openai/gpt-4o" />
+          <el-option label="GPT-4o Mini" value="openai/gpt-4o-mini" />
+          <el-option label="DeepSeek Chat V3" value="deepseek/deepseek-chat-v3-0324" />
         </el-select>
       </div>
     </div>
@@ -117,14 +115,14 @@ const emit = defineEmits<{
 }>()
 
 const saving = ref(false)
-const showGeminiKey = ref(false)
+const showOpenrouterKey = ref(false)
 const showDeepseekKey = ref(false)
 
 const settings = reactive({
   aiEnabled: false,
-  geminiApiKey: '',
+  openrouterApiKey: '',
   deepseekApiKey: '',
-  defaultModel: 'gemini-2.5-flash'
+  defaultModel: 'openai/gpt-4o'
 })
 
 // Load settings from localStorage when dialog opens
@@ -140,9 +138,9 @@ function loadSettings() {
     if (saved) {
       const parsed = JSON.parse(saved)
       settings.aiEnabled = parsed.aiEnabled ?? false
-      settings.geminiApiKey = parsed.geminiApiKey ?? ''
+      settings.openrouterApiKey = parsed.openrouterApiKey ?? ''
       settings.deepseekApiKey = parsed.deepseekApiKey ?? ''
-      settings.defaultModel = parsed.defaultModel ?? 'gemini-2.5-flash'
+      settings.defaultModel = parsed.defaultModel ?? 'openai/gpt-4o'
     }
   } catch (e) {
     console.error('Failed to load AI settings:', e)
@@ -155,7 +153,7 @@ async function saveSettings() {
     // Save to localStorage
     localStorage.setItem('ai_settings', JSON.stringify({
       aiEnabled: settings.aiEnabled,
-      geminiApiKey: settings.geminiApiKey,
+      openrouterApiKey: settings.openrouterApiKey,
       deepseekApiKey: settings.deepseekApiKey,
       defaultModel: settings.defaultModel
     }))

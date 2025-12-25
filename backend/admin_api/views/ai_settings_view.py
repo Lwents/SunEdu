@@ -17,8 +17,9 @@ class AdminAISettingsView(APIView):
 
     def get(self, request):
         """Get current AI settings (keys are masked)"""
-        gemini_key = os.getenv("GEMINI_API_KEY", "")
+        openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
         deepseek_key = os.getenv("DEEPSEEK_API_KEY", "")
+        default_model = os.getenv("OPENROUTER_MODEL") or os.getenv("DEEPSEEK_MODEL") or "openai/gpt-4o"
         
         # Get from database if available
         try:
@@ -27,26 +28,26 @@ class AdminAISettingsView(APIView):
             if cached:
                 return Response({
                     "enabled": cached.get("enabled", True),
-                    "gemini_key": self._mask_key(cached.get("gemini_key", gemini_key)),
+                    "openrouter_key": self._mask_key(cached.get("openrouter_key", openrouter_key)),
                     "deepseek_key": self._mask_key(cached.get("deepseek_key", deepseek_key)),
-                    "default_model": cached.get("default_model", "gemini-2.5-flash")
+                    "default_model": cached.get("default_model", default_model)
                 })
         except Exception:
             pass
         
         return Response({
             "enabled": True,
-            "gemini_key": self._mask_key(gemini_key),
+            "openrouter_key": self._mask_key(openrouter_key),
             "deepseek_key": self._mask_key(deepseek_key),
-            "default_model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+            "default_model": default_model
         })
 
     def post(self, request):
         """Update AI settings"""
         enabled = request.data.get("enabled", True)
-        gemini_key = request.data.get("gemini_key", "")
+        openrouter_key = request.data.get("openrouter_key", "")
         deepseek_key = request.data.get("deepseek_key", "")
-        default_model = request.data.get("default_model", "gemini-2.5-flash")
+        default_model = request.data.get("default_model", "openai/gpt-4o")
         
         # Store in cache (or database in production)
         try:
@@ -55,10 +56,10 @@ class AdminAISettingsView(APIView):
             # Don't overwrite if masked key is sent
             current = cache.get("ai_settings") or {}
             
-            if gemini_key and not gemini_key.startswith("***"):
-                current["gemini_key"] = gemini_key
+            if openrouter_key and not openrouter_key.startswith("***"):
+                current["openrouter_key"] = openrouter_key
                 # Also set environment variable for current process
-                os.environ["GEMINI_API_KEY"] = gemini_key
+                os.environ["OPENROUTER_API_KEY"] = openrouter_key
             
             if deepseek_key and not deepseek_key.startswith("***"):
                 current["deepseek_key"] = deepseek_key
@@ -68,7 +69,7 @@ class AdminAISettingsView(APIView):
             current["default_model"] = default_model
             
             if default_model:
-                os.environ["GEMINI_MODEL"] = default_model
+                os.environ["OPENROUTER_MODEL"] = default_model
             
             cache.set("ai_settings", current, timeout=None)  # Never expire
             

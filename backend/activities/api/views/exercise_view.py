@@ -1,5 +1,4 @@
 from typing import Any, Dict
-from django.conf import settings
 from django.http import HttpResponse
 from rest_framework import status, permissions, generics
 from rest_framework.views import APIView
@@ -212,22 +211,22 @@ class GenerateQuestionsAIView(APIView):
     """
     POST /api/activities/ai/generate-questions/
     Body: {title, level, description, count, hint, model}
-    Calls Gemini from backend using GEMINI_API_KEY env.
+    Calls OpenRouter from backend using OPENROUTER_API_KEY env.
     """
     permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
 
     def post(self, request: Request):
-        # Ưu tiên ENV, fallback về settings; không nhúng khóa mặc định
-        api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", "")
-        if not api_key:
-            return Response({"detail": "Missing GEMINI_API_KEY on server"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
         title = request.data.get("title", "")
         level = request.data.get("level", "")
         description = request.data.get("description", "")
         count = int(request.data.get("count") or 5)
         hint = request.data.get("hint", "")
-        model = request.data.get("model") or os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
+        model = (
+            request.data.get("model")
+            or os.getenv("OPENROUTER_MODEL")
+            or os.getenv("DEEPSEEK_MODEL")
+            or "openai/gpt-4o"
+        )
 
         count = max(1, min(count, 10))
 
@@ -249,108 +248,58 @@ class GenerateQuestionsAIView(APIView):
             "}\n"
         )
 
-        # Gọi Gemini API trước (ổn định hơn), fallback sang DeepSeek nếu lỗi
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-        
-        try:
-            resp = requests.post(
-                url,
-                json={
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"maxOutputTokens": 2048},
-                },
-                timeout=60,
-            )
-            
-            if resp.status_code == 200:
-                data = resp.json()
-                text = ""
-                try:
-                    text = data.get("candidates", [])[0].get("content", {}).get("parts", [])[0].get("text", "")
-                except Exception:
-                    text = ""
-                if text and text.strip():
-                    return Response({"model": model, "text": text, "raw": data})
-                return Response({"detail": "AI không trả về kết quả"}, status=status.HTTP_502_BAD_GATEWAY)
-            
-            if resp.status_code == 429:
-                # Gemini quá tải -> fallback sang DeepSeek
-                deepseek_result = self._call_deepseek_api(prompt)
-                if deepseek_result.get("success"):
-                    return Response({
-                        "model": deepseek_result.get("model", "deepseek"),
-                        "text": deepseek_result.get("text", ""),
-                        "raw": deepseek_result.get("raw", {}),
-                    })
-                return Response({"detail": "AI đang quá tải. Vui lòng thử lại sau."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
-            
-            # Gemini lỗi khác -> fallback sang DeepSeek
-            deepseek_result = self._call_deepseek_api(prompt)
-            if deepseek_result.get("success"):
-                return Response({
-                    "model": deepseek_result.get("model", "deepseek"),
-                    "text": deepseek_result.get("text", ""),
-                    "raw": deepseek_result.get("raw", {}),
-                })
-            return Response({"detail": f"AI trả về lỗi {resp.status_code}", "raw": resp.text}, status=resp.status_code)
-            
-        except Exception as e:
-            # Gemini lỗi kết nối -> fallback sang DeepSeek
-            deepseek_result = self._call_deepseek_api(prompt)
-            if deepseek_result.get("success"):
-                return Response({
-                    "model": deepseek_result.get("model", "deepseek"),
-                    "text": deepseek_result.get("text", ""),
-                    "raw": deepseek_result.get("raw", {}),
-                })
-            return Response({"detail": f"Lỗi kết nối AI: {str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+        ai_result = self._call_openrouter_api(prompt, model=model)
+        if ai_result.get("error"):
+            return Response({"detail": ai_result["error"]}, status=status.HTTP_502_BAD_GATEWAY)
+
+        return Response({
+            "model": ai_result.get("model", model),
+            "text": ai_result.get("text", ""),
+            "raw": ai_result.get("raw", {}),
+        })
     
-    def _call_deepseek_api(self, prompt):
-        """Gọi DeepSeek API (OpenRouter) làm fallback khi Gemini quá tải"""
-        # DeepSeek API key qua OpenRouter
-        deepseek_api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
-        if not deepseek_api_key:
-            return {"error": "DeepSeek API chưa được cấu hình"}
-        
-        deepseek_model = os.getenv("DEEPSEEK_MODEL") or "deepseek/deepseek-chat-v3-0324"
-        
+    def _call_openrouter_api(self, prompt, model):
+        """Gọi OpenRouter API để tạo câu hỏi"""
+        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            return {"error": "OpenRouter API chưa được cấu hình"}
+
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {deepseek_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://sunedu.local",
             "X-Title": "SunEdu AI Question Generator",
         }
-        
+
         try:
             resp = requests.post(
                 url,
                 headers=headers,
                 json={
-                    "model": deepseek_model,
+                    "model": model,
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 2048,
                 },
                 timeout=60,
             )
-            
+
             if resp.status_code == 200:
                 data = resp.json()
                 try:
                     text = data.get("choices", [])[0].get("message", {}).get("content", "")
                     if text and text.strip():
-                        return {"success": True, "text": text.strip(), "model": deepseek_model, "raw": data}
-                    return {"error": "DeepSeek trả về nội dung rỗng"}
+                        return {"text": text.strip(), "model": model, "raw": data}
+                    return {"error": "OpenRouter trả về nội dung rỗng"}
                 except (IndexError, KeyError, TypeError) as e:
-                    return {"error": f"Lỗi parse DeepSeek: {str(e)}"}
-            
-            # Xử lý lỗi
+                    return {"error": f"Lỗi parse OpenRouter: {str(e)}"}
+
             try:
                 error_data = resp.json()
                 error_msg = error_data.get("error", {}).get("message", f"Lỗi {resp.status_code}")
-            except:
-                error_msg = f"Lỗi DeepSeek API {resp.status_code}"
+            except Exception:
+                error_msg = f"Lỗi OpenRouter API {resp.status_code}"
             return {"error": error_msg}
-            
+
         except Exception as e:
-            return {"error": f"Lỗi kết nối DeepSeek: {str(e)}"}
+            return {"error": f"Lỗi kết nối OpenRouter: {str(e)}"}

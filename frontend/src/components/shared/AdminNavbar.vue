@@ -77,18 +77,18 @@
               <el-switch v-model="aiSettings.enabled" size="large" />
             </div>
 
-            <!-- Gemini API Key -->
+            <!-- OpenRouter API Key -->
             <div class="setting-item vertical">
-              <label class="setting-title">GEMINI_API_KEY</label>
+              <label class="setting-title">OPENROUTER_API_KEY</label>
               <div class="key-input">
                 <el-input
-                  v-model="aiSettings.geminiKey"
-                  :type="showGeminiKey ? 'text' : 'password'"
+                  v-model="aiSettings.openrouterKey"
+                  :type="showOpenrouterKey ? 'text' : 'password'"
                   placeholder="Nhập key mới hoặc để trống giữ nguyên..."
-                  @focus="onKeyFocus('gemini')"
+                  @focus="onKeyFocus('openrouter')"
                 />
-                <el-button @click="showGeminiKey = !showGeminiKey">
-                  {{ showGeminiKey ? '🙈' : '👁️' }}
+                <el-button @click="showOpenrouterKey = !showOpenrouterKey">
+                  {{ showOpenrouterKey ? '🙈' : '👁️' }}
                 </el-button>
               </div>
               <p class="setting-hint">Nhập key mới để thay đổi, hoặc để trống để giữ nguyên</p>
@@ -115,10 +115,9 @@
             <div class="setting-item vertical">
               <label class="setting-title">Model mặc định</label>
               <el-select v-model="aiSettings.defaultModel" class="w-full">
-                <el-option value="gemini-2.5-flash" label="Gemini 2.5 Flash" />
-                <el-option value="gemini-2.0-flash" label="Gemini 2.0 Flash" />
-                <el-option value="gemini-1.5-pro" label="Gemini 1.5 Pro" />
-                <el-option value="deepseek-chat" label="DeepSeek Chat" />
+                <el-option value="openai/gpt-4o" label="GPT-4o" />
+                <el-option value="openai/gpt-4o-mini" label="GPT-4o Mini" />
+                <el-option value="deepseek/deepseek-chat-v3-0324" label="DeepSeek Chat V3" />
               </el-select>
             </div>
 
@@ -186,15 +185,15 @@ const showConfirm = ref(false)
 // Secret AI Settings
 const showSecretPopup = ref(false)
 const savingAI = ref(false)
-const showGeminiKey = ref(false)
+const showOpenrouterKey = ref(false)
 const showDeepseekKey = ref(false)
 let secretHoldTimer: ReturnType<typeof setTimeout> | null = null
 
 const aiSettings = reactive({
   enabled: true,
-  geminiKey: '',
+  openrouterKey: '',
   deepseekKey: '',
-  defaultModel: 'gemini-2.5-flash'
+  defaultModel: 'openai/gpt-4o'
 })
 
 function startSecretHold() {
@@ -215,17 +214,17 @@ async function loadAISettings() {
   try {
     const { data } = await http.get('/admin/system/ai-settings/')
     aiSettings.enabled = data.enabled ?? true
-    aiSettings.geminiKey = data.gemini_key || ''
+    aiSettings.openrouterKey = data.openrouter_key || ''
     aiSettings.deepseekKey = data.deepseek_key || ''
-    aiSettings.defaultModel = data.default_model || 'gemini-2.5-flash'
+    aiSettings.defaultModel = data.default_model || 'openai/gpt-4o'
   } catch {
     // Ignore
   }
 }
 
-function onKeyFocus(type: 'gemini' | 'deepseek') {
-  if (type === 'gemini' && aiSettings.geminiKey.includes('***')) {
-    aiSettings.geminiKey = ''
+function onKeyFocus(type: 'openrouter' | 'deepseek') {
+  if (type === 'openrouter' && aiSettings.openrouterKey.includes('***')) {
+    aiSettings.openrouterKey = ''
   }
   if (type === 'deepseek' && aiSettings.deepseekKey.includes('***')) {
     aiSettings.deepseekKey = ''
@@ -237,7 +236,7 @@ async function saveAISettings() {
   try {
     await http.post('/admin/system/ai-settings/', {
       enabled: aiSettings.enabled,
-      gemini_key: aiSettings.geminiKey,
+      openrouter_key: aiSettings.openrouterKey,
       deepseek_key: aiSettings.deepseekKey,
       default_model: aiSettings.defaultModel
     })

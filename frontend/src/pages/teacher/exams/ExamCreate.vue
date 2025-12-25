@@ -768,7 +768,7 @@ async function generateQuestionsWithAI() {
       count,
       hint: aiHint.value,
       question_type: aiType.value === 'auto' ? undefined : aiType.value,
-      model: import.meta.env.VITE_GEMINI_MODEL,
+      model: import.meta.env.VITE_OPENROUTER_MODEL || import.meta.env.VITE_DEEPSEEK_MODEL,
     })
     const text = data?.text || ''
     const parsed = parseAIResponse(text)
@@ -803,9 +803,22 @@ function parseAIResponse(raw: string): Question[] {
   if (!raw) return []
   let jsonText = raw.trim()
   // Nếu có code block, lấy nội dung bên trong
-  const match = jsonText.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/)
+  const match = jsonText.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
   if (match && match[1]) {
     jsonText = match[1]
+  } else {
+    const objStart = jsonText.indexOf('{')
+    const objEnd = jsonText.lastIndexOf('}')
+    const arrStart = jsonText.indexOf('[')
+    const arrEnd = jsonText.lastIndexOf(']')
+    const hasObj = objStart !== -1 && objEnd > objStart
+    const hasArr = arrStart !== -1 && arrEnd > arrStart
+    if (hasObj || hasArr) {
+      const pickObj = hasObj && (!hasArr || objStart < arrStart)
+      jsonText = pickObj
+        ? jsonText.slice(objStart, objEnd + 1)
+        : jsonText.slice(arrStart, arrEnd + 1)
+    }
   }
   try {
     const obj = JSON.parse(jsonText)
@@ -823,13 +836,23 @@ function normalizeAIQuestion(item: any, idx: number): Question | null {
   const id = makeId(`aiq${idx}`)
   const type = (item.type || 'single') as QType
   const score = Number(item.score) || 1
-  const text = String(item.text || '').trim()
+  const text = String(item.text || item.question || item.prompt || '').trim()
   if (!text) return null
 
   if (type === 'single' || type === 'multi') {
-    const choices = (item.choices || []).map((c: any, i: number) => ({ id: `c${i + 1}`, text: String(c || '') }))
-    const correctIdx = Array.isArray(item.correct_indices) ? item.correct_indices : [item.correct_index ?? 0]
-    const answer = correctIdx.filter((n: any) => Number.isInteger(n) && choices[n]) .map((n: number) => choices[n].id)
+    const rawChoices = Array.isArray(item.choices)
+      ? item.choices
+      : Array.isArray(item.options)
+      ? item.options
+      : item.choices && typeof item.choices === 'object'
+      ? Object.values(item.choices)
+      : []
+    const choices = rawChoices.map((c: any, i: number) => ({
+      id: `c${i + 1}`,
+      text: String(c?.text ?? c?.label ?? c?.value ?? c ?? '').trim(),
+    }))
+    const correctIdx = resolveCorrectIndices(item, choices)
+    const answer = correctIdx.filter((n) => Number.isInteger(n) && choices[n]) .map((n: number) => choices[n].id)
     if (choices.length < 2 || answer.length === 0) return null
     return { id, type, text, score, choices, answer } as Question
   }
@@ -864,6 +887,68 @@ function normalizeAIQuestion(item: any, idx: number): Question | null {
   }
 
   return null
+}
+
+function resolveCorrectIndices(item: any, choices: { id: string; text: string }[]): number[] {
+  const indices: number[] = []
+  const rawList = Array.isArray(item.correct_indices)
+    ? item.correct_indices
+    : Array.isArray(item.answers)
+    ? item.answers
+    : item.correct_indices !== undefined
+    ? [item.correct_indices]
+    : item.correct_index !== undefined
+    ? [item.correct_index]
+    : item.correctIndex !== undefined
+    ? [item.correctIndex]
+    : item.correct_answer !== undefined
+    ? [item.correct_answer]
+    : item.correctAnswer !== undefined
+    ? [item.correctAnswer]
+    : item.answer !== undefined
+    ? [item.answer]
+    : item.correct !== undefined
+    ? [item.correct]
+    : []
+
+  const normalizeChoiceText = (value: string) =>
+    value.replace(/^[A-Da-d]\s*[.\)]\s*/, '').trim().toLowerCase()
+
+  const findIndexByText = (value: string) => {
+    const target = normalizeChoiceText(value)
+    if (!target) return null
+    const idx = choices.findIndex((c) => normalizeChoiceText(c.text) === target)
+    return idx >= 0 ? idx : null
+  }
+
+  const parseIndex = (val: any) => {
+    if (typeof val === 'number' && Number.isInteger(val)) return val
+    if (typeof val === 'string') {
+      const trimmed = val.trim()
+      if (/^\d+$/.test(trimmed)) return Number(trimmed)
+      const letter = trimmed.charAt(0).toUpperCase()
+      if (letter >= 'A' && letter <= 'Z') {
+        return letter.charCodeAt(0) - 65
+      }
+      const byText = findIndexByText(trimmed)
+      if (byText !== null) return byText
+    }
+    return null
+  }
+
+  rawList.forEach((val: unknown) => {
+    if (Array.isArray(val)) {
+      val.forEach((inner: unknown) => {
+        const idx = parseIndex(inner)
+        if (idx !== null) indices.push(idx)
+      })
+    } else {
+      const idx = parseIndex(val)
+      if (idx !== null) indices.push(idx)
+    }
+  })
+
+  return Array.from(new Set(indices))
 }
 
 function buildFallbackQuestions(count: number, type: QType): Question[] {
