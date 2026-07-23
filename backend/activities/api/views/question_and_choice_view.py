@@ -44,7 +44,13 @@ class IsTeacherOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
-        return bool(request.user.is_staff or (hasattr(request.user, 'role') and request.user.role in ['teacher', 'admin']))
+        return bool(
+            request.user.is_staff
+            or (
+                hasattr(request.user, 'role')
+                and request.user.role in ['instructor', 'teacher', 'admin']
+            )
+        )
 
 
 # -----------------------
@@ -75,7 +81,7 @@ class QuestionDeleteView(APIView):
     """
     DELETE /api/activities/questions/{question_id}/
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def delete(self, request: Request, question_id: str):
         try:
@@ -106,7 +112,7 @@ class ChoiceDeleteView(APIView):
     """
     DELETE /api/activities/choices/{choice_id}/
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsTeacherOrAdmin]
 
     def delete(self, request: Request, choice_id: str):
         try:

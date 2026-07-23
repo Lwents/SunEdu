@@ -16,7 +16,7 @@ from activities.services import (
     exercise_stats,
 )
 from activities.services import NotFoundError, ValidationError, PermissionDenied
-from content.models import Enrollment
+from content.models import Enrollment, Course
 
 
 class StudentExamsListView(APIView):
@@ -35,9 +35,12 @@ class StudentExamsListView(APIView):
         q = request.query_params.get('q', '').strip()
         
         # Lấy danh sách grade của các khóa học đã mua
-        enrolled_courses = Enrollment.objects.filter(
-            student=student
-        ).select_related('course').values_list('course__grade', flat=True)
+        enrolled_rows = list(
+            Enrollment.objects.filter(student=student)
+            .values_list('course_id', 'course__grade')
+        )
+        enrolled_courses = [grade for _, grade in enrolled_rows]
+        enrolled_course_ids = {course_id for course_id, _ in enrolled_rows}
         
         # Normalize grade: "Lớp 1" -> "1", "1" -> "1"
         def normalize_grade(grade_str):
@@ -62,7 +65,7 @@ class StudentExamsListView(APIView):
         # Chỉ lấy exercise độc lập (không gắn với lesson) hoặc exercise có lesson
         exercises = Exercise.objects.filter(
             published=True
-        ).select_related('lesson__module__course')
+        ).select_related('lesson__module__course', 'settings')
         
         # Loại bỏ exercise gắn với lesson (chỉ giữ exercise độc lập)
         # Vì exercise gắn với lesson sẽ được làm trong lesson, không phải bài kiểm tra độc lập
@@ -71,15 +74,35 @@ class StudentExamsListView(APIView):
         # Apply search filter
         if q:
             exercises = exercises.filter(title__icontains=q)
+
+        exercises = list(exercises)
+        settings_course_ids = {
+            getattr(getattr(exercise, 'settings', None), 'course_id', None)
+            for exercise in exercises
+        }
+        settings_course_ids.discard(None)
+        settings_course_grades = dict(
+            Course.objects.filter(id__in=settings_course_ids).values_list('id', 'grade')
+        )
         
         exams_data = []
         for exercise in exercises:
             # Lấy grade từ exercise.grade field hoặc từ lesson nếu có
             exercise_grade = None
             
-            # Ưu tiên 1: Lấy từ field grade của exercise (nếu có)
-            if exercise.grade:
-                exercise_grade = exercise.grade
+            # Một số database cũ còn cột grade, nhưng model hiện tại có thể không có.
+            # getattr giúp endpoint không 500 trong cả hai trạng thái migration.
+            model_grade = getattr(exercise, 'grade', None)
+            if model_grade:
+                exercise_grade = model_grade
+
+            # Đề độc lập liên kết khóa học qua ExerciseSettings.course_id.
+            settings_obj = getattr(exercise, 'settings', None)
+            settings_course_id = getattr(settings_obj, 'course_id', None) if settings_obj else None
+            if settings_course_id:
+                if settings_course_id not in enrolled_course_ids:
+                    continue
+                exercise_grade = settings_course_grades.get(settings_course_id) or exercise_grade
             
             # Ưu tiên 2: Nếu exercise có lesson, lấy grade từ course
             elif exercise.lesson and exercise.lesson.module and exercise.lesson.module.course:
@@ -101,9 +124,9 @@ class StudentExamsListView(APIView):
             pass_score = 12  # Default
             
             try:
-                if hasattr(exercise, 'settings') and exercise.settings:
-                    duration_sec = exercise.settings.time_limit_seconds or duration_sec
-                    pass_score = exercise.settings.pass_score or pass_score
+                if settings_obj:
+                    duration_sec = settings_obj.time_limit_seconds or duration_sec
+                    pass_score = settings_obj.pass_score or pass_score
             except:
                 pass
             
@@ -189,16 +212,13 @@ class StudentExamDetailView(APIView):
             
             # Get choices
             choices = question.choices.all()
-            correct_answers = []
             for choice in choices:
                 question_data['choices'].append({
                     'id': str(choice.id),
                     'text': choice.text,
                 })
-                if choice.is_correct:
-                    correct_answers.append(str(choice.id))
-            
-            question_data['answer'] = correct_answers
+
+            # Không gửi đáp án đúng trước khi học sinh nộp bài.
             questions_data.append(question_data)
         
         exercise_data['questions'] = questions_data
@@ -512,4 +532,3 @@ class StudentCertificatesView(APIView):
             })
         
         return Response(certificates, status=status.HTTP_200_OK)
-

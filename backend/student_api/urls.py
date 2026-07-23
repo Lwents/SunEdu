@@ -129,6 +129,6 @@ urlpatterns = [
     # Games
     path('games/', StudentGameListView.as_view(), name='game-list'),
     path('games/<uuid:game_id>/', StudentGameDetailView.as_view(), name='game-detail'),
-    path('games/<uuid:game_id>/<str:action>/', StudentGameSessionView.as_view(), name='game-session'),
     path('games/<uuid:game_id>/leaderboard/', StudentGameLeaderboardView.as_view(), name='game-leaderboard'),
+    path('games/<uuid:game_id>/<str:action>/', StudentGameSessionView.as_view(), name='game-session'),
 ]

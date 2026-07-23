@@ -225,24 +225,11 @@ class AILearningAnalyzerView(APIView):
             })
         except Exception as e:
             logger.error(f"AI Learning Analyzer error: {e}")
-            # Trả về response mặc định khi có lỗi
-            return Response({
-                "has_courses": True,
-                "analysis": {
-                    "total_lessons": 0,
-                    "completed_lessons": 0,
-                    "total_exercises": 0,
-                    "completed_exercises": 0,
-                    "overall_progress": 0,
-                    "avg_score": 0,
-                    "course_progress": []
-                },
-                "suggestions": [],
-                "weaknesses": [],
-                "achievements": [],
-                "daily_goal": {"target": 2, "completed": 0, "streak": 0},
-                "ai_message": "Chào con! Hãy bắt đầu học tập nào! 🌟",
-            })
+            # Không giả lập số liệu 0 khi truy vấn thật bị lỗi.
+            return Response(
+                {"detail": "Không thể phân tích dữ liệu học tập lúc này."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
     
     def _analyze_progress(self, user, enrollments):
         """Phân tích tiến độ học tập tổng thể"""
@@ -705,10 +692,26 @@ class AIAssessmentView(APIView):
             course = Course.objects.get(id=course_id)
         except Course.DoesNotExist:
             return Response({"detail": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not Enrollment.objects.filter(student=request.user, course=course).exists():
+            return Response(
+                {"detail": "Bạn chưa đăng ký khóa học này."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         
         # Tạo câu hỏi đánh giá bằng AI
         use_ai = request.data.get('use_ai', True)
         questions = self._generate_assessment_questions(course, use_ai=use_ai)
+
+        if questions is None:
+            return Response(
+                {"detail": "Không thể tạo câu hỏi đánh giá vì AI chưa được cấu hình hoặc đang lỗi."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        if not questions:
+            return Response(
+                {"detail": "Khóa học chưa có nội dung bài học để tạo bài đánh giá."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         
         return Response({
             "course_id": str(course.id),
@@ -836,29 +839,8 @@ CHỈ TRẢ VỀ JSON, KHÔNG GIẢI THÍCH."""
             except Exception as e:
                 logger.error(f"AI assessment generation failed: {e}")
         
-        # Fallback: câu hỏi mặc định (vẫn tạo 10-15 câu)
-        questions = []
-        fallback_templates = [
-            ("Bạn đã biết gì về {title}?", ["Chưa biết gì", "Biết một chút", "Biết khá nhiều", "Đã thành thạo"]),
-            ("Mức độ tự tin của bạn với {title}?", ["Không tự tin", "Hơi tự tin", "Khá tự tin", "Rất tự tin"]),
-            ("Bạn đã từng học về {title} chưa?", ["Chưa bao giờ", "Đã nghe qua", "Đã học sơ", "Đã học kỹ"]),
-        ]
-        
-        for i in range(num_questions):
-            lesson = lesson_data[i % len(lesson_data)]
-            template = fallback_templates[i % len(fallback_templates)]
-            questions.append({
-                "id": i + 1,
-                "type": "single",
-                "text": template[0].format(title=lesson['title']),
-                "choices": template[1],
-                "correct_index": None,  # Không có đáp án đúng cho self-assessment
-                "module": lesson["module"],
-                "lesson_id": lesson["lesson_id"],
-                "ai_generated": False,
-            })
-        
-        return questions
+        # Không tạo bộ câu hỏi tự đánh giá giả khi provider lỗi/chưa cấu hình.
+        return None
 
 
 class AIAssessmentResultView(APIView):
@@ -879,6 +861,11 @@ class AIAssessmentResultView(APIView):
             course = Course.objects.get(id=course_id)
         except Course.DoesNotExist:
             return Response({"detail": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not Enrollment.objects.filter(student=request.user, course=course).exists():
+            return Response(
+                {"detail": "Bạn chưa đăng ký khóa học này."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         
         # Phân tích kết quả với AI
         use_ai = request.data.get('use_ai', True)
@@ -952,6 +939,7 @@ class AIAssessmentResultView(APIView):
         
         # Tạo recommendation bằng AI
         recommendation = ""
+        ai_recommendation = False
         if use_ai:
             try:
                 prompt = f"""Bạn là AI tư vấn học tập cho học sinh tiểu học Việt Nam.
@@ -972,6 +960,7 @@ Chỉ trả về lời khuyên, không giải thích."""
                 result = AIAPIClient.call_ai(prompt, max_tokens=100)
                 if not result.get("error") and result.get("text"):
                     recommendation = result["text"]
+                    ai_recommendation = True
             except Exception as e:
                 logger.error(f"AI recommendation failed: {e}")
         
@@ -999,7 +988,7 @@ Chỉ trả về lời khuyên, không giải thích."""
                 "focus_practice": score_10 >= 7,
                 "challenge_mode": score_10 >= 8.5,
             },
-            "ai_powered": use_ai,
+            "ai_powered": ai_recommendation,
         }
 
 

@@ -232,7 +232,9 @@ class StudentCourseCatalogView(APIView):
         
         courses_data = []
         for course in courses:
-            is_enrolled = str(course.id) in enrolled_course_ids
+            # values_list() trả về UUID, vì vậy phải so sánh UUID với UUID.
+            # So sánh chuỗi với UUID khiến mọi khóa học luôn hiện là chưa đăng ký.
+            is_enrolled = course.id in enrolled_course_ids
             
             courses_data.append({
                 'id': str(course.id),

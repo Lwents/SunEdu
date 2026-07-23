@@ -159,6 +159,7 @@ class ExerciseModelSerializer(serializers.ModelSerializer):
         # Get type from data, or fallback to instance type, or default to 'mcq'
         typ = data.get("type") or (self.instance.type if self.instance else "mcq")
         settings = data.get("settings", {}) or {}
+        questions_supplied = "questions" in self.validated_data
         questions_raw = self.validated_data.get("questions", [])
         q_domains: List[QuestionDomain] = []
         existing_qids = set()
@@ -167,6 +168,16 @@ class ExerciseModelSerializer(serializers.ModelSerializer):
                 existing_qids = {str(qm.id) for qm in self.instance.questions.all()}
             except Exception:
                 existing_qids = set()
+        # A partial update such as {"published": true} must not be interpreted
+        # as "replace all questions with an empty list".  The service performs
+        # an intentional full sync, so retain the existing nested objects when
+        # the questions field was omitted from a PATCH request.
+        if self.instance and not questions_supplied:
+            q_domains = [
+                QuestionDomain.from_model(question)
+                for question in self.instance.questions.prefetch_related("choices").all()
+            ]
+
         for q in questions_raw:
             incoming_qid = q.get("id")
             if incoming_qid and str(incoming_qid) in existing_qids:

@@ -34,7 +34,11 @@ class RegisterView(RoleBasedOutputMixin, APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user_input_dto = UserInput(**serializer.validated_data)
+        public_registration_data = dict(serializer.validated_data)
+        # Đăng ký công khai chỉ được tạo học viên. Giáo viên/quản trị phải do
+        # một admin đã xác thực tạo qua /account/admin/users/.
+        public_registration_data['role'] = 'student'
+        user_input_dto = UserInput(**public_registration_data)
 
         try:
             # call service with domain object

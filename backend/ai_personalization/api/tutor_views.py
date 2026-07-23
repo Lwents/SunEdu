@@ -65,11 +65,18 @@ class AITutorChatView(APIView):
         except Exception as e:
             logger.error(f"AI Tutor chat error: {e}")
             result = {
-                'success': True,
-                'message': f"Xin chào! 🌟 Mình đang học cách trả lời tốt hơn. Bạn hỏi gì vậy?",
-                'provider': 'fallback'
+                'success': False,
+                'error': str(e),
             }
         
+        if not result.get('success'):
+            # Không trả câu trả lời mẫu khi nhà cung cấp AI chưa được cấu hình hoặc lỗi.
+            # Client cần biết đúng trạng thái để không hiểu nhầm dữ liệu fallback là kết quả thật.
+            return Response(
+                {'detail': 'AI Tutor chưa sẵn sàng. Vui lòng cấu hình OPENROUTER_API_KEY.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         if result['success']:
             # Update conversation history
             conversation_history.append({'role': 'user', 'content': message})

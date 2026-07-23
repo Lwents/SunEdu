@@ -22,6 +22,19 @@ from payments.models import Payment, UserSubscription, SubscriptionPlan
 from payments.services.momo_client import MoMoAIOClient
 
 
+def _enroll_paid_courses(payment):
+    """Activate every course attached to a successful payment on the server."""
+    from content.models import Course, Enrollment
+
+    metadata = payment.metadata if isinstance(payment.metadata, dict) else {}
+    raw_ids = metadata.get("course_ids") or []
+    course_ids = [str(value).strip() for value in raw_ids if str(value).strip()]
+    if not course_ids:
+        return
+    for course in Course.objects.filter(id__in=course_ids, published=True):
+        Enrollment.objects.get_or_create(student=payment.user, course=course)
+
+
 class MoMoPaymentInitView(APIView):
     """Khởi tạo giao dịch MoMo từ FE."""
 
@@ -73,6 +86,9 @@ class MoMoPaymentInitView(APIView):
         try:
             client = MoMoAIOClient()
         except ValueError as config_error:
+            payment.status = "failed"
+            payment.metadata = {**payment.metadata, "error": str(config_error)}
+            payment.save(update_fields=["status", "metadata"])
             return Response(
                 {
                     "detail": "MoMo payment gateway is not properly configured. Please contact administrator.",
@@ -172,6 +188,7 @@ class MoMoIPNView(APIView):
                 payment.transaction_id = data.get("transId")
                 payment.paid_at = payment.paid_at or timezone.now()
                 payment.save(update_fields=["status", "transaction_id", "paid_at", "metadata"])
+                _enroll_paid_courses(payment)
 
                 if payment.plan:
                     subscription, created = UserSubscription.objects.get_or_create(
@@ -292,6 +309,7 @@ class MoMoSyncPaymentView(APIView):
                     if not payment.paid_at:
                         payment.paid_at = timezone.now()
                     payment.save(update_fields=["status", "transaction_id", "paid_at", "metadata"])
+                    _enroll_paid_courses(payment)
 
                     # Tạo/cập nhật subscription nếu có plan (giống MoMoIPNView)
                     if payment.plan:

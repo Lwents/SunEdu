@@ -103,8 +103,9 @@ class AdminTransactionDetailView(APIView):
             return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
 
         gateway_name = tx.metadata.get('gateway', 'N/A') if tx.metadata else 'N/A'
-        fees = float(tx.amount) * 0.03  # Placeholder - calculate actual fees
-        net = float(tx.amount) - fees
+        # Gateway fee chưa được lưu trong Payment; trả 0 thay vì bịa tỷ lệ 3%.
+        fees = 0.0
+        net = float(tx.amount) if tx.status == 'paid' else 0.0
 
         meta = tx.metadata or {}
         course_ids = meta.get('course_ids') or []
@@ -173,13 +174,12 @@ class AdminTransactionMetricsView(APIView):
         if to_date:
             queryset = queryset.filter(created_at__lte=to_date)
 
-        total_amount = queryset.aggregate(total=Sum('amount'))['total'] or 0
+        total_amount = queryset.filter(status__in=['paid', 'refunded']).aggregate(total=Sum('amount'))['total'] or 0
         count = queryset.count()
         refunds_queryset = queryset.filter(status='refunded')
         refunds = refunds_queryset.aggregate(total=Sum('amount'))['total'] or 0
-        fees = float(total_amount) * 0.03  # Placeholder
-        net = float(total_amount) - fees - float(refunds)
-        disputed = refunds_queryset.count()  # Placeholder
+        net = float(total_amount) - float(refunds)
+        disputed = queryset.filter(metadata__disputed=True).count()
 
         return Response({
             'count': count,
@@ -290,6 +290,4 @@ class AdminTransactionExportView(APIView):
             ])
 
         return response
-
-
 

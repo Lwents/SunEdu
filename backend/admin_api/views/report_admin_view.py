@@ -62,16 +62,15 @@ class AdminRevenueReportView(APIView):
             elif granularity == 'month':
                 next_date = (current.replace(day=28) + timedelta(days=4)).replace(day=1)
 
-            payments = Payment.objects.filter(
+            period_payments = Payment.objects.filter(
                 created_at__date__gte=current,
                 created_at__date__lt=next_date,
-                status='paid'
             )
 
-            gross = payments.aggregate(total=Sum('amount'))['total'] or Decimal('0')
-            refunds = payments.filter(status='refunded').aggregate(total=Sum('amount'))['total'] or Decimal('0')
-            fees = gross * Decimal('0.03')  # Placeholder phí 3%
-            net = gross - fees - refunds
+            gross = period_payments.filter(status__in=['paid', 'refunded']).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            refunds = period_payments.filter(status='refunded').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            # Chưa lưu phí thực tế của cổng thanh toán, nên không tự giả định 3%.
+            net = gross - refunds
 
             points.append({
                 'date': current.isoformat(),
@@ -238,10 +237,9 @@ class AdminRevenueReportView(APIView):
             course_revenue[course_id]['gross'] += float(payment.amount)
             course_revenue[course_id]['orders'] += 1
 
-        # Calculate net
+        # Payment hiện chưa lưu gateway fee thực tế; không dựng phí 3% giả.
         for data in course_revenue.values():
-            fees = data['gross'] * 0.03
-            data['net'] = data['gross'] - fees
+            data['net'] = data['gross']
 
         # Sort by orders desc, then gross desc
         result = sorted(

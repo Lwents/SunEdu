@@ -18,27 +18,32 @@ class StudentProfileView(APIView):
     """
     permission_classes = [IsAuthenticated, IsStudent]
 
+    @staticmethod
+    def _profile_data(user, profile):
+        """Serialize safely because the custom user does not extend AbstractUser."""
+        joined_at = getattr(user, 'date_joined', None) or getattr(user, 'created_on', None)
+        metadata = profile.metadata if isinstance(profile.metadata, dict) else {}
+        return {
+            'id': str(user.id),
+            'username': getattr(user, 'username', '') or '',
+            'email': getattr(user, 'email', '') or '',
+            'firstName': getattr(user, 'first_name', '') or '',
+            'lastName': getattr(user, 'last_name', '') or '',
+            'fullName': user.get_full_name() or getattr(user, 'username', ''),
+            'phone': getattr(user, 'phone', '') or '',
+            'avatar': getattr(user, 'avatar', None),
+            'class_name': getattr(profile, 'class_name', None) or metadata.get('class_name'),
+            'role': getattr(user, 'role', 'student'),
+            'dateJoined': joined_at.isoformat() if joined_at else None,
+        }
+
     def get(self, request):
         """Get student profile"""
         user = request.user
         from custom_account.models import Profile
         profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
         
-        profile_data = {
-            'id': str(user.id),
-            'username': user.username,
-            'email': user.email,
-            'firstName': user.first_name,
-            'lastName': user.last_name,
-            'fullName': user.get_full_name() or user.username,
-            'phone': getattr(user, 'phone', ''),
-            'avatar': getattr(user, 'avatar', None),
-            'class_name': getattr(profile, 'class_name', None) or (profile.metadata or {}).get("class_name"),
-            'role': getattr(user, 'role', 'student'),
-            'dateJoined': user.date_joined.isoformat() if user.date_joined else None,
-        }
-        
-        return Response(profile_data, status=status.HTTP_200_OK)
+        return Response(self._profile_data(user, profile), status=status.HTTP_200_OK)
 
     def put(self, request):
         """Update student profile"""
@@ -47,10 +52,17 @@ class StudentProfileView(APIView):
         profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
         
         # Update allowed fields
-        if 'firstName' in request.data:
+        if 'firstName' in request.data and hasattr(user, 'first_name'):
             user.first_name = request.data['firstName']
-        if 'lastName' in request.data:
+        if 'lastName' in request.data and hasattr(user, 'last_name'):
             user.last_name = request.data['lastName']
+        if ('firstName' in request.data or 'lastName' in request.data) \
+                and not hasattr(user, 'first_name'):
+            first_name = str(request.data.get('firstName', '') or '').strip()
+            last_name = str(request.data.get('lastName', '') or '').strip()
+            display_name = f"{first_name} {last_name}".strip()
+            if display_name:
+                profile.display_name = display_name
         if 'email' in request.data:
             user.email = request.data['email']
         if 'phone' in request.data:
@@ -66,21 +78,7 @@ class StudentProfileView(APIView):
         user.save()
         profile.save()
         
-        profile_data = {
-            'id': str(user.id),
-            'username': user.username,
-            'email': user.email,
-            'firstName': user.first_name,
-            'lastName': user.last_name,
-            'fullName': user.get_full_name() or user.username,
-            'phone': getattr(user, 'phone', ''),
-            'avatar': getattr(user, 'avatar', None),
-            'class_name': getattr(profile, 'class_name', None) or (profile.metadata or {}).get("class_name"),
-            'role': getattr(user, 'role', 'student'),
-            'dateJoined': user.date_joined.isoformat() if user.date_joined else None,
-        }
-        
-        return Response(profile_data, status=status.HTTP_200_OK)
+        return Response(self._profile_data(user, profile), status=status.HTTP_200_OK)
 
 
 class StudentChangePasswordView(APIView):
@@ -143,14 +141,14 @@ class StudentParentViewView(APIView):
     def get(self, request):
         """Get parent information"""
         user = request.user
-        
-        # Parent info might be stored in user profile or separate model
-        # For now, return empty/default structure
+        from custom_account.models import Profile
+        profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
+        metadata = profile.metadata if isinstance(profile.metadata, dict) else {}
         parent_data = {
-            'name': getattr(user, 'parent_name', ''),
-            'email': getattr(user, 'parent_email', ''),
-            'phone': getattr(user, 'parent_phone', ''),
-            'relationship': getattr(user, 'parent_relationship', ''),
+            'name': metadata.get('parent_name', ''),
+            'email': metadata.get('parent_email', ''),
+            'phone': metadata.get('parent_phone', ''),
+            'relationship': metadata.get('parent_relation', ''),
         }
         
         return Response(parent_data, status=status.HTTP_200_OK)
@@ -158,24 +156,25 @@ class StudentParentViewView(APIView):
     def put(self, request):
         """Update parent information"""
         user = request.user
-        
-        # Update parent fields if they exist on user model
-        if 'name' in request.data:
-            setattr(user, 'parent_name', request.data['name'])
-        if 'email' in request.data:
-            setattr(user, 'parent_email', request.data['email'])
-        if 'phone' in request.data:
-            setattr(user, 'parent_phone', request.data['phone'])
-        if 'relationship' in request.data:
-            setattr(user, 'parent_relationship', request.data['relationship'])
-        
-        user.save()
-        
+        from custom_account.models import Profile
+        profile, _ = Profile.objects.get_or_create(user=user, defaults={"language": "vietnamese"})
+        metadata = dict(profile.metadata) if isinstance(profile.metadata, dict) else {}
+        field_map = {
+            'name': 'parent_name',
+            'email': 'parent_email',
+            'phone': 'parent_phone',
+            'relationship': 'parent_relation',
+        }
+        for request_key, metadata_key in field_map.items():
+            if request_key in request.data:
+                metadata[metadata_key] = str(request.data.get(request_key) or '').strip()
+        profile.metadata = metadata
+        profile.save(update_fields=['metadata'])
         parent_data = {
-            'name': getattr(user, 'parent_name', ''),
-            'email': getattr(user, 'parent_email', ''),
-            'phone': getattr(user, 'parent_phone', ''),
-            'relationship': getattr(user, 'parent_relationship', ''),
+            'name': metadata.get('parent_name', ''),
+            'email': metadata.get('parent_email', ''),
+            'phone': metadata.get('parent_phone', ''),
+            'relationship': metadata.get('parent_relation', ''),
         }
         
         return Response(parent_data, status=status.HTTP_200_OK)

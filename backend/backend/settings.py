@@ -193,7 +193,8 @@ AUTH_USER_MODEL = 'custom_account.UserModel'
 # Static & Media files
 # -------------------------------
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_SOURCE_DIR = BASE_DIR / 'static'
+STATICFILES_DIRS = [STATIC_SOURCE_DIR] if STATIC_SOURCE_DIR.exists() else []
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
@@ -362,7 +363,7 @@ REST_AUTH = {
     'USER_DETAILS_SERIALIZER': 'custom_account.serializers.UserPublicOutputSerializer',
 }
 
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_UNIQUE_EMAIL = True

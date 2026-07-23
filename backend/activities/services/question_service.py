@@ -24,11 +24,19 @@ ExerciseAnswerModel = apps.get_model("activities", "ExerciseAnswer")
 # Question services
 # ----------------------
 def add_question(exercise_id: str, q_domain: QuestionDomain) -> QuestionDomain:
-    ex = ExerciseModel.objects.get(id=exercise_id)
-    q = QuestionModel.objects.create(
-        exercise=ex, prompt=q_domain.prompt, meta=q_domain.meta or {}
-    )
-    return QuestionDomain.from_model(q)
+    with transaction.atomic():
+        ex = ExerciseModel.objects.get(id=exercise_id)
+        q = QuestionModel.objects.create(
+            exercise=ex, prompt=q_domain.prompt, meta=q_domain.meta or {}
+        )
+        for choice_domain in q_domain.choices:
+            ChoiceModel.objects.create(
+                question=q,
+                text=choice_domain.text,
+                is_correct=choice_domain.is_correct,
+                position=choice_domain.position,
+            )
+        return QuestionDomain.from_model(q)
 
 
 def delete_question(question_id: str) -> None:

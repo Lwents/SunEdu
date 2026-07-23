@@ -243,6 +243,16 @@ class AdminUserListView(RoleBasedOutputMixin, APIView):
 
         try:
             new_user_domain: UserDomain = self.user_service.register_user(data=user_create_dto.to_dict())
+
+            # Tài khoản role=admin do quản trị viên tạo phải có is_staff để vượt
+            # qua IsAdminUser của chính các API quản trị. Luồng đăng ký công khai
+            # không đi qua view này nên không thể tự nâng quyền bằng trường role.
+            if new_user_domain.role == 'admin':
+                created_user = UserModel.objects.get(pk=new_user_domain.id)
+                if not created_user.is_staff:
+                    created_user.is_staff = True
+                    created_user.save(update_fields=['is_staff'])
+                new_user_domain = UserDomain.from_model(created_user)
             
             # Serialize DTO -> JSON 
             return Response(
